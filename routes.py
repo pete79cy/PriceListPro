@@ -601,7 +601,8 @@ def register_routes(app):
             product.category = request.form.get('product_category')  # Note: product_category for disambiguation
             product.scientific_name = request.form.get('scientific_name')
             product.pot = request.form.get('pot')
-            product.sku = request.form.get('sku')
+            sku = request.form.get('sku')
+            product.sku = sku if sku else None  # Explicitly set None if empty
             product.description = request.form.get('description')
             
             db.session.commit()
