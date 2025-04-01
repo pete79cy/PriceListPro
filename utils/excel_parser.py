@@ -8,6 +8,33 @@ from utils.logger import logger
 # Log that this module was loaded
 logger.info("Excel parser module loaded")
 
+def sanitize_string(value):
+    """
+    Sanitize a string value to ensure it can be safely stored in the database.
+    Handles encoding issues and strips whitespace.
+    
+    Args:
+        value: The value to sanitize (any type)
+        
+    Returns:
+        str or None: The sanitized string, or None if the value was None or empty
+    """
+    if value is None:
+        return None
+    # Convert to string if not already
+    string_value = str(value)
+    # Strip whitespace
+    string_value = string_value.strip()
+    # Explicitly encode and decode to handle any character encoding issues
+    try:
+        # Try UTF-8 first (most common for modern text)
+        string_value.encode('utf-8').decode('utf-8')
+    except UnicodeError:
+        # If that fails, use a more forgiving approach
+        string_value = string_value.encode('utf-8', errors='replace').decode('utf-8')
+        logger.warning(f"Had to replace characters in: {value}")
+    return string_value if string_value else None
+
 def parse_excel_file(file_path, customer_id, upload_id):
     """
     Parse an Excel file containing price list data.
@@ -225,11 +252,12 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 # Create new product - log all fields first to aid debugging
                 logger.debug(f"Creating new product - Name: {product_name}, Category: {category}, Scientific Name: {scientific_name}, Pot: {pot}")
                 
-                # Ensure we have clean, properly-encoded strings for all fields
-                safe_name = str(product_name).strip() if product_name is not None else None
-                safe_category = str(category).strip() if category is not None else None
-                safe_scientific_name = str(scientific_name).strip() if scientific_name is not None else None
-                safe_pot = str(pot).strip() if pot is not None else None
+                # Use the sanitize_string function defined at module level
+                
+                safe_name = sanitize_string(product_name)
+                safe_category = sanitize_string(category)
+                safe_scientific_name = sanitize_string(scientific_name)
+                safe_pot = sanitize_string(pot)
                 safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
                 
                 product = Product(
@@ -246,10 +274,10 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 # Update existing product fields if provided - use safe values
                 logger.debug(f"Updating existing product: {product.name} (ID: {product.id})")
                 
-                # Ensure we have clean, properly-encoded strings for all fields
-                safe_category = str(category).strip() if category is not None else None
-                safe_scientific_name = str(scientific_name).strip() if scientific_name is not None else None
-                safe_pot = str(pot).strip() if pot is not None else None
+                # Use the sanitize_string function defined at module level
+                safe_category = sanitize_string(category)
+                safe_scientific_name = sanitize_string(scientific_name)
+                safe_pot = sanitize_string(pot)
                 
                 if safe_category is not None:
                     product.category = safe_category
