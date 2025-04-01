@@ -29,8 +29,7 @@ app.secret_key = os.environ.get("SESSION_SECRET")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
-    "pool_pre_ping": True,
-    "connect_args": {"client_encoding": "utf8"},
+    "pool_pre_ping": True
 }
 
 # Configure file uploads
@@ -45,7 +44,7 @@ with app.app_context():
     # Import models here so tables are created
     import models
     db.create_all()
-    
+
     # Import and register routes
     from routes import register_routes
     register_routes(app)
