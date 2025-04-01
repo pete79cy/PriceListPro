@@ -49,6 +49,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('invoices') }}">
+                            <i class="fas fa-file-invoice"></i> Invoices
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('pending_updates') }}">
                             <i class="fas fa-tasks"></i> Price Updates
                             {% set pending_count = (pending_update_count or 0) %}
@@ -101,7 +106,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        {{ message|safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
