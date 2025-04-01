@@ -588,23 +588,28 @@ def register_routes(app):
     @login_required
     def edit_product():
         """Edit product details from any page"""
-        product_id = request.form.get('product_id')
-        redirect_to = request.form.get('redirect_to', 'products')
-        
-        if not product_id:
-            flash('Product ID is required.', 'danger')
-            return redirect(url_for(redirect_to))
-        
-        product = Product.query.get_or_404(product_id)
-        product.name = request.form.get('name')
-        product.category = request.form.get('product_category')  # Note: product_category for disambiguation
-        product.scientific_name = request.form.get('scientific_name')
-        product.pot = request.form.get('pot')
-        product.sku = request.form.get('sku')
-        product.description = request.form.get('description')
-        
-        db.session.commit()
-        flash(f'Product "{product.name}" updated successfully!', 'success')
+        try:
+            product_id = request.form.get('product_id')
+            redirect_to = request.form.get('redirect_to', 'products')
+            
+            if not product_id:
+                flash('Product ID is required.', 'danger')
+                return redirect(url_for(redirect_to))
+            
+            product = Product.query.get_or_404(product_id)
+            product.name = request.form.get('name')
+            product.category = request.form.get('product_category')  # Note: product_category for disambiguation
+            product.scientific_name = request.form.get('scientific_name')
+            product.pot = request.form.get('pot')
+            product.sku = request.form.get('sku')
+            product.description = request.form.get('description')
+            
+            db.session.commit()
+            flash(f'Product "{product.name}" updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating product {product_id}: {str(e)}")
+            flash('An error occurred while updating the product. Please try again.', 'danger')
         
         # Handle redirection with query parameters
         if redirect_to == 'price_lists':
