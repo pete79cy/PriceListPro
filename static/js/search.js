@@ -6,30 +6,30 @@ document.addEventListener('DOMContentLoaded', function() {
   const searchResults = document.getElementById('search-results');
   const resultsContainer = document.getElementById('results-container');
   const noResults = document.getElementById('no-results');
-  
+
   // Handle the search form submission
   searchForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const query = searchQuery.value.trim();
     const customerId = customerSelect.value;
-    
+
     if (!query || !customerId) {
       return;
     }
-    
+
     // Show loading spinner
     searchSpinner.classList.remove('d-none');
     searchResults.classList.add('d-none');
     noResults.classList.add('d-none');
-    
+
     // Make AJAX request to search API
     fetch(`/api/search?q=${encodeURIComponent(query)}&customer_id=${customerId}`)
       .then(response => response.json())
       .then(data => {
         // Hide spinner
         searchSpinner.classList.add('d-none');
-        
+
         if (data.results && data.results.length > 0) {
           // Show results
           renderSearchResults(data);
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(error => {
         console.error('Search error:', error);
         searchSpinner.classList.add('d-none');
-        
+
         // Show error message
         resultsContainer.innerHTML = `
           <div class="alert alert-danger">
@@ -53,12 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.classList.remove('d-none');
       });
   });
-  
+
   // Function to render search results
   function renderSearchResults(data) {
     // Get customer name
     const customerName = customerSelect.options[customerSelect.selectedIndex].text;
-    
+
     // Create header
     let html = `
       <div class="alert alert-success mb-4">
@@ -66,17 +66,17 @@ document.addEventListener('DOMContentLoaded', function() {
         Found ${data.results.length} matching products for <strong>${customerName}</strong>
       </div>
     `;
-    
+
     // Create cards for each result
     html += '<div class="row">';
-    
+
     data.results.forEach(result => {
-      // Format currency
-      const formattedPrice = new Intl.NumberFormat('en-US', {
+      // Format currency -  This needs to be changed to EUR as well.
+      const formattedPrice = new Intl.NumberFormat('de-DE', {
         style: 'currency',
-        currency: 'USD'
+        currency: 'EUR'
       }).format(result.current_price);
-      
+
       html += `
         <div class="col-md-6 col-lg-4 mb-4">
           <div class="card h-100">
@@ -86,12 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="card-body">
               ${result.sku ? `<p class="mb-2"><strong>SKU:</strong> ${result.sku}</p>` : ''}
               ${result.description ? `<p class="mb-3"><strong>Description:</strong> ${result.description}</p>` : ''}
-              
+
               <div class="text-center mb-3">
                 <span class="display-6">${formattedPrice}</span>
                 <div class="text-muted small">Current Price</div>
               </div>
-              
+
               ${result.price_history.length > 1 ? `
                 <div class="accordion" id="priceHistory${result.product_id}">
                   <div class="accordion-item">
@@ -114,9 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
                           <tbody>
                             ${result.price_history.map(price => `
                               <tr>
-                                <td>${new Intl.NumberFormat('en-US', {
+                                <td>${new Intl.NumberFormat('de-DE', {
                                   style: 'currency',
-                                  currency: 'USD'
+                                  currency: 'EUR'
                                 }).format(price.price)}</td>
                                 <td>${price.effective_date || 'N/A'}</td>
                               </tr>
@@ -133,9 +133,9 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       `;
     });
-    
+
     html += '</div>';
-    
+
     // Update the results container
     resultsContainer.innerHTML = html;
   }

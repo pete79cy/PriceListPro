@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload
+from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from utils.excel_parser import parse_excel_file
@@ -13,6 +13,7 @@ from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
 from utils.logger import logger
 from utils.excel_template import ensure_template_exists
+from utils.product_management import approve_price_update, reject_price_update
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -25,6 +26,13 @@ def register_routes(app):
     # Helper function to check allowed file extensions
     def allowed_file(filename, extensions):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
+        
+    # Context processor to add pending update count to all templates
+    @app.context_processor
+    def inject_pending_update_count():
+        if current_user.is_authenticated:
+            return {'pending_update_count': ProductUpdateRequest.query.filter_by(status='Pending').count()}
+        return {'pending_update_count': 0}
     
     @app.route('/', methods=['GET'])
     def index():
@@ -82,13 +90,16 @@ def register_routes(app):
     @login_required
     def dashboard():
         # Get some stats for the dashboard
+        pending_update_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
+        
         stats = {
             'customers': Customer.query.count(),
             'products': Product.query.count(),
             'price_lists': PriceList.query.count(),
-            'invoices': Invoice.query.count()
+            'invoices': Invoice.query.count(),
+            'pending_updates': pending_update_count
         }
-        return render_template('dashboard.html', stats=stats)
+        return render_template('dashboard.html', stats=stats, pending_update_count=pending_update_count)
     
     @app.route('/uploads', methods=['GET'])
     @login_required
@@ -489,6 +500,67 @@ def register_routes(app):
                               pagination=pagination,
                               selected_customer_id=customer_id,
                               selected_category=category)
+    
+    @app.route('/pending-updates')
+    @login_required
+    def pending_updates():
+        """View all pending price update requests"""
+        # Get filter parameters
+        status = request.args.get('status', 'Pending')  # Default to showing pending updates
+        customer_id = request.args.get('customer_id', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = 20  # Items per page
+        
+        # Base query
+        query = ProductUpdateRequest.query.join(Product)
+        
+        # Apply filters
+        if status:
+            query = query.filter(ProductUpdateRequest.status == status)
+        if customer_id:
+            # We need to join with PriceList to filter by customer
+            query = query.join(PriceList).filter(PriceList.customer_id == customer_id)
+            
+        # Order by creation date (newest first)
+        query = query.order_by(ProductUpdateRequest.created_at.desc())
+        
+        # Paginate results
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        updates = pagination.items
+        
+        # Get all customers for filter dropdown
+        customers = Customer.query.all()
+        
+        return render_template('pending_updates.html', 
+                              updates=updates,
+                              customers=customers,
+                              pagination=pagination,
+                              selected_status=status,
+                              selected_customer_id=customer_id)
+    
+    @app.route('/update/<int:update_id>/approve', methods=['POST'])
+    @login_required
+    def approve_update(update_id):
+        """Approve a pending price update"""
+        if approve_price_update(update_id):
+            flash('Price update approved successfully.', 'success')
+        else:
+            flash('Failed to approve price update. The update may no longer exist or has already been processed.', 'danger')
+        
+        # Redirect back to the pending updates page
+        return redirect(url_for('pending_updates'))
+    
+    @app.route('/update/<int:update_id>/reject', methods=['POST'])
+    @login_required
+    def reject_update(update_id):
+        """Reject a pending price update"""
+        if reject_price_update(update_id):
+            flash('Price update rejected.', 'success')
+        else:
+            flash('Failed to reject price update. The update may no longer exist or has already been processed.', 'danger')
+        
+        # Redirect back to the pending updates page
+        return redirect(url_for('pending_updates'))
     
     @app.route('/uploads/<filename>')
     @login_required

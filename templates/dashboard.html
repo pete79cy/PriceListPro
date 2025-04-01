@@ -61,6 +61,30 @@
         </div>
     </div>
     
+    <!-- Pending Updates Card -->
+    {% if stats.pending_updates > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Pending Price Updates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h3>You have {{ stats.pending_updates }} pending price update{% if stats.pending_updates != 1 %}s{% endif %} requiring review</h3>
+                            <p class="mb-0">These are price changes detected from recent imports that need your approval or rejection.</p>
+                        </div>
+                        <a href="{{ url_for('pending_updates') }}" class="btn btn-danger btn-lg">
+                            <i class="fas fa-tasks me-2"></i> Review Updates
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <div class="row">
         <div class="col-lg-6 mb-4">
             <div class="card">
@@ -71,6 +95,12 @@
                     <div class="list-group">
                         <a href="{{ url_for('uploads') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-upload me-2"></i> Upload Files
+                        </a>
+                        <a href="{{ url_for('pending_updates') }}" class="list-group-item list-group-item-action {% if stats.pending_updates > 0 %}list-group-item-danger{% endif %}">
+                            <i class="fas fa-tasks me-2"></i> Manage Price Updates
+                            {% if stats.pending_updates > 0 %}
+                            <span class="badge bg-danger float-end">{{ stats.pending_updates }}</span>
+                            {% endif %}
                         </a>
                         <a href="{{ url_for('search') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-search me-2"></i> Search Products and Prices
