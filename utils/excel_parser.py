@@ -26,14 +26,25 @@ def sanitize_string(value):
     string_value = str(value)
     # Strip whitespace
     string_value = string_value.strip()
+    # Handle potential numeric or other non-string types
+    if not isinstance(value, str):
+        try:
+            string_value = str(value)
+        except:
+            return None
     # Explicitly encode and decode to handle any character encoding issues
     try:
         # Try UTF-8 first (most common for modern text)
-        string_value.encode('utf-8').decode('utf-8')
+        string_value = string_value.encode('utf-8').decode('utf-8')
     except UnicodeError:
-        # If that fails, use a more forgiving approach
-        string_value = string_value.encode('utf-8', errors='replace').decode('utf-8')
-        logger.warning(f"Had to replace characters in: {value}")
+        try:
+            # Try with Greek encoding if UTF-8 fails
+            string_value = string_value.encode('iso-8859-7').decode('utf-8', errors='ignore')
+            logger.info(f"Converted Greek characters in: {value}")
+        except UnicodeError:
+            # If that fails too, use a more forgiving approach
+            string_value = string_value.encode('utf-8', errors='replace').decode('utf-8')
+            logger.warning(f"Had to replace characters in: {value}")
     return string_value if string_value else None
 
 def parse_excel_file(file_path, customer_id, upload_id):
@@ -137,7 +148,12 @@ def parse_excel_file(file_path, customer_id, upload_id):
             'SELLING PRICE': 'price',
             'Price': 'price',
             'PRICE': 'price',
-            'price': 'price'
+            'price': 'price',
+            # Add Greek column mappings
+            'Α/Α': 'index',  # Index number column - will be ignored
+            'ΟΝΟΜΑ': 'name',  # Greek for "NAME"
+            'ΤΙΜΗ': 'price',  # Greek for "PRICE"
+            'ΜΕΓΕΘΟΣ': 'pot'  # Greek for "SIZE"
         }
         
         # Rename columns if they exist in the dataframe
