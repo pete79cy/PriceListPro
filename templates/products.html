@@ -174,7 +174,7 @@
     function updateBatchDeleteButton() {
         const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
         batchDeleteBtn.disabled = selectedCount === 0;
-        batchDeleteBtn.textContent = `Delete Selected (${selectedCount})`;
+        batchDeleteBtn.textContent = selectedCount > 0 ? `Delete Selected (${selectedCount})` : 'Delete Selected';
     }
 
     // Handle batch delete
@@ -205,53 +205,53 @@
             alert('Error deleting products');
         }
     });
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle edit product modal
-    document.querySelectorAll('.edit-product').forEach(button => {
-        button.addEventListener('click', function() {
-            document.getElementById('productModalLabel').textContent = 'Edit Product';
-            document.getElementById('product_id').value = this.dataset.id;
-            document.getElementById('name').value = this.dataset.name;
-            document.getElementById('sku').value = this.dataset.sku;
-            document.getElementById('description').value = this.dataset.description;
-            
-            // Try to set additional fields if available in the DOM
-            const product = document.querySelector(`tr[data-product-id="${this.dataset.id}"]`);
-            if (product) {
-                if (product.dataset.category) {
-                    document.getElementById('category').value = product.dataset.category;
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle edit product modal
+        document.querySelectorAll('.edit-product').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('productModalLabel').textContent = 'Edit Product';
+                document.getElementById('product_id').value = this.dataset.id;
+                document.getElementById('name').value = this.dataset.name;
+                document.getElementById('sku').value = this.dataset.sku;
+                document.getElementById('description').value = this.dataset.description;
+
+                // Try to set additional fields if available in the DOM
+                const product = document.querySelector(`tr[data-product-id="${this.dataset.id}"]`);
+                if (product) {
+                    if (product.dataset.category) {
+                        document.getElementById('category').value = product.dataset.category;
+                    }
+                    if (product.dataset.scientificName) {
+                        document.getElementById('scientific_name').value = product.dataset.scientificName;
+                    }
+                    if (product.dataset.pot) {
+                        document.getElementById('pot').value = product.dataset.pot;
+                    }
                 }
-                if (product.dataset.scientificName) {
-                    document.getElementById('scientific_name').value = product.dataset.scientificName;
-                }
-                if (product.dataset.pot) {
-                    document.getElementById('pot').value = product.dataset.pot;
-                }
-            }
+            });
+        });
+
+        // Reset modal when adding a new product
+        document.querySelector('[data-bs-target="#productModal"]').addEventListener('click', function() {
+            document.getElementById('productModalLabel').textContent = 'Add Product';
+            document.getElementById('product_id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('scientific_name').value = '';
+            document.getElementById('pot').value = '';
+            document.getElementById('sku').value = '';
+            document.getElementById('description').value = '';
+        });
+
+        // Handle delete modal
+        document.getElementById('deleteModal').addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const productId = button.dataset.id;
+            const productName = button.dataset.name;
+
+            document.getElementById('delete-product-name').textContent = productName;
+            document.getElementById('delete-form').action = `/products/${productId}/delete`;
         });
     });
-    
-    // Reset modal when adding a new product
-    document.querySelector('[data-bs-target="#productModal"]').addEventListener('click', function() {
-        document.getElementById('productModalLabel').textContent = 'Add Product';
-        document.getElementById('product_id').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('category').value = '';
-        document.getElementById('scientific_name').value = '';
-        document.getElementById('pot').value = '';
-        document.getElementById('sku').value = '';
-        document.getElementById('description').value = '';
-    });
-    
-    // Handle delete modal
-    document.getElementById('deleteModal').addEventListener('show.bs.modal', function(event) {
-        const button = event.relatedTarget;
-        const productId = button.dataset.id;
-        const productName = button.dataset.name;
-        
-        document.getElementById('delete-product-name').textContent = productName;
-        document.getElementById('delete-form').action = `/products/${productId}/delete`;
-    });
-});
 </script>
 {% endblock %}
