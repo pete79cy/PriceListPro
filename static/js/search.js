@@ -114,9 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
                           <tbody>
                             ${result.price_history.map(price => `
                               <tr>
-                                <td>${new Intl.NumberFormat('en-US', {
+                                <td>${new Intl.NumberFormat('de-DE', {
                                   style: 'currency',
-                                  currency: 'USD'
+                                  currency: 'EUR'
                                 }).format(price.price)}</td>
                                 <td>${price.effective_date || 'N/A'}</td>
                               </tr>
