@@ -55,7 +55,7 @@ class Invoice(db.Model):
     invoice_number = db.Column(db.String(50), nullable=False, unique=True)
     invoice_date = db.Column(db.Date, nullable=False)
     total_amount = db.Column(db.Float, nullable=True)
-    currency = db.Column(db.String(10), nullable=True, default='€')  # Store currency symbol (€, $, £)
+    currency = db.Column(db.String(10), nullable=False, default='€')  # Euro is the default currency
     file_path = db.Column(db.String(255), nullable=True)  # Path to the stored PDF
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
