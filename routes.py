@@ -1,5 +1,6 @@
 import os
 import uuid
+import traceback
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory
 from werkzeug.utils import secure_filename
@@ -8,6 +9,10 @@ from models import Customer, Product, PriceList, Invoice, InvoiceItem, FileUploa
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
+from utils.logger import logger
+
+# Log that routes module was loaded
+logger.info("Routes module loaded")
 
 def register_routes(app):
     
@@ -70,19 +75,35 @@ def register_routes(app):
             db.session.commit()
             
             try:
+                # Log before processing
+                logger.info(f"Starting Excel processing for file: {filename}, customer_id: {customer_id}")
+                
                 # Process the excel file
                 result = parse_excel_file(file_path, customer_id, upload.id)
                 
-                # Update upload record
-                upload.processed = True
-                upload.processing_notes = f"Successfully processed. Added {result['new_products']} products and {result['price_entries']} price list entries."
-                db.session.commit()
-                
-                flash(f'Successfully uploaded and processed: {filename}. Added {result["new_products"]} products and {result["price_entries"]} price list entries.', 'success')
+                # Handle errors from the parser
+                if result.get('errors') and len(result['errors']) > 0:
+                    error_messages = '; '.join(result['errors'])
+                    logger.error(f"Excel processing completed with errors: {error_messages}")
+                    upload.processing_notes = f"Processed with errors: {error_messages}"
+                    upload.processed = True
+                    db.session.commit()
+                    flash(f'File processed with errors: {error_messages}', 'warning')
+                else:
+                    # Update upload record for success
+                    logger.info(f"Excel processing successful: {result}")
+                    upload.processed = True
+                    upload.processing_notes = f"Successfully processed. Added {result['new_products']} products and {result['price_entries']} price list entries."
+                    db.session.commit()
+                    
+                    flash(f'Successfully uploaded and processed: {filename}. Added {result["new_products"]} products and {result["price_entries"]} price list entries.', 'success')
             except Exception as e:
-                upload.processing_notes = f"Error processing file: {str(e)}"
+                error_msg = f"Error processing file: {str(e)}"
+                logger.error(error_msg)
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                upload.processing_notes = error_msg
                 db.session.commit()
-                flash(f'Error processing file: {str(e)}', 'danger')
+                flash(error_msg, 'danger')
             
             return redirect(url_for('uploads'))
         

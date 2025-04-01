@@ -5,8 +5,16 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
-# Set up logging
+# Set up logging - this will be replaced by the custom logger
 logging.basicConfig(level=logging.DEBUG)
+
+# Import our custom logger
+try:
+    from utils.logger import logger
+    logger.info("App module loaded")
+except ImportError:
+    # This can happen on first load before utils directory exists
+    pass
 
 class Base(DeclarativeBase):
     pass
