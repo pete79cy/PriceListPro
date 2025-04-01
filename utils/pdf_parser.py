@@ -143,13 +143,20 @@ def extract_invoice_data(text):
             item_num, description, quantity, price, vat_rate, total = match.groups()
             
             # Skip if this is the A/A field which is just a numbering field
-            if description.strip().upper() == 'A/A' or description.strip().upper().startswith('A/A '):
+            # Handle both Latin and Greek characters for A/A
+            if (description.strip().upper() == 'A/A' or description.strip().upper() == 'Α/Α' or 
+                description.strip().upper().startswith('A/A ') or description.strip().upper().startswith('Α/Α ')):
                 continue
                 
-            # If the description contains "A/A" as a prefix, trim it out
-            if ' A/A ' in description.upper() or description.upper().startswith('A/A '):
+            # Thoroughly filter any A/A prefixes (handling both Latin and Greek characters)
+            # A/A could appear as A/A or Α/Α (with Greek letters)
+            if (re.search(r'\bA/A\b|\bA/A\s+|\bΑ/Α\b|\bΑ/Α\s+', description.upper()) or 
+                description.upper().startswith('A/A') or description.upper().startswith('Α/Α')):
                 # Remove A/A and any numbers that might follow it
-                description = re.sub(r'^A/A\s+\d+\s+', '', description, flags=re.IGNORECASE)
+                description = re.sub(r'^(?:A/A|Α/Α)\s*\d*\s*', '', description, flags=re.IGNORECASE)
+                
+            # Clean up any remaining A/A references    
+            description = description.replace('(A/A)', '').replace('(Α/Α)', '')
                 
             # In PDFs, Column A = Scientific Name, Description = Name, PRICE = Selling Price
             description = description.strip()
@@ -246,13 +253,19 @@ def extract_invoice_data(text):
                         description = parts[0].strip()
                         
                         # Skip A/A field which is just a numbering field
-                        if description.upper() == 'A/A' or description.upper().startswith('A/A '):
+                        if (description.upper() == 'A/A' or description.upper() == 'Α/Α' or 
+                            description.upper().startswith('A/A ') or description.upper().startswith('Α/Α ')):
                             continue
                             
-                        # If the description contains "A/A" as a prefix, trim it out
-                        if ' A/A ' in description.upper() or description.upper().startswith('A/A '):
-                            # Remove A/A and any numbers that might follow it
-                            description = re.sub(r'^A/A\s+\d+\s+', '', description, flags=re.IGNORECASE)
+                        # Thoroughly filter any A/A prefixes (handling both Latin and Greek characters)
+                        # A/A could appear as A/A or Α/Α (with Greek letters)
+                        if (re.search(r'\bA/A\b|\bA/A\s+|\bΑ/Α\b|\bΑ/Α\s+', description.upper()) or 
+                            description.upper().startswith('A/A') or description.upper().startswith('Α/Α')):
+                            # Remove A/A and any numbers that might follow it, handling both Latin and Greek characters
+                            description = re.sub(r'^(?:A/A|Α/Α)\s*\d*\s*', '', description, flags=re.IGNORECASE)
+                            
+                        # Clean up any remaining A/A references    
+                        description = description.replace('(A/A)', '').replace('(Α/Α)', '')
                             
                         # Try to extract price and quantity
                         numbers = [float(num.replace(',', '.')) for num in re.findall(r'(\d+[.,]\d+)', line)]

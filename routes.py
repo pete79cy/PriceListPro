@@ -617,12 +617,15 @@ def register_routes(app):
                 
             # Special handling for SKU (unique constraint)
             sku = request.form.get('sku')
-            if sku == 'None' or not sku:
-                # Keep the existing SKU (even if it's NULL)
-                # Don't change it to prevent unique constraint violations
-                pass
+            if sku == 'None' or not sku or sku.strip() == '':
+                # Set to None explicitly if empty or 'None'
+                product.sku = None
             else:
-                product.sku = sku
+                # Check if this SKU already exists on another product
+                existing_product = Product.query.filter(Product.sku == sku, Product.id != product.id).first()
+                if existing_product:
+                    raise ValueError(f"SKU '{sku}' already exists on product '{existing_product.name}'. SKUs must be unique.")
+                product.sku = sku.strip()
                 
             description = request.form.get('description')
             if description == 'None' or not description:
@@ -631,10 +634,14 @@ def register_routes(app):
             
             db.session.commit()
             flash(f'Product "{product.name}" updated successfully!', 'success')
+        except ValueError as e:
+            db.session.rollback()
+            logger.error(f"Validation error updating product {product_id}: {str(e)}")
+            flash(f'Error: {str(e)}', 'danger')
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error updating product {product_id}: {str(e)}")
-            flash('An error occurred while updating the product. Please try again.', 'danger')
+            flash(f'An error occurred while updating the product: {str(e)}', 'danger')
         
         # Handle redirection with query parameters
         if redirect_to == 'price_lists':
