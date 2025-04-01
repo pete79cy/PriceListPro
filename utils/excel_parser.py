@@ -1,6 +1,7 @@
 import pandas as pd
 import logging
 import traceback
+import re
 from app import db
 from models import Customer, Product, PriceList
 from utils.logger import logger
@@ -12,7 +13,7 @@ logger.info("Excel parser module loaded")
 def sanitize_string(value):
     """
     Sanitize a string value to ensure it can be safely stored in the database.
-    Handles encoding issues and strips whitespace.
+    Handles encoding issues and strips whitespace, with special handling for Greek characters.
     
     Args:
         value: The value to sanitize (any type)
@@ -22,18 +23,50 @@ def sanitize_string(value):
     """
     if value is None:
         return None
+        
     # Convert to string if not already
     string_value = str(value)
+    
+    # Skip A/A field which is just a numbering/index field
+    if string_value.strip().upper() in ['A/A', 'Α/Α'] or string_value.strip().upper().startswith(('A/A ', 'Α/Α ')):
+        logger.info(f"Skipping A/A field value: {string_value}")
+        return None
+        
     # Strip whitespace
     string_value = string_value.strip()
+    
+    # Handle potential numeric or other non-string types
+    if not isinstance(value, str):
+        try:
+            string_value = str(value)
+        except:
+            return None
+            
     # Explicitly encode and decode to handle any character encoding issues
     try:
         # Try UTF-8 first (most common for modern text)
-        string_value.encode('utf-8').decode('utf-8')
+        string_value = string_value.encode('utf-8').decode('utf-8')
     except UnicodeError:
-        # If that fails, use a more forgiving approach
-        string_value = string_value.encode('utf-8', errors='replace').decode('utf-8')
-        logger.warning(f"Had to replace characters in: {value}")
+        try:
+            # Try with Greek encoding - use iso-8859-7 specifically for Greek characters
+            string_value = string_value.encode('iso-8859-7').decode('iso-8859-7', errors='ignore')
+            logger.info(f"Converted Greek characters in: {string_value} (original: {value})")
+        except UnicodeError:
+            try:
+                # Try another Greek encoding if needed
+                string_value = string_value.encode('cp1253').decode('cp1253', errors='ignore')
+                logger.info(f"Converted Greek characters using cp1253 in: {string_value} (original: {value})")
+            except UnicodeError:
+                # If that fails too, use a more forgiving approach
+                string_value = string_value.encode('utf-8', errors='replace').decode('utf-8')
+                logger.warning(f"Had to replace characters in: {string_value} (original: {value})")
+    
+    # Clean up any remaining A/A references
+    if string_value:
+        string_value = string_value.replace('(A/A)', '').replace('(Α/Α)', '')
+        # Remove A/A and any numbers that might follow it, handling both Latin and Greek characters
+        string_value = re.sub(r'^(?:A/A|Α/Α)\s*\d*\s*', '', string_value, flags=re.IGNORECASE)
+    
     return string_value if string_value else None
 
 def parse_excel_file(file_path, customer_id, upload_id):
@@ -105,14 +138,28 @@ def parse_excel_file(file_path, customer_id, upload_id):
         # Log the columns found for debugging
         logger.info(f"Excel columns found: {df.columns.tolist()}")
         
-        # Clean column names - handle non-ASCII characters
+        # First log the original column names as UTF-8 for debugging (helpful for Greek columns)
+        logger.info("Original column names detected:")
+        for col in df.columns:
+            try:
+                if isinstance(col, str):
+                    # Log both original and UTF-8 representation
+                    logger.info(f"  - Column: '{col}' (Unicode repr: {repr(col)})")
+            except:
+                logger.warning(f"  - Could not log column name type: {type(col)}")
+                
+        # Don't strip away Greek characters - we want to keep them for matching
+        # Only clean up problematic non-printable characters
         cleaned_columns = {}
         for col in df.columns:
-            # Create a clean ASCII version of the column name
-            cleaned_col = str(col).encode('ascii', 'ignore').decode('ascii')
-            if cleaned_col != col:
-                logger.info(f"Cleaned column name: '{col}' -> '{cleaned_col}'")
-                df = df.rename(columns={col: cleaned_col})
+            if isinstance(col, str):
+                # Replace null bytes and other control characters, but keep Greek letters
+                cleaned_col = ''.join(c for c in str(col) if c.isprintable() or c.isspace())
+                cleaned_col = cleaned_col.strip()
+                
+                if cleaned_col != col:
+                    logger.info(f"Cleaned column name: '{col}' -> '{cleaned_col}'")
+                    df = df.rename(columns={col: cleaned_col})
                 
         logger.info(f"Columns after cleaning: {df.columns.tolist()}")
         
@@ -137,7 +184,25 @@ def parse_excel_file(file_path, customer_id, upload_id):
             'SELLING PRICE': 'price',
             'Price': 'price',
             'PRICE': 'price',
-            'price': 'price'
+            'price': 'price',
+            # Greek column mappings - comprehensive set for better handling Greek document formats
+            'Α/Α': 'index',  # Index number column - will be ignored
+            'A/A': 'index',  # Latin equivalent - will be ignored
+            'ΟΝΟΜΑ': 'name',  # Greek for "NAME"
+            'ΟΝΟΜΑΣΙΑ': 'name',  # "DESIGNATION"
+            'ΠΕΡΙΓΡΑΦΗ': 'name',  # "DESCRIPTION"
+            'ΕΙΔΟΣ': 'name',  # "TYPE/SPECIES"
+            'ΤΙΜΗ': 'price',  # Greek for "PRICE"
+            'ΑΞΙΑ': 'price',  # "VALUE" 
+            'ΚΟΣΤΟΣ': 'price',  # "COST"
+            'ΤΙΜΗ ΠΩΛΗΣΗΣ': 'price',  # "SELLING PRICE"
+            'ΜΕΓΕΘΟΣ': 'pot',  # Greek for "SIZE"
+            'ΜΕΓΕΘΟΣ ΓΛΑΣΤΡΑΣ': 'pot',  # "POT SIZE" 
+            'ΓΛΑΣΤΡΑ': 'pot',  # "POT"
+            'ΚΑΤΗΓΟΡΙΑ': 'category',  # "CATEGORY"
+            'ΟΙΚΟΓΕΝΕΙΑ': 'category',  # "FAMILY"
+            'ΕΠΙΣΤΗΜΟΝΙΚΟ ΟΝΟΜΑ': 'scientific_name',  # "SCIENTIFIC NAME"
+            'ΛΑΤΙΝΙΚΑ': 'scientific_name'  # "LATIN"
         }
         
         # Rename columns if they exist in the dataframe
@@ -197,6 +262,16 @@ def parse_excel_file(file_path, customer_id, upload_id):
             
             # Skip rows with missing essential data
             if pd.isna(product_name):
+                continue
+                
+            # Skip any rows where the product name might be from an index column
+            # These might have snuck through if column mappings didn't catch them
+            if isinstance(product_name, str) and (
+                product_name.strip().upper() in ['A/A', 'Α/Α'] or 
+                product_name.strip().upper().startswith(('A/A ', 'Α/Α ')) or
+                re.match(r'^(?:A/A|Α/Α)\s*\d*\s*$', product_name, re.IGNORECASE)
+            ):
+                logger.info(f"Skipping index/A/A row with value: {product_name}")
                 continue
             
             # Get optional fields
