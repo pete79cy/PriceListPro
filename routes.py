@@ -76,10 +76,12 @@ def register_routes(app):
             db.session.commit()
             
             try:
-                # Log before processing
+                # Log before processing with detailed info
                 logger.info(f"Starting Excel processing for file: {filename}, customer_id: {customer_id}")
+                logger.info(f"File size: {os.path.getsize(file_path)} bytes")
+                logger.info(f"Upload ID: {upload.id}")
                 
-                # Process the excel file
+                # Process the excel file with extra error handling
                 result = parse_excel_file(file_path, customer_id, upload.id)
                 
                 # Handle errors from the parser
@@ -100,11 +102,17 @@ def register_routes(app):
                     flash(f'Successfully uploaded and processed: {filename}. Added {result["new_products"]} products and {result["price_entries"]} price list entries.', 'success')
             except Exception as e:
                 error_msg = f"Error processing file: {str(e)}"
-                logger.error(error_msg)
+                logger.error("=== Excel Upload Error ===")
+                logger.error(f"File: {filename}")
+                logger.error(f"Customer ID: {customer_id}")
+                logger.error(f"Upload ID: {upload.id}")
+                logger.error(f"Error: {error_msg}")
                 logger.error(f"Full traceback: {traceback.format_exc()}")
+                logger.error("========================")
+                
                 upload.processing_notes = error_msg
                 db.session.commit()
-                flash(error_msg, 'danger')
+                flash("Error uploading file. Please check if the Excel file follows the expected format.", 'danger')
             
             return redirect(url_for('uploads'))
         
