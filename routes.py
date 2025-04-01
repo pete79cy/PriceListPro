@@ -30,12 +30,16 @@ def register_routes(app):
     # Context processor to add pending update count to all templates
     @app.context_processor
     def inject_pending_update_count():
-        if current_user.is_authenticated:
-            pending_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
-            return {
-                'pending_update_count': pending_count,
-                'has_pending_updates': pending_count > 0
-            }
+        try:
+            if current_user.is_authenticated:
+                pending_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
+                return {
+                    'pending_update_count': pending_count,
+                    'has_pending_updates': pending_count > 0
+                }
+        except:
+            # If there's any error (like with current_user not being available), return defaults
+            pass
         return {
             'pending_update_count': 0,
             'has_pending_updates': False
@@ -46,13 +50,16 @@ def register_routes(app):
         # If user is already logged in, show the dashboard
         if current_user.is_authenticated:
             # Get some stats for the dashboard
+            pending_update_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
+            
             stats = {
                 'customers': Customer.query.count(),
                 'products': Product.query.count(),
                 'price_lists': PriceList.query.count(),
-                'invoices': Invoice.query.count()
+                'invoices': Invoice.query.count(),
+                'pending_updates': pending_update_count
             }
-            return render_template('dashboard.html', stats=stats)
+            return render_template('dashboard.html', stats=stats, pending_update_count=pending_update_count)
         # Otherwise show the login page
         return render_template('index.html')
         
