@@ -43,8 +43,9 @@ class Product(db.Model):
     category = db.Column(db.String(100), nullable=True)
     scientific_name = db.Column(db.String(150), nullable=True)
     pot = db.Column(db.String(50), nullable=True)
-    sku = db.Column(db.String(50), nullable=True, unique=True,
-                    info={'allow_multiple_nulls': True})  # Allow multiple NULL values
+    # Using a partial unique index in the database (unique only for non-NULL values)
+    # This allows multiple products with NULL SKU values
+    sku = db.Column(db.String(50), nullable=True)
     description = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
