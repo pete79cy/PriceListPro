@@ -588,22 +588,46 @@ def register_routes(app):
     @login_required
     def edit_product():
         """Edit product details from any page"""
+        product_id = request.form.get('product_id')
+        redirect_to = request.form.get('redirect_to', 'products')
+        
+        if not product_id:
+            flash('Product ID is required.', 'danger')
+            return redirect(url_for(redirect_to))
+            
         try:
-            product_id = request.form.get('product_id')
-            redirect_to = request.form.get('redirect_to', 'products')
-            
-            if not product_id:
-                flash('Product ID is required.', 'danger')
-                return redirect(url_for(redirect_to))
-            
             product = Product.query.get_or_404(product_id)
             product.name = request.form.get('name')
-            product.category = request.form.get('product_category')  # Note: product_category for disambiguation
-            product.scientific_name = request.form.get('scientific_name')
-            product.pot = request.form.get('pot')
+            
+            # Handle 'None' string values properly
+            category = request.form.get('product_category')
+            if category == 'None' or not category:
+                category = None
+            product.category = category
+                
+            scientific_name = request.form.get('scientific_name')
+            if scientific_name == 'None' or not scientific_name:
+                scientific_name = None
+            product.scientific_name = scientific_name
+                
+            pot = request.form.get('pot')
+            if pot == 'None' or not pot:
+                pot = None
+            product.pot = pot
+                
+            # Special handling for SKU (unique constraint)
             sku = request.form.get('sku')
-            product.sku = sku if sku else None  # Explicitly set None if empty
-            product.description = request.form.get('description')
+            if sku == 'None' or not sku:
+                # Keep the existing SKU (even if it's NULL)
+                # Don't change it to prevent unique constraint violations
+                pass
+            else:
+                product.sku = sku
+                
+            description = request.form.get('description')
+            if description == 'None' or not description:
+                description = None
+            product.description = description
             
             db.session.commit()
             flash(f'Product "{product.name}" updated successfully!', 'success')
