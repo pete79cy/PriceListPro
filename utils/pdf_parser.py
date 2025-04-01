@@ -107,14 +107,25 @@ def extract_invoice_data(text):
         try:
             item_num, description, quantity, price, vat_rate, total = match.groups()
             
-            # Clean up the description - may contain extra spaces or scientific name
+            # In PDFs, Column A = Scientific Name, Description = Name, PRICE = Selling Price
             description = description.strip()
             
-            # Try to extract scientific name if present (often in italics or parentheses)
+            # The field that comes before description is typically the scientific name (Column A in Excel)
             scientific_name = None
-            sci_name_match = re.search(r'([A-Z][a-z]+ [a-z]+)', description)
+            name = description
+            
+            # Try to extract scientific name if present
+            # Format often looks like: "Carissa macrocarpa Emerald Blanket"
+            # where "Carissa macrocarpa" is the scientific name and "Emerald Blanket" is the product name
+            sci_name_match = re.search(r'^([A-Z][a-z]+ [a-z]+)(?:\s+(.+))?$', description)
             if sci_name_match:
                 scientific_name = sci_name_match.group(1)
+                # If we have a product name after the scientific name, use that as the description
+                if sci_name_match.group(2):
+                    name = sci_name_match.group(2).strip()
+            
+            # Update description to be just the product name
+            description = name
             
             # Try to extract pot size if present (often with L for liters)
             pot_size = None
