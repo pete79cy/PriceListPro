@@ -583,6 +583,74 @@ def register_routes(app):
                               pagination=pagination,
                               selected_customer_id=customer_id,
                               selected_category=category)
+    
+    @app.route('/edit-product', methods=['POST'])
+    @login_required
+    def edit_product():
+        """Edit product details from any page"""
+        product_id = request.form.get('product_id')
+        redirect_to = request.form.get('redirect_to', 'products')
+        
+        if not product_id:
+            flash('Product ID is required.', 'danger')
+            return redirect(url_for(redirect_to))
+        
+        product = Product.query.get_or_404(product_id)
+        product.name = request.form.get('name')
+        product.category = request.form.get('product_category')  # Note: product_category for disambiguation
+        product.scientific_name = request.form.get('scientific_name')
+        product.pot = request.form.get('pot')
+        product.sku = request.form.get('sku')
+        product.description = request.form.get('description')
+        
+        db.session.commit()
+        flash(f'Product "{product.name}" updated successfully!', 'success')
+        
+        # Handle redirection with query parameters
+        if redirect_to == 'price_lists':
+            customer_id = request.form.get('customer_id')
+            category = request.form.get('category')
+            return redirect(url_for('price_lists', customer_id=customer_id, category=category))
+        else:
+            return redirect(url_for(redirect_to))
+    
+    @app.route('/edit-price', methods=['POST'])
+    @login_required
+    def edit_price():
+        """Edit price in a price list"""
+        price_id = request.form.get('price_id')
+        product_id = request.form.get('product_id')
+        customer_id = request.form.get('customer_id')
+        new_price = float(request.form.get('price', 0))
+        immediate_update = request.form.get('immediate_update') == '1'
+        
+        if not price_id or not product_id or not customer_id:
+            flash('Missing required information.', 'danger')
+            return redirect(url_for('price_lists'))
+        
+        price_list = PriceList.query.get_or_404(price_id)
+        old_price = price_list.price
+        
+        if immediate_update:
+            # Apply the change directly
+            price_list.price = new_price
+            db.session.commit()
+            flash(f'Price updated successfully from {old_price}€ to {new_price}€.', 'success')
+        else:
+            # Create a price update request
+            update_request = ProductUpdateRequest(
+                product_id=product_id,
+                price_list_id=price_id,
+                old_price=old_price,
+                new_price=new_price,
+                status='Pending',
+                source_file=f'manual_edit&customer_id={customer_id}'
+            )
+            db.session.add(update_request)
+            db.session.commit()
+            flash(f'Price update request created. Current price: {old_price}€, Requested price: {new_price}€. This change requires approval.', 'info')
+        
+        return redirect(url_for('price_lists', customer_id=customer_id))
                               
     @app.route('/invoices')
     @login_required
