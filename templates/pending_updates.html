@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <h1 class="mb-4">Pending Price Updates</h1>
-
+    
     <!-- Filter options -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -44,19 +44,23 @@
         </div>
     </div>
 
-    <!-- Updates Table -->
+    <!-- Updates table -->
     <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Price Update Requests</h5>
+            <span class="badge bg-light text-dark">{{ pagination.total }} Items</span>
+        </div>
         <div class="card-body">
             {% if updates %}
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
+                <table class="table table-striped table-hover">
+                    <thead>
                         <tr>
                             <th>Product</th>
-                            <th>Customer</th>
-                            <th class="text-end">Current Price</th>
-                            <th class="text-end">New Price</th>
-                            <th>Source</th>
+                            <th>Old Price</th>
+                            <th>New Price</th>
+                            <th>Change</th>
+                            <th>Status</th>
                             <th>Date</th>
                             <th>Actions</th>
                         </tr>
@@ -64,28 +68,60 @@
                     <tbody>
                         {% for update in updates %}
                         <tr>
-                            <td>{{ update.product.name }}</td>
-                            <td>{{ update.price_list.customer.name }}</td>
-                            <td class="text-end">€{{ "%.2f"|format(update.old_price) }}</td>
-                            <td class="text-end">€{{ "%.2f"|format(update.new_price) }}</td>
-                            <td>{{ update.source_file or 'Manual' }}</td>
+                            <td>
+                                <div>{{ update.product.name }}</div>
+                                {% if update.product.scientific_name %}
+                                <small class="text-muted font-italic">{{ update.product.scientific_name }}</small>
+                                {% endif %}
+                                {% if update.product.pot %}
+                                <small class="text-muted">{{ update.product.pot }}</small>
+                                {% endif %}
+                            </td>
+                            <td>€{{ "%.2f"|format(update.old_price) }}</td>
+                            <td>€{{ "%.2f"|format(update.new_price) }}</td>
+                            <td>
+                                {% set diff = update.new_price - update.old_price %}
+                                {% set percentage = (diff / update.old_price * 100) if update.old_price > 0 else 0 %}
+                                {% if diff > 0 %}
+                                <span class="text-danger">
+                                    +{{ "%.2f"|format(diff) }} ({{ "%.2f"|format(percentage) }}%)
+                                    <i class="fas fa-arrow-up"></i>
+                                </span>
+                                {% elif diff < 0 %}
+                                <span class="text-success">
+                                    {{ "%.2f"|format(diff) }} ({{ "%.2f"|format(percentage) }}%)
+                                    <i class="fas fa-arrow-down"></i>
+                                </span>
+                                {% else %}
+                                <span class="text-muted">No change</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if update.status == 'Pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif update.status == 'Approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif update.status == 'Rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
                             <td>{{ update.created_at.strftime('%Y-%m-%d') }}</td>
                             <td>
                                 {% if update.status == 'Pending' %}
                                 <div class="btn-group">
-                                    <form action="{{ url_for('approve_update', update_id=update.id) }}" method="POST" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success me-1">
+                                    <form method="POST" action="{{ url_for('approve_update', update_id=update.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-success">
                                             <i class="fas fa-check"></i> Approve
                                         </button>
                                     </form>
-                                    <form action="{{ url_for('reject_update', update_id=update.id) }}" method="POST" class="d-inline">
+                                    <form method="POST" action="{{ url_for('reject_update', update_id=update.id) }}" style="display: inline;" class="ms-1">
                                         <button type="submit" class="btn btn-sm btn-danger">
                                             <i class="fas fa-times"></i> Reject
                                         </button>
                                     </form>
                                 </div>
                                 {% else %}
-                                <span class="badge bg-{{ update.status|lower }}">{{ update.status }}</span>
+                                <span class="text-muted">No actions available</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -93,6 +129,58 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination controls -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Price Update Navigation">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('pending_updates', page=pagination.prev_num, customer_id=selected_customer_id, status=selected_status) }}">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == pagination.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('pending_updates', page=page_num, customer_id=selected_customer_id, status=selected_status) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('pending_updates', page=pagination.next_num, customer_id=selected_customer_id, status=selected_status) }}">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
             {% else %}
             <div class="alert alert-info">
                 <i class="fas fa-info-circle"></i> No price update requests found with the selected filters.

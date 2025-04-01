@@ -31,15 +31,8 @@ def register_routes(app):
     @app.context_processor
     def inject_pending_update_count():
         if current_user.is_authenticated:
-            pending_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
-            return {
-                'pending_update_count': pending_count,
-                'has_pending_updates': pending_count > 0
-            }
-        return {
-            'pending_update_count': 0,
-            'has_pending_updates': False
-        }
+            return {'pending_update_count': ProductUpdateRequest.query.filter_by(status='Pending').count()}
+        return {'pending_update_count': 0}
     
     @app.route('/', methods=['GET'])
     def index():
