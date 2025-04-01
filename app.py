@@ -30,7 +30,10 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
-    "connect_args": {"client_encoding": "utf8"},
+    "connect_args": {
+        "client_encoding": "utf8",
+        "options": "-c client_encoding=utf8 -c standard_conforming_strings=on"
+    },
 }
 
 # Configure file uploads

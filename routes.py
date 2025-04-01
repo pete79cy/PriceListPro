@@ -81,25 +81,44 @@ def register_routes(app):
                 logger.info(f"File size: {os.path.getsize(file_path)} bytes")
                 logger.info(f"Upload ID: {upload.id}")
                 
-                # Process the excel file with extra error handling
-                result = parse_excel_file(file_path, customer_id, upload.id)
+                # Add extra debugging for file content
+                try:
+                    import pandas as pd
+                    logger.info(f"Attempting to read first few rows of the Excel file for debugging")
+                    sample_df = pd.read_excel(file_path, engine='openpyxl', nrows=5)
+                    logger.info(f"Sample Excel data headers: {sample_df.columns.tolist()}")
+                    logger.info(f"Sample Excel data types: {sample_df.dtypes.to_dict()}")
+                except Exception as sample_error:
+                    logger.warning(f"Failed to read sample data: {str(sample_error)}")
                 
-                # Handle errors from the parser
-                if result.get('errors') and len(result['errors']) > 0:
-                    error_messages = '; '.join(result['errors'])
-                    logger.error(f"Excel processing completed with errors: {error_messages}")
-                    upload.processing_notes = f"Processed with errors: {error_messages}"
-                    upload.processed = True
-                    db.session.commit()
-                    flash(f'File processed with errors: {error_messages}', 'warning')
-                else:
-                    # Update upload record for success
-                    logger.info(f"Excel processing successful: {result}")
-                    upload.processed = True
-                    upload.processing_notes = f"Successfully processed. Added {result['new_products']} products and {result['price_entries']} price list entries."
-                    db.session.commit()
+                try:
+                    # Process the excel file with extra error handling
+                    result = parse_excel_file(file_path, customer_id, upload.id)
                     
-                    flash(f'Successfully uploaded and processed: {filename}. Added {result["new_products"]} products and {result["price_entries"]} price list entries.', 'success')
+                    # Handle errors from the parser
+                    if result.get('errors') and len(result['errors']) > 0:
+                        error_messages = '; '.join(result['errors'])
+                        logger.error(f"Excel processing completed with errors: {error_messages}")
+                        upload.processing_notes = f"Processed with errors: {error_messages}"
+                        upload.processed = True
+                        db.session.commit()
+                        flash(f'File processed with errors: {error_messages}', 'warning')
+                    else:
+                        # Update upload record for success
+                        logger.info(f"Excel processing successful: {result}")
+                        upload.processed = True
+                        upload.processing_notes = f"Successfully processed. Added {result['new_products']} products and {result['price_entries']} price list entries."
+                        db.session.commit()
+                        
+                        flash(f'Successfully uploaded and processed: {filename}. Added {result["new_products"]} products and {result["price_entries"]} price list entries.', 'success')
+                except UnicodeError as ue:
+                    # Specifically catch encoding issues
+                    error_msg = f"Character encoding error: {str(ue)}. The file may contain special characters that need preprocessing."
+                    logger.error(f"Unicode error: {error_msg}")
+                    logger.error(f"Unicode error traceback: {traceback.format_exc()}")
+                    upload.processing_notes = error_msg
+                    db.session.commit()
+                    flash(error_msg, 'danger')
             except Exception as e:
                 error_msg = f"Error processing file: {str(e)}"
                 logger.error("=== Excel Upload Error ===")
@@ -384,3 +403,66 @@ def register_routes(app):
     @app.route('/uploads/<filename>')
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        
+    @app.route('/test-encoding', methods=['GET', 'POST'])
+    def test_encoding():
+        """Test the application's ability to handle different character encodings"""
+        # Fetch products with potential Unicode characters
+        products = Product.query.filter(
+            db.or_(
+                Product.name.like('%Κ%'),        # Greek
+                Product.name.like('%Т%'),        # Cyrillic
+                Product.scientific_name.like('%Δ%')  # Greek
+            )
+        ).limit(10).all()
+        
+        return render_template('test_encoding.html', products=products)
+        
+    @app.route('/test-encoding-submit', methods=['POST'])
+    def test_encoding_submit():
+        """Handle the test encoding form submission"""
+        # Get form data
+        name = request.form.get('name')
+        category = request.form.get('category')
+        scientific_name = request.form.get('scientific_name')
+        pot = request.form.get('pot')
+        
+        # Create a test product with the provided data
+        from utils.excel_parser import sanitize_string
+        
+        # Apply sanitization to ensure consistent handling
+        safe_name = sanitize_string(name)
+        safe_category = sanitize_string(category)
+        safe_scientific_name = sanitize_string(scientific_name)
+        safe_pot = sanitize_string(pot)
+        safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
+        
+        product = Product(
+            name=safe_name,
+            category=safe_category,
+            scientific_name=safe_scientific_name,
+            pot=safe_pot,
+            description=safe_description
+        )
+        
+        # Log the data being saved
+        logger.info(f"Test Encoding - Saving product with name: {safe_name}")
+        logger.info(f"Test Encoding - Category: {safe_category}")
+        logger.info(f"Test Encoding - Scientific Name: {safe_scientific_name}")
+        logger.info(f"Test Encoding - Pot: {safe_pot}")
+        
+        # Save to database
+        db.session.add(product)
+        db.session.commit()
+        
+        # Fetch products with potential Unicode characters, including the one just created
+        products = Product.query.filter(
+            db.or_(
+                Product.name.like('%Κ%'),        # Greek
+                Product.name.like('%Т%'),        # Cyrillic
+                Product.scientific_name.like('%Δ%')  # Greek
+            )
+        ).limit(10).all()
+        
+        # Return to the test encoding page with the results
+        return render_template('test_encoding.html', product=product, products=products)
