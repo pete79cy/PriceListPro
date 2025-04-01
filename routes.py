@@ -485,13 +485,23 @@ def register_routes(app):
     @login_required
     def delete_product(product_id):
         product = Product.query.get_or_404(product_id)
+        product_name = product.name
+        redirect_to = request.form.get('redirect_to', 'products')
+        customer_id = request.form.get('customer_id', '')
+        category = request.form.get('category', '')
+        
         # Delete associated price list entries first
         PriceList.query.filter_by(product_id=product_id).delete()
         # Then delete the product
         db.session.delete(product)
         db.session.commit()
-        flash(f'Product {product.name} deleted successfully!', 'success')
-        return redirect(url_for('products'))
+        flash(f'Product "{product_name}" deleted successfully!', 'success')
+        
+        # Redirect based on where the request came from
+        if redirect_to == 'price_lists':
+            return redirect(url_for('price_lists', customer_id=customer_id, category=category))
+        else:
+            return redirect(url_for('products'))
 
     @app.route('/products/batch-delete', methods=['POST'])
     @login_required
