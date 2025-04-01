@@ -208,29 +208,47 @@ def parse_excel_file(file_path, customer_id, upload_id):
             logger.debug(f"Looking for product with name: {product_name}")
             
             # Normalize product name for database query
-            # Convert to UTF-8 to handle encoding issues
+            # Handle encoding issues by converting any non-ASCII characters to their ASCII equivalents
             normalized_name = product_name
             try:
-                # Prevent encoding issues by explicitly handling UTF-8 conversion
+                # Prevent encoding issues by explicitly handling UTF-8 conversion and removing non-ASCII chars
                 if isinstance(product_name, str):
+                    # First, strip whitespace
                     normalized_name = product_name.strip()
-                    logger.debug(f"Normalized product name: {normalized_name}")
+                    # Then, normalize to ASCII to avoid encoding errors in database
+                    ascii_name = normalized_name.encode('ascii', 'ignore').decode('ascii')
+                    logger.debug(f"Normalized product name: '{normalized_name}' to ASCII: '{ascii_name}'")
+                    normalized_name = ascii_name
             except Exception as encoding_error:
                 logger.warning(f"Error normalizing product name: {str(encoding_error)}")
+                normalized_name = str(product_name).encode('ascii', 'ignore').decode('ascii')
                 
-            # Use case-insensitive search to avoid encoding issues
-            product = Product.query.filter(Product.name.ilike(f"{normalized_name}")).first()
+            # Use case-insensitive search with ASCII name
+            if normalized_name:
+                try:
+                    logger.debug(f"Searching for product with name like: '{normalized_name}'")
+                    product = Product.query.filter(Product.name.ilike(f"%{normalized_name}%")).first()
+                except Exception as db_error:
+                    logger.error(f"Database error searching for product: {str(db_error)}")
+                    # Fallback to even more conservative search
+                    product = None
+            else:
+                product = None
             
             if not product:
                 # Create new product - log all fields first to aid debugging
                 logger.debug(f"Creating new product - Name: {product_name}, Category: {category}, Scientific Name: {scientific_name}, Pot: {pot}")
                 
                 # Ensure we have clean, properly-encoded strings for all fields
-                safe_name = str(product_name).strip() if product_name is not None else None
-                safe_category = str(category).strip() if category is not None else None
-                safe_scientific_name = str(scientific_name).strip() if scientific_name is not None else None
-                safe_pot = str(pot).strip() if pot is not None else None
-                safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
+                # Also convert non-ASCII characters to avoid database encoding issues
+                safe_name = str(product_name).strip().encode('ascii', 'ignore').decode('ascii') if product_name is not None else None
+                safe_category = str(category).strip().encode('ascii', 'ignore').decode('ascii') if category is not None else None
+                safe_scientific_name = str(scientific_name).strip().encode('ascii', 'ignore').decode('ascii') if scientific_name is not None else None
+                safe_pot = str(pot).strip().encode('ascii', 'ignore').decode('ascii') if pot is not None else None
+                safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip().encode('ascii', 'ignore').decode('ascii') or None
+                
+                logger.debug(f"Sanitized product values - Name: '{safe_name}', Category: '{safe_category}', Scientific: '{safe_scientific_name}', Pot: '{safe_pot}'")
+                
                 
                 product = Product(
                     name=safe_name,
@@ -247,9 +265,12 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 logger.debug(f"Updating existing product: {product.name} (ID: {product.id})")
                 
                 # Ensure we have clean, properly-encoded strings for all fields
-                safe_category = str(category).strip() if category is not None else None
-                safe_scientific_name = str(scientific_name).strip() if scientific_name is not None else None
-                safe_pot = str(pot).strip() if pot is not None else None
+                # Also convert non-ASCII characters to avoid database encoding issues
+                safe_category = str(category).strip().encode('ascii', 'ignore').decode('ascii') if category is not None else None
+                safe_scientific_name = str(scientific_name).strip().encode('ascii', 'ignore').decode('ascii') if scientific_name is not None else None
+                safe_pot = str(pot).strip().encode('ascii', 'ignore').decode('ascii') if pot is not None else None
+                
+                logger.debug(f"Updating product with sanitized values - Category: '{safe_category}', Scientific: '{safe_scientific_name}', Pot: '{safe_pot}'")
                 
                 if safe_category is not None:
                     product.category = safe_category
@@ -258,7 +279,7 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 if safe_pot is not None:
                     product.pot = safe_pot
                 if safe_scientific_name is not None or safe_pot is not None:
-                    safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip()
+                    safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip().encode('ascii', 'ignore').decode('ascii')
                     product.description = safe_description or product.description
             
             # Create price list entry if price exists
