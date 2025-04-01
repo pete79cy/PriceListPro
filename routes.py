@@ -274,6 +274,12 @@ def register_routes(app):
                 db.session.add(invoice)
                 db.session.commit()
                 
+                # Track price list updates
+                price_list_updates = {
+                    'new': 0,
+                    'pending': 0
+                }
+                
                 # Add invoice items
                 for item in invoice_data.get('items', []):
                     # Try to find product by name, scientific name, or description
@@ -301,6 +307,19 @@ def register_routes(app):
                             ).first()
                             if better_match:
                                 product = better_match
+                                
+                    # If product not found, create a new one
+                    if not product and item.get('description'):
+                        # Create a new product from the invoice item
+                        product_data = {
+                            'name': item['description'],
+                            'scientific_name': item.get('scientific_name'),
+                            'pot': item.get('pot_size'),
+                            'description': f"{item.get('scientific_name', '')} {item.get('pot_size', '')}".strip() or None
+                        }
+                        from utils.product_management import find_or_create_product
+                        product, message, is_new = find_or_create_product(product_data)
+                        logger.info(f"Product from invoice: {message}")
                     
                     invoice_item = InvoiceItem(
                         invoice_id=invoice.id,
@@ -315,13 +334,63 @@ def register_routes(app):
                         total=item.get('total', 0)
                     )
                     db.session.add(invoice_item)
+                    
+                    # Create or update price list entry if we have a product and price
+                    if product and item.get('price', 0) > 0:
+                        from utils.product_management import create_or_update_price_list
+                        price_list, message, is_new = create_or_update_price_list(
+                            customer_id=customer_id,
+                            product_id=product.id,
+                            new_price=item['price'],
+                            source_file=f"Invoice #{invoice.invoice_number}"
+                        )
+                        logger.info(f"Price list from invoice: {message}")
+                        
+                        # Track updates
+                        if is_new:
+                            price_list_updates['new'] += 1
+                        elif "pending approval" in message:
+                            price_list_updates['pending'] += 1
                 
                 # Update upload record
+                # Update processing notes to include price list updates
+                price_list_info = ""
+                if price_list_updates['new'] > 0 or price_list_updates['pending'] > 0:
+                    price_list_info = f" Also "
+                    if price_list_updates['new'] > 0:
+                        price_list_info += f"created {price_list_updates['new']} new price list entries"
+                    
+                    if price_list_updates['new'] > 0 and price_list_updates['pending'] > 0:
+                        price_list_info += f" and "
+                        
+                    if price_list_updates['pending'] > 0:
+                        price_list_info += f"added {price_list_updates['pending']} pending price updates"
+                    price_list_info += "."
+                
                 upload.processed = True
-                upload.processing_notes = f"Successfully processed. Created invoice #{invoice.invoice_number} with {len(invoice_data.get('items', []))} items."
+                upload.processing_notes = f"Successfully processed. Created invoice #{invoice.invoice_number} with {len(invoice_data.get('items', []))} items.{price_list_info}"
                 db.session.commit()
                 
-                flash(f'Successfully uploaded and processed: {filename}. Created invoice #{invoice.invoice_number}. You can view it on the <a href="{url_for("invoices")}">Invoices page</a>.', 'success')
+                success_message = f'Successfully uploaded and processed: {filename}. Created invoice #{invoice.invoice_number}.'
+                
+                # Add price list information to the success message
+                if price_list_updates['new'] > 0:
+                    success_message += f' Created {price_list_updates["new"]} new price list entries.'
+                
+                if price_list_updates['pending'] > 0:
+                    success_message += f' Added {price_list_updates["pending"]} pending price updates that require approval.'
+                
+                success_message += f' You can view the invoice on the <a href="{url_for("invoices")}">Invoices page</a>'
+                
+                if price_list_updates['new'] > 0 or price_list_updates['pending'] > 0:
+                    success_message += f' and check the price lists on the <a href="{url_for("price_lists")}?customer_id={customer_id}">Price Lists page</a>'
+                
+                if price_list_updates['pending'] > 0:
+                    success_message += f' or review the pending updates on the <a href="{url_for("pending_updates")}">Price Updates page</a>'
+                
+                success_message += '.'
+                
+                flash(success_message, 'success')
             except Exception as e:
                 upload.processing_notes = f"Error processing file: {str(e)}"
                 db.session.commit()
