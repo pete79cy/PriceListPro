@@ -55,6 +55,7 @@ class Invoice(db.Model):
     invoice_number = db.Column(db.String(50), nullable=False, unique=True)
     invoice_date = db.Column(db.Date, nullable=False)
     total_amount = db.Column(db.Float, nullable=True)
+    currency = db.Column(db.String(10), nullable=True, default='€')  # Store currency symbol (€, $, £)
     file_path = db.Column(db.String(255), nullable=True)  # Path to the stored PDF
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -70,9 +71,12 @@ class InvoiceItem(db.Model):
     invoice_id = db.Column(db.Integer, db.ForeignKey('invoice.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
     description = db.Column(db.String(200), nullable=False)
+    scientific_name = db.Column(db.String(150), nullable=True)  # Store scientific name if present
+    pot_size = db.Column(db.String(50), nullable=True)  # Store pot size if present
     quantity = db.Column(db.Float, nullable=False)
     price = db.Column(db.Float, nullable=False)
     vat = db.Column(db.Float, nullable=True)
+    vat_percentage = db.Column(db.Float, nullable=True)  # Store VAT percentage if applicable
     total = db.Column(db.Float, nullable=True)
     
     def __repr__(self):

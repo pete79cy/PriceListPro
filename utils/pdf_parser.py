@@ -3,6 +3,24 @@ import logging
 import PyPDF2
 from datetime import datetime
 
+def extract_scientific_name(text):
+    """Extract scientific name from text if present"""
+    if not text:
+        return None
+    sci_name_match = re.search(r'^([A-Z][a-z]+ [a-z]+)(?:\s+|$)', text)
+    if sci_name_match:
+        return sci_name_match.group(1)
+    return None
+
+def extract_pot_size(text):
+    """Extract pot size from text if present"""
+    if not text:
+        return None
+    pot_match = re.search(r'(\d+L|\d+\s*L)', text)
+    if pot_match:
+        return pot_match.group(1)
+    return None
+
 def extract_text_from_pdf(pdf_path):
     """
     Extract text content from a PDF file.
@@ -81,21 +99,38 @@ def extract_invoice_data(text):
         if customer_name_match:
             invoice_data['customer_name'] = customer_name_match.group(1).strip()
     
-    # Extract total amount
+    # Extract total amount and currency
+    currency_symbol = '€'  # Default currency symbol
     total_patterns = [
-        r'TOTAL\s*(?::|€|EUR|\$)?\s*(\d+[.,]\d+)',
-        r'(?:Total|Amount Due|Grand Total|Sum)[:\s][$€£]?\s*(\d+[.,]\d+)',
-        r'[$€£]\s*(\d+[.,]\d+)'  # Generic currency pattern
+        r'TOTAL\s*(?::|([€$£])|(EUR|USD|GBP))?\s*(\d+[.,]\d+)',
+        r'(?:Total|Amount Due|Grand Total|Sum)[:\s](?:([€$£])|(EUR|USD|GBP))?\s*(\d+[.,]\d+)',
+        r'([€$£])\s*(\d+[.,]\d+)'  # Generic currency pattern
     ]
     
     for pattern in total_patterns:
         total_match = re.search(pattern, text, re.IGNORECASE)
         if total_match:
-            total_str = total_match.group(1).strip().replace(',', '.')
+            groups = total_match.groups()
+            if 'TOTAL' in pattern or '(?:Total' in pattern:
+                # Handle patterns with currency symbol/code
+                if groups[0]:  # Symbol found
+                    currency_symbol = groups[0]
+                elif groups[1]:  # Currency code found
+                    currency_map = {'EUR': '€', 'USD': '$', 'GBP': '£'}
+                    currency_symbol = currency_map.get(groups[1].upper(), '€')
+                
+                # Get the amount from the correct group
+                total_str = groups[2].strip().replace(',', '.')
+            else:
+                # Handle simple currency pattern
+                currency_symbol = groups[0] or '€'
+                total_str = groups[1].strip().replace(',', '.')
+            
             try:
                 invoice_data['total_amount'] = float(total_str)
+                invoice_data['currency'] = currency_symbol
                 break
-            except ValueError:
+            except (ValueError, IndexError):
                 continue
     
     # Extract line items 
@@ -135,21 +170,34 @@ def extract_invoice_data(text):
             
             # Handle VAT rate (might be percentage or amount)
             vat_value = 0
-            if vat_rate:
-                try:
-                    vat_value = float(vat_rate.replace(',', '.'))
-                except ValueError:
-                    pass
+            vat_percentage = None
             
-            # Convert values to correct types
+            # First convert values to numbers so we can calculate VAT properly
             try:
                 quantity = float(quantity)
                 price = float(price.replace(',', '.'))
                 total = float(total.replace(',', '.'))
             except ValueError:
                 continue
+                
+            if vat_rate:
+                try:
+                    vat_rate_value = float(vat_rate.replace(',', '.'))
+                    
+                    # Detect if value is percentage or amount
+                    if vat_rate_value < 50:  # Likely a percentage if less than 50
+                        vat_percentage = vat_rate_value
+                        # Calculate VAT amount based on price and quantity
+                        vat_value = (price * quantity * vat_percentage) / 100
+                    else:
+                        # It's a direct VAT amount
+                        vat_value = vat_rate_value
+                except ValueError:
+                    pass
             
-            # Add to items list
+            # Values already converted above, no need to convert again
+            
+            # Add to items list with improved VAT handling
             invoice_data['items'].append({
                 'description': description,
                 'scientific_name': scientific_name,
@@ -157,6 +205,7 @@ def extract_invoice_data(text):
                 'quantity': quantity,
                 'price': price,
                 'vat': vat_value,
+                'vat_percentage': vat_percentage,
                 'total': total
             })
         except Exception as e:
@@ -197,8 +246,12 @@ def extract_invoice_data(text):
                             # Add item to the list
                             invoice_data['items'].append({
                                 'description': description,
+                                'scientific_name': extract_scientific_name(description),
+                                'pot_size': extract_pot_size(description),
                                 'quantity': quantity,
                                 'price': price,
+                                'vat': None,
+                                'vat_percentage': None,
                                 'total': total
                             })
                 
