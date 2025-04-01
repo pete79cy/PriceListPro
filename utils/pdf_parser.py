@@ -100,11 +100,11 @@ def extract_invoice_data(text):
             invoice_data['customer_name'] = customer_name_match.group(1).strip()
     
     # Extract total amount and currency
-    currency_symbol = '€'  # Default currency symbol
+    currency_symbol = '€'  # Euro is the default currency
     total_patterns = [
-        r'TOTAL\s*(?::|([€$£])|(EUR|USD|GBP))?\s*(\d+[.,]\d+)',
-        r'(?:Total|Amount Due|Grand Total|Sum)[:\s](?:([€$£])|(EUR|USD|GBP))?\s*(\d+[.,]\d+)',
-        r'([€$£])\s*(\d+[.,]\d+)'  # Generic currency pattern
+        r'TOTAL\s*(?::|([€])|(EUR))?\s*(\d+[.,]\d+)',
+        r'(?:Total|Amount Due|Grand Total|Sum)[:\s](?:([€])|(EUR))?\s*(\d+[.,]\d+)',
+        r'([€])\s*(\d+[.,]\d+)'  # Euro currency pattern
     ]
     
     for pattern in total_patterns:
@@ -116,7 +116,7 @@ def extract_invoice_data(text):
                 if groups[0]:  # Symbol found
                     currency_symbol = groups[0]
                 elif groups[1]:  # Currency code found
-                    currency_map = {'EUR': '€', 'USD': '$', 'GBP': '£'}
+                    currency_map = {'EUR': '€'}  # Euro only
                     currency_symbol = currency_map.get(groups[1].upper(), '€')
                 
                 # Get the amount from the correct group

@@ -6,9 +6,14 @@
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Products</h5>
-                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#productModal">
-                    <i class="fas fa-plus"></i> Add Product
-                </button>
+                <div class="btn-group">
+                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#productModal">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                    <button class="btn btn-danger btn-sm ms-2" id="batchDeleteBtn" disabled>
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% if products %}
@@ -16,6 +21,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
                                 <th>ID</th>
                                 <th>SKU</th>
                                 <th>Name</th>
@@ -29,6 +35,7 @@
                                 data-category="{{ product.category }}" 
                                 data-scientific-name="{{ product.scientific_name }}" 
                                 data-pot="{{ product.pot }}">
+                                <td><input type="checkbox" class="form-check-input product-checkbox" value="{{ product.id }}"></td>
                                 <td>{{ product.id }}</td>
                                 <td>{{ product.sku }}</td>
                                 <td>{{ product.name }}</td>
@@ -145,6 +152,59 @@
 
 {% block scripts %}
 <script>
+    // Batch deletion functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const productCheckboxes = document.querySelectorAll('.product-checkbox');
+    const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+
+    // Handle select all checkbox
+    selectAllCheckbox.addEventListener('change', function() {
+        productCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBatchDeleteButton();
+    });
+
+    // Handle individual checkboxes
+    productCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBatchDeleteButton);
+    });
+
+    // Update batch delete button state
+    function updateBatchDeleteButton() {
+        const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
+        batchDeleteBtn.disabled = selectedCount === 0;
+        batchDeleteBtn.textContent = `Delete Selected (${selectedCount})`;
+    }
+
+    // Handle batch delete
+    batchDeleteBtn.addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to delete the selected products? This cannot be undone.')) {
+            return;
+        }
+
+        const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        try {
+            const response = await fetch('/products/batch-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ product_ids: selectedIds })
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Error deleting products');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error deleting products');
+        }
+    });
 document.addEventListener('DOMContentLoaded', function() {
     // Handle edit product modal
     document.querySelectorAll('.edit-product').forEach(button => {

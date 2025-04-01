@@ -2,10 +2,12 @@ import os
 import uuid
 import traceback
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory
+from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session
 from werkzeug.utils import secure_filename
 from app import db
-from models import Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload
+from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload
+from flask_login import login_user, logout_user, login_required, current_user
+from datetime import datetime
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
@@ -24,8 +26,61 @@ def register_routes(app):
     def allowed_file(filename, extensions):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
     
-    @app.route('/')
+    @app.route('/', methods=['GET'])
     def index():
+        # If user is already logged in, show the dashboard
+        if current_user.is_authenticated:
+            # Get some stats for the dashboard
+            stats = {
+                'customers': Customer.query.count(),
+                'products': Product.query.count(),
+                'price_lists': PriceList.query.count(),
+                'invoices': Invoice.query.count()
+            }
+            return render_template('dashboard.html', stats=stats)
+        # Otherwise show the login page
+        return render_template('index.html')
+        
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        # If user is already logged in, redirect to dashboard
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+            
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+            
+            # Validate the username and password
+            user = User.query.filter_by(username=username).first()
+            
+            if user and user.check_password(password):
+                # Update last login timestamp
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                
+                # Log the user in
+                login_user(user)
+                flash(f'Welcome back, {user.username}!', 'success')
+                
+                # Redirect to the page they were trying to access or the dashboard
+                next_page = request.args.get('next')
+                return redirect(next_page if next_page else url_for('dashboard'))
+            else:
+                flash('Invalid username or password. Please try again.', 'danger')
+                
+        return render_template('index.html')
+    
+    @app.route('/logout')
+    @login_required
+    def logout():
+        logout_user()
+        flash('You have been logged out successfully.', 'success')
+        return redirect(url_for('index'))
+    
+    @app.route('/dashboard')
+    @login_required
+    def dashboard():
         # Get some stats for the dashboard
         stats = {
             'customers': Customer.query.count(),
@@ -33,15 +88,17 @@ def register_routes(app):
             'price_lists': PriceList.query.count(),
             'invoices': Invoice.query.count()
         }
-        return render_template('index.html', stats=stats)
+        return render_template('dashboard.html', stats=stats)
     
     @app.route('/uploads', methods=['GET'])
+    @login_required
     def uploads():
         customers = Customer.query.all()
         recent_uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(10).all()
         return render_template('uploads.html', customers=customers, recent_uploads=recent_uploads)
     
     @app.route('/upload/excel', methods=['POST'])
+    @login_required
     def upload_excel():
         if 'file' not in request.files:
             flash('No file part', 'danger')
@@ -139,6 +196,7 @@ def register_routes(app):
         return redirect(request.url)
     
     @app.route('/upload/pdf', methods=['POST'])
+    @login_required
     def upload_pdf():
         if 'file' not in request.files:
             flash('No file part', 'danger')
@@ -250,6 +308,7 @@ def register_routes(app):
         return redirect(request.url)
     
     @app.route('/customers', methods=['GET', 'POST'])
+    @login_required
     def customers():
         if request.method == 'POST':
             # Add or update a customer
@@ -279,6 +338,7 @@ def register_routes(app):
         return render_template('customers.html', customers=customers_list)
     
     @app.route('/customers/<int:customer_id>/delete', methods=['POST'])
+    @login_required
     def delete_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         db.session.delete(customer)
@@ -287,6 +347,7 @@ def register_routes(app):
         return redirect(url_for('customers'))
     
     @app.route('/products', methods=['GET', 'POST'])
+    @login_required
     def products():
         if request.method == 'POST':
             # Add or update a product
@@ -327,19 +388,46 @@ def register_routes(app):
         return render_template('products.html', products=products_list)
     
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
+    @login_required
     def delete_product(product_id):
         product = Product.query.get_or_404(product_id)
+        # Delete associated price list entries first
+        PriceList.query.filter_by(product_id=product_id).delete()
+        # Then delete the product
         db.session.delete(product)
         db.session.commit()
         flash(f'Product {product.name} deleted successfully!', 'success')
         return redirect(url_for('products'))
+
+    @app.route('/products/batch-delete', methods=['POST'])
+    @login_required
+    def batch_delete_products():
+        data = request.get_json()
+        product_ids = data.get('product_ids', [])
+        
+        if not product_ids:
+            return jsonify({'error': 'No products selected'}), 400
+            
+        try:
+            # Delete associated price list entries first
+            PriceList.query.filter(PriceList.product_id.in_(product_ids)).delete(synchronize_session=False)
+            # Then delete the products
+            Product.query.filter(Product.id.in_(product_ids)).delete(synchronize_session=False)
+            db.session.commit()
+            flash(f'{len(product_ids)} products deleted successfully!', 'success')
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
     
     @app.route('/search', methods=['GET'])
+    @login_required
     def search():
         customers = Customer.query.all()
         return render_template('search.html', customers=customers)
     
     @app.route('/api/search', methods=['GET'])
+    @login_required
     def api_search():
         query = request.args.get('q', '')
         customer_id = request.args.get('customer_id', '')
@@ -354,6 +442,7 @@ def register_routes(app):
         return jsonify(results)
     
     @app.route('/download/template')
+    @login_required
     def download_template():
         """Provide a downloadable Excel template for price lists"""
         template_path = ensure_template_exists(app.static_folder)
@@ -361,6 +450,7 @@ def register_routes(app):
                                  as_attachment=True, download_name="price_list_template.xlsx")
     
     @app.route('/price-lists')
+    @login_required
     def price_lists():
         """View all price lists with filtering options"""
         # Get query parameters
@@ -401,10 +491,12 @@ def register_routes(app):
                               selected_category=category)
     
     @app.route('/uploads/<filename>')
+    @login_required
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
         
     @app.route('/test-encoding', methods=['GET', 'POST'])
+    @login_required
     def test_encoding():
         """Test the application's ability to handle different character encodings"""
         # Fetch products with potential Unicode characters
@@ -419,6 +511,7 @@ def register_routes(app):
         return render_template('test_encoding.html', products=products)
         
     @app.route('/test-encoding-submit', methods=['POST'])
+    @login_required
     def test_encoding_submit():
         """Handle the test encoding form submission"""
         # Get form data
