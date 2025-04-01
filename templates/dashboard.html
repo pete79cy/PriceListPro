@@ -55,7 +55,7 @@
                     <h1 class="display-4 text-warning">{{ stats.invoices }}</h1>
                     <h5 class="card-title">Invoices</h5>
                     <p class="card-text">Total invoices processed</p>
-                    <a href="#" class="btn btn-outline-warning">View Invoices</a>
+                    <a href="{{ url_for('invoices') }}" class="btn btn-outline-warning">View Invoices</a>
                 </div>
             </div>
         </div>
@@ -101,6 +101,9 @@
                             {% if stats.pending_updates > 0 %}
                             <span class="badge bg-danger float-end">{{ stats.pending_updates }}</span>
                             {% endif %}
+                        </a>
+                        <a href="{{ url_for('invoices') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-invoice me-2"></i> View Invoices
                         </a>
                         <a href="{{ url_for('search') }}" class="list-group-item list-group-item-action">
                             <i class="fas fa-search me-2"></i> Search Products and Prices

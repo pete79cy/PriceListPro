@@ -321,7 +321,7 @@ def register_routes(app):
                 upload.processing_notes = f"Successfully processed. Created invoice #{invoice.invoice_number} with {len(invoice_data.get('items', []))} items."
                 db.session.commit()
                 
-                flash(f'Successfully uploaded and processed: {filename}. Created invoice #{invoice.invoice_number}.', 'success')
+                flash(f'Successfully uploaded and processed: {filename}. Created invoice #{invoice.invoice_number}. You can view it on the <a href="{url_for("invoices")}">Invoices page</a>.', 'success')
             except Exception as e:
                 upload.processing_notes = f"Error processing file: {str(e)}"
                 db.session.commit()
@@ -514,6 +514,71 @@ def register_routes(app):
                               pagination=pagination,
                               selected_customer_id=customer_id,
                               selected_category=category)
+                              
+    @app.route('/invoices')
+    @login_required
+    def invoices():
+        """View all invoices with filtering options"""
+        # Get query parameters
+        customer_id = request.args.get('customer_id', '')
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = 20  # Items per page
+        
+        # Base query
+        query = Invoice.query
+        
+        # Apply filters
+        if customer_id:
+            query = query.filter(Invoice.customer_id == customer_id)
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(Invoice.invoice_date >= date_from_obj)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(Invoice.invoice_date <= date_to_obj)
+            except ValueError:
+                pass
+            
+        # Order by invoice date (newest first)
+        query = query.order_by(Invoice.invoice_date.desc())
+        
+        # Paginate results
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        invoices_list = pagination.items
+        
+        # Get all customers for filter dropdown
+        customers = Customer.query.all()
+        
+        return render_template('invoices.html', 
+                              invoices=invoices_list, 
+                              customers=customers,
+                              pagination=pagination,
+                              selected_customer_id=customer_id,
+                              date_from=date_from,
+                              date_to=date_to)
+                              
+    @app.route('/invoice/<int:invoice_id>')
+    @login_required
+    def invoice_details(invoice_id):
+        """View details of a specific invoice"""
+        invoice = Invoice.query.get_or_404(invoice_id)
+        
+        # Get associated customer
+        customer = Customer.query.get(invoice.customer_id)
+        
+        # Get all invoice items with products
+        items = InvoiceItem.query.filter_by(invoice_id=invoice_id).all()
+        
+        return render_template('invoice_details.html',
+                              invoice=invoice,
+                              customer=customer,
+                              items=items)
     
     @app.route('/pending-updates')
     @login_required
