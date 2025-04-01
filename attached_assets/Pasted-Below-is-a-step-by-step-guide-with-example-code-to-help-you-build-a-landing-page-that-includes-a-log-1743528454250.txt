@@ -1,0 +1,179 @@
+Below is a step‐by‐step guide with example code to help you build a landing page that includes a login form and a button linking to your price list manager. You can later expand this landing page with more tools for your business.
+
+---
+
+## 1. Set Up Your Environment
+
+**Using Replit:**  
+- Create a new Replit project (choose a language like Python with Flask for a web application).  
+- Organize your project with folders for templates (HTML files) and static assets (CSS, images, etc.).
+
+---
+
+## 2. Create the Basic Flask App
+
+**File: app.py**
+
+This script sets up the Flask server with routes for the landing page, login processing, and the price list manager page.
+
+```python
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Replace with a secure random key for production
+
+# Sample credentials for demonstration. In production, manage users securely.
+users = {
+    'admin': 'password123'
+}
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if username in users and users[username] == password:
+        session['user'] = username
+        return redirect(url_for('price_list'))
+    else:
+        flash('Invalid credentials, please try again.')
+        return redirect(url_for('index'))
+
+@app.route('/price-list')
+def price_list():
+    if 'user' not in session:
+        return redirect(url_for('index'))
+    return render_template('price_list.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+**Explanation:**  
+- The landing page (`/`) shows the login form.  
+- The `/login` route processes credentials and, on success, redirects the user to the price list manager.  
+- The `/price-list` route displays the price list manager (accessible only to logged-in users).  
+- The `/logout` route lets users log out.
+
+---
+
+## 3. Create HTML Templates
+
+### Landing Page with Login
+
+**File: templates/index.html**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Business Tools Landing Page</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Welcome to My Business Tools</h1>
+  <form action="{{ url_for('login') }}" method="post">
+    <div>
+      <label for="username">Username:</label>
+      <input type="text" name="username" id="username" required>
+    </div>
+    <div>
+      <label for="password">Password:</label>
+      <input type="password" name="password" id="password" required>
+    </div>
+    <div>
+      <button type="submit">Login</button>
+    </div>
+  </form>
+  <!-- Future: Add more buttons/links for additional business tools -->
+</body>
+</html>
+```
+
+### Price List Manager Page
+
+**File: templates/price_list.html**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Price List Manager</title>
+</head>
+<body>
+  <h1>Price List Manager</h1>
+  <p>Welcome, {{ session['user'] }}!</p>
+  <!-- This is where you’ll add the price list manager functionality -->
+  <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>
+```
+
+---
+
+## 4. Add CSS Styling
+
+**File: static/style.css**
+
+```css
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+form {
+  border: 1px solid #ccc;
+  padding: 20px;
+  width: 300px;
+  margin: auto;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+div {
+  margin-bottom: 15px;
+}
+
+label {
+  display: inline-block;
+  width: 80px;
+}
+
+input {
+  padding: 5px;
+  width: 180px;
+}
+```
+
+---
+
+## 5. Testing and Future Expansion
+
+- **Run the Application:**  
+  On Replit, run your Flask app. Open the webview to see your landing page. Try logging in with the sample credentials (`admin` / `password123`).
+
+- **Future Tools:**  
+  - To add more features, create additional routes and templates (e.g., `/tool2`, `/tool3`) and update the landing page with links or buttons to access these tools.  
+  - You can also create a navigation bar to manage multiple tools.
+
+- **Security Enhancements:**  
+  - Store credentials securely (e.g., hashed passwords in a database).  
+  - Consider using Flask extensions like Flask-Login for more robust session management.
+
+---
+
+By following these steps, you’ll have a basic landing page with a login mechanism and a button (via redirection) to access your price list manager. Feel free to ask for further details or adjustments as you expand your project!

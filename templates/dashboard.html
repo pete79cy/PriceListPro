@@ -1,0 +1,124 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard - Plant Pricing System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="mb-4">Dashboard</h1>
+            <p class="lead">Welcome back, {{ current_user.username }}! 
+                {% if current_user.is_admin %}
+                <span class="badge bg-primary">Admin</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-primary">{{ stats.customers }}</h1>
+                    <h5 class="card-title">Customers</h5>
+                    <p class="card-text">Total registered customers</p>
+                    <a href="{{ url_for('customers') }}" class="btn btn-outline-primary">View Customers</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-success">{{ stats.products }}</h1>
+                    <h5 class="card-title">Products</h5>
+                    <p class="card-text">Total products in database</p>
+                    <a href="{{ url_for('products') }}" class="btn btn-outline-success">View Products</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-info">{{ stats.price_lists }}</h1>
+                    <h5 class="card-title">Price List Entries</h5>
+                    <p class="card-text">Total price list entries</p>
+                    <a href="{{ url_for('price_lists') }}" class="btn btn-outline-info">View Price Lists</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-warning">{{ stats.invoices }}</h1>
+                    <h5 class="card-title">Invoices</h5>
+                    <p class="card-text">Total invoices processed</p>
+                    <a href="#" class="btn btn-outline-warning">View Invoices</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{{ url_for('uploads') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-upload me-2"></i> Upload Files
+                        </a>
+                        <a href="{{ url_for('search') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-search me-2"></i> Search Products and Prices
+                        </a>
+                        <a href="{{ url_for('download_template') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-excel me-2"></i> Download Excel Template
+                        </a>
+                        <a href="{{ url_for('test_encoding') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-language me-2"></i> Test Encoding Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">System Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Database</span>
+                            <span class="badge bg-success">Connected</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Version</span>
+                            <span>1.0.0</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Last Login</span>
+                            <span>
+                                {% if current_user.last_login %}
+                                    {{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Account Created</span>
+                            <span>{{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
