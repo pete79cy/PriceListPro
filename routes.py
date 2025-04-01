@@ -329,6 +329,9 @@ def register_routes(app):
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
     def delete_product(product_id):
         product = Product.query.get_or_404(product_id)
+        # Delete associated price list entries first
+        PriceList.query.filter_by(product_id=product_id).delete()
+        # Then delete the product
         db.session.delete(product)
         db.session.commit()
         flash(f'Product {product.name} deleted successfully!', 'success')
