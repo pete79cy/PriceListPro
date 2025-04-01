@@ -142,6 +142,15 @@ def extract_invoice_data(text):
         try:
             item_num, description, quantity, price, vat_rate, total = match.groups()
             
+            # Skip if this is the A/A field which is just a numbering field
+            if description.strip().upper() == 'A/A' or description.strip().upper().startswith('A/A '):
+                continue
+                
+            # If the description contains "A/A" as a prefix, trim it out
+            if ' A/A ' in description.upper() or description.upper().startswith('A/A '):
+                # Remove A/A and any numbers that might follow it
+                description = re.sub(r'^A/A\s+\d+\s+', '', description, flags=re.IGNORECASE)
+                
             # In PDFs, Column A = Scientific Name, Description = Name, PRICE = Selling Price
             description = description.strip()
             
@@ -235,6 +244,16 @@ def extract_invoice_data(text):
                     
                     if len(parts) >= 2:
                         description = parts[0].strip()
+                        
+                        # Skip A/A field which is just a numbering field
+                        if description.upper() == 'A/A' or description.upper().startswith('A/A '):
+                            continue
+                            
+                        # If the description contains "A/A" as a prefix, trim it out
+                        if ' A/A ' in description.upper() or description.upper().startswith('A/A '):
+                            # Remove A/A and any numbers that might follow it
+                            description = re.sub(r'^A/A\s+\d+\s+', '', description, flags=re.IGNORECASE)
+                            
                         # Try to extract price and quantity
                         numbers = [float(num.replace(',', '.')) for num in re.findall(r'(\d+[.,]\d+)', line)]
                         
