@@ -1,7 +1,12 @@
 import pandas as pd
 import logging
+import traceback
 from app import db
 from models import Customer, Product, PriceList
+from utils.logger import logger
+
+# Log that this module was loaded
+logger.info("Excel parser module loaded")
 
 def parse_excel_file(file_path, customer_id, upload_id):
     """
@@ -15,7 +20,7 @@ def parse_excel_file(file_path, customer_id, upload_id):
     Returns:
         dict: Stats about the import (new products, price entries, etc.)
     """
-    logging.debug(f"Parsing Excel file: {file_path} for customer: {customer_id}")
+    logger.info(f"Parsing Excel file: {file_path} for customer: {customer_id}")
     
     # Initialize stats
     stats = {
@@ -24,22 +29,31 @@ def parse_excel_file(file_path, customer_id, upload_id):
         'errors': []
     }
     
+    # Log detailed information for debugging
+    logger.debug(f"Excel parse starting - file: {file_path}, customer_id: {customer_id}, upload_id: {upload_id}")
+    
     try:
         # Read the Excel file with error handling
         try:
             # First try with default engine
+            logger.info(f"Attempting to read Excel with openpyxl: {file_path}")
             df = pd.read_excel(file_path, engine='openpyxl')
+            logger.info("Successfully read Excel file with openpyxl")
         except Exception as excel_error:
-            logging.warning(f"Error reading Excel with openpyxl: {str(excel_error)}")
+            logger.warning(f"Error reading Excel with openpyxl: {str(excel_error)}")
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
             # Try with alternative engines
             try:
+                logger.info(f"Attempting to read Excel with xlrd: {file_path}")
                 df = pd.read_excel(file_path, engine='xlrd')
+                logger.info("Successfully read Excel file with xlrd")
             except Exception as xlrd_error:
-                logging.error(f"Error reading Excel with xlrd: {str(xlrd_error)}")
+                logger.error(f"Error reading Excel with xlrd: {str(xlrd_error)}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 raise ValueError(f"Could not read Excel file: {file_path}. Please check the file format.")
         
         # Log the columns found for debugging
-        logging.debug(f"Excel columns found: {df.columns.tolist()}")
+        logger.info(f"Excel columns found: {df.columns.tolist()}")
         
         # Map expected column names - case insensitive for flexibility
         column_mapping = {
@@ -125,13 +139,14 @@ def parse_excel_file(file_path, customer_id, upload_id):
         
         # Commit all changes
         db.session.commit()
-        logging.debug(f"Excel import complete. Stats: {stats}")
+        logger.info(f"Excel import complete. Stats: {stats}")
         return stats
         
     except Exception as e:
         db.session.rollback()
         error_message = f"Error parsing Excel file: {str(e)}"
-        logging.error(error_message)
+        logger.error(error_message)
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         stats['errors'].append(error_message)
         
         # Return stats with error information instead of raising exception
