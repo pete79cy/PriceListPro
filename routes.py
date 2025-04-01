@@ -306,6 +306,35 @@ def register_routes(app):
         db.session.commit()
         flash(f'Product {product.name} deleted successfully!', 'success')
         return redirect(url_for('products'))
+        
+    @app.route('/products/batch-delete', methods=['POST'])
+    def batch_delete_products():
+        start_id = request.form.get('start_id', type=int)
+        end_id = request.form.get('end_id', type=int)
+        
+        if not start_id or not end_id:
+            flash('Please provide valid start and end IDs', 'danger')
+            return redirect(url_for('products'))
+            
+        # Find products in the specified range
+        products_to_delete = Product.query.filter(
+            Product.id >= start_id,
+            Product.id <= end_id
+        ).all()
+        
+        count = len(products_to_delete)
+        
+        if count == 0:
+            flash(f'No products found in the ID range {start_id}-{end_id}', 'warning')
+            return redirect(url_for('products'))
+        
+        # Delete each product
+        for product in products_to_delete:
+            db.session.delete(product)
+            
+        db.session.commit()
+        flash(f'Successfully deleted {count} products with IDs between {start_id} and {end_id}', 'success')
+        return redirect(url_for('products'))
     
     @app.route('/search', methods=['GET'])
     def search():
