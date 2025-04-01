@@ -1,0 +1,78 @@
+Here are several suggestions to resolve the issue of Greek characters converting to nearly empty strings:
+
+### 1. Review and Adjust the Conversion Function
+
+- **Normalization:**  
+  Make sure you’re using Unicode normalization before converting. For example:
+  
+  ```python
+  import unicodedata
+  
+  def convert_greek_to_ascii(text):
+      normalized = unicodedata.normalize('NFKD', text)
+      ascii_text = normalized.encode('ascii', 'ignore').decode('ascii')
+      return ascii_text
+  ```
+  
+  This approach should decompose Greek characters into their basic Latin approximations rather than stripping them entirely.
+
+- **Library Choice:**  
+  If the built-in normalization isn’t sufficient, consider using a dedicated library like [Unidecode](https://pypi.org/project/Unidecode/) which often produces better transliterations:
+  
+  ```python
+  from unidecode import unidecode
+  
+  def convert_greek_to_ascii(text):
+      return unidecode(text)
+  ```
+
+### 2. Implement a Fallback Mechanism
+
+- **Custom Mapping:**  
+  If you still encounter cases where the conversion results in an empty or near-empty string, you can implement a custom mapping for problematic characters:
+  
+  ```python
+  GREEK_MAP = {
+      'α': 'a',
+      'β': 'b',
+      'γ': 'g',
+      # add mappings for all Greek letters...
+  }
+  
+  def custom_transliterate(text):
+      result = ''.join(GREEK_MAP.get(ch, ch) for ch in text)
+      return result
+  
+  def convert_greek_to_ascii(text):
+      ascii_text = unidecode(text)
+      # If the result is empty or nearly empty, apply custom mapping
+      if not ascii_text.strip() or len(ascii_text.strip()) < len(text.strip()) // 2:
+          ascii_text = custom_transliterate(text)
+      return ascii_text
+  ```
+
+### 3. Evaluate Database Matching Strategy
+
+- **Avoid Over-Conversion:**  
+  Rather than fully converting to ASCII, consider storing both the original Greek string and its transliterated counterpart. Use the transliterated version for search, but fall back to the original if needed.
+  
+- **Database Collation:**  
+  If possible, adjust your database collation to support Unicode. This can help perform searches directly on the original Greek text without needing conversion, reducing the risk of empty strings.
+
+### 4. Debug and Test
+
+- **Logging Intermediate Values:**  
+  Log both the input and output of your conversion function. This will help you identify exactly where the process is breaking down.
+  
+- **Unit Tests:**  
+  Create tests with various Greek inputs to compare the expected transliterations. This will ensure that your conversion consistently meets expectations.
+
+### 5. Performance and Consistency Considerations
+
+- **Pre-computation:**  
+  If conversion is a heavy operation, consider pre-computing and storing the transliterated value in your database. This way, you avoid running the conversion on every query.
+  
+- **Consistency Checks:**  
+  After implementing changes, run a batch job on your existing data to ensure that the conversion now produces meaningful ASCII strings rather than empty or space-only strings.
+
+By following these steps, you can minimize issues where the conversion process yields empty strings, ensuring more reliable matching in your database. Let me know if you need further details or code examples for any of these suggestions!

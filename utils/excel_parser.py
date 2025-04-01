@@ -1,12 +1,42 @@
 import pandas as pd
 import logging
 import traceback
+import unicodedata
+from unidecode import unidecode
 from app import db
 from models import Customer, Product, PriceList
 from utils.logger import logger
 
 # Log that this module was loaded
 logger.info("Excel parser module loaded")
+
+def transliterate_text(text):
+    """
+    Transliterate text from any language (including Greek) to ASCII.
+    This is better than just stripping non-ASCII characters as it tries
+    to find appropriate ASCII equivalents.
+    
+    Args:
+        text (str): Text to transliterate
+        
+    Returns:
+        str: Transliterated ASCII text
+    """
+    if not isinstance(text, str) or not text:
+        return text
+        
+    # First try unidecode which handles many languages including Greek
+    transliterated = unidecode(text)
+    
+    # If unidecode returned an empty string or mostly spaces, 
+    # try Unicode normalization as a fallback
+    if not transliterated.strip() or len(transliterated.strip()) < len(text.strip()) // 2:
+        logger.debug(f"Unidecode produced poor result for '{text}', trying normalization")
+        normalized = unicodedata.normalize('NFKD', text)
+        transliterated = normalized.encode('ascii', 'ignore').decode('ascii')
+    
+    logger.debug(f"Transliterated '{text}' to '{transliterated}'")
+    return transliterated
 
 def parse_excel_file(file_path, customer_id, upload_id):
     """
@@ -207,24 +237,28 @@ def parse_excel_file(file_path, customer_id, upload_id):
             # Get or create product - use case-insensitive comparison
             logger.debug(f"Looking for product with name: {product_name}")
             
-            # Normalize product name for database query
-            # Handle encoding issues by converting any non-ASCII characters to their ASCII equivalents
-            normalized_name = product_name
+            # Transliterate product name using our new function (handles Greek and other non-ASCII chars)
+            original_name = product_name
+            normalized_name = None
+            
             try:
-                # Prevent encoding issues by explicitly handling UTF-8 conversion and removing non-ASCII chars
                 if isinstance(product_name, str):
                     # First, strip whitespace
-                    normalized_name = product_name.strip()
-                    # Then, normalize to ASCII to avoid encoding errors in database
-                    ascii_name = normalized_name.encode('ascii', 'ignore').decode('ascii')
-                    logger.debug(f"Normalized product name: '{normalized_name}' to ASCII: '{ascii_name}'")
-                    normalized_name = ascii_name
+                    cleaned_name = product_name.strip()
+                    # Then, transliterate to ASCII properly
+                    normalized_name = transliterate_text(cleaned_name)
+                    logger.debug(f"Transliterated product name: '{cleaned_name}' to '{normalized_name}'")
+                    
+                    # If transliteration returned empty string, use fallback
+                    if not normalized_name or not normalized_name.strip():
+                        logger.warning(f"Transliteration returned empty result for '{cleaned_name}', falling back to basic ASCII")
+                        normalized_name = cleaned_name.encode('ascii', 'ignore').decode('ascii')
             except Exception as encoding_error:
-                logger.warning(f"Error normalizing product name: {str(encoding_error)}")
+                logger.warning(f"Error transliterating product name: {str(encoding_error)}")
                 normalized_name = str(product_name).encode('ascii', 'ignore').decode('ascii')
                 
-            # Use case-insensitive search with ASCII name
-            if normalized_name:
+            # Use case-insensitive search with transliterated name
+            if normalized_name and normalized_name.strip():
                 try:
                     logger.debug(f"Searching for product with name like: '{normalized_name}'")
                     product = Product.query.filter(Product.name.ilike(f"%{normalized_name}%")).first()
@@ -233,19 +267,20 @@ def parse_excel_file(file_path, customer_id, upload_id):
                     # Fallback to even more conservative search
                     product = None
             else:
+                logger.warning(f"No valid name for database search, original: '{original_name}'")
                 product = None
             
             if not product:
                 # Create new product - log all fields first to aid debugging
                 logger.debug(f"Creating new product - Name: {product_name}, Category: {category}, Scientific Name: {scientific_name}, Pot: {pot}")
                 
-                # Ensure we have clean, properly-encoded strings for all fields
-                # Also convert non-ASCII characters to avoid database encoding issues
-                safe_name = str(product_name).strip().encode('ascii', 'ignore').decode('ascii') if product_name is not None else None
-                safe_category = str(category).strip().encode('ascii', 'ignore').decode('ascii') if category is not None else None
-                safe_scientific_name = str(scientific_name).strip().encode('ascii', 'ignore').decode('ascii') if scientific_name is not None else None
-                safe_pot = str(pot).strip().encode('ascii', 'ignore').decode('ascii') if pot is not None else None
-                safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip().encode('ascii', 'ignore').decode('ascii') or None
+                # Ensure we have clean, properly-transliterated strings for all fields
+                # Use our transliterate function to better handle non-ASCII characters (including Greek)
+                safe_name = transliterate_text(str(product_name).strip()) if product_name is not None else None
+                safe_category = transliterate_text(str(category).strip()) if category is not None else None
+                safe_scientific_name = transliterate_text(str(scientific_name).strip()) if scientific_name is not None else None
+                safe_pot = transliterate_text(str(pot).strip()) if pot is not None else None
+                safe_description = transliterate_text(f"{safe_scientific_name or ''} {safe_pot or ''}".strip()) or None
                 
                 logger.debug(f"Sanitized product values - Name: '{safe_name}', Category: '{safe_category}', Scientific: '{safe_scientific_name}', Pot: '{safe_pot}'")
                 
@@ -264,13 +299,13 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 # Update existing product fields if provided - use safe values
                 logger.debug(f"Updating existing product: {product.name} (ID: {product.id})")
                 
-                # Ensure we have clean, properly-encoded strings for all fields
-                # Also convert non-ASCII characters to avoid database encoding issues
-                safe_category = str(category).strip().encode('ascii', 'ignore').decode('ascii') if category is not None else None
-                safe_scientific_name = str(scientific_name).strip().encode('ascii', 'ignore').decode('ascii') if scientific_name is not None else None
-                safe_pot = str(pot).strip().encode('ascii', 'ignore').decode('ascii') if pot is not None else None
+                # Ensure we have clean, properly-transliterated strings for all fields
+                # Use our transliterate function to better handle non-ASCII characters (including Greek)
+                safe_category = transliterate_text(str(category).strip()) if category is not None else None
+                safe_scientific_name = transliterate_text(str(scientific_name).strip()) if scientific_name is not None else None
+                safe_pot = transliterate_text(str(pot).strip()) if pot is not None else None
                 
-                logger.debug(f"Updating product with sanitized values - Category: '{safe_category}', Scientific: '{safe_scientific_name}', Pot: '{safe_pot}'")
+                logger.debug(f"Updating product with transliterated values - Category: '{safe_category}', Scientific: '{safe_scientific_name}', Pot: '{safe_pot}'")
                 
                 if safe_category is not None:
                     product.category = safe_category
@@ -279,7 +314,7 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 if safe_pot is not None:
                     product.pot = safe_pot
                 if safe_scientific_name is not None or safe_pot is not None:
-                    safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip().encode('ascii', 'ignore').decode('ascii')
+                    safe_description = transliterate_text(f"{safe_scientific_name or ''} {safe_pot or ''}".strip())
                     product.description = safe_description or product.description
             
             # Create price list entry if price exists
