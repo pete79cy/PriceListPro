@@ -25,16 +25,44 @@ def parse_excel_file(file_path, customer_id, upload_id):
     }
     
     try:
-        # Read the Excel file
-        df = pd.read_excel(file_path)
+        # Read the Excel file with error handling
+        try:
+            # First try with default engine
+            df = pd.read_excel(file_path, engine='openpyxl')
+        except Exception as excel_error:
+            logging.warning(f"Error reading Excel with openpyxl: {str(excel_error)}")
+            # Try with alternative engines
+            try:
+                df = pd.read_excel(file_path, engine='xlrd')
+            except Exception as xlrd_error:
+                logging.error(f"Error reading Excel with xlrd: {str(xlrd_error)}")
+                raise ValueError(f"Could not read Excel file: {file_path}. Please check the file format.")
         
-        # Map expected column names
+        # Log the columns found for debugging
+        logging.debug(f"Excel columns found: {df.columns.tolist()}")
+        
+        # Map expected column names - case insensitive for flexibility
         column_mapping = {
             'Name': 'name',
+            'NAME': 'name',
+            'name': 'name',
             'Category': 'category',
+            'CATEGORY': 'category',
+            'category': 'category', 
             'Scientific Name': 'scientific_name',
+            'SCIENTIFIC NAME': 'scientific_name',
+            'scientific name': 'scientific_name',
+            'Scientific_Name': 'scientific_name',
             'Pot': 'pot',
-            'Selling Price': 'price'
+            'POT': 'pot',
+            'pot': 'pot',
+            'Pot Size': 'pot',
+            'POT SIZE': 'pot',
+            'Selling Price': 'price',
+            'SELLING PRICE': 'price',
+            'Price': 'price',
+            'PRICE': 'price',
+            'price': 'price'
         }
         
         # Rename columns if they exist in the dataframe
@@ -102,6 +130,10 @@ def parse_excel_file(file_path, customer_id, upload_id):
         
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Error parsing Excel file: {str(e)}")
-        stats['errors'].append(str(e))
-        raise
+        error_message = f"Error parsing Excel file: {str(e)}"
+        logging.error(error_message)
+        stats['errors'].append(error_message)
+        
+        # Return stats with error information instead of raising exception
+        # This allows the web interface to display the error message
+        return stats

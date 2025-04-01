@@ -136,6 +136,7 @@ def register_routes(app):
                     invoice_number=invoice_data.get('invoice_number', f'AUTO-{uuid.uuid4().hex[:8]}'),
                     invoice_date=datetime.strptime(invoice_data.get('invoice_date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'),
                     total_amount=invoice_data.get('total_amount', 0),
+                    currency=invoice_data.get('currency', '€'),
                     file_path=unique_filename
                 )
                 db.session.add(invoice)
@@ -173,9 +174,12 @@ def register_routes(app):
                         invoice_id=invoice.id,
                         product_id=product.id if product else None,
                         description=item['description'],
+                        scientific_name=item.get('scientific_name'),
+                        pot_size=item.get('pot_size'),
                         quantity=item.get('quantity', 1),
                         price=item.get('price', 0),
                         vat=item.get('vat', 0),
+                        vat_percentage=item.get('vat_percentage'),
                         total=item.get('total', 0)
                     )
                     db.session.add(invoice_item)
