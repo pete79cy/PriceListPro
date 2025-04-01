@@ -4,6 +4,7 @@ import traceback
 from app import db
 from models import Customer, Product, PriceList
 from utils.logger import logger
+from utils.product_management import find_or_create_product, create_or_update_price_list
 
 # Log that this module was loaded
 logger.info("Excel parser module loaded")
@@ -231,74 +232,44 @@ def parse_excel_file(file_path, customer_id, upload_id):
                     logger.debug(f"Using column '{price_col}' as price with value {price_val}")
                     price = price_val
             
-            # Get or create product - use case-insensitive comparison
-            logger.debug(f"Looking for product with name: {product_name}")
+            # Use safe string values
+            safe_name = sanitize_string(product_name)
+            safe_category = sanitize_string(category)
+            safe_scientific_name = sanitize_string(scientific_name)
+            safe_pot = sanitize_string(pot)
             
-            # Normalize product name for database query
-            # Convert to UTF-8 to handle encoding issues
-            normalized_name = product_name
-            try:
-                # Prevent encoding issues by explicitly handling UTF-8 conversion
-                if isinstance(product_name, str):
-                    normalized_name = product_name.strip()
-                    logger.debug(f"Normalized product name: {normalized_name}")
-            except Exception as encoding_error:
-                logger.warning(f"Error normalizing product name: {str(encoding_error)}")
-                
-            # Use case-insensitive search to avoid encoding issues
-            product = Product.query.filter(Product.name.ilike(f"{normalized_name}")).first()
+            # Prepare product data dictionary
+            product_data = {
+                'name': safe_name,
+                'category': safe_category,
+                'scientific_name': safe_scientific_name,
+                'pot': safe_pot,
+                'description': f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
+            }
             
-            if not product:
-                # Create new product - log all fields first to aid debugging
-                logger.debug(f"Creating new product - Name: {product_name}, Category: {category}, Scientific Name: {scientific_name}, Pot: {pot}")
-                
-                # Use the sanitize_string function defined at module level
-                
-                safe_name = sanitize_string(product_name)
-                safe_category = sanitize_string(category)
-                safe_scientific_name = sanitize_string(scientific_name)
-                safe_pot = sanitize_string(pot)
-                safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
-                
-                product = Product(
-                    name=safe_name,
-                    category=safe_category,
-                    scientific_name=safe_scientific_name,
-                    pot=safe_pot,
-                    description=safe_description
-                )
-                db.session.add(product)
-                db.session.flush()  # Get the product ID without committing
+            # Use the find_or_create_product function from product_management
+            product, message, is_new = find_or_create_product(product_data)
+            
+            if is_new:
+                logger.info(message)
                 stats['new_products'] += 1
             else:
-                # Update existing product fields if provided - use safe values
-                logger.debug(f"Updating existing product: {product.name} (ID: {product.id})")
-                
-                # Use the sanitize_string function defined at module level
-                safe_category = sanitize_string(category)
-                safe_scientific_name = sanitize_string(scientific_name)
-                safe_pot = sanitize_string(pot)
-                
-                if safe_category is not None:
-                    product.category = safe_category
-                if safe_scientific_name is not None:
-                    product.scientific_name = safe_scientific_name
-                if safe_pot is not None:
-                    product.pot = safe_pot
-                if safe_scientific_name is not None or safe_pot is not None:
-                    safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip()
-                    product.description = safe_description or product.description
+                logger.debug(message)
             
-            # Create price list entry if price exists
-            if price is not None:
-                price_list = PriceList(
+            # Create or update price list entry if price exists
+            if price is not None and product:
+                source_file_name = f"upload_{upload_id}"
+                price_list, price_message, is_new_price = create_or_update_price_list(
                     customer_id=customer_id,
                     product_id=product.id,
-                    price=price,
-                    source_file=f"upload_{upload_id}"
+                    new_price=price,
+                    source_file=source_file_name
                 )
-                db.session.add(price_list)
-                stats['price_entries'] += 1
+                
+                if is_new_price:
+                    stats['price_entries'] += 1
+                
+                logger.debug(price_message)
         
         # Commit all changes
         db.session.commit()

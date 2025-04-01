@@ -1,0 +1,149 @@
+Below is a plan outlining how you can implement these two functionalities:
+
+---
+
+### 1. Check for Product Existence and Add if Missing
+
+**Process:**
+
+- **Identify the Product Uniquely:**  
+  Decide on a unique identifier for each product. This might be a combination of fields such as the product name, scientific name, and pot size.
+
+- **Database Query:**  
+  When processing an invoice or price list upload, query the database to check if a product record exists for the customer based on that unique identifier.
+
+- **Add New Product:**  
+  - **If not found:** Create a new product record including all available information (Name, Scientific Name, Pot, Selling Price, etc.).  
+  - **Record Insertion:** Save this new record to the customer’s price list.
+
+**Example Pseudocode (Using SQLAlchemy):**
+
+```python
+def add_or_update_product(customer_id, product_data):
+    # product_data should contain keys: name, scientific_name, pot, selling_price
+    product = Product.query.filter_by(
+        customer_id=customer_id,
+        scientific_name=product_data['scientific_name'],
+        pot=product_data['pot']
+    ).first()
+
+    if not product:
+        # Product does not exist, so add it
+        new_product = Product(
+            customer_id=customer_id,
+            name=product_data['name'],
+            scientific_name=product_data['scientific_name'],
+            pot=product_data['pot'],
+            selling_price=product_data['selling_price']
+        )
+        db.session.add(new_product)
+        db.session.commit()
+        return "Product added successfully."
+    else:
+        # Product exists, check if price needs to be updated
+        if product.selling_price != product_data['selling_price']:
+            # Proceed to update with approval (see below)
+            create_pending_update_request(product, product_data['selling_price'])
+            return "Price update pending approval."
+        else:
+            return "No changes required."
+```
+
+---
+
+### 2. Price Update with User Approval
+
+**Process:**
+
+- **Detect Price Change:**  
+  When a product is found in the database, compare its current selling price with the new selling price coming from the uploaded data.
+
+- **Create a Pending Update Record:**  
+  Instead of directly updating the product, create a separate record (e.g., in a `ProductUpdateRequest` table) that holds:
+  - Product ID  
+  - Old price  
+  - New price  
+  - Timestamp  
+  - Status (e.g., Pending, Approved, Rejected)
+
+- **User Approval Interface:**  
+  Build an interface (e.g., a dashboard or modal window) where the user (or admin) can review pending updates and decide whether to approve or reject them.
+
+- **Finalizing the Update:**  
+  - **If Approved:** Update the product’s selling price in the product table and mark the pending update as approved.  
+  - **If Rejected:** Simply mark the pending update as rejected without modifying the original product record.
+
+**Example Code for Creating a Pending Update:**
+
+```python
+def create_pending_update_request(product, new_price):
+    pending_update = ProductUpdateRequest(
+        product_id=product.id,
+        old_price=product.selling_price,
+        new_price=new_price,
+        status='Pending'
+    )
+    db.session.add(pending_update)
+    db.session.commit()
+```
+
+**Example Route to Approve/Reject Updates (Using Flask):**
+
+```python
+@app.route('/pending-updates')
+def pending_updates():
+    # Only allow authorized users to view this
+    updates = ProductUpdateRequest.query.filter_by(status='Pending').all()
+    return render_template('pending_updates.html', updates=updates)
+
+@app.route('/update/<int:update_id>/approve', methods=['POST'])
+def approve_update(update_id):
+    update = ProductUpdateRequest.query.get(update_id)
+    if update:
+        # Update the actual product price
+        product = Product.query.get(update.product_id)
+        product.selling_price = update.new_price
+        update.status = 'Approved'
+        db.session.commit()
+        flash('Update approved successfully.')
+    return redirect(url_for('pending_updates'))
+
+@app.route('/update/<int:update_id>/reject', methods=['POST'])
+def reject_update(update_id):
+    update = ProductUpdateRequest.query.get(update_id)
+    if update:
+        update.status = 'Rejected'
+        db.session.commit()
+        flash('Update rejected.')
+    return redirect(url_for('pending_updates'))
+```
+
+---
+
+### 3. User Interface Considerations
+
+- **Display Pending Updates:**  
+  In your dashboard (e.g., in `pending_updates.html`), list all pending update requests with details (product name, old price, new price) and buttons for approval/rejection.
+
+- **Feedback Messages:**  
+  After the user takes an action, show a confirmation message indicating whether the update was approved or rejected.
+
+- **Security:**  
+  Ensure that only authorized users (e.g., admins) have access to the update approval interface.
+
+---
+
+### 4. Testing
+
+- **Unit Testing:**  
+  Write tests that simulate uploading a price list or invoice with new products and price changes. Confirm that new products are added and that price changes result in pending update records.
+  
+- **Manual Testing:**  
+  Test the full workflow on a staging environment to ensure that:
+  - Products not in the database are added correctly.
+  - Price changes create pending update requests.
+  - The approval/rejection interface works as expected.
+
+---
+
+By following this plan, you can implement functionality that automatically adds new products to a customer's price list and flags existing products for a price update—pending user approval—if a difference is detected. This approach helps maintain data integrity and gives users control over price updates. Let me know if you need further details or additional code examples!

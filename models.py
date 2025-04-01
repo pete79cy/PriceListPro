@@ -113,3 +113,21 @@ class FileUpload(db.Model):
     
     def __repr__(self):
         return f'<FileUpload {self.filename}>'
+
+class ProductUpdateRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    price_list_id = db.Column(db.Integer, db.ForeignKey('price_list.id'), nullable=True)
+    old_price = db.Column(db.Float, nullable=False)
+    new_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Pending')  # 'Pending', 'Approved', 'Rejected'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    source_file = db.Column(db.String(255), nullable=True)  # Where the update came from
+    
+    # Relationships
+    product = db.relationship('Product', backref='update_requests', lazy=True)
+    price_list = db.relationship('PriceList', backref='update_requests', lazy=True)
+    
+    def __repr__(self):
+        return f'<ProductUpdateRequest Product: {self.product_id}, Old: {self.old_price}, New: {self.new_price}, Status: {self.status}>'
