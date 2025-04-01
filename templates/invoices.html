@@ -43,10 +43,30 @@
                 </div>
 
                 {% if invoices %}
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        <button id="select-all-btn" class="btn btn-sm btn-outline-secondary me-2">
+                            <i class="fas fa-check-square me-1"></i> Select All
+                        </button>
+                        <button id="deselect-all-btn" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-square me-1"></i> Deselect All
+                        </button>
+                    </div>
+                    <div>
+                        <button id="batch-delete-btn" class="btn btn-sm btn-danger me-2" disabled>
+                            <i class="fas fa-trash me-1"></i> Delete Selected
+                        </button>
+                        <button id="delete-all-btn" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash-alt me-1"></i> Delete All Invoices
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="select-all-checkbox"></th>
                                 <th>Invoice #</th>
                                 <th>Customer</th>
                                 <th>Date</th>
@@ -57,6 +77,7 @@
                         <tbody>
                             {% for invoice in invoices %}
                             <tr>
+                                <td><input type="checkbox" class="invoice-checkbox" data-id="{{ invoice.id }}"></td>
                                 <td>{{ invoice.invoice_number }}</td>
                                 <td>
                                     {% for customer in customers %}
@@ -76,11 +97,88 @@
                                         <i class="fas fa-file-pdf"></i> PDF
                                     </a>
                                     {% endif %}
+                                    <button class="btn btn-sm btn-danger delete-invoice" data-id="{{ invoice.id }}" data-number="{{ invoice.invoice_number }}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Delete Invoice Confirmation Modal -->
+                <div class="modal fade" id="deleteInvoiceModal" tabindex="-1" aria-labelledby="deleteInvoiceModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="deleteInvoiceModalLabel">Confirm Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete Invoice <span id="invoice-number-to-delete" class="fw-bold"></span>?</p>
+                                <p>This action cannot be undone. All invoice data and relationships will be permanently deleted.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form id="deleteInvoiceForm" method="post">
+                                    <button type="submit" class="btn btn-danger">Delete Invoice</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Batch Delete Confirmation Modal -->
+                <div class="modal fade" id="batchDeleteModal" tabindex="-1" aria-labelledby="batchDeleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="batchDeleteModalLabel">Confirm Batch Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete <span id="selected-count" class="fw-bold"></span> selected invoices?</p>
+                                <p>This action cannot be undone. All invoice data and relationships will be permanently deleted.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" id="confirm-batch-delete" class="btn btn-danger">Delete Selected Invoices</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delete All Invoices Confirmation Modal -->
+                <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="deleteAllModalLabel">Confirm Delete All Invoices</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i> <strong>Warning:</strong> This is a destructive action!
+                                </div>
+                                <p>Are you sure you want to delete <strong>ALL</strong> invoices from the database?</p>
+                                <p>This will:</p>
+                                <ul>
+                                    <li>Delete all invoice records</li>
+                                    <li>Delete all invoice items</li>
+                                    <li>Delete all PDF files associated with invoices</li>
+                                    <li>Delete all PDF upload records</li>
+                                </ul>
+                                <p class="fw-bold">This action cannot be undone!</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ url_for('delete_all_invoices') }}" method="post">
+                                    <button type="submit" class="btn btn-danger">Delete All Invoices</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Pagination -->
@@ -142,4 +240,155 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Single invoice deletion
+    const deleteInvoiceButtons = document.querySelectorAll('.delete-invoice');
+    const deleteInvoiceModal = document.getElementById('deleteInvoiceModal');
+    const invoiceNumberSpan = document.getElementById('invoice-number-to-delete');
+    const deleteInvoiceForm = document.getElementById('deleteInvoiceForm');
+    
+    // Delete all invoices
+    const deleteAllBtn = document.getElementById('delete-all-btn');
+    const deleteAllModal = document.getElementById('deleteAllModal');
+    
+    // Delete all button click event
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(deleteAllModal);
+            modal.show();
+        });
+    }
+    
+    deleteInvoiceButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const invoiceId = this.dataset.id;
+            const invoiceNumber = this.dataset.number;
+            
+            // Update modal
+            invoiceNumberSpan.textContent = invoiceNumber;
+            deleteInvoiceForm.action = `/invoice/${invoiceId}/delete`;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(deleteInvoiceModal);
+            modal.show();
+        });
+    });
+    
+    // Batch deletion functionality
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+    const batchDeleteBtn = document.getElementById('batch-delete-btn');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const deselectAllBtn = document.getElementById('deselect-all-btn');
+    const batchDeleteModal = document.getElementById('batchDeleteModal');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const confirmBatchDeleteBtn = document.getElementById('confirm-batch-delete');
+    
+    // Function to update the delete button state
+    function updateBatchDeleteButton() {
+        const selectedCount = document.querySelectorAll('.invoice-checkbox:checked').length;
+        batchDeleteBtn.disabled = selectedCount === 0;
+    }
+    
+    // Select all checkbox
+    selectAllCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        invoiceCheckboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
+        updateBatchDeleteButton();
+    });
+    
+    // Individual checkboxes
+    invoiceCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBatchDeleteButton();
+            
+            // Update select all checkbox
+            const allChecked = document.querySelectorAll('.invoice-checkbox:checked').length === invoiceCheckboxes.length;
+            selectAllCheckbox.checked = allChecked;
+        });
+    });
+    
+    // Select all button
+    selectAllBtn.addEventListener('click', function() {
+        invoiceCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        selectAllCheckbox.checked = true;
+        updateBatchDeleteButton();
+    });
+    
+    // Deselect all button
+    deselectAllBtn.addEventListener('click', function() {
+        invoiceCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        selectAllCheckbox.checked = false;
+        updateBatchDeleteButton();
+    });
+    
+    // Batch delete button
+    batchDeleteBtn.addEventListener('click', function() {
+        const selectedCount = document.querySelectorAll('.invoice-checkbox:checked').length;
+        selectedCountSpan.textContent = selectedCount;
+        
+        const modal = new bootstrap.Modal(batchDeleteModal);
+        modal.show();
+    });
+    
+    // Confirm batch delete
+    confirmBatchDeleteBtn.addEventListener('click', function() {
+        // Get all selected invoice IDs
+        const selectedIds = [];
+        document.querySelectorAll('.invoice-checkbox:checked').forEach(checkbox => {
+            selectedIds.push(parseInt(checkbox.dataset.id));
+        });
+        
+        // Send batch delete request
+        fetch('/invoices/batch-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                invoice_ids: selectedIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message and reload page
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.querySelector('.card-body').prepend(alertDiv);
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(batchDeleteModal);
+                modal.hide();
+                
+                // Reload page after a delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                console.error('Error:', data.error);
+                alert('Error deleting invoices: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred during batch deletion');
+        });
+    });
+});
+</script>
 {% endblock %}

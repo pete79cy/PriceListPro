@@ -648,6 +648,94 @@ def register_routes(app):
                               invoice=invoice,
                               customer=customer,
                               items=items)
+                              
+    @app.route('/invoice/<int:invoice_id>/delete', methods=['POST'])
+    @login_required
+    def delete_invoice(invoice_id):
+        """Delete an invoice and its related items"""
+        invoice = Invoice.query.get_or_404(invoice_id)
+        
+        # Get the file path if it exists
+        file_path = invoice.file_path
+        
+        # Get customer information for the flash message
+        customer_name = Customer.query.get(invoice.customer_id).name if Customer.query.get(invoice.customer_id) else "Unknown"
+        invoice_number = invoice.invoice_number
+        
+        try:
+            # First delete all related invoice items (cascade doesn't work here)
+            InvoiceItem.query.filter_by(invoice_id=invoice_id).delete()
+            
+            # Then delete the invoice
+            db.session.delete(invoice)
+            db.session.commit()
+            
+            # Delete the file if it exists
+            if file_path:
+                try:
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], file_path))
+                except (OSError, FileNotFoundError):
+                    # If file is not found, just log and continue
+                    logger.warning(f"Could not delete file at {file_path}")
+            
+            flash(f'Invoice #{invoice_number} for {customer_name} has been deleted successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting invoice: {str(e)}', 'danger')
+            logger.error(f"Error deleting invoice {invoice_id}: {str(e)}")
+        
+        return redirect(url_for('invoices'))
+        
+    @app.route('/invoices/batch-delete', methods=['POST'])
+    @login_required
+    def batch_delete_invoices():
+        """Delete multiple invoices at once"""
+        data = request.get_json()
+        invoice_ids = data.get('invoice_ids', [])
+        
+        if not invoice_ids:
+            return jsonify({'error': 'No invoices selected'}), 400
+            
+        deleted_count = 0
+        try:
+            for invoice_id in invoice_ids:
+                invoice = Invoice.query.get(invoice_id)
+                if invoice:
+                    # Delete file if it exists
+                    if invoice.file_path:
+                        try:
+                            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], invoice.file_path))
+                        except (OSError, FileNotFoundError):
+                            logger.warning(f"Could not delete file for invoice {invoice_id}")
+                    
+                    # Delete invoice items
+                    InvoiceItem.query.filter_by(invoice_id=invoice_id).delete()
+                    
+                    # Delete invoice
+                    db.session.delete(invoice)
+                    deleted_count += 1
+            
+            db.session.commit()
+            return jsonify({'success': True, 'message': f'{deleted_count} invoices deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error in batch delete invoices: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+            
+    @app.route('/invoices/delete-all', methods=['POST'])
+    @login_required
+    def delete_all_invoices():
+        """Delete all invoices from the database"""
+        from utils.database_cleanup import delete_all_invoices
+        
+        success, message, deleted_count = delete_all_invoices()
+        
+        if success:
+            flash(message, 'success')
+        else:
+            flash(message, 'danger')
+            
+        return redirect(url_for('invoices'))
     
     @app.route('/pending-updates')
     @login_required
