@@ -143,10 +143,31 @@ def register_routes(app):
                 
                 # Add invoice items
                 for item in invoice_data.get('items', []):
-                    # Try to find product by name or description
-                    product = Product.query.filter(
-                        Product.name.ilike(f"%{item['description']}%")
-                    ).first()
+                    # Try to find product by name, scientific name, or description
+                    product = None
+                    
+                    # If scientific name is available in the item data
+                    if item.get('scientific_name'):
+                        product = Product.query.filter(
+                            Product.scientific_name.ilike(f"%{item['scientific_name']}%")
+                        ).first()
+                    
+                    # If not found by scientific name, try by regular name
+                    if not product:
+                        product = Product.query.filter(
+                            Product.name.ilike(f"%{item['description']}%")
+                        ).first()
+                        
+                    # If product is found, check if pot size matches if available
+                    if product and item.get('pot_size') and product.pot:
+                        if item['pot_size'].lower() not in product.pot.lower():
+                            # Try to find a better match with matching pot size
+                            better_match = Product.query.filter(
+                                Product.name.ilike(f"%{item['description']}%"),
+                                Product.pot.ilike(f"%{item['pot_size']}%")
+                            ).first()
+                            if better_match:
+                                product = better_match
                     
                     invoice_item = InvoiceItem(
                         invoice_id=invoice.id,
@@ -218,17 +239,30 @@ def register_routes(app):
             # Add or update a product
             product_id = request.form.get('product_id')
             name = request.form.get('name')
+            category = request.form.get('category')
+            scientific_name = request.form.get('scientific_name')
+            pot = request.form.get('pot')
             sku = request.form.get('sku')
             description = request.form.get('description')
             
             if product_id:  # Update existing
                 product = Product.query.get_or_404(product_id)
                 product.name = name
+                product.category = category
+                product.scientific_name = scientific_name
+                product.pot = pot
                 product.sku = sku
                 product.description = description
                 flash(f'Product {name} updated successfully!', 'success')
             else:  # Create new
-                product = Product(name=name, sku=sku, description=description)
+                product = Product(
+                    name=name, 
+                    category=category,
+                    scientific_name=scientific_name,
+                    pot=pot,
+                    sku=sku, 
+                    description=description
+                )
                 db.session.add(product)
                 flash(f'Product {name} added successfully!', 'success')
             

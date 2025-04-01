@@ -25,11 +25,23 @@
                         </thead>
                         <tbody>
                             {% for product in products %}
-                            <tr>
+                            <tr data-product-id="{{ product.id }}" 
+                                data-category="{{ product.category }}" 
+                                data-scientific-name="{{ product.scientific_name }}" 
+                                data-pot="{{ product.pot }}">
                                 <td>{{ product.id }}</td>
                                 <td>{{ product.sku }}</td>
                                 <td>{{ product.name }}</td>
-                                <td>{{ product.description }}</td>
+                                <td>
+                                    {% if product.scientific_name %}
+                                    <em>{{ product.scientific_name }}</em>
+                                    {% if product.pot %}
+                                    <span class="ms-2 badge bg-info">{{ product.pot }}</span>
+                                    {% endif %}
+                                    {% else %}
+                                    {{ product.description }}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-info edit-product" 
                                             data-id="{{ product.id }}"
@@ -77,6 +89,18 @@
                     <div class="mb-3">
                         <label for="name" class="form-label">Name</label>
                         <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <input type="text" class="form-control" id="category" name="category">
+                    </div>
+                    <div class="mb-3">
+                        <label for="scientific_name" class="form-label">Scientific Name</label>
+                        <input type="text" class="form-control" id="scientific_name" name="scientific_name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="pot" class="form-label">Pot Size</label>
+                        <input type="text" class="form-control" id="pot" name="pot" placeholder="e.g. 2L, 5L">
                     </div>
                     <div class="mb-3">
                         <label for="sku" class="form-label">SKU</label>
@@ -130,6 +154,20 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('name').value = this.dataset.name;
             document.getElementById('sku').value = this.dataset.sku;
             document.getElementById('description').value = this.dataset.description;
+            
+            // Try to set additional fields if available in the DOM
+            const product = document.querySelector(`tr[data-product-id="${this.dataset.id}"]`);
+            if (product) {
+                if (product.dataset.category) {
+                    document.getElementById('category').value = product.dataset.category;
+                }
+                if (product.dataset.scientificName) {
+                    document.getElementById('scientific_name').value = product.dataset.scientificName;
+                }
+                if (product.dataset.pot) {
+                    document.getElementById('pot').value = product.dataset.pot;
+                }
+            }
         });
     });
     
@@ -138,6 +176,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('productModalLabel').textContent = 'Add Product';
         document.getElementById('product_id').value = '';
         document.getElementById('name').value = '';
+        document.getElementById('category').value = '';
+        document.getElementById('scientific_name').value = '';
+        document.getElementById('pot').value = '';
         document.getElementById('sku').value = '';
         document.getElementById('description').value = '';
     });
