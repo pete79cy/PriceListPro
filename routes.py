@@ -102,16 +102,9 @@ def register_routes(app):
                 error_msg = f"Error processing file: {str(e)}"
                 logger.error(error_msg)
                 logger.error(f"Full traceback: {traceback.format_exc()}")
-                logger.error(f"Customer ID: {customer_id}")
-                logger.error(f"File name: {filename}")
-                logger.error(f"Upload ID: {upload.id}")
-                
-                # Store detailed error info
-                detailed_error = f"Error: {str(e)}\nTraceback: {traceback.format_exc()}"
-                upload.processing_notes = detailed_error[:500]  # Truncate to fit in db
+                upload.processing_notes = error_msg
                 db.session.commit()
-                
-                flash('An error occurred while processing the file. Please check the file format and encoding.', 'danger')
+                flash(error_msg, 'danger')
             
             return redirect(url_for('uploads'))
         
