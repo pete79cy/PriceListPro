@@ -35,9 +35,10 @@ def parse_excel_file(file_path, customer_id, upload_id):
     try:
         # Read the Excel file with error handling
         try:
-            # First try with default engine
+            # First try with default engine and handle first-row header issue
             logger.info(f"Attempting to read Excel with openpyxl: {file_path}")
-            df = pd.read_excel(file_path, engine='openpyxl')
+            # Skip the non-header row and use the first row with actual headers
+            df = pd.read_excel(file_path, engine='openpyxl', header=1)
             logger.info("Successfully read Excel file with openpyxl")
         except Exception as excel_error:
             logger.warning(f"Error reading Excel with openpyxl: {str(excel_error)}")
@@ -45,7 +46,7 @@ def parse_excel_file(file_path, customer_id, upload_id):
             # Try with alternative engines
             try:
                 logger.info(f"Attempting to read Excel with xlrd: {file_path}")
-                df = pd.read_excel(file_path, engine='xlrd')
+                df = pd.read_excel(file_path, engine='xlrd', header=1)
                 logger.info("Successfully read Excel file with xlrd")
             except Exception as xlrd_error:
                 logger.error(f"Error reading Excel with xlrd: {str(xlrd_error)}")
@@ -54,6 +55,17 @@ def parse_excel_file(file_path, customer_id, upload_id):
         
         # Log the columns found for debugging
         logger.info(f"Excel columns found: {df.columns.tolist()}")
+        
+        # Clean column names - handle non-ASCII characters
+        cleaned_columns = {}
+        for col in df.columns:
+            # Create a clean ASCII version of the column name
+            cleaned_col = str(col).encode('ascii', 'ignore').decode('ascii')
+            if cleaned_col != col:
+                logger.info(f"Cleaned column name: '{col}' -> '{cleaned_col}'")
+                df = df.rename(columns={col: cleaned_col})
+                
+        logger.info(f"Columns after cleaning: {df.columns.tolist()}")
         
         # Map expected column names - case insensitive for flexibility
         column_mapping = {
@@ -100,31 +112,62 @@ def parse_excel_file(file_path, customer_id, upload_id):
             pot = row.get('pot') if 'pot' in df.columns and not pd.isna(row.get('pot')) else None
             price = row.get('price') if 'price' in df.columns and not pd.isna(row.get('price')) else None
             
-            # Get or create product
-            product = Product.query.filter(Product.name == product_name).first()
+            # Get or create product - use case-insensitive comparison
+            logger.debug(f"Looking for product with name: {product_name}")
+            
+            # Normalize product name for database query
+            # Convert to UTF-8 to handle encoding issues
+            normalized_name = product_name
+            try:
+                # Prevent encoding issues by explicitly handling UTF-8 conversion
+                if isinstance(product_name, str):
+                    normalized_name = product_name.strip()
+                    logger.debug(f"Normalized product name: {normalized_name}")
+            except Exception as encoding_error:
+                logger.warning(f"Error normalizing product name: {str(encoding_error)}")
+                
+            # Use case-insensitive search to avoid encoding issues
+            product = Product.query.filter(Product.name.ilike(f"{normalized_name}")).first()
             
             if not product:
-                # Create new product
+                # Create new product - log all fields first to aid debugging
+                logger.debug(f"Creating new product - Name: {product_name}, Category: {category}, Scientific Name: {scientific_name}, Pot: {pot}")
+                
+                # Ensure we have clean, properly-encoded strings for all fields
+                safe_name = str(product_name).strip() if product_name is not None else None
+                safe_category = str(category).strip() if category is not None else None
+                safe_scientific_name = str(scientific_name).strip() if scientific_name is not None else None
+                safe_pot = str(pot).strip() if pot is not None else None
+                safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
+                
                 product = Product(
-                    name=product_name,
-                    category=category,
-                    scientific_name=scientific_name,
-                    pot=pot,
-                    description=f"{scientific_name or ''} {pot or ''}".strip() or None
+                    name=safe_name,
+                    category=safe_category,
+                    scientific_name=safe_scientific_name,
+                    pot=safe_pot,
+                    description=safe_description
                 )
                 db.session.add(product)
                 db.session.flush()  # Get the product ID without committing
                 stats['new_products'] += 1
             else:
-                # Update existing product fields if provided
-                if category is not None:
-                    product.category = category
-                if scientific_name is not None:
-                    product.scientific_name = scientific_name
-                if pot is not None:
-                    product.pot = pot
-                if scientific_name is not None or pot is not None:
-                    product.description = f"{scientific_name or ''} {pot or ''}".strip() or product.description
+                # Update existing product fields if provided - use safe values
+                logger.debug(f"Updating existing product: {product.name} (ID: {product.id})")
+                
+                # Ensure we have clean, properly-encoded strings for all fields
+                safe_category = str(category).strip() if category is not None else None
+                safe_scientific_name = str(scientific_name).strip() if scientific_name is not None else None
+                safe_pot = str(pot).strip() if pot is not None else None
+                
+                if safe_category is not None:
+                    product.category = safe_category
+                if safe_scientific_name is not None:
+                    product.scientific_name = safe_scientific_name
+                if safe_pot is not None:
+                    product.pot = safe_pot
+                if safe_scientific_name is not None or safe_pot is not None:
+                    safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip()
+                    product.description = safe_description or product.description
             
             # Create price list entry if price exists
             if price is not None:
