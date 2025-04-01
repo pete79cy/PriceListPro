@@ -336,6 +336,26 @@ def register_routes(app):
         db.session.commit()
         flash(f'Product {product.name} deleted successfully!', 'success')
         return redirect(url_for('products'))
+
+    @app.route('/products/batch-delete', methods=['POST'])
+    def batch_delete_products():
+        data = request.get_json()
+        product_ids = data.get('product_ids', [])
+        
+        if not product_ids:
+            return jsonify({'error': 'No products selected'}), 400
+            
+        try:
+            # Delete associated price list entries first
+            PriceList.query.filter(PriceList.product_id.in_(product_ids)).delete(synchronize_session=False)
+            # Then delete the products
+            Product.query.filter(Product.id.in_(product_ids)).delete(synchronize_session=False)
+            db.session.commit()
+            flash(f'{len(product_ids)} products deleted successfully!', 'success')
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
     
     @app.route('/search', methods=['GET'])
     def search():
