@@ -10,6 +10,7 @@ from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
 from utils.logger import logger
+from utils.excel_template import ensure_template_exists
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -324,6 +325,53 @@ def register_routes(app):
         
         results = search_price_list(query, customer_id)
         return jsonify(results)
+    
+    @app.route('/download/template')
+    def download_template():
+        """Provide a downloadable Excel template for price lists"""
+        template_path = ensure_template_exists(app.static_folder)
+        return send_from_directory(os.path.dirname(template_path), os.path.basename(template_path), 
+                                 as_attachment=True, download_name="price_list_template.xlsx")
+    
+    @app.route('/price-lists')
+    def price_lists():
+        """View all price lists with filtering options"""
+        # Get query parameters
+        customer_id = request.args.get('customer_id', '')
+        category = request.args.get('category', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = 20  # Items per page
+        
+        # Base query
+        query = PriceList.query.join(Product)
+        
+        # Apply filters
+        if customer_id:
+            query = query.filter(PriceList.customer_id == customer_id)
+        if category:
+            query = query.filter(Product.category == category)
+            
+        # Order by customer name and product name
+        query = query.order_by(PriceList.customer_id, Product.category, Product.name)
+        
+        # Paginate results
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        price_lists = pagination.items
+        
+        # Get all customers for filter dropdown
+        customers = Customer.query.all()
+        
+        # Get all unique categories for filter dropdown
+        categories = db.session.query(Product.category).filter(Product.category != None, Product.category != '').distinct().order_by(Product.category).all()
+        categories = [c[0] for c in categories]  # Extract the category names
+        
+        return render_template('price_lists.html', 
+                              price_lists=price_lists, 
+                              customers=customers,
+                              categories=categories,
+                              pagination=pagination,
+                              selected_customer_id=customer_id,
+                              selected_category=category)
     
     @app.route('/uploads/<filename>')
     def uploaded_file(filename):
