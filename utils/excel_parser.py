@@ -24,17 +24,46 @@ def transliterate_text(text):
     """
     if not isinstance(text, str) or not text:
         return text
-        
+    
+    # Ensure text is a proper Unicode string before conversion
+    if not isinstance(text, str):
+        text = str(text)
+    
+    # Clean any strange whitespace characters
+    text = text.strip()
+    
     # First try unidecode which handles many languages including Greek
-    transliterated = unidecode(text)
+    try:
+        transliterated = unidecode(text)
+        logger.debug(f"Unidecode result for '{text}': '{transliterated}'")
+        
+        # If unidecode returned an empty string or mostly spaces, 
+        # try Unicode normalization as a fallback
+        if not transliterated.strip() or len(transliterated.strip()) < len(text.strip()) // 2:
+            logger.debug(f"Unidecode produced poor result for '{text}', trying normalization")
+            normalized = unicodedata.normalize('NFKD', text)
+            ascii_text = normalized.encode('ascii', 'ignore').decode('ascii')
+            
+            # If normalization also fails, keep the original 
+            if not ascii_text.strip():
+                logger.warning(f"Both transliteration methods failed for '{text}', preserving original")
+                return text  # Return original to preserve data
+            
+            transliterated = ascii_text
+    except Exception as e:
+        logger.error(f"Error during transliteration for '{text}': {str(e)}")
+        # Fall back to simple ASCII encoding in case of error
+        try:
+            transliterated = text.encode('ascii', 'ignore').decode('ascii')
+        except:
+            logger.error(f"Even fallback ASCII encoding failed for '{text}'")
+            return text  # Return original as last resort
     
-    # If unidecode returned an empty string or mostly spaces, 
-    # try Unicode normalization as a fallback
-    if not transliterated.strip() or len(transliterated.strip()) < len(text.strip()) // 2:
-        logger.debug(f"Unidecode produced poor result for '{text}', trying normalization")
-        normalized = unicodedata.normalize('NFKD', text)
-        transliterated = normalized.encode('ascii', 'ignore').decode('ascii')
-    
+    # If all conversion attempts resulted in empty string, return original
+    if not transliterated.strip() and text.strip():
+        logger.warning(f"All transliteration attempts produced empty result for '{text}', preserving original")
+        return text
+        
     logger.debug(f"Transliterated '{text}' to '{transliterated}'")
     return transliterated
 
@@ -63,6 +92,12 @@ def parse_excel_file(file_path, customer_id, upload_id):
     logger.debug(f"Excel parse starting - file: {file_path}, customer_id: {customer_id}, upload_id: {upload_id}")
     
     try:
+        # Initialize counters for batch processing
+        batch_size = 100
+        current_batch_count = 0
+        new_products_batch = []
+        price_list_batch = []
+        
         # Read the Excel file with error handling
         try:
             # First try to read the file with the default header=0 (first row as header)
@@ -327,13 +362,32 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 )
                 db.session.add(price_list)
                 stats['price_entries'] += 1
+                
+                # Increment batch counter
+                current_batch_count += 1
+                
+                # Commit changes in batches to prevent timeouts
+                if current_batch_count >= batch_size:
+                    logger.info(f"Committing batch of {current_batch_count} operations")
+                    try:
+                        db.session.commit()
+                        # Reset batch counter after successful commit
+                        current_batch_count = 0
+                    except Exception as batch_error:
+                        db.session.rollback()
+                        logger.error(f"Error committing batch: {str(batch_error)}")
+                        raise  # Re-raise to handle in outer exception block
         
-        # Commit all changes
-        db.session.commit()
+        # Commit any remaining records in the final batch
+        if current_batch_count > 0:
+            logger.info(f"Committing final batch of {current_batch_count} operations")
+            db.session.commit()
+            
         logger.info(f"Excel import complete. Stats: {stats}")
         return stats
         
     except Exception as e:
+        # Rollback in case of any errors
         db.session.rollback()
         error_message = f"Error parsing Excel file: {str(e)}"
         logger.error(error_message)
