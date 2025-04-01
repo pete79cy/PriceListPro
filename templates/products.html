@@ -1,0 +1,156 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Products</h5>
+                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#productModal">
+                    <i class="fas fa-plus"></i> Add Product
+                </button>
+            </div>
+            <div class="card-body">
+                {% if products %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>SKU</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>{{ product.id }}</td>
+                                <td>{{ product.sku }}</td>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.description }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info edit-product" 
+                                            data-id="{{ product.id }}"
+                                            data-name="{{ product.name }}"
+                                            data-sku="{{ product.sku }}"
+                                            data-description="{{ product.description }}"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#productModal">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal"
+                                            data-id="{{ product.id }}"
+                                            data-name="{{ product.name }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No products found. Click the "Add Product" button to create your first product or upload a price list.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="productModalLabel">Add Product</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('products') }}" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="product_id" id="product_id">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sku" class="form-label">SKU</label>
+                        <input type="text" class="form-control" id="sku" name="sku">
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Product</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-product-name"></strong>?</p>
+                <p class="text-danger">This action cannot be undone. All price list entries associated with this product will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="delete-form" action="" method="post">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle edit product modal
+    document.querySelectorAll('.edit-product').forEach(button => {
+        button.addEventListener('click', function() {
+            document.getElementById('productModalLabel').textContent = 'Edit Product';
+            document.getElementById('product_id').value = this.dataset.id;
+            document.getElementById('name').value = this.dataset.name;
+            document.getElementById('sku').value = this.dataset.sku;
+            document.getElementById('description').value = this.dataset.description;
+        });
+    });
+    
+    // Reset modal when adding a new product
+    document.querySelector('[data-bs-target="#productModal"]').addEventListener('click', function() {
+        document.getElementById('productModalLabel').textContent = 'Add Product';
+        document.getElementById('product_id').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('sku').value = '';
+        document.getElementById('description').value = '';
+    });
+    
+    // Handle delete modal
+    document.getElementById('deleteModal').addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const productId = button.dataset.id;
+        const productName = button.dataset.name;
+        
+        document.getElementById('delete-product-name').textContent = productName;
+        document.getElementById('delete-form').action = `/products/${productId}/delete`;
+    });
+});
+</script>
+{% endblock %}

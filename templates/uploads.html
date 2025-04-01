@@ -1,0 +1,150 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Upload Excel Price List</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('upload_excel') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="excel-customer" class="form-label">Select Customer</label>
+                        <select class="form-select" id="excel-customer" name="customer_id" required>
+                            <option value="" selected disabled>Choose a customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="excel-file" class="form-label">Excel File (.xlsx, .xls)</label>
+                        <input class="form-control" type="file" id="excel-file" name="file" accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i> Upload Price List
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <h6>Expected Excel Format:</h6>
+                    <ul class="small">
+                        <li>Required columns: <code>product_name</code>, <code>price</code></li>
+                        <li>Optional columns: <code>sku</code>, <code>description</code>, <code>effective_date</code>, <code>expiry_date</code></li>
+                    </ul>
+                    <div class="alert alert-info small">
+                        The system will create new products if they don't exist, or update existing product prices.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Upload PDF Invoice</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('upload_pdf') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="pdf-customer" class="form-label">Select Customer</label>
+                        <select class="form-select" id="pdf-customer" name="customer_id" required>
+                            <option value="" selected disabled>Choose a customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="pdf-file" class="form-label">PDF Invoice</label>
+                        <input class="form-control" type="file" id="pdf-file" name="file" accept=".pdf" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i> Upload Invoice
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <h6>PDF Invoice Processing:</h6>
+                    <ul class="small">
+                        <li>The system will extract text from the PDF using AI</li>
+                        <li>Invoice number, date, and line items will be identified</li>
+                        <li>Products will be matched to existing product catalog when possible</li>
+                    </ul>
+                    <div class="alert alert-info small">
+                        Processing PDF invoices may take a moment. The system will try to match products with your existing catalog.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Recent Uploads</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_uploads %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Type</th>
+                                <th>Customer</th>
+                                <th>Upload Date</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for upload in recent_uploads %}
+                            <tr>
+                                <td>{{ upload.filename }}</td>
+                                <td>
+                                    {% if upload.file_type == 'excel' %}
+                                    <span class="badge bg-success">Excel</span>
+                                    {% else %}
+                                    <span class="badge bg-info">PDF</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for customer in customers %}
+                                        {% if customer.id == upload.customer_id %}
+                                            {{ customer.name }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ upload.upload_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if upload.processed %}
+                                    <span class="badge bg-success">Processed</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ upload.processing_notes }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No files have been uploaded yet. Use the forms above to upload your first file.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
