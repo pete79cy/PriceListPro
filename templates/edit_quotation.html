@@ -123,11 +123,10 @@
                                         </td>
                                         <td>
                                             <select class="form-select" name="supplier_{{ loop.index0 }}">
-                                                <option value="in-house" {% if product.supplier == 'in-house' %}selected{% endif %}>In-house Production</option>
-                                                <option value="Supplier A" {% if product.supplier == 'Supplier A' %}selected{% endif %}>Supplier A</option>
-                                                <option value="Supplier B" {% if product.supplier == 'Supplier B' %}selected{% endif %}>Supplier B</option>
-                                                <option value="Supplier C" {% if product.supplier == 'Supplier C' %}selected{% endif %}>Supplier C</option>
-                                                <option value="Other" {% if product.supplier and product.supplier not in ['in-house', 'Supplier A', 'Supplier B', 'Supplier C'] %}selected{% endif %}>Other</option>
+                                                {% for supplier in suppliers %}
+                                                <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
+                                                {% endfor %}
+                                                <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
                                             </select>
                                         </td>
                                         <td>
