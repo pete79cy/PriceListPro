@@ -54,6 +54,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('quotations') }}">
+                            <i class="fas fa-file-contract"></i> Quotations
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('pending_updates') }}">
                             <i class="fas fa-tasks"></i> Price Updates
                             {% set pending_count = (pending_update_count or 0) %}
@@ -154,6 +159,7 @@
                     <ul>
                         <li>Upload and process Excel price lists with customer-specific pricing</li>
                         <li>Parse PDF invoices to extract line items and prices</li>
+                        <li>Create and manage customer quotations with supplier reports</li>
                         <li>Manage products with scientific names, categories, and pot sizes</li>
                         <li>Track customer-specific pricing</li>
                         <li>Search across products and pricing data</li>
@@ -172,6 +178,7 @@
                         </li>
                         <li><strong>Price Lists:</strong> View and manage customer-specific pricing</li>
                         <li><strong>Invoices:</strong> Access processed invoices and their line items</li>
+                        <li><strong>Quotations:</strong> Create, manage and export customer quotations and supplier reports</li>
                         <li><strong>Price Updates:</strong> Review and approve pending price changes</li>
                         <li><strong>Search:</strong> Quick access to pricing information</li>
                     </ol>

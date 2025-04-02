@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Supplier Order Report - {{ supplier }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            width: 100%;
+            margin-bottom: 1cm;
+        }
+        .company-info {
+            float: left;
+            width: 60%;
+        }
+        .report-info {
+            float: right;
+            width: 40%;
+            text-align: right;
+        }
+        .supplier-info {
+            width: 100%;
+            margin-bottom: 1cm;
+        }
+        .clear {
+            clear: both;
+        }
+        h1 {
+            font-size: 18pt;
+            color: #224870;
+            margin-bottom: 0.5cm;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1cm 0;
+        }
+        th {
+            background-color: #e6e6e6;
+            padding: 0.3cm;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10pt;
+            border-bottom: 1px solid #999;
+        }
+        td {
+            padding: 0.3cm;
+            border-bottom: 1px solid #ddd;
+            font-size: 10pt;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .summary {
+            width: 40%;
+            float: right;
+            margin-top: 1cm;
+        }
+        .summary table {
+            width: 100%;
+        }
+        .notes {
+            margin-top: 1cm;
+            border-top: 1px solid #ddd;
+            padding-top: 0.5cm;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 9pt;
+            text-align: center;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 0.2cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            <h1>COMPANY NAME</h1>
+            <p>
+                Company Address Line 1<br>
+                Company Address Line 2<br>
+                Phone: +XX XXX XXXXXX<br>
+                Email: info@example.com
+            </p>
+        </div>
+        <div class="report-info">
+            <h1>SUPPLIER ORDER</h1>
+            <p>
+                <strong>Quotation Ref:</strong> {{ quotation.quotation_number }}<br>
+                <strong>Date:</strong> {{ date_generated }}<br>
+                <strong>Customer:</strong> {{ customer.name }}
+            </p>
+        </div>
+        <div class="clear"></div>
+    </div>
+    
+    <div class="supplier-info">
+        <h2>Supplier: {{ supplier }}</h2>
+        <p>This order report lists all products to be sourced from {{ supplier }} for quotation {{ quotation.quotation_number }}.</p>
+    </div>
+    
+    <h2>Order Details</h2>
+    <table>
+        <thead>
+            <tr>
+                <th width="5%">#</th>
+                <th width="35%">Description</th>
+                <th width="20%">Scientific Name</th>
+                <th width="10%">Pot Size</th>
+                <th width="10%" class="text-right">Quantity</th>
+                <th width="10%" class="text-right">Cost Price</th>
+                <th width="10%" class="text-right">Total Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.description }}</td>
+                <td><em>{{ item.scientific_name or "" }}</em></td>
+                <td>{{ item.pot_size or "" }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.quantity) }}</td>
+                <td class="text-right">{% if item.cost_price %}{{ currency }} {{ "%.2f"|format(item.cost_price) }}{% else %}-{% endif %}</td>
+                <td class="text-right">{% if item.cost_price %}{{ currency }} {{ "%.2f"|format(item.quantity * item.cost_price) }}{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="summary">
+        <table>
+            <tr>
+                <td><strong>Total Order Cost:</strong></td>
+                <td class="text-right"><strong>{{ currency }} {{ "%.2f"|format(total_cost) }}</strong></td>
+            </tr>
+        </table>
+    </div>
+    <div class="clear"></div>
+    
+    <div class="notes">
+        <h2>Notes</h2>
+        <p>Please confirm availability, pricing, and expected delivery timeframe for the above products as soon as possible.</p>
+    </div>
+    
+    <div class="footer">
+        <p>Supplier Order Report for {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
+    </div>
+</body>
+</html>

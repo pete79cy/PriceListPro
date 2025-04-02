@@ -2,10 +2,10 @@ import os
 import uuid
 import traceback
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session
+from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest
+from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from utils.excel_parser import parse_excel_file
@@ -14,6 +14,8 @@ from utils.search import search_price_list
 from utils.logger import logger
 from utils.excel_template import ensure_template_exists
 from utils.product_management import approve_price_update, reject_price_update
+from utils.quotation_parser import parse_quotation_file
+from utils.pdf_generator import generate_quotation_pdf, generate_supplier_report
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -1022,3 +1024,316 @@ def register_routes(app):
         
         # Return to the test encoding page with the results
         return render_template('test_encoding.html', product=product, products=products)
+        
+    # Quotation Management Routes
+    @app.route('/quotations')
+    @login_required
+    def quotations():
+        """View all quotations with filtering options"""
+        # Get filter parameters
+        customer_id = request.args.get('customer_id', type=int)
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Build the query
+        query = Quotation.query
+        
+        # Apply filters if provided
+        if customer_id:
+            query = query.filter(Quotation.customer_id == customer_id)
+            
+        if date_from:
+            try:
+                from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(Quotation.quotation_date >= from_date)
+            except ValueError:
+                flash("Invalid 'from' date format. Please use YYYY-MM-DD.", 'warning')
+                
+        if date_to:
+            try:
+                to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(Quotation.quotation_date <= to_date)
+            except ValueError:
+                flash("Invalid 'to' date format. Please use YYYY-MM-DD.", 'warning')
+        
+        # Get customer list for filter dropdown
+        customers = Customer.query.order_by(Customer.name).all()
+        
+        # Execute the query
+        quotations = query.order_by(Quotation.created_at.desc()).all()
+        
+        return render_template('quotations.html', 
+                              quotations=quotations,
+                              customers=customers,
+                              selected_customer_id=customer_id,
+                              date_from=date_from,
+                              date_to=date_to)
+    
+    @app.route('/upload-quotation')
+    @login_required
+    def upload_quotation():
+        """Show the quotation upload page"""
+        customers = Customer.query.order_by(Customer.name).all()
+        return render_template('upload_quotation.html', customers=customers)
+    
+    @app.route('/upload-quotation-file', methods=['POST'])
+    @login_required
+    def upload_quotation_file():
+        """Handle uploaded file for quotation creation"""
+        if 'file' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(url_for('upload_quotation'))
+        
+        file = request.files['file']
+        customer_id = request.form.get('customer_id')
+        file_type = request.form.get('file_type')
+        
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(url_for('upload_quotation'))
+        
+        if not customer_id:
+            flash('Please select a customer', 'danger')
+            return redirect(url_for('upload_quotation'))
+            
+        # Validate file type and extension
+        allowed_extensions = {'excel': ['xlsx', 'xls'], 'pdf': ['pdf']}
+        if file_type not in allowed_extensions:
+            flash('Invalid file type selection', 'danger')
+            return redirect(url_for('upload_quotation'))
+            
+        file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        if file_ext not in allowed_extensions[file_type]:
+            flash(f'Invalid file extension for {file_type}. Allowed: {", ".join(allowed_extensions[file_type])}', 'danger')
+            return redirect(url_for('upload_quotation'))
+        
+        # Generate unique filename and save the file
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(file_path)
+        
+        try:
+            # Parse the file to extract product data
+            quotation_data = parse_quotation_file(file_path, customer_id, file_type)
+            
+            # Store the extracted data in session for editing
+            session['quotation_data'] = quotation_data
+            
+            # Get the customer info for the edit page
+            customer = Customer.query.get_or_404(customer_id)
+            
+            flash('File processed successfully. Please review and edit the quotation below.', 'success')
+            return render_template('edit_quotation.html', 
+                                  products=quotation_data['products'],
+                                  customer=customer,
+                                  quotation_number=quotation_data['quotation_number'],
+                                  quotation_date=quotation_data['quotation_date'])
+            
+        except Exception as e:
+            logger.error(f"Error processing file for quotation: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error processing file: {str(e)}", 'danger')
+            return redirect(url_for('upload_quotation'))
+            
+    @app.route('/save-quotation', methods=['POST'])
+    @login_required
+    def save_quotation():
+        """Save the finalized quotation"""
+        try:
+            # Get basic quotation data
+            customer_id = request.form.get('customer_id', type=int)
+            quotation_number = request.form.get('quotation_number')
+            quotation_date_str = request.form.get('quotation_date')
+            currency = request.form.get('currency', '€')
+            notes = request.form.get('notes', '')
+            
+            # Parse quotation date
+            try:
+                quotation_date = datetime.strptime(quotation_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                quotation_date = datetime.now().date()
+            
+            # Get the number of products
+            product_count = int(request.form.get('product_count', 0))
+            
+            # Create new quotation
+            quotation = Quotation(
+                customer_id=customer_id,
+                quotation_number=quotation_number,
+                quotation_date=quotation_date,
+                currency=currency,
+                notes=notes
+            )
+            db.session.add(quotation)
+            db.session.flush()  # Generate the quotation.id
+            
+            # Track totals for the quotation
+            total_amount = 0
+            
+            # Process each product
+            for i in range(product_count):
+                # Get product data from the form
+                description = request.form.get(f'description_{i}')
+                scientific_name = request.form.get(f'scientific_name_{i}')
+                pot_size = request.form.get(f'pot_size_{i}')
+                product_id = request.form.get(f'product_id_{i}')
+                
+                quantity = float(request.form.get(f'quantity_{i}', 1))
+                selling_price = float(request.form.get(f'selling_price_{i}', 0))
+                vat_rate = float(request.form.get(f'vat_rate_{i}', 19))
+                supplier = request.form.get(f'supplier_{i}')
+                
+                try:
+                    cost_price = float(request.form.get(f'cost_price_{i}', 0))
+                except (ValueError, TypeError):
+                    cost_price = 0
+                
+                # Calculate item total
+                item_total = quantity * selling_price
+                total_amount += item_total
+                
+                # Create quotation item
+                quotation_item = QuotationItem(
+                    quotation_id=quotation.id,
+                    product_id=product_id if product_id else None,
+                    description=description,
+                    scientific_name=scientific_name,
+                    pot_size=pot_size,
+                    quantity=quantity,
+                    selling_price=selling_price,
+                    vat_rate=vat_rate,
+                    supplier=supplier,
+                    cost_price=cost_price,
+                    total=item_total
+                )
+                db.session.add(quotation_item)
+            
+            # Update the quotation total
+            quotation.total_amount = total_amount
+            db.session.commit()
+            
+            flash('Quotation created successfully!', 'success')
+            return redirect(url_for('view_quotation', quotation_id=quotation.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error saving quotation: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error saving quotation: {str(e)}", 'danger')
+            return redirect(url_for('upload_quotation'))
+            
+    @app.route('/quotation/<int:quotation_id>')
+    @login_required
+    def view_quotation(quotation_id):
+        """View details of a specific quotation"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        # Calculate subtotal and VAT summary
+        subtotal = 0
+        vat_dict = {}  # Dictionary to track VAT by rate
+        
+        for item in quotation.items:
+            item_subtotal = item.quantity * item.selling_price
+            subtotal += item_subtotal
+            
+            # Track VAT amounts by rate
+            vat_rate = item.vat_rate
+            vat_amount = item_subtotal * (vat_rate / 100)
+            
+            if vat_rate in vat_dict:
+                vat_dict[vat_rate] += vat_amount
+            else:
+                vat_dict[vat_rate] = vat_amount
+        
+        # Convert VAT dict to list for the template
+        vat_summary = [{'rate': rate, 'amount': amount} for rate, amount in vat_dict.items()]
+        
+        # Create a dictionary of suppliers and item counts
+        suppliers = {}
+        for item in quotation.items:
+            if item.supplier:
+                if item.supplier in suppliers:
+                    suppliers[item.supplier] += 1
+                else:
+                    suppliers[item.supplier] = 1
+        
+        return render_template('view_quotation.html', 
+                              quotation=quotation,
+                              subtotal=subtotal,
+                              vat_summary=vat_summary,
+                              suppliers=suppliers)
+    
+    @app.route('/quotation/<int:quotation_id>/export')
+    @login_required
+    def export_quotation(quotation_id):
+        """Export a quotation as PDF"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Generate the PDF
+            pdf_path = generate_quotation_pdf(quotation, app.config['UPLOAD_FOLDER'])
+            
+            # Update the quotation with the PDF path
+            quotation.file_path = os.path.basename(pdf_path)
+            db.session.commit()
+            
+            # Send the file to the client
+            return send_from_directory(
+                directory=app.config['UPLOAD_FOLDER'],
+                path=os.path.basename(pdf_path),
+                as_attachment=True,
+                download_name=f"Quotation_{quotation.quotation_number}.pdf"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error exporting quotation: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating PDF: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
+    @app.route('/quotation/<int:quotation_id>/supplier/<path:supplier>')
+    @login_required
+    def export_supplier_report(quotation_id, supplier):
+        """Export a supplier-specific report from a quotation"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Generate the supplier report
+            pdf_path = generate_supplier_report(quotation, supplier, app.config['UPLOAD_FOLDER'])
+            
+            if not pdf_path:
+                flash(f"No items found for supplier '{supplier}'", 'warning')
+                return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            
+            # Send the file to the client
+            return send_from_directory(
+                directory=app.config['UPLOAD_FOLDER'],
+                path=os.path.basename(pdf_path),
+                as_attachment=True,
+                download_name=f"Supplier_{supplier}_Quotation_{quotation.quotation_number}.pdf"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error exporting supplier report: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating supplier report: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
+    @app.route('/quotation/<int:quotation_id>/delete')
+    @login_required
+    def delete_quotation(quotation_id):
+        """Delete a quotation and its related items"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Delete the quotation (cascade will delete items)
+            db.session.delete(quotation)
+            db.session.commit()
+            flash('Quotation deleted successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting quotation: {str(e)}")
+            flash(f"Error deleting quotation: {str(e)}", 'danger')
+        
+        return redirect(url_for('quotations'))

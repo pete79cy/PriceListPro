@@ -133,3 +133,42 @@ class ProductUpdateRequest(db.Model):
     
     def __repr__(self):
         return f'<ProductUpdateRequest Product: {self.product_id}, Old: {self.old_price}, New: {self.new_price}, Status: {self.status}>'
+
+class Quotation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    quotation_number = db.Column(db.String(50), nullable=False, unique=True)
+    quotation_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    total_amount = db.Column(db.Float, nullable=True)
+    currency = db.Column(db.String(10), nullable=False, default='€')  # Euro is the default currency
+    notes = db.Column(db.Text, nullable=True)
+    file_path = db.Column(db.String(255), nullable=True)  # Path to the stored PDF (if generated)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    customer = db.relationship('Customer', backref='quotations', lazy=True)
+    items = db.relationship('QuotationItem', backref='quotation', lazy=True, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<Quotation {self.quotation_number}>'
+
+class QuotationItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    description = db.Column(db.String(200), nullable=False)
+    scientific_name = db.Column(db.String(150), nullable=True)
+    pot_size = db.Column(db.String(50), nullable=True)
+    quantity = db.Column(db.Float, nullable=False, default=1)
+    selling_price = db.Column(db.Float, nullable=False)
+    vat_rate = db.Column(db.Float, nullable=False, default=19.0)  # Default VAT rate of 19%
+    supplier = db.Column(db.String(255), nullable=True)  # Supplier name or "in-house production"
+    cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
+    total = db.Column(db.Float, nullable=True)  # Total price (selling_price * quantity)
+    
+    # Relationships
+    product = db.relationship('Product', backref='quotation_items', lazy=True)
+    
+    def __repr__(self):
+        return f'<QuotationItem {self.description}>'
