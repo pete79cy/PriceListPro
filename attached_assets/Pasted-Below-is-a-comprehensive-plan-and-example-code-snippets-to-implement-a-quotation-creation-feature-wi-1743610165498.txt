@@ -1,0 +1,250 @@
+Below is a comprehensive plan and example code snippets to implement a quotation creation feature with the following capabilities:
+	•	File Upload & Parsing:
+Allow uploading a PDF or Excel file containing the customer’s requested plants.
+Use existing parsers (or extend them) to extract the list of products from the uploaded file.
+	•	Auto-Populate from Price List:
+For each product extracted, check if it exists in the customer’s price list.
+If found, auto-fill details (e.g., selling price) in the quotation.
+	•	Editable Quotation Interface:
+Present an interface where you can review each product entry and edit:
+	•	The selling price and add VAT (select between 19% or 15%).
+	•	The supplier (or flag for in-house production).
+	•	The cost price (what you pay).
+	•	Exporting PDF Quotations and Supplier Reports:
+Once finalized, export the quotation as a PDF.
+Optionally, generate separate order reports by grouping products by supplier.
+	•	Database Integration:
+Store the quotation and its items using new database models (e.g., Quotation and QuotationItem).
+
+⸻
+
+1. Database Models
+
+You might add models similar to:
+
+# models.py
+from datetime import datetime
+from your_app import db
+
+class Quotation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.String(255))
+    items = db.relationship('QuotationItem', backref='quotation', lazy=True)
+
+class QuotationItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'))
+    product_name = db.Column(db.String(255))
+    scientific_name = db.Column(db.String(255))
+    pot = db.Column(db.String(50))
+    selling_price = db.Column(db.Float)
+    vat_rate = db.Column(db.Float)  # e.g., 19 or 15
+    supplier = db.Column(db.String(255))  # or link to a Supplier table
+    cost_price = db.Column(db.Float)
+
+
+
+⸻
+
+2. File Upload & Parsing
+
+Extend your file upload route to support quotation files. For example, add a new route:
+
+# routes.py
+from flask import request, render_template, redirect, url_for, flash
+from werkzeug.utils import secure_filename
+import os, uuid
+
+@app.route('/upload-quotation', methods=['GET', 'POST'])
+def upload_quotation():
+    if request.method == 'POST':
+        file = request.files.get('file')
+        customer_id = request.form.get('customer_id')
+        if file and file.filename.lower().endswith(('.pdf', '.xlsx')):
+            unique_filename = f"{uuid.uuid4()}_{secure_filename(file.filename)}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(file_path)
+            
+            # Call your parser (pdf_parser or excel_parser) to extract product data
+            if file.filename.lower().endswith('.pdf'):
+                products = parse_pdf_quotation(file_path)
+            else:
+                products = parse_excel_quotation(file_path)
+            
+            # Auto-populate details if product exists in customer price list:
+            populated_products = []
+            for prod in products:
+                # Look up in price list database; this function should return a dict with details if found
+                price_info = get_price_list_info(customer_id, prod.get('scientific_name'), prod.get('pot'))
+                if price_info:
+                    prod.update({
+                        'selling_price': price_info.get('selling_price'),
+                        'supplier': price_info.get('supplier')  # if available
+                    })
+                populated_products.append(prod)
+            
+            # Save extracted data in session or temporary storage for editing
+            session['quotation_products'] = populated_products
+            session['customer_id'] = customer_id
+            
+            flash("File processed. Please review and edit the quotation below.")
+            return redirect(url_for('edit_quotation'))
+        else:
+            flash("Invalid file type. Please upload a PDF or Excel file.")
+    return render_template('upload_quotation.html')
+
+Note:
+	•	Parsing Functions: Implement parse_pdf_quotation(file_path) and parse_excel_quotation(file_path) to extract product details (name, scientific name, pot, etc.).
+	•	Auto-Populate: The function get_price_list_info(customer_id, scientific_name, pot) queries your price list database to return matching data.
+
+⸻
+
+3. Editable Quotation Interface
+
+Create a new route and template to review and edit the extracted products before finalizing the quotation:
+
+# routes.py
+
+@app.route('/edit-quotation', methods=['GET', 'POST'])
+def edit_quotation():
+    products = session.get('quotation_products')
+    customer_id = session.get('customer_id')
+    if request.method == 'POST':
+        # Create new quotation
+        quotation = Quotation(customer_id=customer_id)
+        db.session.add(quotation)
+        db.session.flush()  # To generate quotation.id
+        
+        # Iterate through submitted form data for each product
+        for index, prod in enumerate(products):
+            selling_price = request.form.get(f'price_{index}')
+            vat_rate = request.form.get(f'vat_{index}')
+            supplier = request.form.get(f'supplier_{index}')
+            cost_price = request.form.get(f'cost_{index}')
+            # You may also allow editing of product name or other fields if needed
+            q_item = QuotationItem(
+                quotation_id=quotation.id,
+                product_name=prod.get('name'),
+                scientific_name=prod.get('scientific_name'),
+                pot=prod.get('pot'),
+                selling_price=float(selling_price),
+                vat_rate=float(vat_rate),
+                supplier=supplier,
+                cost_price=float(cost_price)
+            )
+            db.session.add(q_item)
+        db.session.commit()
+        flash("Quotation created successfully!")
+        return redirect(url_for('view_quotation', quotation_id=quotation.id))
+    
+    return render_template('edit_quotation.html', products=products)
+
+Template Example (templates/edit_quotation.html):
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Quotation</title>
+</head>
+<body>
+  <h1>Edit Quotation</h1>
+  <form method="POST">
+    <table border="1">
+      <tr>
+        <th>Product Name</th>
+        <th>Scientific Name</th>
+        <th>Pot</th>
+        <th>Selling Price (€)</th>
+        <th>VAT Rate (%)</th>
+        <th>Supplier / Production</th>
+        <th>Cost Price (€)</th>
+      </tr>
+      {% for prod in products %}
+      <tr>
+        <td>{{ prod.name }}</td>
+        <td>{{ prod.scientific_name }}</td>
+        <td>{{ prod.pot }}</td>
+        <td><input type="text" name="price_{{ loop.index0 }}" value="{{ prod.selling_price or '' }}"></td>
+        <td>
+          <select name="vat_{{ loop.index0 }}">
+            <option value="19" {% if prod.vat_rate == 19 %}selected{% endif %}>19%</option>
+            <option value="15" {% if prod.vat_rate == 15 %}selected{% endif %}>15%</option>
+          </select>
+        </td>
+        <td><input type="text" name="supplier_{{ loop.index0 }}" value="{{ prod.supplier or '' }}"></td>
+        <td><input type="text" name="cost_{{ loop.index0 }}" value="{{ prod.cost_price or '' }}"></td>
+      </tr>
+      {% endfor %}
+    </table>
+    <button type="submit">Finalize Quotation</button>
+  </form>
+</body>
+</html>
+
+
+
+⸻
+
+4. Viewing and Exporting the Quotation
+
+After creation, you might want a page to view the quotation details and then export it as a PDF.
+
+View Quotation Route:
+
+@app.route('/quotation/<int:quotation_id>')
+def view_quotation(quotation_id):
+    quotation = Quotation.query.get_or_404(quotation_id)
+    return render_template('view_quotation.html', quotation=quotation)
+
+Exporting as PDF:
+Use a library such as ReportLab, WeasyPrint, or wkhtmltopdf. For example, with WeasyPrint you could do:
+
+from flask import make_response
+from weasyprint import HTML
+
+@app.route('/quotation/<int:quotation_id>/export')
+def export_quotation(quotation_id):
+    quotation = Quotation.query.get_or_404(quotation_id)
+    rendered = render_template('quotation_pdf.html', quotation=quotation)
+    pdf = HTML(string=rendered).write_pdf()
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=quotation_{quotation_id}.pdf'
+    return response
+
+Template for PDF (templates/quotation_pdf.html):
+Create a styled HTML template that includes all necessary details and then render it as PDF.
+
+⸻
+
+5. Supplier Order Reports
+
+If you need to generate supplier-specific order reports, you can add a route that groups QuotationItem records by supplier:
+
+@app.route('/quotation/<int:quotation_id>/supplier-report')
+def supplier_report(quotation_id):
+    quotation = Quotation.query.get_or_404(quotation_id)
+    # Group items by supplier
+    supplier_items = {}
+    for item in quotation.items:
+        supplier = item.supplier or 'Production'
+        supplier_items.setdefault(supplier, []).append(item)
+    return render_template('supplier_report.html', supplier_items=supplier_items)
+
+Then provide an export option similar to the quotation export to generate a PDF for each supplier’s report.
+
+⸻
+
+Summary
+
+This approach lets you:
+	•	Upload a file (PDF or Excel) with requested plants.
+	•	Parse the file and auto-populate data from your price list (if available).
+	•	Present an editable interface where you can add or modify the selling price, VAT, supplier, and cost price.
+	•	Save the quotation details in the database.
+	•	Export the final quotation as a PDF and generate supplier-specific order reports.
+
+This design keeps the workflow modular, allowing you to further refine each component as needed. Let me know if you’d like more detailed code examples or further guidance on any part of this implementation!
