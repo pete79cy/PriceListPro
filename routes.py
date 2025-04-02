@@ -533,14 +533,6 @@ def register_routes(app):
         template_path = ensure_template_exists(app.static_folder)
         return send_from_directory(os.path.dirname(template_path), os.path.basename(template_path), 
                                  as_attachment=True, download_name="price_list_template.xlsx")
-                                 
-    @app.route('/download/quotation-template')
-    @login_required
-    def download_quotation_template():
-        """Provide a downloadable Excel template for quotations"""
-        template_path = ensure_template_exists(app.static_folder, template_type='quotation')
-        return send_from_directory(os.path.dirname(template_path), os.path.basename(template_path),
-                                 as_attachment=True, download_name="quotation_template.xlsx")
     
     @app.route('/price-lists')
     @login_required
