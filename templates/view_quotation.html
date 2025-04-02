@@ -1,0 +1,234 @@
+{% extends "layout.html" %}
+
+{% block title %}View Quotation{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <h1>Quotation Details</h1>
+            <p class="text-muted">Quotation #{{ quotation.quotation_number }}</p>
+        </div>
+        <div class="col-lg-6 text-end">
+            <div class="btn-group">
+                <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back to Quotations
+                </a>
+                <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-primary">
+                    <i class="fas fa-file-pdf me-2"></i> Export PDF
+                </a>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
+                    <i class="fas fa-trash me-2"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Quotation Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th style="width: 40%">Quotation Number:</th>
+                            <td>{{ quotation.quotation_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>Quotation Date:</th>
+                            <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Amount:</th>
+                            <td>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ quotation.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th style="width: 40%">Name:</th>
+                            <td>{{ quotation.customer.name }}</td>
+                        </tr>
+                        {% if quotation.customer.email %}
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ quotation.customer.email }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if quotation.customer.phone %}
+                        <tr>
+                            <th>Phone:</th>
+                            <td>{{ quotation.customer.phone }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if quotation.customer.address %}
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ quotation.customer.address }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Quotation Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Description</th>
+                                    <th>Scientific Name</th>
+                                    <th>Pot Size</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-center">VAT Rate</th>
+                                    <th>Supplier</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in quotation.items %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ item.description }}</td>
+                                    <td><em>{{ item.scientific_name or "" }}</em></td>
+                                    <td>{{ item.pot_size or "" }}</td>
+                                    <td class="text-center">{{ "%.2f"|format(item.quantity) }}</td>
+                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                                    <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
+                                    <td>{{ item.supplier or "Not specified" }}</td>
+                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            {% if quotation.notes %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ quotation.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Subtotal:</th>
+                            <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(subtotal) }}</td>
+                        </tr>
+                        {% for vat in vat_summary %}
+                        <tr>
+                            <th>VAT ({{ "%.1f"|format(vat.rate) }}%):</th>
+                            <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(vat.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <th><strong>Total:</strong></th>
+                            <td class="text-end"><strong>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Supplier Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>Generate supplier-specific reports for this quotation:</p>
+                    
+                    <div class="list-group">
+                        {% for supplier, count in suppliers.items() %}
+                        <a href="{{ url_for('export_supplier_report', quotation_id=quotation.id, supplier=supplier) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="fas fa-file-pdf me-2"></i> 
+                                {{ supplier }}
+                            </span>
+                            <span class="badge bg-primary rounded-pill">{{ count }} item{% if count != 1 %}s{% endif %}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if not suppliers %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No supplier information available for this quotation.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this quotation? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(deleteUrl) {
+    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}
