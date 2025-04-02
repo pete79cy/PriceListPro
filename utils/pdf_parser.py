@@ -38,7 +38,14 @@ def extract_text_from_pdf(pdf_path):
         with open(pdf_path, 'rb') as file:
             pdf_reader = PyPDF2.PdfReader(file)
             for page_num in range(len(pdf_reader.pages)):
-                text += pdf_reader.pages[page_num].extract_text()
+                page_text = pdf_reader.pages[page_num].extract_text()
+                text += page_text
+                logging.debug(f"PDF Page {page_num+1} content: {page_text[:200]}...")  # Log first 200 chars
+                
+        # Log the whole text for debugging
+        logging.debug(f"Extracted full text from PDF (truncated): {text[:500]}...")
+        if len(text) < 10:  # Very short text is suspicious
+            logging.warning(f"Extracted text is unusually short: '{text}'. PDF might be image-based or corrupted.")
         return text
     except Exception as e:
         logging.error(f"Error extracting text from PDF: {str(e)}")
@@ -133,7 +140,66 @@ def extract_invoice_data(text):
             except (ValueError, IndexError):
                 continue
     
-    # Extract line items 
+    # First try to find any special format lines like "1Myrtus communis microphylla nanaΜερσινια Ψυντρόφυλλη 2L20 3.00 19.00 60.00"
+    # This special pattern has A/A, plant name, and numbers all stuck together
+    special_pattern = r'(\d+)([A-Z][a-z]+ [a-z]+ [a-z]+)([^0-9]*)\s*(\d+L?)\s*(\d+)\s+(\d+[.,]\d+)\s+(\d+[.,]\d+)\s+(\d+[.,]\d+)'
+    special_matches = re.finditer(special_pattern, text)
+    
+    special_items_found = False
+    for match in special_matches:
+        try:
+            # This captures the special pattern with Greek format: A/A, Latin name, Greek name, pot size, qty, price, VAT, total
+            item_num, latin_name, greek_name, pot_size, quantity, price, vat, total = match.groups()
+            
+            logging.debug(f"Found special format item: {match.group(0)}")
+            logging.debug(f"Item parts: A/A={item_num}, Latin={latin_name}, Greek={greek_name}, Pot={pot_size}, Qty={quantity}, Price={price}, VAT={vat}, Total={total}")
+            
+            # Extract scientific name and common name
+            scientific_name = latin_name.strip()
+            common_name = greek_name.strip()
+            
+            # Combine for description
+            description = f"{scientific_name} {common_name}".strip()
+            
+            # Convert values to numbers
+            try:
+                quantity = float(quantity)
+                price = float(price.replace(',', '.'))
+                vat_value = float(vat.replace(',', '.'))
+                total = float(total.replace(',', '.'))
+                
+                # Calculate VAT percentage
+                subtotal = price * quantity
+                if subtotal > 0:
+                    vat_percentage = (vat_value / subtotal) * 100
+                else:
+                    vat_percentage = None
+            except ValueError:
+                logging.warning(f"Error converting numeric values for item: {description}")
+                continue
+            
+            # Add to items list
+            invoice_data['items'].append({
+                'description': description,
+                'scientific_name': scientific_name,
+                'pot_size': pot_size,
+                'quantity': quantity,
+                'price': price,
+                'vat': vat_value,
+                'vat_percentage': vat_percentage,
+                'total': total
+            })
+            special_items_found = True
+            
+        except Exception as e:
+            logging.warning(f"Error parsing special format invoice line item: {str(e)}")
+    
+    # If special items were found, skip the regular pattern (we've already processed them)
+    if special_items_found:
+        logging.info(f"Found {len(invoice_data['items'])} items using special Greek format pattern")
+        return invoice_data
+    
+    # Extract line items using standard pattern
     # Look for patterns like those in the sample invoice
     item_pattern = r'(\d+)\s+(.*?)\s+(\d+)\s+(\d+[.,]\d+)(?:\s+(\d+[.,]\d+))?\s+(\d+[.,]\d+)'
     item_matches = re.finditer(item_pattern, text)
@@ -227,18 +293,24 @@ def extract_invoice_data(text):
         except Exception as e:
             logging.warning(f"Error parsing invoice line item: {str(e)}")
     
-    # If no items found with detailed pattern, try simpler approach
+    # If no items found with detailed pattern, try simpler approaches
     if not invoice_data['items']:
+        logging.warning("No items found with detailed pattern. Trying simpler approaches...")
         lines = text.split('\n')
         item_mode = False
         
-        for line in lines:
+        # Log the content to help with debugging
+        logging.debug(f"Text split into {len(lines)} lines for analysis")
+        
+        # First approach - Look for lines with table headers
+        for i, line in enumerate(lines):
             # Skip empty lines
             if not line.strip():
                 continue
             
             # Look for table headers that might indicate the start of item listing
-            if re.search(r'(DESCRIPTION|QTY|PRICE|description|product|service|qty|quantity|price|amount|total)', line, re.IGNORECASE) and not item_mode:
+            if re.search(r'(DESCRIPTION|QTY|PRICE|ITEM|PRODUCT|description|qty|price|item|product|amount|total)', line, re.IGNORECASE) and not item_mode:
+                logging.debug(f"Found potential table header at line {i}: {line}")
                 item_mode = True
                 continue
             
@@ -246,6 +318,7 @@ def extract_invoice_data(text):
                 # If line contains price-like pattern, it might be an item line
                 price_match = re.search(r'(\d+[.,]\d+)', line)
                 if price_match and not re.search(r'(subtotal|tax|vat|total|balance|discount)', line, re.IGNORECASE):
+                    logging.debug(f"Potential item line found: {line}")
                     # Try to extract item details
                     parts = re.split(r'\s{2,}', line)
                     
@@ -290,6 +363,117 @@ def extract_invoice_data(text):
                 # If we encounter a line that might indicate the end of items section
                 if re.search(r'(subtotal|tax|vat|total|balance|discount)', line, re.IGNORECASE):
                     item_mode = False
+        
+        # Second approach - More aggressive pattern matching if still no items
+        if not invoice_data['items']:
+            logging.warning("Still no items found. Trying more aggressive pattern matching...")
+            
+            # Any line with a plant name and at least one number might be an item
+            plant_keywords = ['plant', 'tree', 'flower', 'bulb', 'shrub', 'herb', 'carissa', 'blanket', 'ficus', 'emerald']
+            
+            for line in lines:
+                if not line.strip() or len(line.strip()) < 5:
+                    continue
+                    
+                # Check if the line has both plant-related words and numbers
+                contains_plant_term = any(keyword in line.lower() for keyword in plant_keywords)
+                contains_numbers = re.search(r'\d+[.,]\d+', line)
+                
+                # Special case: If line is clearly a product description (capitalized words) with numbers
+                looks_like_product = re.search(r'[A-Z][a-z]+ [a-z]+|[A-Z][a-z]+', line) and contains_numbers
+                
+                if (contains_plant_term or looks_like_product) and contains_numbers:
+                    logging.debug(f"Found potential product line via keywords: {line}")
+                    # Extract numbers for price/quantity
+                    numbers = [float(num.replace(',', '.')) for num in re.findall(r'(\d+[.,]\d+)', line)]
+                    
+                    if numbers:
+                        # Extract description - anything before the first number
+                        number_positions = [line.find(match) for match in re.findall(r'\d+[.,]\d+', line)]
+                        first_number_pos = min(number_positions) if number_positions else len(line)
+                        description = line[:first_number_pos].strip()
+                        
+                        # Default values
+                        quantity = 1.0
+                        price = numbers[0] if numbers else 0.0
+                        total = price * quantity
+                        
+                        # If we have multiple numbers, try to guess what they are
+                        if len(numbers) >= 2:
+                            # First number could be quantity if small
+                            if numbers[0] < 100:
+                                quantity = numbers[0]
+                                price = numbers[1]
+                            else:
+                                # Otherwise first number is probably price
+                                price = numbers[0]
+                                
+                            # Last number is likely the total
+                            if len(numbers) >= 3:
+                                total = numbers[-1]
+                            else:
+                                total = quantity * price
+                        
+                        # Add item to the list
+                        invoice_data['items'].append({
+                            'description': description,
+                            'scientific_name': extract_scientific_name(description),
+                            'pot_size': extract_pot_size(description),
+                            'quantity': quantity,
+                            'price': price,
+                            'vat': None,
+                            'vat_percentage': None,
+                            'total': total
+                        })
+        
+        # Third approach - Even more basic extraction if still no items
+        if not invoice_data['items']:
+            logging.warning("Still no items found. Trying last resort extraction...")
+            
+            # Analyze the PDF structure to find potential product table
+            for i, line in enumerate(lines):
+                # Skip very short lines and lines without numbers
+                if len(line.strip()) < 5 or not re.search(r'\d', line):
+                    continue
+                
+                # Skip lines that are clearly headers/footers
+                if re.search(r'(invoice|page|date|number|total|subtotal)', line.lower()):
+                    continue
+                
+                # If it has multiple words and at least one number, consider it a product
+                words = line.split()
+                if len(words) >= 3 and any(word.replace(',', '.').replace('.', '').isdigit() for word in words):
+                    # Extract numbers
+                    numbers = [float(num.replace(',', '.')) for num in re.findall(r'(\d+[.,]\d+)', line)]
+                    
+                    # Extract potential description - first half of the line
+                    half_point = len(line) // 2
+                    description = line[:half_point].strip()
+                    
+                    # Default values
+                    quantity = 1.0
+                    price = numbers[0] if numbers else 0.0
+                    total = price
+                    
+                    if numbers:
+                        # Add guessed item
+                        invoice_data['items'].append({
+                            'description': description,
+                            'scientific_name': None,
+                            'pot_size': None,
+                            'quantity': quantity,
+                            'price': price,
+                            'vat': None,
+                            'vat_percentage': None,
+                            'total': total
+                        })
+                        logging.debug(f"Added last-resort item: {description}")
+                        
+            # Log the result of our extraction attempts
+            if not invoice_data['items']:
+                logging.error("Failed to extract any items after all approaches.")
+            else:
+                logging.info(f"Extracted {len(invoice_data['items'])} items with last-resort approach.")
     
     logging.debug(f"Extracted invoice data: {invoice_data}")
     return invoice_data
