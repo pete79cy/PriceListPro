@@ -13,6 +13,8 @@
             font-size: 11pt;
             line-height: 1.4;
             color: #333;
+            margin: 0;
+            padding: 0;
         }
         .header {
             width: 100%;
@@ -39,43 +41,88 @@
             color: #224870;
             margin-bottom: 0.5cm;
         }
+        h2 {
+            font-size: 14pt;
+            color: #224870;
+            margin-top: 1cm;
+            margin-bottom: 0.5cm;
+        }
+        
+        /* Improved table styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1cm 0;
+            margin: 0.5cm 0;
+            table-layout: fixed; /* Fixed table layout for consistent column widths */
         }
+        
+        /* Table header styling */
+        thead {
+            display: table-header-group; /* Ensures header is repeated on page breaks */
+        }
+        
         th {
             background-color: #e6e6e6;
-            padding: 0.3cm;
+            padding: 0.2cm;
             text-align: left;
             font-weight: bold;
             font-size: 10pt;
-            border-bottom: 1px solid #999;
+            border: 1px solid #999;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
+        
+        /* Table cell styling */
         td {
-            padding: 0.3cm;
-            border-bottom: 1px solid #ddd;
+            padding: 0.2cm;
+            border: 1px solid #ddd;
             font-size: 10pt;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
         }
+        
+        /* Special column styling */
+        .numeric {
+            text-align: right;
+        }
+        
+        /* Text alignment classes */
         .text-right {
             text-align: right;
         }
         .text-center {
             text-align: center;
         }
+        
+        /* Summary section */
         .summary {
             width: 40%;
             float: right;
-            margin-top: 1cm;
+            margin-top: 0.5cm;
         }
         .summary table {
             width: 100%;
         }
+        .summary td {
+            border: none;
+            padding: 0.1cm 0.3cm;
+            border-bottom: 1px solid #ddd;
+        }
+        .summary tr:last-child td {
+            border-top: 2px solid #999;
+            font-weight: bold;
+        }
+        
+        /* Notes section */
         .notes {
             margin-top: 1cm;
             border-top: 1px solid #ddd;
             padding-top: 0.5cm;
+            page-break-inside: avoid;
         }
+        
+        /* Footer */
         .footer {
             position: fixed;
             bottom: 0;
@@ -85,6 +132,26 @@
             color: #777;
             border-top: 1px solid #ddd;
             padding-top: 0.2cm;
+        }
+        
+        /* Print-specific styles */
+        @media print {
+            body {
+                font-size: 11pt;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
+            }
         }
     </style>
 </head>
@@ -129,9 +196,9 @@
                 <th width="20%">Scientific Name</th>
                 <th width="10%">Pot Size</th>
                 <th width="10%">Height</th>
-                <th width="10%" class="text-right">Quantity</th>
-                <th width="10%" class="text-right">Unit Price</th>
-                <th width="10%" class="text-right">Total</th>
+                <th width="10%" class="text-right numeric">Quantity</th>
+                <th width="10%" class="text-right numeric">Unit Price</th>
+                <th width="10%" class="text-right numeric">Total</th>
             </tr>
         </thead>
         <tbody>
@@ -142,9 +209,9 @@
                 <td><em>{{ item.scientific_name or "" }}</em></td>
                 <td>{{ item.pot_size or "" }}</td>
                 <td>{{ item.height or "" }}</td>
-                <td class="text-right">{{ "%.2f"|format(item.quantity) }}</td>
-                <td class="text-right">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
-                <td class="text-right">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                <td class="text-right numeric">{{ "%.2f"|format(item.quantity) }}</td>
+                <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -154,17 +221,17 @@
         <table>
             <tr>
                 <td><strong>Subtotal:</strong></td>
-                <td class="text-right">{{ currency }} {{ "%.2f"|format(subtotal) }}</td>
+                <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(subtotal) }}</td>
             </tr>
             {% for vat in vat_list %}
             <tr>
                 <td><strong>VAT ({{ "%.1f"|format(vat.rate) }}%):</strong></td>
-                <td class="text-right">{{ currency }} {{ "%.2f"|format(vat.amount) }}</td>
+                <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(vat.amount) }}</td>
             </tr>
             {% endfor %}
             <tr>
                 <td><strong>Total:</strong></td>
-                <td class="text-right"><strong>{{ currency }} {{ "%.2f"|format(grand_total) }}</strong></td>
+                <td class="text-right numeric"><strong>{{ currency }} {{ "%.2f"|format(grand_total) }}</strong></td>
             </tr>
         </table>
     </div>

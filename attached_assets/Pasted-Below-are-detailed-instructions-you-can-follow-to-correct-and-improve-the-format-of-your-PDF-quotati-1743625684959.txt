@@ -1,0 +1,186 @@
+Below are detailed instructions you can follow to correct and improve the format of your PDF quotation reports:
+
+---
+
+### 1. Review and Revise the HTML Structure
+
+- **Use Semantic Table Markup:**  
+  Ensure your quotation report is generated using proper HTML table elements. Separate your header, body, and footer sections with `<thead>`, `<tbody>`, and `<tfoot>` tags. For example:
+
+  ```html
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Description</th>
+        <th>Scientific Name</th>
+        <th>Pot Size</th>
+        <th>Height</th>
+        <th>Quantity</th>
+        <th>Unit Price</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Row data goes here -->
+    </tbody>
+  </table>
+  ```
+
+- **Avoid Duplicate Headers:**  
+  Make sure that the header row is only included once in the `<thead>` rather than being repeated inside the body.
+
+---
+
+### 2. Define a Consistent Table Layout with CSS
+
+- **Set Fixed Table Layout:**  
+  Using a fixed layout ensures that columns remain consistently aligned even when content varies.
+
+  ```css
+  table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+  }
+  ```
+
+- **Specify Column Widths:**  
+  If certain columns (e.g., Description or Scientific Name) tend to be longer, assign them a greater percentage width while keeping numeric columns narrower.
+
+  ```css
+  thead th:nth-child(2), thead th:nth-child(3) {
+      width: 25%;
+  }
+  thead th:nth-child(7), thead th:nth-child(8) {
+      width: 10%;
+  }
+  ```
+
+- **Add Padding and Borders:**  
+  Improve readability by adding padding and borders to your table cells.
+
+  ```css
+  thead th, tbody td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: left;
+      word-wrap: break-word;
+  }
+  ```
+
+- **Align Numeric Data:**  
+  Right-align numeric values (like Unit Price and Total) for clarity.
+
+  ```css
+  .numeric {
+      text-align: right;
+  }
+  ```
+
+---
+
+### 3. Create a Print-Friendly Stylesheet
+
+- **Adjust for PDF Rendering:**  
+  Since PDFs can render HTML/CSS differently than browsers, add print-specific CSS rules. For example:
+
+  ```css
+  @media print {
+      body {
+          font-size: 12pt;
+      }
+      header, footer {
+          display: block;
+      }
+      table {
+          page-break-inside: auto;
+      }
+      tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+      }
+  }
+  ```
+
+- **Ensure Consistent Headers and Footers:**  
+  If you want to repeat the quotation header (like company info and quotation title) on every page, consider using fixed-position elements or a PDF library feature that supports repeated headers.
+
+---
+
+### 4. Validate and Refine the Layout
+
+- **Use Browser Developer Tools:**  
+  Preview the HTML report in your browser and use developer tools to inspect the elements. Adjust margins, padding, and column widths until the layout appears clean and aligned.
+
+- **Test PDF Generation:**  
+  Generate a PDF using your chosen tool (like WeasyPrint, wkhtmltopdf, or ReportLab) and review it. Make incremental adjustments to the CSS if columns are misaligned or text overlaps.
+
+- **Remove Redundant Elements:**  
+  Make sure elements such as duplicated headings or extraneous spacing are removed. Consolidate repeated content to streamline the layout.
+
+---
+
+### 5. Example CSS for a Clean Report
+
+Here’s an example CSS snippet that you can adapt to your report template:
+
+```css
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+thead th {
+    background: #f2f2f2;
+    padding: 8px;
+    border: 1px solid #ddd;
+    font-weight: bold;
+}
+
+tbody td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    word-wrap: break-word;
+}
+
+.numeric {
+    text-align: right;
+}
+
+@media print {
+    body {
+        font-size: 12pt;
+        margin: 0.5in;
+    }
+    header, footer {
+        display: block;
+        text-align: center;
+    }
+    table {
+        page-break-inside: auto;
+    }
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+}
+```
+
+---
+
+### 6. Additional Considerations
+
+- **Sectioning Content:**  
+  Use clear headings for sections like “Customer Information,” “Quotation Details,” and “Terms & Conditions.” This helps in visually separating different parts of the report.
+
+- **Dynamic Data Insertion:**  
+  Ensure that the values like subtotal, VAT, and total are properly formatted and aligned. Use classes or inline styles to adjust their appearance.
+
+- **Iterate Based on Feedback:**  
+  If users still find the report confusing, consider gathering feedback and making further adjustments. Sometimes minor tweaks in spacing or font sizes can greatly improve clarity.
+
+---
+
+Following these instructions should help you correct the report format, ensuring that the final PDF is both professional and easy to read. Let me know if you need further assistance or more detailed code examples!
