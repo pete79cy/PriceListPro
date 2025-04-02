@@ -142,14 +142,24 @@ def extract_quotation_data_from_pdf(pdf_path, customer_id):
 
 def extract_quotation_data_from_excel(excel_path, customer_id):
     """
-    Extract quotation data from Excel file
+    Extract quotation data from Excel file according to the specified format:
+    
+    Required columns (case-insensitive):
+    - Category: Type of plant (e.g., Tree, Grasses)
+    - Description: Scientific name of the plant
+    - Height: Plant height information (e.g., "200cm" or "200/250cm")
+    - Unit: Quantity unit (e.g., number of plants)
+    - Unit Price: Price per unit in €
+    - Actual Size: Actual size details (e.g., "8/10-2,5-3m")
+    - Cost: Cost price from supplier
+    - Supplier: Supplier name or "in-house production" indicator
     
     Args:
         excel_path (str): Path to the Excel file
         customer_id (int): Customer ID for price list lookup
         
     Returns:
-        dict: Extracted products with auto-populated prices when available
+        dict: Extracted products with data from Excel
     """
     logger.info(f"Extracting quotation data from Excel: {excel_path}")
     
@@ -169,8 +179,8 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 df = pd.read_excel(excel_path, engine='openpyxl', header=None)
                 logger.info("Successfully read Excel file with openpyxl using header=None")
                 
-                # Set default column names based on position
-                default_columns = ['category', 'name', 'scientific_name', 'pot', 'price']
+                # Set default column names based on expected structure
+                default_columns = ['category', 'description', 'height', 'unit', 'unit_price', 'actual_size', 'cost', 'supplier']
                 # Only use as many default columns as we have in the dataframe
                 usable_cols = min(len(default_columns), len(df.columns))
                 column_rename = {i: default_columns[i] for i in range(usable_cols)}
@@ -179,13 +189,16 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
         # Normalize column names to handle variations in Excel headers
         df.columns = [str(col).strip().lower() for col in df.columns]
         
-        # Map common variations of column names
+        # Map common variations of column names based on the expected structure
         column_maps = {
-            'name': ['name', 'product', 'description', 'product name', 'product description', 'item'],
-            'scientific_name': ['scientific name', 'scientific', 'latin name', 'botanical name', 'botanical'],
-            'pot': ['pot', 'pot size', 'size', 'container', 'container size'],
+            'category': ['category', 'plant type', 'type', 'plant category'],
+            'description': ['description', 'scientific name', 'botanical name', 'scientific', 'name', 'plant name'],
             'height': ['height', 'plant height', 'h', 'height (cm)', 'height cm'],
-            'price': ['price', 'unit price', 'selling price', 'sell price', 'cost']
+            'unit': ['unit', 'unit type', 'quantity unit', 'qty unit'],
+            'unit_price': ['unit price', 'price', 'selling price', 'unit cost', 'price (€)', 'price per unit', 'unit_price'],
+            'actual_size': ['actual size', 'size', 'plant size', 'actual_size', 'real size'],
+            'cost': ['cost', 'cost price', 'supplier cost', 'purchase price', 'buying price'],
+            'supplier': ['supplier', 'vendor', 'source', 'provider', 'producer']
         }
         
         # Map the actual columns to our standard names
@@ -208,36 +221,60 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             'quotation_date': datetime.now().strftime('%Y-%m-%d')
         }
         
+        # Get required column names that should be in the dataframe
+        required_columns = ['description', 'unit_price']
+        
+        # Check if all required columns are present
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns in Excel file: {', '.join(missing_columns)}")
+        
         # Remove empty rows and process each row
         df = df.dropna(how='all')
         for index, row in df.iterrows():
             # Skip header-like rows
-            if isinstance(row.get('name'), str) and row.get('name').lower() in ['name', 'product', 'description']:
+            if isinstance(row.get('description'), str) and row.get('description').lower() in ['description', 'scientific name', 'name']:
                 continue
             
-            # Extract data from row
-            description = str(row.get('name', '')) if pd.notna(row.get('name', '')) else ''
-            scientific_name = str(row.get('scientific_name', '')) if pd.notna(row.get('scientific_name', '')) else ''
-            pot_size = str(row.get('pot', '')) if pd.notna(row.get('pot', '')) else ''
+            # Extract data from row based on our expected structure
+            description = str(row.get('description', '')) if pd.notna(row.get('description', '')) else ''
+            # Using description as scientific_name since that's what it contains according to the format
+            scientific_name = description
+            category = str(row.get('category', '')) if pd.notna(row.get('category', '')) else ''
             height = str(row.get('height', '')) if pd.notna(row.get('height', '')) else ''
+            unit = str(row.get('unit', '')) if pd.notna(row.get('unit', '')) else ''
+            actual_size = str(row.get('actual_size', '')) if pd.notna(row.get('actual_size', '')) else ''
+            supplier = str(row.get('supplier', '')) if pd.notna(row.get('supplier', '')) else ''
             
-            # Format height with "cm" if it's just a number
+            # Format height with "cm" if it's just a number or range without units
             if height and re.match(r'^\d+(/\d+)?$', height.strip()):
                 height = f"{height.strip()} cm"
             
+            # Extract cost and unit price
+            cost_price = None
+            unit_price = None
+            
+            if 'cost' in row and pd.notna(row['cost']):
+                try:
+                    cost_price = float(row['cost'])
+                except (ValueError, TypeError):
+                    pass
+            
+            if 'unit_price' in row and pd.notna(row['unit_price']):
+                try:
+                    unit_price = float(row['unit_price'])
+                except (ValueError, TypeError):
+                    pass
+            
             # Skip empty rows
-            if not description and not scientific_name:
+            if not description:
                 continue
             
-            # Ensure we have at least a description
-            if not description and scientific_name:
-                description = scientific_name
-            
-            # Check if product exists and get price from price list
+            # Check if product exists in the database based on scientific name
             product_data = {
-                'name': description,
+                'name': description,  # Use description as name for lookup
                 'scientific_name': scientific_name,
-                'pot': pot_size
+                'category': category
             }
             
             # Try to find matching product in database
@@ -246,30 +283,28 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 create_if_missing=False  # Don't create new products here
             )
             
-            # Extract selling price from Excel if available
-            excel_price = None
-            if 'price' in row and pd.notna(row['price']):
-                try:
-                    excel_price = float(row['price'])
-                except (ValueError, TypeError):
-                    pass
+            # The pot_size in our case is derived from actual_size
+            pot_size = actual_size
             
-            # Initialize product entry
+            # Initialize product entry using our new format
             product_entry = {
-                'description': description,
+                'description': description,  # This holds the scientific name as per format
                 'scientific_name': scientific_name,
                 'pot_size': pot_size,
                 'height': height,
-                'quantity': 1,
-                'selling_price': excel_price,  # Use price from Excel if available
+                'quantity': 1,  # Default quantity, can be adjusted in UI
+                'selling_price': unit_price,  # Price from the Excel file
                 'vat_rate': 19,  # Default VAT rate
-                'supplier': None,
-                'cost_price': None,
-                'product_id': product.id if product else None
+                'supplier': supplier,
+                'cost_price': cost_price,
+                'product_id': product.id if product else None,
+                'category': category,
+                'actual_size': actual_size,
+                'unit': unit
             }
             
-            # If product exists and we don't have a price from Excel, check price list
-            if product and not excel_price:
+            # If unit_price is not available but product exists in database, check price list
+            if product and not unit_price:
                 # Get price from customer's price list if available
                 price_list = PriceList.query.filter_by(
                     customer_id=customer_id,
