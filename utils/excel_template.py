@@ -99,8 +99,8 @@ def create_quotation_template(output_path):
         ws = wb.active
         ws.title = "Quotation Template"
         
-        # Define headers based on the specified format
-        headers = ["Category", "Description", "Height", "Unit", "Unit Price", "Actual Size", "Cost", "Supplier"]
+        # Define headers based on the specified format and matching test01.xlsx
+        headers = ["Category", "Description", "Height", "Unit", "Unit price", "Actual Size", "Cost", "Supplier"]
         
         # Set up header style
         header_font = Font(bold=True, size=12, color="FFFFFF")
@@ -127,11 +127,11 @@ def create_quotation_template(output_path):
             column_letter = get_column_letter(col_num)
             ws.column_dimensions[column_letter].width = max(15, len(header) + 5)
         
-        # Add example data based on the format
+        # Add example data based on the format and matching test01.xlsx
         examples = [
-            ["Tree", "Quercus robur", "200/250cm", "pcs", 120.00, "8/10-2,5-3m", 85.00, "Sample Nursery"],
-            ["Grasses", "Miscanthus sinensis 'Gracillimus'", "100cm", "pcs", 15.50, "3L", 9.75, "In-house production"],
-            ["Shrub", "Viburnum tinus", "60/80cm", "pcs", 28.75, "5L", 19.50, "Plant Supplier GmbH"]
+            ["Trees", "Cupressus sempervirens 'Totem'", "200-220 cm", 4, 45.00, "60L", 35.00, "Shaelos"],
+            ["Trees", "Feijoa sellowiana (Multi-stem)", "180-200 cm", 4, 20.00, "15L", 15.00, "Arocaria"],
+            ["Grasses", "Agapanthus africanus", "20-30 cm", 8, 3.50, "2L", None, None]
         ]
         
         # Write example data
@@ -152,13 +152,13 @@ def create_quotation_template(output_path):
         
         instructions = [
             "1. Fill in your quotation data using the format shown in the examples above.",
-            "2. 'Description' (Scientific name) and 'Unit Price' are required fields.",
-            "3. 'Category' indicates the type of plant (e.g., Tree, Grasses, etc.).",
-            "4. 'Height' should be in format like '200cm' or '200/250cm'.",
-            "5. 'Unit' is the quantity unit (e.g., number of plants).",
-            "6. 'Actual Size' can include details like pot size or trunk circumference.",
+            "2. 'Description' (Scientific name) and 'Unit price' are required fields.",
+            "3. 'Category' indicates the type of plant (e.g., Trees, Grasses, etc.).",
+            "4. 'Height' should be in format like '200-220 cm' or '180-200 cm'.",
+            "5. 'Unit' should contain the quantity (number of plants) as a number.",
+            "6. 'Actual Size' typically contains the pot size (e.g., '60L', '15L').",
             "7. 'Cost' is the cost price from the supplier (optional).",
-            "8. 'Supplier' can be the supplier name or 'In-house production'.",
+            "8. 'Supplier' should be the supplier name like 'Shaelos' or 'Arocaria'.",
             "9. Save the file as .xlsx or .xls before uploading."
         ]
         
