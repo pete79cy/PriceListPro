@@ -561,6 +561,13 @@ def register_routes(app):
         # Get all customers for filter dropdown
         customers = Customer.query.all()
         
+        # Get all existing products for add product form
+        products = []
+        if customer_id:
+            # Get products that aren't already in this customer's price list
+            subquery = db.session.query(PriceList.product_id).filter(PriceList.customer_id == customer_id).subquery()
+            products = Product.query.filter(~Product.id.in_(subquery)).order_by(Product.name).all()
+        
         # Get all unique categories for filter dropdown
         categories = db.session.query(Product.category).filter(Product.category != None, Product.category != '').distinct().order_by(Product.category).all()
         categories = [c[0] for c in categories]  # Extract the category names
@@ -569,6 +576,7 @@ def register_routes(app):
                               price_lists=price_lists, 
                               customers=customers,
                               categories=categories,
+                              products=products,
                               pagination=pagination,
                               selected_customer_id=customer_id,
                               selected_category=category)
@@ -640,6 +648,59 @@ def register_routes(app):
         else:
             return redirect(url_for(redirect_to))
     
+    @app.route('/add-to-price-list', methods=['POST'])
+    @login_required
+    def add_to_price_list():
+        """Add a product to a customer's price list"""
+        product_id = request.form.get('product_id')
+        customer_id = request.form.get('customer_id')
+        price = request.form.get('price')
+        
+        if not product_id or not customer_id or not price:
+            flash('Missing required information. Product, customer, and price are required.', 'danger')
+            return redirect(url_for('price_lists', customer_id=customer_id))
+        
+        try:
+            # Convert price to float
+            price = float(price)
+            
+            # Check if product and customer exist
+            product = Product.query.get_or_404(product_id)
+            customer = Customer.query.get_or_404(customer_id)
+            
+            # Check if this price list entry already exists
+            existing = PriceList.query.filter_by(
+                product_id=product_id, 
+                customer_id=customer_id
+            ).first()
+            
+            if existing:
+                flash(f'Price list entry for {product.name} already exists for this customer.', 'warning')
+                return redirect(url_for('price_lists', customer_id=customer_id))
+            
+            # Create new price list entry
+            price_list = PriceList(
+                product_id=product_id,
+                customer_id=customer_id,
+                price=price,
+                effective_date=datetime.now().date(),
+                source_file='manual_addition'
+            )
+            
+            db.session.add(price_list)
+            db.session.commit()
+            
+            flash(f'Product "{product.name}" added to price list with price {price}€.', 'success')
+            
+        except ValueError:
+            flash('Invalid price. Please enter a valid number.', 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding product to price list: {str(e)}', 'danger')
+            logger.error(f"Error adding product {product_id} to price list: {str(e)}")
+        
+        return redirect(url_for('price_lists', customer_id=customer_id))
+
     @app.route('/edit-price', methods=['POST'])
     @login_required
     def edit_price():
