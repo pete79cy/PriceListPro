@@ -102,6 +102,7 @@
                                     <th>Description</th>
                                     <th>Scientific Name</th>
                                     <th>Pot Size</th>
+                                    <th>Height</th>
                                     <th class="text-center">Quantity</th>
                                     <th class="text-end">Unit Price</th>
                                     <th class="text-center">VAT Rate</th>
@@ -116,6 +117,7 @@
                                     <td>{{ item.description }}</td>
                                     <td><em>{{ item.scientific_name or "" }}</em></td>
                                     <td>{{ item.pot_size or "" }}</td>
+                                    <td>{{ item.height or "" }}</td>
                                     <td class="text-center">{{ "%.2f"|format(item.quantity) }}</td>
                                     <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
                                     <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
