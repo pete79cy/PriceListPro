@@ -117,7 +117,7 @@
                                         <td>
                                             <select class="form-select" name="vat_rate_{{ loop.index0 }}">
                                                 <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
-                                                <option value="15" {% if product.vat_rate == 15 %}selected{% endif %}>15%</option>
+                                                <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
                                                 <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
                                             </select>
                                         </td>
@@ -161,8 +161,8 @@
                                             <span id="vat19">€ 0.00</span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-2">
-                                            <span>VAT (15%):</span>
-                                            <span id="vat15">€ 0.00</span>
+                                            <span>VAT (5%):</span>
+                                            <span id="vat5">€ 0.00</span>
                                         </div>
                                         <div class="d-flex justify-content-between font-weight-bold">
                                             <strong>Total:</strong>
@@ -201,7 +201,8 @@
     function calculateSummary() {
         let subtotal = 0;
         let vat19Total = 0;
-        let vat15Total = 0;
+        let vat5Total = 0;
+        let vat0Total = 0;
         
         const rows = document.querySelectorAll('#productTable tbody tr');
         
@@ -221,8 +222,10 @@
                 // Add to the appropriate VAT total
                 if (vatRate === 19) {
                     vat19Total += rowSubtotal * 0.19;
-                } else if (vatRate === 15) {
-                    vat15Total += rowSubtotal * 0.15;
+                } else if (vatRate === 5) {
+                    vat5Total += rowSubtotal * 0.05;
+                } else if (vatRate === 0) {
+                    vat0Total += 0; // No VAT
                 }
             }
         });
@@ -230,8 +233,8 @@
         // Update the summary display
         document.getElementById('subtotal').textContent = '€ ' + subtotal.toFixed(2);
         document.getElementById('vat19').textContent = '€ ' + vat19Total.toFixed(2);
-        document.getElementById('vat15').textContent = '€ ' + vat15Total.toFixed(2);
-        document.getElementById('total').textContent = '€ ' + (subtotal + vat19Total + vat15Total).toFixed(2);
+        document.getElementById('vat5').textContent = '€ ' + vat5Total.toFixed(2);
+        document.getElementById('total').textContent = '€ ' + (subtotal + vat19Total + vat5Total).toFixed(2);
     }
 </script>
 {% endblock %}

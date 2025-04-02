@@ -10,6 +10,33 @@ from utils.logger import logger
 from utils.product_verification import verify_product_exists
 from utils.pdf_parser import extract_scientific_name, extract_pot_size
 
+def parse_quantity_from_unit(unit_value):
+    """
+    Extract quantity from unit field handling various formats:
+    - Pure numbers: "10" → 10.0
+    - Numbers with text: "10 pcs" → 10.0
+    - Ranges like "10-15" → We'll take the first number (10.0)
+    - Default to 1.0 if no valid number found
+    
+    Args:
+        unit_value (str): The unit field value
+        
+    Returns:
+        float: The extracted quantity or 1.0 if none found
+    """
+    if not unit_value or not isinstance(unit_value, str):
+        return 1.0
+        
+    # Look for the first number pattern in the string
+    match = re.search(r'(\d+(?:\.\d+)?)', str(unit_value))
+    if match:
+        try:
+            return float(match.group(1))
+        except (ValueError, TypeError):
+            pass
+            
+    return 1.0
+
 def parse_quotation_file(file_path, customer_id, file_type):
     """
     Parse a PDF or Excel file for quotation creation
@@ -113,7 +140,7 @@ def extract_quotation_data_from_pdf(pdf_path, customer_id):
                     'height': height,
                     'quantity': 1,
                     'selling_price': None,
-                    'vat_rate': 19,  # Default VAT rate
+                    'vat_rate': 19,  # Default VAT rate of 19%, can also be 5% or 0%
                     'supplier': None,
                     'cost_price': None,
                     'product_id': product.id if product else None
@@ -195,7 +222,7 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             'description': ['description', 'scientific name', 'botanical name', 'scientific', 'name', 'plant name'],
             'height': ['height', 'plant height', 'h', 'height (cm)', 'height cm'],
             'unit': ['unit', 'unit type', 'quantity unit', 'qty unit'],
-            'unit_price': ['unit price', 'price', 'selling price', 'unit cost', 'price (€)', 'price per unit', 'unit_price'],
+            'unit_price': ['unit price', 'price', 'selling price', 'unit cost', 'price (€)', 'price per unit', 'unit_price', 'unit price', 'unitprice'],
             'actual_size': ['actual size', 'size', 'plant size', 'actual_size', 'real size'],
             'cost': ['cost', 'cost price', 'supplier cost', 'purchase price', 'buying price'],
             'supplier': ['supplier', 'vendor', 'source', 'provider', 'producer']
@@ -292,9 +319,10 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 'scientific_name': scientific_name,
                 'pot_size': pot_size,
                 'height': height,
-                'quantity': 1,  # Default quantity, can be adjusted in UI
+                # Try to extract quantity from unit field - handle various formats
+                'quantity': parse_quantity_from_unit(unit),
                 'selling_price': unit_price,  # Price from the Excel file
-                'vat_rate': 19,  # Default VAT rate
+                'vat_rate': 19,  # Default VAT rate of 19%, can also be 5% or 0%
                 'supplier': supplier,
                 'cost_price': cost_price,
                 'product_id': product.id if product else None,
