@@ -529,10 +529,22 @@ def register_routes(app):
     @app.route('/download/template')
     @login_required
     def download_template():
-        """Provide a downloadable Excel template for price lists"""
-        template_path = ensure_template_exists(app.static_folder)
-        return send_from_directory(os.path.dirname(template_path), os.path.basename(template_path), 
-                                 as_attachment=True, download_name="price_list_template.xlsx")
+        """Provide a downloadable Excel template for price lists or quotations"""
+        templates_dict = ensure_template_exists(app.static_folder)
+        template_type = request.args.get('type', 'price_list')
+        
+        if template_type == 'quotation':
+            template_path = templates_dict['quotation']
+            download_name = "quotation_template.xlsx"
+        else:
+            template_path = templates_dict['price_list']
+            download_name = "price_list_template.xlsx"
+            
+        template_dir = os.path.dirname(template_path)
+        template_file = os.path.basename(template_path)
+            
+        return send_from_directory(template_dir, template_file, 
+                                 as_attachment=True, download_name=download_name)
     
     @app.route('/price-lists')
     @login_required

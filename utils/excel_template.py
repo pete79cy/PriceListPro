@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from utils.logger import logger
 
@@ -81,23 +81,126 @@ def create_excel_template(output_path):
         logger.error(f"Error creating Excel template: {str(e)}")
         return False
 
+def create_quotation_template(output_path):
+    """
+    Create an Excel template file for quotation uploads based on the specified format.
+    
+    Args:
+        output_path (str): Path where the Excel template will be saved
+        
+    Returns:
+        bool: True if successful, False if error
+    """
+    try:
+        logger.info(f"Creating quotation Excel template at: {output_path}")
+        
+        # Create a workbook and select the active worksheet
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Quotation Template"
+        
+        # Define headers based on the specified format
+        headers = ["Category", "Description", "Height", "Unit", "Unit Price", "Actual Size", "Cost", "Supplier"]
+        
+        # Set up header style
+        header_font = Font(bold=True, size=12, color="FFFFFF")
+        header_fill = PatternFill(start_color="336699", end_color="336699", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        # Define border style
+        thin_border = Border(
+            left=Side(style='thin'), 
+            right=Side(style='thin'), 
+            top=Side(style='thin'), 
+            bottom=Side(style='thin')
+        )
+        
+        # Write headers and apply styles
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = thin_border
+            
+            # Set column width based on header length and content
+            column_letter = get_column_letter(col_num)
+            ws.column_dimensions[column_letter].width = max(15, len(header) + 5)
+        
+        # Add example data based on the format
+        examples = [
+            ["Tree", "Quercus robur", "200/250cm", "pcs", 120.00, "8/10-2,5-3m", 85.00, "Sample Nursery"],
+            ["Grasses", "Miscanthus sinensis 'Gracillimus'", "100cm", "pcs", 15.50, "3L", 9.75, "In-house production"],
+            ["Shrub", "Viburnum tinus", "60/80cm", "pcs", 28.75, "5L", 19.50, "Plant Supplier GmbH"]
+        ]
+        
+        # Write example data
+        for row_num, example in enumerate(examples, 2):
+            for col_num, value in enumerate(example, 1):
+                cell = ws.cell(row=row_num, column=col_num, value=value)
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+                cell.border = thin_border
+                
+                # Format the cost and price columns
+                if col_num in [5, 7]:  # Unit Price and Cost columns
+                    cell.number_format = '€#,##0.00'
+        
+        # Add instruction row
+        instruction_row = len(examples) + 3
+        ws.cell(row=instruction_row, column=1, value="Instructions:")
+        ws.cell(row=instruction_row, column=1).font = Font(bold=True)
+        
+        instructions = [
+            "1. Fill in your quotation data using the format shown in the examples above.",
+            "2. 'Description' (Scientific name) and 'Unit Price' are required fields.",
+            "3. 'Category' indicates the type of plant (e.g., Tree, Grasses, etc.).",
+            "4. 'Height' should be in format like '200cm' or '200/250cm'.",
+            "5. 'Unit' is the quantity unit (e.g., number of plants).",
+            "6. 'Actual Size' can include details like pot size or trunk circumference.",
+            "7. 'Cost' is the cost price from the supplier (optional).",
+            "8. 'Supplier' can be the supplier name or 'In-house production'.",
+            "9. Save the file as .xlsx or .xls before uploading."
+        ]
+        
+        for i, instruction in enumerate(instructions):
+            ws.cell(row=instruction_row + i + 1, column=1, value=instruction)
+            ws.merge_cells(f"A{instruction_row + i + 1}:H{instruction_row + i + 1}")
+            ws.cell(row=instruction_row + i + 1, column=1).alignment = Alignment(horizontal="left")
+        
+        # Save the workbook
+        wb.save(output_path)
+        logger.info(f"Quotation Excel template created successfully at: {output_path}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating quotation Excel template: {str(e)}")
+        return False
+
 def ensure_template_exists(app_static_folder):
     """
-    Ensure that the Excel template exists in the static folder.
-    If it doesn't exist, create it.
+    Ensure that the Excel templates exist in the static folder.
+    If they don't exist, create them.
     
     Args:
         app_static_folder (str): Path to the app's static folder
         
     Returns:
-        str: Path to the template file
+        dict: Paths to the template files
     """
     templates_folder = os.path.join(app_static_folder, 'templates')
     os.makedirs(templates_folder, exist_ok=True)
     
-    template_path = os.path.join(templates_folder, 'price_list_template.xlsx')
+    # Price list template
+    price_list_template_path = os.path.join(templates_folder, 'price_list_template.xlsx')
+    if not os.path.exists(price_list_template_path):
+        create_excel_template(price_list_template_path)
     
-    if not os.path.exists(template_path):
-        create_excel_template(template_path)
+    # Quotation template
+    quotation_template_path = os.path.join(templates_folder, 'quotation_template.xlsx')
+    if not os.path.exists(quotation_template_path):
+        create_quotation_template(quotation_template_path)
     
-    return template_path
+    return {
+        'price_list': price_list_template_path,
+        'quotation': quotation_template_path
+    }
