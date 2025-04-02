@@ -179,13 +179,17 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
         # Normalize column names to handle variations in Excel headers
         df.columns = [str(col).strip().lower() for col in df.columns]
         
-        # Map common variations of column names
+        # Map common variations of column names based on the quotation template
         column_maps = {
+            'category': ['category', 'plant category', 'plant type', 'type'],
             'name': ['name', 'product', 'description', 'product name', 'product description', 'item'],
             'scientific_name': ['scientific name', 'scientific', 'latin name', 'botanical name', 'botanical'],
-            'pot': ['pot', 'pot size', 'size', 'container', 'container size'],
+            'pot': ['pot', 'pot size', 'size', 'container', 'container size', 'actual size'],
             'height': ['height', 'plant height', 'h', 'height (cm)', 'height cm'],
-            'price': ['price', 'unit price', 'selling price', 'sell price', 'cost']
+            'price': ['price', 'unit price', 'selling price', 'sell price'],
+            'quantity': ['quantity', 'unit', 'qty', 'count', 'number of units'],
+            'cost_price': ['cost', 'cost price', 'buying price', 'purchase price'],
+            'supplier': ['supplier', 'vendor', 'source']
         }
         
         # Map the actual columns to our standard names
