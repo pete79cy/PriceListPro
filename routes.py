@@ -282,44 +282,23 @@ def register_routes(app):
                 
                 # Add invoice items
                 for item in invoice_data.get('items', []):
-                    # Try to find product by name, scientific name, or description
-                    product = None
+                    # Use the enhanced product verification system
+                    from utils.product_verification import verify_product_exists
                     
-                    # If scientific name is available in the item data
-                    if item.get('scientific_name'):
-                        product = Product.query.filter(
-                            Product.scientific_name.ilike(f"%{item['scientific_name']}%")
-                        ).first()
+                    # Create product data dictionary from the invoice item
+                    product_data = {
+                        'name': item['description'],
+                        'scientific_name': item.get('scientific_name'),
+                        'pot': item.get('pot_size'),
+                        'description': f"{item.get('scientific_name', '')} {item.get('pot_size', '')}".strip() or None
+                    }
                     
-                    # If not found by scientific name, try by regular name
-                    if not product:
-                        product = Product.query.filter(
-                            Product.name.ilike(f"%{item['description']}%")
-                        ).first()
-                        
-                    # If product is found, check if pot size matches if available
-                    if product and item.get('pot_size') and product.pot:
-                        if item['pot_size'].lower() not in product.pot.lower():
-                            # Try to find a better match with matching pot size
-                            better_match = Product.query.filter(
-                                Product.name.ilike(f"%{item['description']}%"),
-                                Product.pot.ilike(f"%{item['pot_size']}%")
-                            ).first()
-                            if better_match:
-                                product = better_match
-                                
-                    # If product not found, create a new one
-                    if not product and item.get('description'):
-                        # Create a new product from the invoice item
-                        product_data = {
-                            'name': item['description'],
-                            'scientific_name': item.get('scientific_name'),
-                            'pot': item.get('pot_size'),
-                            'description': f"{item.get('scientific_name', '')} {item.get('pot_size', '')}".strip() or None
-                        }
-                        from utils.product_management import find_or_create_product
-                        product, message, is_new = find_or_create_product(product_data)
-                        logger.info(f"Product from invoice: {message}")
+                    # Use the enhanced verification system that tries multiple strategies
+                    product, message, is_new, was_created = verify_product_exists(
+                        product_data, 
+                        create_if_missing=True  # Create if not found
+                    )
+                    logger.info(f"Product from invoice: {message}")
                     
                     invoice_item = InvoiceItem(
                         invoice_id=invoice.id,

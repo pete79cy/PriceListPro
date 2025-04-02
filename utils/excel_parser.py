@@ -6,6 +6,7 @@ from app import db
 from models import Customer, Product, PriceList
 from utils.logger import logger
 from utils.product_management import find_or_create_product, create_or_update_price_list
+from utils.product_verification import batch_verify_products, extract_products_from_excel
 
 # Log that this module was loaded
 logger.info("Excel parser module loaded")
@@ -256,6 +257,10 @@ def parse_excel_file(file_path, customer_id, upload_id):
                     else:
                         raise ValueError("Missing required column: 'Name'. Please ensure your Excel file has a column for product names.")
         
+        # Process products in batch for better performance and verification
+        # First, pre-process the rows to prepare product data
+        products_to_verify = []
+        
         # Process each row
         for _, row in df.iterrows():
             product_name = row['name']
@@ -319,32 +324,27 @@ def parse_excel_file(file_path, customer_id, upload_id):
                 'category': safe_category,
                 'scientific_name': safe_scientific_name,
                 'pot': safe_pot,
+                'price': price,
+                'source_file': f"upload_{upload_id}",
                 'description': f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
             }
             
-            # Use the find_or_create_product function from product_management
-            product, message, is_new = find_or_create_product(product_data)
-            
-            if is_new:
-                logger.info(message)
-                stats['new_products'] += 1
-            else:
-                logger.debug(message)
-            
-            # Create or update price list entry if price exists
-            if price is not None and product:
-                source_file_name = f"upload_{upload_id}"
-                price_list, price_message, is_new_price = create_or_update_price_list(
-                    customer_id=customer_id,
-                    product_id=product.id,
-                    new_price=price,
-                    source_file=source_file_name
-                )
-                
-                if is_new_price:
-                    stats['price_entries'] += 1
-                
-                logger.debug(price_message)
+            # Add to list for batch verification
+            products_to_verify.append(product_data)
+        
+        # Now use the enhanced batch verification system for better product matching
+        logger.info(f"Verifying {len(products_to_verify)} products from Excel file")
+        verified_products, verification_stats = batch_verify_products(
+            product_list=products_to_verify,
+            create_missing=True,
+            customer_id=customer_id
+        )
+        
+        # Update the stats for the import
+        stats['new_products'] = verification_stats['created']
+        stats['price_entries'] = verification_stats['price_added']
+        if verification_stats['error'] > 0:
+            stats['errors'].append(f"Failed to process {verification_stats['error']} products")
         
         # Commit all changes
         db.session.commit()
