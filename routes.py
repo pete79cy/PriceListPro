@@ -1177,6 +1177,7 @@ def register_routes(app):
                 description = request.form.get(f'description_{i}')
                 scientific_name = request.form.get(f'scientific_name_{i}')
                 pot_size = request.form.get(f'pot_size_{i}')
+                height = request.form.get(f'height_{i}')
                 product_id = request.form.get(f'product_id_{i}')
                 
                 quantity = float(request.form.get(f'quantity_{i}', 1))
@@ -1200,6 +1201,7 @@ def register_routes(app):
                     description=description,
                     scientific_name=scientific_name,
                     pot_size=pot_size,
+                    height=height,
                     quantity=quantity,
                     selling_price=selling_price,
                     vat_rate=vat_rate,

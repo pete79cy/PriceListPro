@@ -160,6 +160,7 @@ class QuotationItem(db.Model):
     description = db.Column(db.String(200), nullable=False)
     scientific_name = db.Column(db.String(150), nullable=True)
     pot_size = db.Column(db.String(50), nullable=True)
+    height = db.Column(db.String(50), nullable=True)  # Plant height (e.g., "30cm", "150/200cm")
     quantity = db.Column(db.Float, nullable=False, default=1)
     selling_price = db.Column(db.Float, nullable=False)
     vat_rate = db.Column(db.Float, nullable=False, default=19.0)  # Default VAT rate of 19%

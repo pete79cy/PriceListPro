@@ -120,9 +120,10 @@
         <thead>
             <tr>
                 <th width="5%">#</th>
-                <th width="35%">Description</th>
+                <th width="25%">Description</th>
                 <th width="20%">Scientific Name</th>
                 <th width="10%">Pot Size</th>
+                <th width="10%">Height</th>
                 <th width="10%" class="text-right">Quantity</th>
                 <th width="10%" class="text-right">Cost Price</th>
                 <th width="10%" class="text-right">Total Cost</th>
@@ -135,6 +136,7 @@
                 <td>{{ item.description }}</td>
                 <td><em>{{ item.scientific_name or "" }}</em></td>
                 <td>{{ item.pot_size or "" }}</td>
+                <td>{{ item.height or "" }}</td>
                 <td class="text-right">{{ "%.2f"|format(item.quantity) }}</td>
                 <td class="text-right">{% if item.cost_price %}{{ currency }} {{ "%.2f"|format(item.cost_price) }}{% else %}-{% endif %}</td>
                 <td class="text-right">{% if item.cost_price %}{{ currency }} {{ "%.2f"|format(item.quantity * item.cost_price) }}{% else %}-{% endif %}</td>

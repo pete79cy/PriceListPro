@@ -81,13 +81,14 @@
                             <table class="table table-bordered" id="productTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 20%">Description</th>
+                                        <th style="width: 15%">Description</th>
                                         <th style="width: 15%">Scientific Name</th>
                                         <th style="width: 10%">Pot Size</th>
-                                        <th style="width: 10%" class="text-center">Quantity</th>
-                                        <th style="width: 12%" class="text-center">Selling Price (€)</th>
+                                        <th style="width: 10%">Height</th>
+                                        <th style="width: 8%" class="text-center">Quantity</th>
+                                        <th style="width: 10%" class="text-center">Selling Price (€)</th>
                                         <th style="width: 8%" class="text-center">VAT (%)</th>
-                                        <th style="width: 15%">Supplier</th>
+                                        <th style="width: 14%">Supplier</th>
                                         <th style="width: 10%" class="text-center">Cost Price (€)</th>
                                     </tr>
                                 </thead>
@@ -103,6 +104,9 @@
                                         </td>
                                         <td>
                                             <input type="text" class="form-control" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30cm">
                                         </td>
                                         <td>
                                             <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">

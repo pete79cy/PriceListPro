@@ -99,11 +99,18 @@ def extract_quotation_data_from_pdf(pdf_path, customer_id):
                     create_if_missing=False  # Don't create new products here
                 )
                 
+                # Try to extract height information from the description
+                height = None
+                height_match = re.search(r'(\d+(?:/\d+)?(?:\s*-\s*\d+)?)\s*cm', line, re.IGNORECASE)
+                if height_match:
+                    height = height_match.group(0).strip()
+                
                 # Initialize product entry
                 product_entry = {
                     'description': description,
                     'scientific_name': scientific_name,
                     'pot_size': pot_size,
+                    'height': height,
                     'quantity': 1,
                     'selling_price': None,
                     'vat_rate': 19,  # Default VAT rate
@@ -177,6 +184,7 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             'name': ['name', 'product', 'description', 'product name', 'product description', 'item'],
             'scientific_name': ['scientific name', 'scientific', 'latin name', 'botanical name', 'botanical'],
             'pot': ['pot', 'pot size', 'size', 'container', 'container size'],
+            'height': ['height', 'plant height', 'h', 'height (cm)', 'height cm'],
             'price': ['price', 'unit price', 'selling price', 'sell price', 'cost']
         }
         
@@ -211,6 +219,11 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             description = str(row.get('name', '')) if pd.notna(row.get('name', '')) else ''
             scientific_name = str(row.get('scientific_name', '')) if pd.notna(row.get('scientific_name', '')) else ''
             pot_size = str(row.get('pot', '')) if pd.notna(row.get('pot', '')) else ''
+            height = str(row.get('height', '')) if pd.notna(row.get('height', '')) else ''
+            
+            # Format height with "cm" if it's just a number
+            if height and re.match(r'^\d+(/\d+)?$', height.strip()):
+                height = f"{height.strip()} cm"
             
             # Skip empty rows
             if not description and not scientific_name:
@@ -246,6 +259,7 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 'description': description,
                 'scientific_name': scientific_name,
                 'pot_size': pot_size,
+                'height': height,
                 'quantity': 1,
                 'selling_price': excel_price,  # Use price from Excel if available
                 'vat_rate': 19,  # Default VAT rate
