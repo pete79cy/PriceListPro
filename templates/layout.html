@@ -59,6 +59,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('suppliers') }}">
+                            <i class="fas fa-truck"></i> Suppliers
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('pending_updates') }}">
                             <i class="fas fa-tasks"></i> Price Updates
                             {% set pending_count = (pending_update_count or 0) %}
@@ -179,6 +184,7 @@
                         <li><strong>Price Lists:</strong> View and manage customer-specific pricing</li>
                         <li><strong>Invoices:</strong> Access processed invoices and their line items</li>
                         <li><strong>Quotations:</strong> Create, manage and export customer quotations and supplier reports</li>
+                        <li><strong>Suppliers:</strong> Manage supplier information for quotations and product sourcing</li>
                         <li><strong>Price Updates:</strong> Review and approve pending price changes</li>
                         <li><strong>Search:</strong> Quick access to pricing information</li>
                     </ol>

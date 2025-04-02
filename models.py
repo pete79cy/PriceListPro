@@ -153,6 +153,21 @@ class Quotation(db.Model):
     def __repr__(self):
         return f'<Quotation {self.quotation_number}>'
 
+class Supplier(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    contact_person = db.Column(db.String(100), nullable=True)
+    email = db.Column(db.String(100), nullable=True)
+    phone = db.Column(db.String(50), nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    is_inhouse = db.Column(db.Boolean, default=False)  # Flag for in-house production
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Supplier {self.name}>'
+
 class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=False)

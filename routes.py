@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem
+from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from utils.excel_parser import parse_excel_file
@@ -1135,12 +1135,16 @@ def register_routes(app):
             # Get the customer info for the edit page
             customer = Customer.query.get_or_404(customer_id)
             
+            # Get suppliers list for the dropdown
+            suppliers_list = Supplier.query.order_by(Supplier.name).all()
+            
             flash('File processed successfully. Please review and edit the quotation below.', 'success')
             return render_template('edit_quotation.html', 
                                   products=quotation_data['products'],
                                   customer=customer,
                                   quotation_number=quotation_data['quotation_number'],
-                                  quotation_date=quotation_data['quotation_date'])
+                                  quotation_date=quotation_data['quotation_date'],
+                                  suppliers=suppliers_list)
             
         except Exception as e:
             logger.error(f"Error processing file for quotation: {str(e)}")
@@ -1190,7 +1194,9 @@ def register_routes(app):
                 scientific_name = request.form.get(f'scientific_name_{i}')
                 pot_size = request.form.get(f'pot_size_{i}')
                 height = request.form.get(f'height_{i}')
-                product_id = request.form.get(f'product_id_{i}')
+                # Convert 'None' string to actual None value
+                product_id_raw = request.form.get(f'product_id_{i}')
+                product_id = None if product_id_raw == 'None' else product_id_raw
                 
                 quantity = float(request.form.get(f'quantity_{i}', 1))
                 selling_price = float(request.form.get(f'selling_price_{i}', 0))
@@ -1209,7 +1215,7 @@ def register_routes(app):
                 # Create quotation item
                 quotation_item = QuotationItem(
                     quotation_id=quotation.id,
-                    product_id=product_id if product_id else None,
+                    product_id=int(product_id) if product_id and product_id != 'None' else None,
                     description=description,
                     scientific_name=scientific_name,
                     pot_size=pot_size,
@@ -1351,3 +1357,115 @@ def register_routes(app):
             flash(f"Error deleting quotation: {str(e)}", 'danger')
         
         return redirect(url_for('quotations'))
+        
+    # Supplier Management Routes
+    @app.route('/suppliers')
+    @login_required
+    def suppliers():
+        """View and manage suppliers"""
+        suppliers_list = Supplier.query.order_by(Supplier.name).all()
+        return render_template('suppliers.html', suppliers=suppliers_list)
+        
+    @app.route('/add_supplier', methods=['POST'])
+    @login_required
+    def add_supplier():
+        """Add a new supplier"""
+        name = request.form.get('name')
+        contact_person = request.form.get('contact_person')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        notes = request.form.get('notes')
+        is_inhouse = request.form.get('is_inhouse') == '1'
+        
+        if not name:
+            flash('Supplier name is required.', 'danger')
+            return redirect(url_for('suppliers'))
+            
+        try:
+            # Check if supplier with this name already exists
+            existing_supplier = Supplier.query.filter_by(name=name).first()
+            if existing_supplier:
+                flash(f'A supplier with name "{name}" already exists.', 'danger')
+                return redirect(url_for('suppliers'))
+                
+            supplier = Supplier(
+                name=name,
+                contact_person=contact_person,
+                email=email,
+                phone=phone,
+                address=address,
+                notes=notes,
+                is_inhouse=is_inhouse
+            )
+            
+            db.session.add(supplier)
+            db.session.commit()
+            
+            flash(f'Supplier "{name}" added successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error adding supplier: {str(e)}")
+            flash(f'Error adding supplier: {str(e)}', 'danger')
+            
+        return redirect(url_for('suppliers'))
+        
+    @app.route('/edit_supplier/<int:supplier_id>', methods=['POST'])
+    @login_required
+    def edit_supplier(supplier_id):
+        """Edit an existing supplier"""
+        supplier = Supplier.query.get_or_404(supplier_id)
+        
+        name = request.form.get('name')
+        contact_person = request.form.get('contact_person')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        notes = request.form.get('notes')
+        is_inhouse = request.form.get('is_inhouse') == '1'
+        
+        if not name:
+            flash('Supplier name is required.', 'danger')
+            return redirect(url_for('suppliers'))
+            
+        try:
+            # Check if another supplier with this name already exists
+            existing_supplier = Supplier.query.filter_by(name=name).first()
+            if existing_supplier and existing_supplier.id != supplier_id:
+                flash(f'Another supplier with name "{name}" already exists.', 'danger')
+                return redirect(url_for('suppliers'))
+                
+            supplier.name = name
+            supplier.contact_person = contact_person
+            supplier.email = email
+            supplier.phone = phone
+            supplier.address = address
+            supplier.notes = notes
+            supplier.is_inhouse = is_inhouse
+            
+            db.session.commit()
+            
+            flash(f'Supplier "{name}" updated successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating supplier: {str(e)}")
+            flash(f'Error updating supplier: {str(e)}', 'danger')
+            
+        return redirect(url_for('suppliers'))
+        
+    @app.route('/delete_supplier/<int:supplier_id>')
+    @login_required
+    def delete_supplier(supplier_id):
+        """Delete a supplier"""
+        supplier = Supplier.query.get_or_404(supplier_id)
+        
+        try:
+            db.session.delete(supplier)
+            db.session.commit()
+            flash(f'Supplier "{supplier.name}" deleted successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting supplier: {str(e)}")
+            flash(f'Error deleting supplier: {str(e)}', 'danger')
+            
+        return redirect(url_for('suppliers'))
