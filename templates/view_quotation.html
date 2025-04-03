@@ -17,6 +17,9 @@
                 <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-primary">
                     <i class="fas fa-file-pdf me-2"></i> Export PDF
                 </a>
+                <button type="button" class="btn btn-primary" id="showAiInsightsButton">
+                    <i class="fas fa-robot me-2"></i> AI Insights
+                </button>
                 <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
                     <i class="fas fa-trash me-2"></i> Delete
                 </button>
@@ -232,5 +235,24 @@ function confirmDelete(deleteUrl) {
     var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
     deleteModal.show();
 }
+
+// Initialize AI Insights for this quotation
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up the quotation context for AI insights
+    if (window.aiInsights) {
+        window.aiInsights.setDocumentContext(
+            'quotation', 
+            {{ quotation.id }}, 
+            'Quotation #{{ quotation.quotation_number }}'
+        );
+    }
+    
+    // Add click handler for the AI insights button
+    document.getElementById('showAiInsightsButton').addEventListener('click', function() {
+        if (window.aiInsights) {
+            window.aiInsights.showSidebar();
+        }
+    });
+});
 </script>
 {% endblock %}
