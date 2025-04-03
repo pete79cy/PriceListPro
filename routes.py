@@ -15,7 +15,7 @@ from utils.logger import logger
 from utils.excel_template import ensure_template_exists
 from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
-from utils.pdf_generator import generate_quotation_pdf, generate_supplier_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
+from utils.pdf_generator import generate_quotation_pdf, generate_supplier_report as generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -1320,7 +1320,7 @@ def register_routes(app):
         
         try:
             # Generate the supplier report
-            pdf_path = generate_supplier_report(quotation, supplier, app.config['UPLOAD_FOLDER'])
+            pdf_path = generate_supplier_pdf_report(quotation, supplier, app.config['UPLOAD_FOLDER'])
             
             if not pdf_path:
                 flash(f"No items found for supplier '{supplier}'", 'warning')
