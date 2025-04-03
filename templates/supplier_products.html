@@ -66,22 +66,29 @@
                 All Supplier Products
                 {% endif %}
             </h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
-                   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                     aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Actions:</div>
-                    <a class="dropdown-item" href="{{ url_for('add_supplier_product') }}">
-                        <i class="fas fa-plus fa-sm fa-fw me-2 text-gray-400"></i>Add New Product
+            <div class="d-flex">
+                <form id="batch-delete-form" method="post" action="{{ url_for('batch_delete_supplier_products') }}" class="me-2">
+                    <button type="button" id="batch-delete-btn" class="btn btn-danger btn-sm" disabled>
+                        <i class="fas fa-trash me-1"></i> Delete Selected
+                    </button>
+                </form>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                       data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
                     </a>
-                    {% if current_supplier %}
-                    <a class="dropdown-item" href="{{ url_for('export_supplier_catalog', supplier_id=current_supplier.id) }}">
-                        <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i>Export Catalog
-                    </a>
-                    {% endif %}
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                         aria-labelledby="dropdownMenuLink">
+                        <div class="dropdown-header">Actions:</div>
+                        <a class="dropdown-item" href="{{ url_for('add_supplier_product') }}">
+                            <i class="fas fa-plus fa-sm fa-fw me-2 text-gray-400"></i>Add New Product
+                        </a>
+                        {% if current_supplier %}
+                        <a class="dropdown-item" href="{{ url_for('export_supplier_catalog', supplier_id=current_supplier.id) }}">
+                            <i class="fas fa-file-pdf fa-sm fa-fw me-2 text-gray-400"></i>Export Catalog
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -91,6 +98,11 @@
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
+                            <th>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all">
+                                </div>
+                            </th>
                             <th>Product Name</th>
                             <th>Scientific Name</th>
                             <th>Height</th>
@@ -105,6 +117,11 @@
                     <tbody>
                         {% for product in supplier_products %}
                         <tr>
+                            <td class="text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input product-checkbox" type="checkbox" value="{{ product.id }}" name="product_ids">
+                                </div>
+                            </td>
                             <td>{{ product.product_name }}</td>
                             <td>{{ product.scientific_name or '-' }}</td>
                             <td>{{ product.height or '-' }}</td>
@@ -199,6 +216,26 @@
         </div>
     </div>
 </div>
+
+<!-- Batch Delete Modal -->
+<div class="modal fade" id="batchDeleteModal" tabindex="-1" aria-labelledby="batchDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batchDeleteModalLabel">Confirm Multiple Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <span id="selected-count" class="fw-bold"></span> selected products?</p>
+                <p class="text-danger mb-0">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-batch-delete">Delete Selected</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -210,6 +247,76 @@
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+        
+        // Checkbox and batch delete functionality
+        const selectAllCheckbox = document.getElementById('select-all');
+        const productCheckboxes = document.querySelectorAll('.product-checkbox');
+        const batchDeleteBtn = document.getElementById('batch-delete-btn');
+        const batchDeleteModal = new bootstrap.Modal(document.getElementById('batchDeleteModal'));
+        
+        // Update batch delete button state
+        function updateBatchDeleteBtn() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            batchDeleteBtn.disabled = checkedBoxes.length === 0;
+            return checkedBoxes.length;
+        }
+        
+        // Select All checkbox
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                productCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateBatchDeleteBtn();
+            });
+        }
+        
+        // Individual checkboxes
+        productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const allChecked = document.querySelectorAll('.product-checkbox').length === 
+                                   document.querySelectorAll('.product-checkbox:checked').length;
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = allChecked;
+                }
+                updateBatchDeleteBtn();
+            });
+        });
+        
+        // Batch delete button
+        if (batchDeleteBtn) {
+            batchDeleteBtn.addEventListener('click', function() {
+                const checkedCount = updateBatchDeleteBtn();
+                if (checkedCount > 0) {
+                    document.getElementById('selected-count').textContent = checkedCount;
+                    batchDeleteModal.show();
+                }
+            });
+        }
+        
+        // Confirm batch delete
+        const confirmBatchDeleteBtn = document.getElementById('confirm-batch-delete');
+        if (confirmBatchDeleteBtn) {
+            confirmBatchDeleteBtn.addEventListener('click', function() {
+                const selectedIds = [];
+                document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+                    selectedIds.push(checkbox.value);
+                });
+                
+                // Create hidden inputs for each selected ID
+                const form = document.getElementById('batch-delete-form');
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'product_ids';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+                
+                // Submit the form
+                form.submit();
+            });
+        }
         
         // Initialize the report builder sortable container
         new Sortable(document.getElementById('report-items'), {
@@ -238,13 +345,13 @@
                 const id = this.dataset.id;
                 const row = this.closest('tr');
                 
-                const productName = row.cells[0].textContent;
-                const scientificName = row.cells[1].textContent;
-                const height = row.cells[2].textContent;
-                const potSize = row.cells[3].textContent;
-                const price = row.cells[4].textContent;
-                const costPrice = row.cells[5].textContent;
-                const supplier = row.cells[6].textContent;
+                const productName = row.cells[1].textContent;
+                const scientificName = row.cells[2].textContent;
+                const height = row.cells[3].textContent;
+                const potSize = row.cells[4].textContent;
+                const price = row.cells[5].textContent;
+                const costPrice = row.cells[6].textContent;
+                const supplier = row.cells[7].textContent;
                 
                 addProductToReport(id, {
                     productName, 
