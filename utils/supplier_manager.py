@@ -16,37 +16,27 @@ def update_supplier_from_quotation_item(item):
     Returns:
         bool: Whether the operation was successful
     """
-    if not item.supplier_name and not item.supplier_id:
+    if not item.supplier:
         # Skip items without supplier information
         return False
         
     try:
         # Get or create the supplier
-        supplier = None
-        if item.supplier_id:
-            supplier = Supplier.query.get(item.supplier_id)
-        
-        if not supplier and item.supplier_name:
-            supplier = Supplier.query.filter_by(name=item.supplier_name).first()
+        supplier = Supplier.query.filter_by(name=item.supplier).first()
             
-            if not supplier:
-                # Create a new supplier with the name
-                supplier = Supplier(
-                    name=item.supplier_name,
-                    is_inhouse="in-house" in item.supplier_name.lower() if item.supplier_name else False
-                )
-                db.session.add(supplier)
-                db.session.flush()  # Get the ID without committing yet
-                logger.info(f"Created new supplier: {supplier.name}")
+        if not supplier:
+            # Create a new supplier with the name
+            supplier = Supplier(
+                name=item.supplier,
+                is_inhouse="in-house" in item.supplier.lower() if item.supplier else False
+            )
+            db.session.add(supplier)
+            db.session.flush()  # Get the ID without committing yet
+            logger.info(f"Created new supplier: {supplier.name}")
         
         if not supplier:
             logger.warning(f"Could not determine supplier for item {item.id}")
             return False
-        
-        # Set the supplier_id field to maintain the relationship
-        if not item.supplier_id:
-            item.supplier_id = supplier.id
-            db.session.add(item)
         
         # Now check for existing supplier product or create a new one
         supplier_product = SupplierProduct.query.filter_by(

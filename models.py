@@ -191,7 +191,6 @@ class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
-    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     description = db.Column(db.String(200), nullable=False)
     scientific_name = db.Column(db.String(150), nullable=True)
     pot_size = db.Column(db.String(50), nullable=True)
@@ -199,13 +198,12 @@ class QuotationItem(db.Model):
     quantity = db.Column(db.Float, nullable=False, default=1)
     selling_price = db.Column(db.Float, nullable=False)
     vat_rate = db.Column(db.Float, nullable=False, default=19.0)  # Default VAT rate of 19%
-    supplier_name = db.Column(db.String(255), nullable=True)  # For backward compatibility and display
+    supplier = db.Column(db.String(255), nullable=True)  # Supplier name 
     cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
     total = db.Column(db.Float, nullable=True)  # Total price (selling_price * quantity)
     
     # Relationships
     product = db.relationship('Product', backref='quotation_items', lazy=True)
-    supplier = db.relationship('Supplier', backref='quotation_items', lazy=True)
     
     def __repr__(self):
         return f'<QuotationItem {self.description}>'
