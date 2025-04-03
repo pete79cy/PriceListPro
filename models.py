@@ -3,7 +3,6 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 
-
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
@@ -191,16 +190,16 @@ class QuotationItem(db.Model):
 
 class CompanySettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False, default="COMPANY NAME")
-    address_line1 = db.Column(db.String(255), nullable=True, default="Company Address Line 1")
-    address_line2 = db.Column(db.String(255), nullable=True, default="Company Address Line 2")
-    phone = db.Column(db.String(50), nullable=True, default="+XX XXX XXXXXX")
-    email = db.Column(db.String(100), nullable=True, default="info@example.com")
+    name = db.Column(db.String(255), nullable=True)
+    address_line1 = db.Column(db.String(255), nullable=True)
+    address_line2 = db.Column(db.String(255), nullable=True)
+    phone = db.Column(db.String(50), nullable=True)
+    email = db.Column(db.String(100), nullable=True)
     website = db.Column(db.String(255), nullable=True)
     logo_path = db.Column(db.String(255), nullable=True)
-    pdf_orientation = db.Column(db.String(20), nullable=False, default="portrait")  # 'portrait' or 'landscape'
+    pdf_orientation = db.Column(db.String(20), nullable=True, default="portrait")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def __repr__(self):
         return f'<CompanySettings {self.name}>'
