@@ -1,9 +1,11 @@
 import os
 import uuid
+import base64
 from datetime import datetime
 from flask import render_template
 from weasyprint import HTML
 from utils.logger import logger
+from models import CompanySettings
 
 def generate_quotation_pdf(quotation, upload_folder):
     """
@@ -40,6 +42,22 @@ def generate_quotation_pdf(quotation, upload_folder):
         # Calculate grand total
         grand_total = subtotal + sum(item['amount'] for item in vat_list)
         
+        # Get company settings
+        company = CompanySettings.query.first()
+        if not company:
+            company = CompanySettings()  # Use default values if no settings exist
+        
+        # Prepare logo data if available
+        logo_data = None
+        if company.logo_path and os.path.exists(company.logo_path):
+            with open(company.logo_path, "rb") as logo_file:
+                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
+                file_ext = os.path.splitext(company.logo_path)[1].strip('.')
+                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+        
+        # Set the orientation based on company settings
+        orientation = company.pdf_orientation  # 'portrait' or 'landscape'
+        
         # Generate HTML content from the template
         html_content = render_template(
             'pdf/quotation_template.html',
@@ -50,7 +68,10 @@ def generate_quotation_pdf(quotation, upload_folder):
             vat_list=vat_list,
             grand_total=grand_total,
             currency=quotation.currency,
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M')
+            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            company=company,
+            logo_data=logo_data,
+            orientation=orientation
         )
         
         # Generate a unique filename
@@ -89,6 +110,22 @@ def generate_supplier_report(quotation, supplier, upload_folder):
         # Calculate total cost
         total_cost = sum(item.quantity * (item.cost_price or 0) for item in items)
         
+        # Get company settings
+        company = CompanySettings.query.first()
+        if not company:
+            company = CompanySettings()  # Use default values if no settings exist
+        
+        # Prepare logo data if available
+        logo_data = None
+        if company.logo_path and os.path.exists(company.logo_path):
+            with open(company.logo_path, "rb") as logo_file:
+                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
+                file_ext = os.path.splitext(company.logo_path)[1].strip('.')
+                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+        
+        # Set the orientation based on company settings
+        orientation = company.pdf_orientation  # 'portrait' or 'landscape'
+        
         # Generate HTML content from the template
         html_content = render_template(
             'pdf/supplier_report_template.html',
@@ -98,7 +135,10 @@ def generate_supplier_report(quotation, supplier, upload_folder):
             items=items,
             total_cost=total_cost,
             currency=quotation.currency,
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M')
+            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            company=company,
+            logo_data=logo_data,
+            orientation=orientation
         )
         
         # Generate a unique filename
