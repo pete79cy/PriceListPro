@@ -83,11 +83,19 @@ class AIInsightsHandler {
     
     // Hide the sidebar
     hideSidebar() {
+        console.log('Hiding AI insights sidebar');
         if (this.sidebar) {
-            this.sidebar.classList.remove('show');
+            // Force remove the show class
+            this.sidebar.className = this.sidebar.className.replace(/\bshow\b/g, '');
+            
+            // Try an alternative approach as well
+            document.getElementById('aiInsightsSidebar').classList.remove('show');
+            
             if (this.showButton) {
                 this.showButton.classList.remove('d-none');
             }
+        } else {
+            console.error('Sidebar element not found in hideSidebar()');
         }
     }
     

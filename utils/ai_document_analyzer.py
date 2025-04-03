@@ -311,6 +311,10 @@ class DocumentAnalyzer:
         Returns:
             str: The response from OpenAI
         """
+        if not self.client:
+            logger.error("OpenAI client not initialized - missing API key")
+            return "Error: OpenAI API key is missing. Please configure it in the settings."
+            
         try:
             # the newest OpenAI model is "gpt-4o" which was released May 13, 2024
             # do not change this unless explicitly requested by the user
