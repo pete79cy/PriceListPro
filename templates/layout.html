@@ -60,10 +60,14 @@
                             <i class="fas fa-file-contract"></i> Quotations
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('suppliers') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="supplierDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-truck"></i> Suppliers
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="supplierDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('suppliers') }}"><i class="fas fa-building"></i> Manage Suppliers</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('supplier_products') }}"><i class="fas fa-leaf"></i> Supplier Products</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('pending_updates') }}">
@@ -190,7 +194,13 @@
                         <li><strong>Price Lists:</strong> View and manage customer-specific pricing</li>
                         <li><strong>Invoices:</strong> Access processed invoices and their line items</li>
                         <li><strong>Quotations:</strong> Create, manage and export customer quotations and supplier reports</li>
-                        <li><strong>Suppliers:</strong> Manage supplier information for quotations and product sourcing</li>
+                        <li><strong>Suppliers:</strong> Manage supplier information for quotations and product sourcing
+                                <ul>
+                                    <li>Maintain supplier contact information</li>
+                                    <li>Track supplier products with the Supplier Products tool</li>
+                                    <li>Generate supplier-specific catalogs and reports</li>
+                                </ul>
+                            </li>
                         <li><strong>Price Updates:</strong> Review and approve pending price changes</li>
                         <li><strong>Search:</strong> Quick access to pricing information</li>
                         <li><strong>AI Document Insights:</strong> Get intelligent analysis of your documents, quotations, and invoices</li>
