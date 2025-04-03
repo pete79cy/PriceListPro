@@ -1233,7 +1233,15 @@ def register_routes(app):
             quotation.total_amount = total_amount
             db.session.commit()
             
-            flash('Quotation created successfully!', 'success')
+            # Update supplier products from the quotation items
+            from utils.supplier_manager import update_suppliers_from_quotation
+            supplier_results = update_suppliers_from_quotation(quotation)
+            
+            if supplier_results['success_count'] > 0:
+                flash(f'Quotation created successfully! {supplier_results["success_count"]} supplier product(s) updated.', 'success')
+            else:
+                flash('Quotation created successfully!', 'success')
+                
             return redirect(url_for('view_quotation', quotation_id=quotation.id))
             
         except Exception as e:
@@ -1358,6 +1366,146 @@ def register_routes(app):
         
         return redirect(url_for('quotations'))
         
+    @app.route('/quotation/<int:quotation_id>/item/add', methods=['POST'])
+    @login_required
+    def add_quotation_item(quotation_id):
+        """Add a new item to an existing quotation"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Get form data
+            description = request.form.get('description')
+            scientific_name = request.form.get('scientific_name')
+            pot_size = request.form.get('pot_size')
+            height = request.form.get('height')
+            quantity = float(request.form.get('quantity', 1))
+            selling_price = float(request.form.get('selling_price', 0))
+            vat_rate = float(request.form.get('vat_rate', 19))
+            supplier = request.form.get('supplier')
+            
+            try:
+                cost_price = float(request.form.get('cost_price', 0))
+            except (ValueError, TypeError):
+                cost_price = 0
+                
+            # Calculate total
+            total = quantity * selling_price
+            
+            # Create the new item
+            new_item = QuotationItem(
+                quotation_id=quotation.id,
+                description=description,
+                scientific_name=scientific_name,
+                pot_size=pot_size,
+                height=height,
+                quantity=quantity,
+                selling_price=selling_price,
+                vat_rate=vat_rate,
+                supplier=supplier,
+                cost_price=cost_price,
+                total=total
+            )
+            
+            db.session.add(new_item)
+            
+            # Update quotation total
+            quotation.total_amount = (quotation.total_amount or 0) + total
+            db.session.commit()
+            
+            # Update supplier products based on the new item
+            from utils.supplier_manager import update_supplier_from_quotation_item
+            update_supplier_from_quotation_item(new_item)
+            
+            flash('Item added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error adding quotation item: {str(e)}")
+            flash(f"Error adding item: {str(e)}", 'danger')
+            
+        return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
+    @app.route('/quotation/<int:quotation_id>/item/<int:item_id>', methods=['POST'])
+    @login_required
+    def edit_quotation_item(quotation_id, item_id):
+        """Edit an existing quotation item"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        item = QuotationItem.query.get_or_404(item_id)
+        
+        # Verify that the item belongs to this quotation
+        if item.quotation_id != quotation.id:
+            flash('Item does not belong to this quotation!', 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            
+        try:
+            # Calculate old total to update quotation total
+            old_total = item.total or (item.quantity * item.selling_price)
+            
+            # Update item fields
+            item.description = request.form.get('description')
+            item.scientific_name = request.form.get('scientific_name')
+            item.pot_size = request.form.get('pot_size')
+            item.height = request.form.get('height')
+            item.quantity = float(request.form.get('quantity', 1))
+            item.selling_price = float(request.form.get('selling_price', 0))
+            item.vat_rate = float(request.form.get('vat_rate', 19))
+            item.supplier = request.form.get('supplier')
+            
+            try:
+                item.cost_price = float(request.form.get('cost_price', 0))
+            except (ValueError, TypeError):
+                item.cost_price = 0
+                
+            # Calculate new total
+            new_total = item.quantity * item.selling_price
+            item.total = new_total
+            
+            # Update quotation total
+            quotation.total_amount = (quotation.total_amount or 0) - old_total + new_total
+            
+            db.session.commit()
+            
+            # Update supplier products based on the updated item
+            from utils.supplier_manager import update_supplier_from_quotation_item
+            update_supplier_from_quotation_item(item)
+            
+            flash('Item updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating quotation item: {str(e)}")
+            flash(f"Error updating item: {str(e)}", 'danger')
+            
+        return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
+    @app.route('/quotation/item/<int:item_id>/delete')
+    @login_required
+    def delete_quotation_item(item_id):
+        """Delete a quotation item"""
+        item = QuotationItem.query.get_or_404(item_id)
+        quotation_id = item.quotation_id
+        
+        try:
+            # Get the quotation to update its total
+            quotation = Quotation.query.get(quotation_id)
+            
+            if quotation:
+                # Calculate item total
+                item_total = item.total or (item.quantity * item.selling_price)
+                
+                # Update quotation total
+                quotation.total_amount = max(0, (quotation.total_amount or 0) - item_total)
+            
+            # Delete the item
+            db.session.delete(item)
+            db.session.commit()
+            
+            flash('Item deleted successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting quotation item: {str(e)}")
+            flash(f"Error deleting item: {str(e)}", 'danger')
+            
+        return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
     # Supplier Management Routes
     @app.route('/suppliers')
     @login_required
@@ -1410,12 +1558,18 @@ def register_routes(app):
             
         return redirect(url_for('suppliers'))
         
-    @app.route('/edit_supplier/<int:supplier_id>', methods=['POST'])
+    @app.route('/edit_supplier/<int:supplier_id>', methods=['GET', 'POST'])
     @login_required
     def edit_supplier(supplier_id):
         """Edit an existing supplier"""
         supplier = Supplier.query.get_or_404(supplier_id)
         
+        # GET request - show the form with the supplier's data
+        if request.method == 'GET':
+            suppliers_list = Supplier.query.order_by(Supplier.name).all()
+            return render_template('edit_supplier.html', supplier=supplier, suppliers=suppliers_list)
+        
+        # POST request - process the form
         name = request.form.get('name')
         contact_person = request.form.get('contact_person')
         email = request.form.get('email')
