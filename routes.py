@@ -1524,3 +1524,80 @@ def register_routes(app):
             flash(f'Error updating company settings: {str(e)}', 'danger')
             
         return redirect(url_for('company_settings'))
+        
+    # AI Document Insights Routes
+    @app.route('/ai-insights/settings', methods=['GET', 'POST'])
+    @login_required
+    def ai_settings():
+        """AI document insights settings page"""
+        from utils.ai_document_analyzer import DocumentAnalyzer
+        
+        # Initialize the document analyzer
+        document_analyzer = DocumentAnalyzer()
+        
+        if request.method == 'POST':
+            api_key = request.form.get('openai_api_key')
+            
+            if api_key:
+                # Set the API key as an environment variable
+                os.environ["OPENAI_API_KEY"] = api_key
+                
+                # Reinitialize the document analyzer with the new API key
+                document_analyzer = DocumentAnalyzer()
+                
+                flash('OpenAI API key has been set successfully.', 'success')
+            else:
+                flash('Please provide a valid API key.', 'danger')
+            
+            return redirect(url_for('ai_settings'))
+        
+        # For GET requests, show the settings page
+        return render_template(
+            'ai/settings.html',
+            api_key_set=bool(os.getenv("OPENAI_API_KEY")),
+            is_enabled=document_analyzer.is_enabled()
+        )
+    
+    @app.route('/ai-insights/status', methods=['GET'])
+    @login_required
+    def ai_status():
+        """Check if AI document analysis is enabled"""
+        from utils.ai_document_analyzer import DocumentAnalyzer
+        
+        # Initialize the document analyzer
+        document_analyzer = DocumentAnalyzer()
+        
+        status = {
+            "enabled": document_analyzer.is_enabled(),
+            "api_key_set": bool(os.getenv("OPENAI_API_KEY"))
+        }
+        return jsonify(status)
+    
+    @app.route('/ai-insights/analyze', methods=['POST'])
+    @login_required
+    def analyze_document():
+        """Analyze a document and return insights"""
+        from utils.ai_document_analyzer import DocumentAnalyzer
+        
+        # Initialize the document analyzer
+        document_analyzer = DocumentAnalyzer()
+        
+        data = request.json
+        
+        # Validate required fields
+        required_fields = ['document_type', 'document_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Get raw content if provided
+        raw_content = data.get('content')
+        
+        # Analyze the document
+        insights = document_analyzer.analyze_document(
+            data['document_type'], 
+            data['document_id'],
+            raw_content
+        )
+        
+        return jsonify(insights)
