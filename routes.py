@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, CompanySettings
+from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from utils.excel_parser import parse_excel_file
@@ -15,7 +15,7 @@ from utils.logger import logger
 from utils.excel_template import ensure_template_exists
 from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
-from utils.pdf_generator import generate_quotation_pdf, generate_supplier_report
+from utils.pdf_generator import generate_quotation_pdf, generate_supplier_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -1469,6 +1469,213 @@ def register_routes(app):
             flash(f'Error deleting supplier: {str(e)}', 'danger')
             
         return redirect(url_for('suppliers'))
+    
+    # Supplier Product Management Routes
+    @app.route('/supplier_products')
+    @login_required
+    def supplier_products():
+        """View and manage supplier products"""
+        from utils.supplier_manager import search_supplier_products
+        
+        query = request.args.get('q', '')
+        supplier_id = request.args.get('supplier_id')
+        
+        # Get all suppliers for the filter dropdown
+        suppliers_list = Supplier.query.order_by(Supplier.name).all()
+        
+        # Get the current supplier if one is selected
+        current_supplier = None
+        if supplier_id:
+            try:
+                supplier_id = int(supplier_id)
+                current_supplier = Supplier.query.get(supplier_id)
+            except (ValueError, TypeError):
+                pass
+        
+        # Search for products
+        products = search_supplier_products(query, supplier_id, limit=100)
+        
+        return render_template(
+            'supplier_products.html',
+            supplier_products=products,
+            suppliers=suppliers_list,
+            current_supplier=current_supplier,
+            query=query
+        )
+    
+    @app.route('/add_supplier_product', methods=['GET', 'POST'])
+    @login_required
+    def add_supplier_product():
+        """Add a new supplier product"""
+        from datetime import datetime
+        
+        if request.method == 'POST':
+            supplier_id = request.form.get('supplier_id')
+            product_name = request.form.get('product_name')
+            scientific_name = request.form.get('scientific_name')
+            height = request.form.get('height')
+            pot_size = request.form.get('pot_size')
+            price = request.form.get('price')
+            cost_price = request.form.get('cost_price')
+            last_detected = request.form.get('last_detected')
+            notes = request.form.get('notes')
+            
+            # Validate the required fields
+            if not supplier_id or not product_name or not price:
+                flash('Please fill in all required fields', 'danger')
+                suppliers_list = Supplier.query.order_by(Supplier.name).all()
+                return render_template('edit_supplier_product.html', suppliers=suppliers_list, today=datetime.utcnow())
+            
+            try:
+                # Create a new supplier product
+                new_product = SupplierProduct(
+                    supplier_id=supplier_id,
+                    product_name=product_name,
+                    scientific_name=scientific_name,
+                    height=height,
+                    pot_size=pot_size,
+                    price=float(price),
+                    cost_price=float(cost_price) if cost_price else None,
+                    last_detected=datetime.strptime(last_detected, '%Y-%m-%d') if last_detected else datetime.utcnow(),
+                    notes=notes
+                )
+                
+                db.session.add(new_product)
+                db.session.commit()
+                
+                flash('Supplier product added successfully', 'success')
+                return redirect(url_for('supplier_products', supplier_id=supplier_id))
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error adding supplier product: {str(e)}")
+                flash(f'Error adding supplier product: {str(e)}', 'danger')
+        
+        # GET request - show the form
+        suppliers_list = Supplier.query.order_by(Supplier.name).all()
+        return render_template('edit_supplier_product.html', suppliers=suppliers_list, today=datetime.utcnow())
+    
+    @app.route('/edit_supplier_product/<int:id>', methods=['GET', 'POST'])
+    @login_required
+    def edit_supplier_product(id):
+        """Edit an existing supplier product"""
+        from datetime import datetime
+        
+        product = SupplierProduct.query.get_or_404(id)
+        
+        if request.method == 'POST':
+            try:
+                product.supplier_id = request.form.get('supplier_id')
+                product.product_name = request.form.get('product_name')
+                product.scientific_name = request.form.get('scientific_name')
+                product.height = request.form.get('height')
+                product.pot_size = request.form.get('pot_size')
+                product.price = float(request.form.get('price'))
+                
+                cost_price = request.form.get('cost_price')
+                product.cost_price = float(cost_price) if cost_price and cost_price.strip() else None
+                
+                last_detected = request.form.get('last_detected')
+                product.last_detected = datetime.strptime(last_detected, '%Y-%m-%d') if last_detected else datetime.utcnow()
+                
+                product.notes = request.form.get('notes')
+                
+                db.session.commit()
+                
+                flash('Supplier product updated successfully', 'success')
+                return redirect(url_for('supplier_products', supplier_id=product.supplier_id))
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error updating supplier product: {str(e)}")
+                flash(f'Error updating supplier product: {str(e)}', 'danger')
+        
+        # GET request - show the form
+        suppliers_list = Supplier.query.order_by(Supplier.name).all()
+        return render_template('edit_supplier_product.html', product=product, suppliers=suppliers_list, today=datetime.utcnow())
+    
+    @app.route('/delete_supplier_product/<int:id>')
+    @login_required
+    def delete_supplier_product(id):
+        """Delete a supplier product"""
+        product = SupplierProduct.query.get_or_404(id)
+        supplier_id = product.supplier_id
+        
+        try:
+            db.session.delete(product)
+            db.session.commit()
+            flash('Supplier product deleted successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting supplier product: {str(e)}")
+            flash(f'Error deleting supplier product: {str(e)}', 'danger')
+            
+        return redirect(url_for('supplier_products', supplier_id=supplier_id))
+        
+    @app.route('/generate_supplier_report', methods=['POST'])
+    @login_required
+    def generate_supplier_report():
+        """Generate a PDF report of selected supplier products"""
+        import json
+        from utils.pdf_generator import generate_supplier_products_pdf
+        
+        product_ids = request.form.get('product_ids')
+        if not product_ids:
+            flash('No products selected for the report', 'warning')
+            return redirect(url_for('supplier_products'))
+        
+        try:
+            # Parse the JSON string of product IDs
+            product_ids = json.loads(product_ids)
+            
+            # Get the products
+            products = SupplierProduct.query.filter(SupplierProduct.id.in_(product_ids)).all()
+            
+            if not products:
+                flash('No valid products found for the report', 'warning')
+                return redirect(url_for('supplier_products'))
+            
+            # Generate the PDF
+            pdf_file, filename = generate_supplier_products_pdf(products)
+            
+            # Send the PDF as a download
+            response = make_response(pdf_file)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generating supplier report: {str(e)}")
+            flash(f'Error generating report: {str(e)}', 'danger')
+            return redirect(url_for('supplier_products'))
+    
+    @app.route('/export_supplier_catalog/<int:supplier_id>')
+    @login_required
+    def export_supplier_catalog(supplier_id):
+        """Export a catalog of all products from a specific supplier"""
+        from utils.pdf_generator import generate_supplier_catalog_pdf
+        
+        supplier = Supplier.query.get_or_404(supplier_id)
+        products = SupplierProduct.query.filter_by(supplier_id=supplier_id).order_by(SupplierProduct.product_name).all()
+        
+        if not products:
+            flash('No products found for this supplier', 'warning')
+            return redirect(url_for('supplier_products', supplier_id=supplier_id))
+        
+        try:
+            # Generate the PDF
+            pdf_file, filename = generate_supplier_catalog_pdf(supplier, products)
+            
+            # Send the PDF as a download
+            response = make_response(pdf_file)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generating supplier catalog: {str(e)}")
+            flash(f'Error generating catalog: {str(e)}', 'danger')
+            return redirect(url_for('supplier_products', supplier_id=supplier_id))
         
     @app.route('/company_settings')
     @login_required
