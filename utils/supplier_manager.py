@@ -16,9 +16,11 @@ def update_supplier_from_quotation_item(item):
     Returns:
         bool: Whether the operation was successful
     """
+    # If supplier is empty, set it to "In-house Production"
     if not item.supplier:
-        # Skip items without supplier information
-        return False
+        item.supplier = "In-house Production"
+        # Save the updated item
+        db.session.commit()
         
     try:
         # Get or create the supplier
@@ -28,7 +30,7 @@ def update_supplier_from_quotation_item(item):
             # Create a new supplier with the name
             supplier = Supplier(
                 name=item.supplier,
-                is_inhouse="in-house" in item.supplier.lower() if item.supplier else False
+                is_inhouse="in-house" in item.supplier.lower() or item.supplier == "In-house Production"
             )
             db.session.add(supplier)
             db.session.flush()  # Get the ID without committing yet

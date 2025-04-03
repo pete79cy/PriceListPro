@@ -1763,6 +1763,51 @@ def register_routes(app):
             flash(f'Error deleting supplier product: {str(e)}', 'danger')
             
         return redirect(url_for('supplier_products', supplier_id=supplier_id))
+    
+    @app.route('/batch_delete_supplier_products', methods=['POST'])
+    @login_required
+    def batch_delete_supplier_products():
+        """Delete multiple supplier products at once"""
+        product_ids = request.form.getlist('product_ids')
+        
+        if not product_ids:
+            flash('No products selected for deletion', 'warning')
+            return redirect(url_for('supplier_products'))
+        
+        success_count = 0
+        error_count = 0
+        supplier_id = None
+        
+        for product_id in product_ids:
+            try:
+                product_id = int(product_id)
+                product = SupplierProduct.query.get(product_id)
+                
+                if product:
+                    # Store supplier_id for redirect (use the first one)
+                    if not supplier_id:
+                        supplier_id = product.supplier_id
+                        
+                    db.session.delete(product)
+                    success_count += 1
+                else:
+                    error_count += 1
+                    
+            except Exception as e:
+                error_count += 1
+                logger.error(f"Error deleting supplier product ID {product_id}: {str(e)}")
+        
+        try:
+            db.session.commit()
+            if success_count > 0:
+                flash(f'Successfully deleted {success_count} supplier products', 'success')
+            if error_count > 0:
+                flash(f'Failed to delete {error_count} supplier products', 'warning')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error during batch delete: {str(e)}', 'danger')
+        
+        return redirect(url_for('supplier_products', supplier_id=supplier_id))
         
     @app.route('/generate_supplier_report', methods=['POST'])
     @login_required
