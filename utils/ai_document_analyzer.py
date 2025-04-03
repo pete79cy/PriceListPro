@@ -3,6 +3,17 @@ from openai import OpenAI
 from utils.logger import logger
 from models import FileUpload, Quotation, Invoice, Customer, Product, PriceList
 from datetime import datetime
+from functools import lru_cache
+
+# Singleton pattern for document analyzer
+_document_analyzer_instance = None
+
+def get_document_analyzer():
+    """Get or create the document analyzer singleton instance"""
+    global _document_analyzer_instance
+    if _document_analyzer_instance is None:
+        _document_analyzer_instance = DocumentAnalyzer()
+    return _document_analyzer_instance
 
 class DocumentAnalyzer:
     """
@@ -20,6 +31,9 @@ class DocumentAnalyzer:
             self.client = None
             self.enabled = False
             logger.warning("OpenAI API key not found. Document insights disabled.")
+        
+        # Initialize analysis cache
+        self._analysis_cache = {}
     
     def is_enabled(self):
         """Check if the analyzer is enabled (API key is set)"""
@@ -40,6 +54,12 @@ class DocumentAnalyzer:
         if not self.enabled:
             return {"error": "AI document analysis is not enabled. Please add an OpenAI API key."}
         
+        # Check cache first - using a cache key based on document type and ID
+        cache_key = f"{document_type}_{document_id}"
+        if cache_key in self._analysis_cache:
+            logger.info(f"Using cached analysis for {document_type} #{document_id}")
+            return self._analysis_cache[cache_key]
+        
         try:
             # Get relevant document context
             context = self._get_document_context(document_type, document_id, file_content)
@@ -55,6 +75,11 @@ class DocumentAnalyzer:
                 insights = self._analyze_pdf(context)
             else:
                 return {"error": f"Unknown document type: {document_type}"}
+            
+            # Cache the results (don't cache errors)
+            if "error" not in insights:
+                self._analysis_cache[cache_key] = insights
+                logger.info(f"Cached analysis for {document_type} #{document_id}")
             
             return insights
         

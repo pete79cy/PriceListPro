@@ -87,7 +87,7 @@ def generate_quotation_pdf(quotation, upload_folder):
         logger.error(f"Error generating quotation PDF: {str(e)}")
         raise
 
-def generate_supplier_report(quotation, supplier, upload_folder):
+def generate_supplier_pdf_report(quotation, supplier, upload_folder):
     """
     Generate a PDF supplier report from a Quotation object
     

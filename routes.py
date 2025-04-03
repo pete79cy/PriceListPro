@@ -15,7 +15,7 @@ from utils.logger import logger
 from utils.excel_template import ensure_template_exists
 from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
-from utils.pdf_generator import generate_quotation_pdf, generate_supplier_report as generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
+from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -1737,10 +1737,10 @@ def register_routes(app):
     @login_required
     def ai_settings():
         """AI document insights settings page"""
-        from utils.ai_document_analyzer import DocumentAnalyzer
+        from utils.ai_document_analyzer import get_document_analyzer
         
-        # Initialize the document analyzer
-        document_analyzer = DocumentAnalyzer()
+        # Get the document analyzer singleton
+        document_analyzer = get_document_analyzer()
         
         if request.method == 'POST':
             api_key = request.form.get('openai_api_key')
@@ -1749,8 +1749,10 @@ def register_routes(app):
                 # Set the API key as an environment variable
                 os.environ["OPENAI_API_KEY"] = api_key
                 
-                # Reinitialize the document analyzer with the new API key
-                document_analyzer = DocumentAnalyzer()
+                # Create a new DocumentAnalyzer instance (the next call to get_document_analyzer will create a new one)
+                global _document_analyzer_instance
+                _document_analyzer_instance = None  # Reset the singleton
+                document_analyzer = get_document_analyzer()  # Get the new instance
                 
                 flash('OpenAI API key has been set successfully.', 'success')
             else:
@@ -1769,10 +1771,10 @@ def register_routes(app):
     @login_required
     def ai_status():
         """Check if AI document analysis is enabled"""
-        from utils.ai_document_analyzer import DocumentAnalyzer
+        from utils.ai_document_analyzer import get_document_analyzer
         
-        # Initialize the document analyzer
-        document_analyzer = DocumentAnalyzer()
+        # Get the document analyzer singleton
+        document_analyzer = get_document_analyzer()
         
         status = {
             "enabled": document_analyzer.is_enabled(),
@@ -1784,10 +1786,10 @@ def register_routes(app):
     @login_required
     def analyze_document():
         """Analyze a document and return insights"""
-        from utils.ai_document_analyzer import DocumentAnalyzer
+        from utils.ai_document_analyzer import get_document_analyzer
         
-        # Initialize the document analyzer
-        document_analyzer = DocumentAnalyzer()
+        # Get the document analyzer singleton
+        document_analyzer = get_document_analyzer()
         
         data = request.json
         
