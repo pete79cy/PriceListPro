@@ -1,0 +1,69 @@
+To generate your PDF quotation reports in landscape mode, you can adjust the PDF generation settings. Here are step‐by‐step instructions based on common PDF tools:
+
+---
+
+### 1. If Using WeasyPrint
+
+- **Update Your CSS:**  
+  In your PDF template's CSS file (the one used to style the HTML before conversion), add an `@page` rule to set the page size and orientation. For example:
+
+  ```css
+  @page {
+      size: A4 landscape;
+      margin: 1cm; /* Adjust margins as needed */
+  }
+  ```
+
+- **Verify Layout:**  
+  Make sure your HTML elements (tables, headers, etc.) are adjusted to fit within the landscape layout. You might need to tweak widths or font sizes.
+
+---
+
+### 2. If Using wkhtmltopdf
+
+- **Use Command-Line Options:**  
+  When calling wkhtmltopdf, add the orientation parameter. For example:
+
+  ```bash
+  wkhtmltopdf --orientation Landscape input.html output.pdf
+  ```
+
+- **Ensure HTML/CSS Compatibility:**  
+  Although wkhtmltopdf respects the command-line option, verify that your HTML and CSS layout looks correct in a landscape format.
+
+---
+
+### 3. If Using ReportLab (Python)
+
+- **Set Page Orientation:**  
+  When creating your PDF document, specify a landscape page size. For example, with ReportLab you might do:
+
+  ```python
+  from reportlab.lib.pagesizes import landscape, A4
+  from reportlab.pdfgen import canvas
+
+  c = canvas.Canvas("output.pdf", pagesize=landscape(A4))
+  # Add your content here
+  c.showPage()
+  c.save()
+  ```
+
+- **Adjust Content Placement:**  
+  Since the coordinate system changes, adjust the positioning of your elements accordingly.
+
+---
+
+### 4. General Tips
+
+- **Preview and Test:**  
+  After making the changes, generate a sample PDF and review it to ensure that all content fits well and appears as expected in landscape mode.
+
+- **Responsive Layout:**  
+  If you use CSS for layout, consider using relative units (like percentages) to help your design adapt to the wider page.
+
+- **Margins and Spacing:**  
+  Fine-tune margins, paddings, and table widths to take full advantage of the additional horizontal space in landscape mode.
+
+---
+
+Following these instructions will switch your PDF quotations to landscape mode. Let me know if you need further assistance or additional code examples!

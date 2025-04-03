@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier
+from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, CompanySettings
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from utils.excel_parser import parse_excel_file
@@ -1469,3 +1469,58 @@ def register_routes(app):
             flash(f'Error deleting supplier: {str(e)}', 'danger')
             
         return redirect(url_for('suppliers'))
+        
+    @app.route('/company_settings')
+    @login_required
+    def company_settings():
+        """View and manage company settings"""
+        # Get or create company settings
+        company = CompanySettings.query.first()
+        if not company:
+            company = CompanySettings()
+            db.session.add(company)
+            db.session.commit()
+            
+        return render_template('company_settings.html', company=company)
+        
+    @app.route('/save_company_settings', methods=['POST'])
+    @login_required
+    def save_company_settings():
+        """Save company settings"""
+        # Get or create company settings
+        company = CompanySettings.query.first()
+        if not company:
+            company = CompanySettings()
+            db.session.add(company)
+            
+        # Update company details
+        company.name = request.form.get('name', company.name)
+        company.address_line1 = request.form.get('address_line1', company.address_line1)
+        company.address_line2 = request.form.get('address_line2', company.address_line2)
+        company.phone = request.form.get('phone', company.phone)
+        company.email = request.form.get('email', company.email)
+        company.website = request.form.get('website', company.website)
+        company.pdf_orientation = request.form.get('pdf_orientation', 'portrait')  # Default to portrait if not provided
+        
+        # Handle logo upload if provided
+        if 'logo' in request.files and request.files['logo'].filename:
+            logo_file = request.files['logo']
+            if logo_file and allowed_file(logo_file.filename, {'png', 'jpg', 'jpeg', 'gif', 'svg'}):
+                # Generate unique filename
+                filename = secure_filename(logo_file.filename)
+                unique_filename = f"logo_{uuid.uuid4().hex[:8]}_{filename}"
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                logo_file.save(file_path)
+                
+                # Update logo path
+                company.logo_path = file_path
+        
+        try:
+            db.session.commit()
+            flash('Company settings updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating company settings: {str(e)}")
+            flash(f'Error updating company settings: {str(e)}', 'danger')
+            
+        return redirect(url_for('company_settings'))
