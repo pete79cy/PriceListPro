@@ -250,8 +250,8 @@
 
 <!-- Add Item Modal -->
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog modal-lg" style="min-height: 500px;">
+        <div class="modal-content" style="min-height: 500px;">
             <div class="modal-header">
                 <h5 class="modal-title" id="addItemModalLabel">Add Quotation Item</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -318,8 +318,8 @@
 
 <!-- Edit Item Modal -->
 <div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog modal-lg" style="min-height: 500px;">
+        <div class="modal-content" style="min-height: 500px;">
             <div class="modal-header">
                 <h5 class="modal-title" id="editItemModalLabel">Edit Quotation Item</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -385,6 +385,27 @@
 </div>
 {% endblock %}
 
+{% block head %}
+{{ super() }}
+<style>
+/* Prevent modal from shifting when input is focused */
+.modal-open {
+    padding-right: 0 !important;
+    overflow-y: auto !important;
+}
+.modal {
+    padding-right: 0 !important;
+}
+.modal-dialog {
+    margin: 30px auto !important;
+    height: auto !important;
+}
+.modal-content {
+    height: auto !important;
+}
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
 function confirmDelete(deleteUrl) {
@@ -394,8 +415,8 @@ function confirmDelete(deleteUrl) {
 }
 
 function editItem(id, description, scientific_name, pot_size, height, quantity, selling_price, vat_rate, supplier, cost_price) {
-    // Set form action URL
-    document.getElementById('editItemForm').action = "{{ url_for('edit_quotation_item', quotation_id=quotation.id) }}/" + id;
+    // Set form action URL with both quotation_id and item_id
+    document.getElementById('editItemForm').action = "/quotation/{{ quotation.id }}/item/" + id;
     
     // Fill the form fields with the item data
     document.getElementById('edit_description').value = description;
