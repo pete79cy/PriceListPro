@@ -1493,13 +1493,13 @@ def register_routes(app):
             company = CompanySettings()
             db.session.add(company)
             
-        # Update company details
-        company.name = request.form.get('name', company.name)
-        company.address_line1 = request.form.get('address_line1', company.address_line1)
-        company.address_line2 = request.form.get('address_line2', company.address_line2)
-        company.phone = request.form.get('phone', company.phone)
-        company.email = request.form.get('email', company.email)
-        company.website = request.form.get('website', company.website)
+        # Update company details - all fields are optional
+        company.name = request.form.get('name') or None
+        company.address_line1 = request.form.get('address_line1') or None
+        company.address_line2 = request.form.get('address_line2') or None
+        company.phone = request.form.get('phone') or None
+        company.email = request.form.get('email') or None
+        company.website = request.form.get('website') or None
         company.pdf_orientation = request.form.get('pdf_orientation', 'portrait')  # Default to portrait if not provided
         
         # Handle logo upload if provided

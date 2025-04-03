@@ -190,12 +190,12 @@ class QuotationItem(db.Model):
 
 class CompanySettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=True)
-    address_line1 = db.Column(db.String(255), nullable=True)
-    address_line2 = db.Column(db.String(255), nullable=True)
-    phone = db.Column(db.String(50), nullable=True)
-    email = db.Column(db.String(100), nullable=True)
-    website = db.Column(db.String(255), nullable=True)
+    name = db.Column(db.String(255), nullable=True, default="Your Company Name")
+    address_line1 = db.Column(db.String(255), nullable=True, default="Address Line 1")
+    address_line2 = db.Column(db.String(255), nullable=True, default="Address Line 2")
+    phone = db.Column(db.String(50), nullable=True, default="+49 123 456789")
+    email = db.Column(db.String(100), nullable=True, default="info@example.com")
+    website = db.Column(db.String(255), nullable=True, default="www.example.com")
     logo_path = db.Column(db.String(255), nullable=True)
     pdf_orientation = db.Column(db.String(20), nullable=True, default="portrait")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
