@@ -15,6 +15,13 @@ def get_document_analyzer():
         _document_analyzer_instance = DocumentAnalyzer()
     return _document_analyzer_instance
 
+def reset_document_analyzer():
+    """Reset the document analyzer singleton, forcing it to reload with new settings"""
+    global _document_analyzer_instance
+    logger.info("Resetting document analyzer singleton")
+    _document_analyzer_instance = None
+    return get_document_analyzer()
+
 class DocumentAnalyzer:
     """
     AI-powered document analyzer that provides contextual insights
