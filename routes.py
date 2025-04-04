@@ -2102,7 +2102,7 @@ def register_routes(app):
     @login_required
     def ai_settings():
         """AI document insights settings page"""
-        from utils.ai_document_analyzer import get_document_analyzer
+        from utils.ai_document_analyzer import get_document_analyzer, reset_document_analyzer
         
         # Get the document analyzer singleton
         document_analyzer = get_document_analyzer()
@@ -2111,15 +2111,23 @@ def register_routes(app):
             api_key = request.form.get('openai_api_key')
             
             if api_key:
-                # Set the API key as an environment variable
-                os.environ["OPENAI_API_KEY"] = api_key
-                
-                # Create a new DocumentAnalyzer instance (the next call to get_document_analyzer will create a new one)
-                global _document_analyzer_instance
-                _document_analyzer_instance = None  # Reset the singleton
-                document_analyzer = get_document_analyzer()  # Get the new instance
-                
-                flash('OpenAI API key has been set successfully.', 'success')
+                try:
+                    # Set the API key as an environment variable
+                    os.environ["OPENAI_API_KEY"] = api_key
+                    
+                    # Reset the document analyzer to use the new API key
+                    # This will clear the singleton instance and create a new one with the updated API key
+                    document_analyzer = reset_document_analyzer()
+                    
+                    logger.info(f"API key set and document analyzer reset successfully. Enabled status: {document_analyzer.is_enabled()}")
+                    
+                    if document_analyzer.is_enabled():
+                        flash('OpenAI API key has been set successfully.', 'success')
+                    else:
+                        flash('API key was set but document analyzer is not enabled. Please check the key format.', 'warning')
+                except Exception as e:
+                    flash(f'Error setting API key: {str(e)}', 'danger')
+                    logger.error(f"Error setting OpenAI API key: {str(e)}")
             else:
                 flash('Please provide a valid API key.', 'danger')
             
@@ -2141,9 +2149,16 @@ def register_routes(app):
         # Get the document analyzer singleton
         document_analyzer = get_document_analyzer()
         
+        # Check if API key is set and document analyzer is enabled
+        api_key_set = bool(os.getenv("OPENAI_API_KEY"))
+        is_enabled = document_analyzer.is_enabled()
+        
+        # Log status for debugging
+        logger.debug(f"AI status check - API key set: {api_key_set}, Enabled: {is_enabled}")
+        
         status = {
-            "enabled": document_analyzer.is_enabled(),
-            "api_key_set": bool(os.getenv("OPENAI_API_KEY"))
+            "enabled": is_enabled,
+            "api_key_set": api_key_set
         }
         return jsonify(status)
     
@@ -2156,22 +2171,42 @@ def register_routes(app):
         # Get the document analyzer singleton
         document_analyzer = get_document_analyzer()
         
-        data = request.json
+        # Check if AI is enabled before proceeding
+        if not document_analyzer.is_enabled():
+            logger.warning("AI document analysis requested but the feature is not enabled")
+            return jsonify({
+                "error": "AI document analysis is not enabled. Please add your OpenAI API key in Settings."
+            }), 400
         
-        # Validate required fields
-        required_fields = ['document_type', 'document_id']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
-        
-        # Get raw content if provided
-        raw_content = data.get('content')
-        
-        # Analyze the document
-        insights = document_analyzer.analyze_document(
-            data['document_type'], 
-            data['document_id'],
-            raw_content
-        )
-        
-        return jsonify(insights)
+        try:
+            data = request.json
+            
+            # Validate required fields
+            required_fields = ['document_type', 'document_id']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({"error": f"Missing required field: {field}"}), 400
+            
+            # Get raw content if provided
+            raw_content = data.get('content')
+            
+            # Log the analysis request
+            logger.info(f"Document analysis requested for {data['document_type']} #{data['document_id']}")
+            
+            # Analyze the document
+            insights = document_analyzer.analyze_document(
+                data['document_type'], 
+                data['document_id'],
+                raw_content
+            )
+            
+            # Check if there was an error
+            if insights and 'error' in insights:
+                logger.warning(f"Document analysis error: {insights['error']}")
+                return jsonify(insights), 400
+                
+            return jsonify(insights)
+            
+        except Exception as e:
+            logger.error(f"Error in document analysis endpoint: {str(e)}")
+            return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
