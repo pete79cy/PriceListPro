@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+
+{% block title %}Pending Price Updates - Plant Pricing System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Pending Price Updates</h1>
+
+    <!-- Filter options -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Filter Options</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('pending_updates') }}">
+                <div class="row">
+                    <div class="col-md-5 mb-3">
+                        <label for="customer_id" class="form-label">Customer:</label>
+                        <select name="customer_id" id="customer_id" class="form-select">
+                            <option value="">All Customers</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" {% if selected_customer_id|string == customer.id|string %}selected{% endif %}>
+                                {{ customer.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label for="status" class="form-label">Status:</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+                            <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end mb-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Updates Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if updates %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Customer</th>
+                            <th class="text-end">Current Price</th>
+                            <th class="text-end">New Price</th>
+                            <th>Source</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for update in updates %}
+                        <tr>
+                            <td>{{ update.product.name }}</td>
+                            <td>{{ update.price_list.customer.name }}</td>
+                            <td class="text-end">€{{ "%.2f"|format(update.old_price) }}</td>
+                            <td class="text-end">€{{ "%.2f"|format(update.new_price) }}</td>
+                            <td>{{ update.source_file or 'Manual' }}</td>
+                            <td>{{ update.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if update.status == 'Pending' %}
+                                <div class="btn-group">
+                                    <form action="{{ url_for('approve_update', update_id=update.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success me-1">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('reject_update', update_id=update.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span class="badge bg-{{ update.status|lower }}">{{ update.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No price update requests found with the selected filters.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

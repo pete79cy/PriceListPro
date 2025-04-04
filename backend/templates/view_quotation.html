@@ -1,0 +1,456 @@
+{% extends "layout.html" %}
+
+{% block title %}View Quotation{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <h1>Quotation Details</h1>
+            <p class="text-muted">Quotation #{{ quotation.quotation_number }}</p>
+        </div>
+        <div class="col-lg-6 text-end">
+            <div class="btn-group">
+                <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back to Quotations
+                </a>
+                <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-primary">
+                    <i class="fas fa-file-pdf me-2"></i> Export PDF
+                </a>
+                <button type="button" class="btn btn-primary" id="showAiInsightsButton">
+                    <i class="fas fa-robot me-2"></i> AI Insights
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
+                    <i class="fas fa-trash me-2"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Quotation Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th style="width: 40%">Quotation Number:</th>
+                            <td>{{ quotation.quotation_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>Quotation Date:</th>
+                            <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Amount:</th>
+                            <td>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ quotation.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th style="width: 40%">Name:</th>
+                            <td>{{ quotation.customer.name }}</td>
+                        </tr>
+                        {% if quotation.customer.email %}
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ quotation.customer.email }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if quotation.customer.phone %}
+                        <tr>
+                            <th>Phone:</th>
+                            <td>{{ quotation.customer.phone }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if quotation.customer.address %}
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ quotation.customer.address }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Quotation Items</h5>
+                    <div>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                            <i class="fas fa-plus me-1"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Description</th>
+                                    <th>Scientific Name</th>
+                                    <th>Actual Size</th>
+                                    <th>Asked Size</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-center">VAT Rate</th>
+                                    <th>Supplier</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in quotation.items %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ item.description }}</td>
+                                    <td><em>{{ item.scientific_name or "" }}</em></td>
+                                    <td>{{ item.pot_size or "" }}</td>
+                                    <td>{{ item.height or "" }}</td>
+                                    <td class="text-center">{{ "%d"|format(item.quantity|int) }}</td>
+                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                                    <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
+                                    <td>{{ item.supplier or "Not specified" }}</td>
+                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-warning btn-sm" 
+                                                onclick="editItem({{ item.id }}, '{{ item.description|e }}', '{{ item.scientific_name|e or '' }}', 
+                                                               '{{ item.pot_size|e or '' }}', '{{ item.height|e or '' }}', 
+                                                               '{{ item.quantity }}', '{{ item.selling_price }}', 
+                                                               '{{ item.vat_rate }}', '{{ item.supplier|e or '' }}', 
+                                                               '{{ item.cost_price or 0 }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('Are you sure you want to delete this item?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            {% if quotation.notes %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ quotation.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Subtotal:</th>
+                            <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(subtotal) }}</td>
+                        </tr>
+                        {% for vat in vat_summary %}
+                        <tr>
+                            <th>VAT ({{ "%.1f"|format(vat.rate) }}%):</th>
+                            <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(vat.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <th><strong>Total:</strong></th>
+                            <td class="text-end"><strong>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Supplier Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>Generate supplier-specific reports for this quotation:</p>
+                    
+                    <div class="list-group">
+                        {% for supplier, count in suppliers.items() %}
+                        <a href="{{ url_for('export_supplier_report', quotation_id=quotation.id, supplier=supplier) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="fas fa-file-pdf me-2"></i> 
+                                {{ supplier }}
+                            </span>
+                            <span class="badge bg-primary rounded-pill">{{ count }} item{% if count != 1 %}s{% endif %}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if not suppliers %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No supplier information available for this quotation.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this quotation? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-height: 500px;">
+        <div class="modal-content" style="min-height: 500px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addItemModalLabel">Add Quotation Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_quotation_item', quotation_id=quotation.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="description" class="form-label">Description *</label>
+                            <input type="text" class="form-control" id="description" name="description" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="scientific_name" class="form-label">Scientific Name</label>
+                            <input type="text" class="form-control" id="scientific_name" name="scientific_name">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="pot_size" class="form-label">Actual Size</label>
+                            <input type="text" class="form-control" id="pot_size" name="pot_size">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="height" class="form-label">Asked Size</label>
+                            <input type="text" class="form-control" id="height" name="height" placeholder="e.g. 30-40, 120/150cm">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="quantity" class="form-label">Quantity *</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="vat_rate" class="form-label">VAT Rate (%)</label>
+                            <input type="number" class="form-control" id="vat_rate" name="vat_rate" value="19" min="0" step="0.1">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="selling_price" class="form-label">Selling Price *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ quotation.currency }}</span>
+                                <input type="number" class="form-control" id="selling_price" name="selling_price" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cost_price" class="form-label">Cost Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ quotation.currency }}</span>
+                                <input type="number" class="form-control" id="cost_price" name="cost_price" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="supplier" class="form-label">Supplier</label>
+                            <input type="text" class="form-control" id="supplier" name="supplier">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-height: 500px;">
+        <div class="modal-content" style="min-height: 500px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editItemModalLabel">Edit Quotation Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editItemForm" action="" method="POST">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_description" class="form-label">Description *</label>
+                            <input type="text" class="form-control" id="edit_description" name="description" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_scientific_name" class="form-label">Scientific Name</label>
+                            <input type="text" class="form-control" id="edit_scientific_name" name="scientific_name">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="edit_pot_size" class="form-label">Actual Size</label>
+                            <input type="text" class="form-control" id="edit_pot_size" name="pot_size">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_height" class="form-label">Asked Size</label>
+                            <input type="text" class="form-control" id="edit_height" name="height" placeholder="e.g. 30-40, 120/150cm">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_quantity" class="form-label">Quantity *</label>
+                            <input type="number" class="form-control" id="edit_quantity" name="quantity" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_vat_rate" class="form-label">VAT Rate (%)</label>
+                            <input type="number" class="form-control" id="edit_vat_rate" name="vat_rate" min="0" step="0.1">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="edit_selling_price" class="form-label">Selling Price *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ quotation.currency }}</span>
+                                <input type="number" class="form-control" id="edit_selling_price" name="selling_price" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_cost_price" class="form-label">Cost Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ quotation.currency }}</span>
+                                <input type="number" class="form-control" id="edit_cost_price" name="cost_price" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_supplier" class="form-label">Supplier</label>
+                            <input type="text" class="form-control" id="edit_supplier" name="supplier">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+/* Prevent modal from shifting when input is focused */
+.modal-open {
+    padding-right: 0 !important;
+    overflow-y: auto !important;
+}
+.modal {
+    padding-right: 0 !important;
+}
+.modal-dialog {
+    margin: 30px auto !important;
+    height: auto !important;
+}
+.modal-content {
+    height: auto !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(deleteUrl) {
+    document.getElementById('confirmDeleteBtn').href = deleteUrl;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    deleteModal.show();
+}
+
+function editItem(id, description, scientific_name, pot_size, height, quantity, selling_price, vat_rate, supplier, cost_price) {
+    // Set form action URL with both quotation_id and item_id
+    document.getElementById('editItemForm').action = "/quotation/{{ quotation.id }}/item/" + id;
+    
+    // Fill the form fields with the item data
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_scientific_name').value = scientific_name;
+    document.getElementById('edit_pot_size').value = pot_size;
+    document.getElementById('edit_height').value = height;
+    document.getElementById('edit_quantity').value = quantity;
+    document.getElementById('edit_selling_price').value = selling_price;
+    document.getElementById('edit_vat_rate').value = vat_rate;
+    document.getElementById('edit_supplier').value = supplier;
+    document.getElementById('edit_cost_price').value = cost_price;
+    
+    // Show the modal
+    var editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+    editModal.show();
+}
+
+// Initialize AI Insights for this quotation
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up the quotation context for AI insights
+    if (window.aiInsights) {
+        window.aiInsights.setDocumentContext(
+            'quotation', 
+            {{ quotation.id }}, 
+            'Quotation #{{ quotation.quotation_number }}'
+        );
+    }
+    
+    // Add click handler for the AI insights button
+    document.getElementById('showAiInsightsButton').addEventListener('click', function() {
+        if (window.aiInsights) {
+            window.aiInsights.showSidebar();
+        }
+    });
+});
+</script>
+{% endblock %}
