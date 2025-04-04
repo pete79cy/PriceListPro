@@ -84,7 +84,7 @@
                                         <th style="width: 15%">Description</th>
                                         <th style="width: 15%">Scientific Name</th>
                                         <th style="width: 10%">Actual Size</th>
-                                        <th style="width: 10%">Height</th>
+                                        <th style="width: 10%">Asked Size</th>
                                         <th style="width: 8%" class="text-center">Quantity</th>
                                         <th style="width: 10%" class="text-center">Selling Price (€)</th>
                                         <th style="width: 8%" class="text-center">VAT (%)</th>
@@ -106,7 +106,7 @@
                                             <input type="text" class="form-control" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="e.g. P9, C3L">
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30cm">
+                                            <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30-40, 120/150cm">
                                         </td>
                                         <td>
                                             <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
