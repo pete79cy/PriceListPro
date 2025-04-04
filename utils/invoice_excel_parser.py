@@ -25,7 +25,8 @@ from utils.product_verification import verify_product_exists
 
 def extract_customer_name_from_invoice(excel_path):
     """
-    Extract customer name from line 11, merged columns J-AE
+    Extract customer name from line 11, typically in columns J-AE
+    The function will scan a few rows around line 11 to locate the customer name.
     
     Args:
         excel_path (str): Path to the Excel file
@@ -38,21 +39,44 @@ def extract_customer_name_from_invoice(excel_path):
         wb = load_workbook(excel_path, data_only=True)
         ws = wb.active
         
-        # Line 11, column J (index 9 in 0-based indexing)
-        customer_cell = ws.cell(row=11, column=10)  # Column J = 10
-        customer_name = customer_cell.value
+        # Log the workbook structure
+        logger.info(f"Extracting customer name from file: {excel_path}")
+        logger.info(f"Sheet names: {wb.sheetnames}, Active sheet: {ws.title}")
+        
+        # Try to find customer name by scanning rows 9-13 and columns 1-15
+        # This makes our parser more flexible to handle slight variations in invoice formats
+        customer_name = None
+        
+        # First look in expected position: line 11, column J
+        expected_cell = ws.cell(row=11, column=10)  # Column J = 10
+        expected_value = expected_cell.value
+        logger.info(f"Value at expected customer cell (J11): {expected_value}")
+        
+        if expected_value and isinstance(expected_value, str) and len(expected_value.strip()) > 3:
+            customer_name = expected_value.strip()
+        else:
+            # Scan nearby rows and columns to locate customer name
+            logger.info("Customer name not found at expected location, scanning nearby cells")
+            for row in range(9, 14):  # Check rows 9-13
+                for col in range(1, 16):  # Check columns A-O
+                    cell_value = ws.cell(row=row, column=col).value
+                    if cell_value and isinstance(cell_value, str) and len(cell_value.strip()) > 3:
+                        logger.info(f"Potential customer name found at row {row}, column {col}: {cell_value}")
+                        # Only set customer_name if it's not yet set or if this value is longer
+                        # (assuming longer strings are more likely to be proper names)
+                        if not customer_name or len(cell_value) > len(customer_name):
+                            customer_name = cell_value.strip()
         
         if customer_name:
-            # Clean up the customer name
-            customer_name = customer_name.strip()
             logger.info(f"Extracted customer name: {customer_name}")
             return customer_name
         else:
-            logger.warning("Could not extract customer name from invoice")
+            logger.warning("Could not extract customer name from invoice after scanning multiple cells")
             return None
             
     except Exception as e:
         logger.error(f"Error extracting customer name from invoice: {str(e)}")
+        logger.error(traceback.format_exc())
         return None
 
 def parse_vat_rate(vat_text):
@@ -116,35 +140,149 @@ def parse_invoice_excel(excel_path, customer_id=None):
         wb = load_workbook(excel_path, data_only=True)
         ws = wb.active
         
+        # Debug workbook structure
+        logger.info(f"Invoice Excel file loaded successfully. Sheet names: {wb.sheetnames}")
+        logger.info(f"Active sheet: {ws.title}")
+        logger.info(f"Sheet dimensions: {ws.dimensions}")
+        
+        # Try to examine cell A1 and some key cells to check if the structure matches expected
+        try:
+            logger.info(f"Cell A1 value: {ws.cell(row=1, column=1).value}")
+            logger.info(f"Customer name cell (J11): {ws.cell(row=11, column=10).value}")
+            logger.info(f"First product cell (E16): {ws.cell(row=16, column=5).value}")
+        except Exception as cell_err:
+            logger.error(f"Error checking reference cells: {str(cell_err)}")
+        
         # Initialize results
         products = []
         
-        # Start processing from line 16
-        row = 16
-        while True:
-            # Check if we've reached the end of the data
-            scientific_name_cell = ws.cell(row=row, column=5)  # Column E = 5
-            if not scientific_name_cell.value:
-                # Break if no more products
+        # Scan for the starting row - look for rows that might contain product data
+        # This makes the parser more robust to different Excel layouts
+        data_row_start = None
+        for scan_row in range(12, 25):  # Look between rows 12-25 for product data
+            scientific_name = ws.cell(row=scan_row, column=5).value  # Column E
+            description = ws.cell(row=scan_row, column=13).value     # Column M
+            price = ws.cell(row=scan_row, column=24).value           # Column X
+            
+            # Check if this row has what looks like product data
+            if (scientific_name or description) and price:
+                logger.info(f"Found potential data row at {scan_row}")
+                data_row_start = scan_row
                 break
+        
+        if not data_row_start:
+            # If we didn't find a clear starting row, try more columns on row 16
+            # as it's the expected starting point
+            logger.info("No clear data starting row found, checking alternative column positions")
+            data_row_start = 16
                 
-            # Extract data from merged cells
-            scientific_name = scientific_name_cell.value
-            description_cell = ws.cell(row=row, column=13)  # Column M = 13
-            description = description_cell.value if description_cell.value else scientific_name
+        # Also check some alternative column positions for scientific names/descriptions
+        # This helps with Excel files that might have different column structures
+        scientific_name_cols = [5, 6, 4]  # Try column E (5) first, then F, then D
+        description_cols = [13, 12, 14]   # Try column M (13) first, then L, then N
+        quantity_cols = [20, 19, 21]      # Try column T (20) first, then S, then U  
+        price_cols = [24, 23, 25]         # Try column X (24) first, then W, then Y
+        vat_cols = [27, 26, 28]           # Try column AA (27) first, then Z, then AB
+        total_cols = [31, 30, 32]         # Try column AE (31) first, then AD, then AF
+        
+        logger.info(f"Starting to process product data from row {data_row_start}")
+        
+        # Start processing from detected start row
+        row = data_row_start
+        max_rows = 100  # Safety limit to prevent infinite loops
+        row_count = 0
+                
+        # Keep track of whether we've found any products
+        found_any_products = False
+        
+        while row_count < max_rows:
+            row_count += 1
             
-            quantity_cell = ws.cell(row=row, column=20)  # Column T = 20
-            quantity = quantity_cell.value
+            # Examine multiple possible scientific name columns
+            scientific_name = None
+            for col in scientific_name_cols:
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value:
+                    scientific_name = cell_value
+                    logger.info(f"Found scientific name in column {col}: {scientific_name}")
+                    break
             
-            price_cell = ws.cell(row=row, column=24)  # Column X = 24
-            price = price_cell.value
+            # If no scientific name found in any column, check if we can find data in other columns
+            # Sometimes the Excel might have only product descriptions without scientific names
+            description = None
+            for col in description_cols:
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value:
+                    description = cell_value
+                    logger.info(f"Found description in column {col}: {description}")
+                    break
+                    
+            # Look for price in different possible columns
+            price = None
+            for col in price_cols:
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value and (isinstance(cell_value, (int, float)) or 
+                                  (isinstance(cell_value, str) and re.search(r'\d', cell_value))):
+                    price = cell_value
+                    logger.info(f"Found price in column {col}: {price}")
+                    break
             
-            vat_cell = ws.cell(row=row, column=27)  # Column AA = 27
-            vat_text = vat_cell.value
+            # Check if we have at least one of scientific name or description, and a price
+            # If not, we've probably reached the end of the product data
+            if not ((scientific_name or description) and price):
+                # If we've already found products in previous rows, assume this is the end of the list
+                if found_any_products:
+                    logger.info(f"No more product data at row {row}, stopping extraction")
+                    break
+                # If we haven't found any products yet, try the next row
+                logger.info(f"No product data at row {row}, trying next row")
+                row += 1
+                continue
+            
+            # Mark that we've found at least one product
+            found_any_products = True
+            
+            # Use scientific name as description if no description found
+            if not description:
+                description = scientific_name
+            elif not scientific_name:
+                # If only description is found but no scientific name, 
+                # sometimes the scientific name is part of the description
+                scientific_name = description
+            
+            # Look for quantity in different possible columns
+            quantity = None
+            for col in quantity_cols:
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value:
+                    quantity = cell_value
+                    logger.info(f"Found quantity in column {col}: {quantity}")
+                    break
+            
+            # Look for VAT information in different possible columns
+            vat_text = None
+            for col in vat_cols:
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value:
+                    vat_text = cell_value
+                    logger.info(f"Found VAT in column {col}: {vat_text}")
+                    break
+            
             vat_rate = parse_vat_rate(vat_text)
             
-            total_ex_vat_cell = ws.cell(row=row, column=31)  # Column AE = 31
-            total_ex_vat = total_ex_vat_cell.value
+            # Look for total in different possible columns
+            total_ex_vat = None
+            for col in total_cols:
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value and (isinstance(cell_value, (int, float)) or 
+                                  (isinstance(cell_value, str) and re.search(r'\d', cell_value))):
+                    total_ex_vat = cell_value
+                    logger.info(f"Found total in column {col}: {total_ex_vat}")
+                    break
+            
+            # Debug row data
+            logger.info(f"Row {row} data: Scientific name: {scientific_name}, Description: {description}, " +
+                       f"Quantity: {quantity}, Price: {price}, VAT: {vat_text}, Total ex VAT: {total_ex_vat}")
             
             # Clean and convert data
             try:
