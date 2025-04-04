@@ -141,7 +141,7 @@ def extract_quotation_data_from_pdf(pdf_path, customer_id):
                     'quantity': 1,
                     'selling_price': None,
                     'vat_rate': 19,  # Default VAT rate of 19%, can also be 5% or 0%
-                    'supplier': None,
+                    'supplier': "In-house Production",  # Default to In-house Production
                     'cost_price': None,
                     'product_id': product.id if product else None
                 }
@@ -272,6 +272,10 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             unit = str(row.get('unit', '')) if pd.notna(row.get('unit', '')) else ''
             actual_size = str(row.get('actual_size', '')) if pd.notna(row.get('actual_size', '')) else ''
             supplier = str(row.get('supplier', '')) if pd.notna(row.get('supplier', '')) else ''
+            
+            # Set default supplier to "In-house Production" if empty
+            if not supplier.strip():
+                supplier = "In-house Production"
             
             # Format height with "cm" if it's just a number or range without units
             if height and re.match(r'^\d+(/\d+)?$', height.strip()):
