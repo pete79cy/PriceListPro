@@ -1,109 +1,118 @@
 import React, { useState, useContext } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { useNavigate, Link } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { FaLeaf, FaSignInAlt } from 'react-icons/fa';
+
+// Auth context
 import { AuthContext } from '../App';
 
+// Custom location state type
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+}
+
+/**
+ * Login page component
+ */
 const Login: React.FC = () => {
+  // Get location and auth context
+  const location = useLocation();
+  const { isAuthenticated, login, loading } = useContext(AuthContext);
+  
+  // Form state
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
-  const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
-
-  // Form validation
-  const validateForm = (): boolean => {
-    setError(null);
+  // Get the redirect path from location state or default to dashboard
+  const locationState = location.state as LocationState;
+  const from = locationState?.from?.pathname || '/dashboard';
+  
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to={from} replace />;
+  }
+  
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!username.trim()) {
-      setError('Username is required');
-      return false;
-    }
-    
-    if (!password.trim()) {
-      setError('Password is required');
-      return false;
-    }
-    
-    return true;
-  };
-
-  // Handle login
-  const handleLogin = async () => {
-    // Validate form
-    if (!validateForm()) {
+    if (!username || !password) {
+      setError('Please enter both username and password');
       return;
     }
     
+    setIsLoggingIn(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      
-      // Call login function from AuthContext
       const success = await login(username, password);
       
-      if (success) {
-        // Redirect to dashboard on successful login
-        navigate('/dashboard');
-      } else {
-        setError('Invalid username or password. Please try again.');
+      if (!success) {
+        setError('Invalid username or password');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('An error occurred during login. Please try again later.');
+    } catch (error) {
+      setError('An error occurred during login. Please try again.');
+      console.error('Login error:', error);
     } finally {
-      setLoading(false);
+      setIsLoggingIn(false);
     }
   };
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleLogin();
-  };
-
+  
   return (
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col md={6} lg={5}>
-          <Card>
-            <Card.Header className="bg-primary text-white text-center">
-              <h3 className="m-0">Login</h3>
-            </Card.Header>
-            <Card.Body>
+          <Card className="shadow-sm border-0">
+            <Card.Body className="p-4">
+              <div className="text-center mb-4">
+                <FaLeaf className="text-primary mb-2" size={40} />
+                <h2 className="fw-bold">Welcome Back</h2>
+                <p className="text-muted">Sign in to your account</p>
+              </div>
+              
               {error && (
-                <Alert variant="danger">{error}</Alert>
+                <Alert variant="danger" className="mb-4">
+                  {error}
+                </Alert>
               )}
               
               <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
+                <Form.Group className="mb-3" controlId="username">
                   <Form.Label>Username</Form.Label>
                   <Form.Control
                     type="text"
+                    placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
-                    disabled={loading}
+                    required
                   />
                 </Form.Group>
                 
-                <Form.Group className="mb-4">
+                <Form.Group className="mb-4" controlId="password">
                   <Form.Label>Password</Form.Label>
                   <Form.Control
                     type="password"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    disabled={loading}
+                    required
                   />
                 </Form.Group>
                 
-                <div className="d-grid">
-                  <Button variant="primary" type="submit" disabled={loading}>
-                    {loading ? 'Logging in...' : 'Login'}
-                  </Button>
-                </div>
+                <Button 
+                  variant="primary" 
+                  type="submit" 
+                  className="w-100 py-2"
+                  disabled={isLoggingIn || loading}
+                >
+                  {isLoggingIn ? 'Signing in...' : 'Sign In'}
+                  {!isLoggingIn && <FaSignInAlt className="ms-2" />}
+                </Button>
               </Form>
             </Card.Body>
           </Card>
