@@ -83,7 +83,7 @@
                                     <tr>
                                         <th style="width: 15%">Description</th>
                                         <th style="width: 15%">Scientific Name</th>
-                                        <th style="width: 10%">Pot Size</th>
+                                        <th style="width: 10%">Actual Size</th>
                                         <th style="width: 10%">Height</th>
                                         <th style="width: 8%" class="text-center">Quantity</th>
                                         <th style="width: 10%" class="text-center">Selling Price (€)</th>
@@ -103,7 +103,7 @@
                                             <input type="text" class="form-control" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}">
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}">
+                                            <input type="text" class="form-control" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="e.g. P9, C3L">
                                         </td>
                                         <td>
                                             <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30cm">
