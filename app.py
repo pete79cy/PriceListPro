@@ -39,8 +39,10 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 # Configure file uploads
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
+app.config['TEMPLATES_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates/sample_files')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['TEMPLATES_FOLDER'], exist_ok=True)
 
 # Initialize the app with the extension
 db.init_app(app)

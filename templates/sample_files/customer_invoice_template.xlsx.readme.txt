@@ -1,0 +1,18 @@
+CUSTOMER INVOICE EXCEL TEMPLATE
+
+This template is structured with merged cells for the following fields:
+
+1. Customer Information:
+   - Line 11, columns J-AE: Customer name
+
+2. Product Information (starting from line 16 onwards):
+   - Columns E-L: Scientific name of the plant
+   - Columns M-S: Description of the plant
+   - Columns T-W: Quantity
+   - Columns X-Z: Price per unit
+   - Columns AA-AD: VAT rate (5% or 19%)
+   - Column AE: Total (excluding VAT)
+
+IMPORTANT: This template requires a specific Excel file structure with merged cells. 
+The actual template file cannot be created from this text description.
+Please refer to the example file "Customer Invoice 1566.xlsx" for reference.
