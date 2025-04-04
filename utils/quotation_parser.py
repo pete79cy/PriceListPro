@@ -191,6 +191,9 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
     logger.info(f"Extracting quotation data from Excel: {excel_path}")
     
     try:
+        # Log the file being processed
+        logger.info(f"Processing Excel file for quotation: {excel_path}")
+        
         # Try to read Excel file with different engines and header configurations
         df = None
         try:
@@ -203,29 +206,37 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 logger.info("Successfully read Excel file with openpyxl using header=1")
             except Exception as e_header1:
                 logger.warning(f"Error reading Excel with openpyxl using header=1: {str(e_header1)}")
-                df = pd.read_excel(excel_path, engine='openpyxl', header=None)
-                logger.info("Successfully read Excel file with openpyxl using header=None")
-                
-                # Set default column names based on expected structure
-                default_columns = ['category', 'description', 'height', 'unit', 'unit_price', 'actual_size', 'cost', 'supplier']
-                # Only use as many default columns as we have in the dataframe
-                usable_cols = min(len(default_columns), len(df.columns))
-                column_rename = {i: default_columns[i] for i in range(usable_cols)}
-                df = df.rename(columns=column_rename)
+                try:
+                    df = pd.read_excel(excel_path, engine='openpyxl', header=None)
+                    logger.info("Successfully read Excel file with openpyxl using header=None")
+                    
+                    # Set default column names based on expected structure
+                    default_columns = ['category', 'description', 'height', 'unit', 'unit_price', 'actual_size', 'cost', 'supplier']
+                    # Only use as many default columns as we have in the dataframe
+                    usable_cols = min(len(default_columns), len(df.columns))
+                    column_rename = {i: default_columns[i] for i in range(usable_cols)}
+                    df = df.rename(columns=column_rename)
+                except Exception as e_header_none:
+                    logger.error(f"Failed to read Excel with any header configuration: {str(e_header_none)}")
+                    raise ValueError("Could not read Excel file with any header configuration. Please check if the file is corrupted or in an unsupported format.")
+
+        # Log the detected columns
+        logger.info(f"Detected columns in Excel: {list(df.columns)}")
         
         # Normalize column names to handle variations in Excel headers
         df.columns = [str(col).strip().lower() for col in df.columns]
         
         # Map common variations of column names based on the expected structure
         column_maps = {
-            'category': ['category', 'plant type', 'type', 'plant category'],
-            'description': ['description', 'scientific name', 'botanical name', 'scientific', 'name', 'plant name'],
-            'height': ['height', 'plant height', 'h', 'height (cm)', 'height cm'],
-            'unit': ['unit', 'unit type', 'quantity unit', 'qty unit'],
-            'unit_price': ['unit price', 'price', 'selling price', 'unit cost', 'price (€)', 'price per unit', 'unit_price', 'unit price', 'unitprice'],
-            'actual_size': ['actual size', 'size', 'plant size', 'actual_size', 'real size'],
-            'cost': ['cost', 'cost price', 'supplier cost', 'purchase price', 'buying price'],
-            'supplier': ['supplier', 'vendor', 'source', 'provider', 'producer']
+            'category': ['category', 'plant type', 'type', 'plant category', 'cat', 'cat.'],
+            'description': ['description', 'scientific name', 'botanical name', 'scientific', 'name', 'plant name', 'desc', 'plant', 'description / scientific name'],
+            'common_name': ['common name', 'common', 'name common', 'vernacular name', 'english name', 'display name'],
+            'height': ['height', 'plant height', 'h', 'height (cm)', 'height cm', 'h(cm)', 'h cm'],
+            'unit': ['unit', 'unit type', 'quantity unit', 'qty unit', 'units', 'qty', 'quantity'],
+            'unit_price': ['unit price', 'price', 'selling price', 'unit cost', 'price (€)', 'price per unit', 'unit_price', 'unit price', 'unitprice', 'price €', 'unit price €', 'each'],
+            'actual_size': ['actual size', 'size', 'plant size', 'actual_size', 'real size', 'pot size', 'container', 'pot'],
+            'cost': ['cost', 'cost price', 'supplier cost', 'purchase price', 'buying price', 'cost €', 'buy price'],
+            'supplier': ['supplier', 'vendor', 'source', 'provider', 'producer', 'origin']
         }
         
         # Map the actual columns to our standard names
@@ -240,6 +251,9 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
         if column_mapping:
             df = df.rename(columns=column_mapping)
         
+        # Log the standardized columns
+        logger.info(f"Standardized columns: {list(df.columns)}")
+        
         # Initialize quotation data
         quotation_data = {
             'products': [],
@@ -249,7 +263,7 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
         }
         
         # Get required column names that should be in the dataframe
-        required_columns = ['description', 'unit_price']
+        required_columns = ['description']  # Only description is truly required
         
         # Check if all required columns are present
         missing_columns = [col for col in required_columns if col not in df.columns]
@@ -258,28 +272,49 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
         
         # Remove empty rows and process each row
         df = df.dropna(how='all')
+        logger.info(f"Processing {len(df)} non-empty rows from Excel file")
+        
         for index, row in df.iterrows():
             # Skip header-like rows
             if isinstance(row.get('description'), str) and row.get('description').lower() in ['description', 'scientific name', 'name']:
+                logger.info(f"Skipping header-like row with description: {row.get('description')}")
                 continue
             
             # Extract data from row based on our expected structure
             description = str(row.get('description', '')) if pd.notna(row.get('description', '')) else ''
-            # Using description as scientific_name since that's what it contains according to the format
-            scientific_name = description
+            
+            # Skip empty description rows
+            if not description.strip():
+                logger.info(f"Skipping row {index} due to empty description")
+                continue
+                
+            # Try to get common name if available, otherwise use description for both fields
+            common_name = str(row.get('common_name', '')) if pd.notna(row.get('common_name', '')) else ''
+            
+            # Determine which field goes where
+            # Description field often contains scientific name in Excel files for plant nurseries
+            scientific_name = description  # Use description as scientific name
+            display_description = common_name if common_name else description  # Use common name as description if available
+            
             category = str(row.get('category', '')) if pd.notna(row.get('category', '')) else ''
             height = str(row.get('height', '')) if pd.notna(row.get('height', '')) else ''
             unit = str(row.get('unit', '')) if pd.notna(row.get('unit', '')) else ''
             actual_size = str(row.get('actual_size', '')) if pd.notna(row.get('actual_size', '')) else ''
             supplier = str(row.get('supplier', '')) if pd.notna(row.get('supplier', '')) else ''
             
+            # Format height properly
+            if height:
+                height = height.strip()
+                # Add "cm" only if it's a number without units
+                if re.match(r'^\d+(/\d+)?(-\d+(/\d+)?)?$', height):
+                    height = f"{height} cm"
+            
+            # Set pot_size based on actual_size
+            pot_size = actual_size.strip() if actual_size else ''
+            
             # Set default supplier to "In-house Production" if empty
             if not supplier.strip():
                 supplier = "In-house Production"
-            
-            # Format height with "cm" if it's just a number or range without units
-            if height and re.match(r'^\d+(/\d+)?$', height.strip()):
-                height = f"{height.strip()} cm"
             
             # Extract cost and unit price
             cost_price = None
@@ -289,21 +324,27 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 try:
                     cost_price = float(row['cost'])
                 except (ValueError, TypeError):
-                    pass
+                    # Try to handle currency formatting with commas or currency symbols
+                    try:
+                        cost_str = str(row['cost']).replace('€', '').replace(',', '.').strip()
+                        cost_price = float(re.sub(r'[^\d.]', '', cost_str))
+                    except:
+                        pass
             
             if 'unit_price' in row and pd.notna(row['unit_price']):
                 try:
                     unit_price = float(row['unit_price'])
                 except (ValueError, TypeError):
-                    pass
-            
-            # Skip empty rows
-            if not description:
-                continue
+                    # Try to handle currency formatting with commas or currency symbols
+                    try:
+                        price_str = str(row['unit_price']).replace('€', '').replace(',', '.').strip()
+                        unit_price = float(re.sub(r'[^\d.]', '', price_str))
+                    except:
+                        pass
             
             # Check if product exists in the database based on scientific name
             product_data = {
-                'name': description,  # Use description as name for lookup
+                'name': scientific_name,  # Use scientific name as name for lookup
                 'scientific_name': scientific_name,
                 'category': category
             }
@@ -314,17 +355,19 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 create_if_missing=False  # Don't create new products here
             )
             
-            # The pot_size in our case is derived from actual_size
-            pot_size = actual_size
+            # Parse quantity with better error handling
+            try:
+                quantity = parse_quantity_from_unit(unit)
+            except:
+                quantity = 1  # Default to 1 if parsing fails
             
             # Initialize product entry using our new format
             product_entry = {
-                'description': description,  # This holds the scientific name as per format
-                'scientific_name': scientific_name,
+                'description': display_description,  # Use common name or description
+                'scientific_name': scientific_name,  # Scientific name from description field
                 'pot_size': pot_size,
                 'height': height,
-                # Try to extract quantity from unit field - handle various formats
-                'quantity': parse_quantity_from_unit(unit),
+                'quantity': quantity,
                 'selling_price': unit_price,  # Price from the Excel file
                 'vat_rate': 19,  # Default VAT rate of 19%, can also be 5% or 0%
                 'supplier': supplier,
@@ -334,6 +377,9 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 'actual_size': actual_size,
                 'unit': unit
             }
+            
+            # Log the extracted product entry
+            logger.info(f"Extracted product: {scientific_name}, price: {unit_price}, pot size: {pot_size}")
             
             # If unit_price is not available but product exists in database, check price list
             if product and not unit_price:
@@ -345,10 +391,12 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 
                 if price_list:
                     product_entry['selling_price'] = price_list.price
+                    logger.info(f"Using price list price for {scientific_name}: {price_list.price}")
             
             # Add to products list
             quotation_data['products'].append(product_entry)
         
+        logger.info(f"Successfully extracted {len(quotation_data['products'])} products from Excel")
         return quotation_data
     
     except Exception as e:
