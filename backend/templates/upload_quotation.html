@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Quotation{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1>Create New Quotation</h1>
+            <p class="text-muted">Upload a file to generate a quotation for your customer</p>
+        </div>
+        <div class="col-lg-4 text-end">
+            <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Quotations
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Upload File for Quotation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Upload Excel File</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form action="{{ url_for('upload_quotation_file') }}" method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="file_type" value="excel">
+                                        <div class="mb-3">
+                                            <label for="excel-customer" class="form-label">Select Customer</label>
+                                            <select class="form-select" id="excel-customer" name="customer_id" required>
+                                                <option value="" selected disabled>Choose a customer</option>
+                                                {% for customer in customers %}
+                                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="excel-file" class="form-label">Excel File</label>
+                                            <input class="form-control" type="file" id="excel-file" name="file" accept=".xlsx,.xls" required>
+                                            <div class="form-text">Upload an Excel file with product information.</div>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-upload me-2"></i> Upload Excel
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i> Download our Excel template for quotations:
+                                        <a href="{{ url_for('download_template', type='quotation') }}" class="link-primary">Download quotation template</a>.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Upload PDF File</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form action="{{ url_for('upload_quotation_file') }}" method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="file_type" value="pdf">
+                                        <div class="mb-3">
+                                            <label for="pdf-customer" class="form-label">Select Customer</label>
+                                            <select class="form-select" id="pdf-customer" name="customer_id" required>
+                                                <option value="" selected disabled>Choose a customer</option>
+                                                {% for customer in customers %}
+                                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="pdf-file" class="form-label">PDF File</label>
+                                            <input class="form-control" type="file" id="pdf-file" name="file" accept=".pdf" required>
+                                            <div class="form-text">Upload a PDF file with product information.</div>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-upload me-2"></i> Upload PDF
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i> The system will attempt to extract product information from the PDF.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">How Quotations Work</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Creating a Quotation:</h6>
+                            <ol class="small">
+                                <li>Upload an Excel file or PDF containing the products your customer has requested</li>
+                                <li>The system will parse the file and extract product information</li>
+                                <li>Products will be matched with your product catalog when possible</li>
+                                <li>For each product, the system will check if it exists in the customer's price list</li>
+                                <li>If found, pricing information will be auto-populated</li>
+                                <li>You'll be able to review and edit all details before finalizing</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Editing and Finalizing:</h6>
+                            <ol class="small">
+                                <li>After upload, you'll be presented with an editable interface</li>
+                                <li>You can adjust selling prices, VAT rates, suppliers, and cost prices</li>
+                                <li>For each product, you can specify if it's sourced from a supplier or produced in-house</li>
+                                <li>Once finalized, you can generate a PDF quotation to send to your customer</li>
+                                <li>You can also create supplier-specific order reports by grouping products by supplier</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

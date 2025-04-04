@@ -1,0 +1,154 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Invoice #{{ invoice.invoice_number }}</h5>
+                <div>
+                    <a href="{{ url_for('invoices') }}" class="btn btn-sm btn-light me-2">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Invoices
+                    </a>
+                    {% if invoice.file_path %}
+                    <a href="{{ url_for('uploaded_file', filename=invoice.file_path) }}" class="btn btn-sm btn-light me-2" target="_blank">
+                        <i class="fas fa-file-pdf me-1"></i> View PDF
+                    </a>
+                    {% endif %}
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal">
+                        <i class="fas fa-trash me-1"></i> Delete
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Invoice Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th style="width: 40%">Invoice Number:</th>
+                                        <td>{{ invoice.invoice_number }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Invoice Date:</th>
+                                        <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Amount:</th>
+                                        <td>{{ invoice.currency }} {{ "%.2f"|format(invoice.total_amount) }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Customer Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th style="width: 40%">Name:</th>
+                                        <td>{{ customer.name }}</td>
+                                    </tr>
+                                    {% if customer.email %}
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ customer.email }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if customer.phone %}
+                                    <tr>
+                                        <th>Phone:</th>
+                                        <td>{{ customer.phone }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if customer.address %}
+                                    <tr>
+                                        <th>Address:</th>
+                                        <td>{{ customer.address }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Invoice Items</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Scientific Name</th>
+                                        <th>Actual Size</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>VAT</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td>{{ item.description }}</td>
+                                        <td>{{ item.scientific_name|default('', true) }}</td>
+                                        <td>{{ item.pot_size|default('', true) }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ invoice.currency }} {{ "%.2f"|format(item.price) }}</td>
+                                        <td>
+                                            {% if item.vat_percentage %}
+                                            {{ "%.1f"|format(item.vat_percentage) }}%
+                                            {% endif %}
+                                            ({{ invoice.currency }} {{ "%.2f"|format(item.vat) }})
+                                        </td>
+                                        <td>{{ invoice.currency }} {{ "%.2f"|format(item.total) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-light fw-bold">
+                                        <td colspan="6" class="text-end">Total Amount:</td>
+                                        <td>{{ invoice.currency }} {{ "%.2f"|format(invoice.total_amount) }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Delete Invoice Confirmation Modal -->
+<div class="modal fade" id="deleteInvoiceModal" tabindex="-1" aria-labelledby="deleteInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteInvoiceModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete Invoice <strong>#{{ invoice.invoice_number }}</strong>?</p>
+                <p>This action cannot be undone. All invoice data and relationships will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" method="post">
+                    <button type="submit" class="btn btn-danger">Delete Invoice</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

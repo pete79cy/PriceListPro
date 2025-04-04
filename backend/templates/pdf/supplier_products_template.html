@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Supplier Products Report</title>
+    <style>
+        @page {
+            size: {{ orientation }};
+            margin: 1.5cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .company-info {
+            flex: 2;
+        }
+        
+        .logo-container {
+            flex: 1;
+            text-align: right;
+        }
+        
+        .logo {
+            max-width: 150px;
+            max-height: 60px;
+        }
+        
+        h1 {
+            font-size: 18px;
+            color: #4e73df;
+            margin-bottom: 5px;
+        }
+        
+        h2 {
+            font-size: 16px;
+            color: #4e73df;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .meta-info {
+            margin-top: 10px;
+            margin-bottom: 20px;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            text-align: left;
+            padding: 8px;
+            font-weight: bold;
+            color: #4e73df;
+        }
+        
+        td {
+            border-bottom: 1px solid #e3e6f0;
+            padding: 8px;
+            vertical-align: top;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fc;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 10px;
+            text-align: center;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        .supplier-section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            <h1>Supplier Products Report</h1>
+            {% if company %}
+            <div>{{ company.name }}</div>
+            {% if company.address_line1 %}<div>{{ company.address_line1 }}</div>{% endif %}
+            {% if company.address_line2 %}<div>{{ company.address_line2 }}</div>{% endif %}
+            {% if company.phone %}<div>Tel: {{ company.phone }}</div>{% endif %}
+            {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
+            {% if company.website %}<div>Web: {{ company.website }}</div>{% endif %}
+            {% endif %}
+        </div>
+        
+        {% if logo_data %}
+        <div class="logo-container">
+            <img src="{{ logo_data }}" class="logo" alt="Company Logo">
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="meta-info">
+        <div>Generated on: {{ date_generated }}</div>
+        <div>Total Products: {{ products_count }} | Suppliers: {{ suppliers_count }}</div>
+    </div>
+    
+    {% for supplier_group in suppliers %}
+    <div class="supplier-section">
+        <h2>{{ supplier_group.supplier.name }}{% if supplier_group.supplier.is_inhouse %} (In-house){% endif %}</h2>
+        
+        {% if supplier_group.supplier.contact_person or supplier_group.supplier.email or supplier_group.supplier.phone %}
+        <div class="meta-info">
+            {% if supplier_group.supplier.contact_person %}<div>Contact: {{ supplier_group.supplier.contact_person }}</div>{% endif %}
+            {% if supplier_group.supplier.email %}<div>Email: {{ supplier_group.supplier.email }}</div>{% endif %}
+            {% if supplier_group.supplier.phone %}<div>Phone: {{ supplier_group.supplier.phone }}</div>{% endif %}
+        </div>
+        {% endif %}
+        
+        <table>
+            <thead>
+                <tr>
+                    <th width="30%">Product Name</th>
+                    <th width="25%">Scientific Name</th>
+                    <th width="10%">Asked Size</th>
+                    <th width="10%">Actual Size</th>
+                    <th width="10%">Price</th>
+                    <th width="10%">Cost</th>
+                    <th width="10%">Last Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in supplier_group.products %}
+                <tr>
+                    <td>{{ product.product_name }}</td>
+                    <td>{{ product.scientific_name or '-' }}</td>
+                    <td>{{ product.height or '-' }}</td>
+                    <td>{{ product.pot_size or '-' }}</td>
+                    <td>€{{ "%.2f"|format(product.price) }}</td>
+                    <td>{% if product.cost_price %}€{{ "%.2f"|format(product.cost_price) }}{% else %}-{% endif %}</td>
+                    <td>{{ product.last_detected.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+    
+    <div class="footer">
+        <p>This is a confidential document intended for internal use only.</p>
+        <p>Generated by Plant Management System | {{ date_generated }}</p>
+    </div>
+</body>
+</html>

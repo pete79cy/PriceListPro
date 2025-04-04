@@ -1,0 +1,90 @@
+<!-- AI Insights Sidebar Component -->
+<div class="ai-insights-sidebar" id="aiInsightsSidebar">
+    <div class="ai-insights-header">
+        <h5><i class="fas fa-robot me-2"></i> Document Insights</h5>
+        <button type="button" class="btn-close ai-close-button" id="closeAiInsights" aria-label="Close" onclick="window.aiInsights.hideSidebar()"></button>
+    </div>
+    
+    <div class="ai-insights-body">
+        <!-- Loading Spinner -->
+        <div class="text-center p-4 ai-loading" id="aiLoadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Analyzing document...</p>
+        </div>
+        
+        <!-- Error Message -->
+        <div class="ai-error-message d-none" id="aiErrorMessage">
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i> Analysis Error</h6>
+                <p id="aiErrorText">Sorry, we couldn't analyze this document. Please try again later.</p>
+            </div>
+            <div class="text-center mt-3">
+                <button class="btn btn-sm btn-outline-primary" id="aiRetryButton">
+                    <i class="fas fa-sync-alt me-1"></i> Retry Analysis
+                </button>
+            </div>
+        </div>
+        
+        <!-- API Key Missing Message -->
+        <div class="ai-api-missing d-none" id="aiApiMissing">
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-key me-2"></i> API Key Required</h6>
+                <p>To enable AI document insights, you need to add your OpenAI API key.</p>
+            </div>
+            <div class="text-center mt-3">
+                <a href="/ai-insights/settings" class="btn btn-sm btn-primary">
+                    <i class="fas fa-cog me-1"></i> Configure API Key
+                </a>
+            </div>
+        </div>
+        
+        <!-- Insights Content -->
+        <div class="ai-insights-content d-none" id="aiInsightsContent">
+            <!-- Document Info -->
+            <div class="ai-document-info mb-3">
+                <h6 class="ai-document-title" id="aiDocumentTitle">Document Analysis</h6>
+                <p class="ai-document-meta" id="aiDocumentMeta">Generated on: <span id="aiTimestamp"></span></p>
+            </div>
+            
+            <!-- Key Observations -->
+            <div class="ai-insight-section" id="aiKeyObservations">
+                <h6><i class="fas fa-search me-2"></i> Key Observations</h6>
+                <div class="ai-insight-content" id="aiKeyObservationsContent"></div>
+            </div>
+            
+            <!-- Pricing Analysis -->
+            <div class="ai-insight-section" id="aiPricingAnalysis">
+                <h6><i class="fas fa-chart-line me-2"></i> Pricing Analysis</h6>
+                <div class="ai-insight-content" id="aiPricingAnalysisContent"></div>
+            </div>
+            
+            <!-- Business Recommendations -->
+            <div class="ai-insight-section" id="aiBusinessRecommendations">
+                <h6><i class="fas fa-lightbulb me-2"></i> Business Recommendations</h6>
+                <div class="ai-insight-content" id="aiBusinessRecommendationsContent"></div>
+            </div>
+            
+            <!-- Other Insights (will be populated dynamically) -->
+            <div id="aiOtherInsights"></div>
+        </div>
+    </div>
+    
+    <div class="ai-insights-footer">
+        <small class="text-muted">Powered by OpenAI</small>
+        <div>
+            <button class="btn btn-sm btn-outline-danger me-2" onclick="window.aiInsights.hideSidebar()">
+                <i class="fas fa-times me-1"></i> Close
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" id="refreshAiInsights">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toggle Button -->
+<button class="btn btn-primary ai-toggle-button d-none" id="showAiInsights">
+    <i class="fas fa-robot me-1"></i> Insights
+</button>
