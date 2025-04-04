@@ -127,7 +127,7 @@
                                     <td><em>{{ item.scientific_name or "" }}</em></td>
                                     <td>{{ item.pot_size or "" }}</td>
                                     <td>{{ item.height or "" }}</td>
-                                    <td class="text-center">{{ "%.2f"|format(item.quantity) }}</td>
+                                    <td class="text-center">{{ "%d"|format(item.quantity|int) }}</td>
                                     <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
                                     <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
                                     <td>{{ item.supplier or "Not specified" }}</td>
