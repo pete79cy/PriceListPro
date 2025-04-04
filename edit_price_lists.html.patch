@@ -1,0 +1,14 @@
+--- templates/price_lists.html.old
++++ templates/price_lists.html
+@@ -145,6 +145,13 @@
+                                                 data-bs-target="#deleteProductModal">
+                                             <i class="fas fa-trash"></i>
+                                         </button>
++                                        <button class="btn btn-sm btn-warning delete-price-btn"
++                                                data-price-id="{{ price.id }}"
++                                                data-product-name="{{ price.product.name }}"
++                                                data-bs-toggle="modal"
++                                                data-bs-target="#deletePriceModal">
++                                            <i class="fas fa-times"></i>
++                                        </button>
+                                     </div>

@@ -715,6 +715,31 @@ def register_routes(app):
         
         return redirect(url_for('price_lists', customer_id=customer_id))
 
+    @app.route('/price-list/<int:price_id>/delete', methods=['POST'])
+    @login_required
+    def delete_price_list_entry(price_id):
+        """Delete a single price list entry"""
+        price_list = PriceList.query.get_or_404(price_id)
+        customer_id = price_list.customer_id
+        product_name = price_list.product.name if price_list.product else "Unknown product"
+        
+        # Store information before deleting
+        customer_name = Customer.query.get(customer_id).name if customer_id else "Unknown customer"
+        
+        try:
+            # Delete just this price list entry
+            db.session.delete(price_list)
+            db.session.commit()
+            flash(f'Price list entry for "{product_name}" for customer "{customer_name}" deleted successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting price list entry {price_id}: {str(e)}")
+            flash(f'Error deleting price list entry: {str(e)}', 'danger')
+        
+        # Redirect back to price lists page with the same filter
+        category = request.form.get('category', '')
+        return redirect(url_for('price_lists', customer_id=customer_id, category=category))
+        
     @app.route('/edit-price', methods=['POST'])
     @login_required
     def edit_price():
