@@ -16,18 +16,15 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
-      '/login': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/logout': {
+      '/static': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: '../static/react',
     emptyOutDir: true,
+    sourcemap: true,
   },
 });

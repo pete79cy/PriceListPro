@@ -1,79 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { createContext, useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-// Import components
-import Navbar from './components/Navbar';
+// Components
+import AppNavbar from './components/Navbar';
 import Footer from './components/Footer';
 
-// Import pages
+// Pages
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 
-// Import Bootstrap CSS
-import 'bootstrap/dist/css/bootstrap.min.css';
+// API client
+import { authAPI } from './api/client';
 
-// Define types
-interface User {
-  id: number;
-  username: string;
-  is_admin: boolean;
-}
-
-interface AuthState {
+// Create authentication context
+interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
+  user: any | null;
   loading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
-// Create AuthContext
-export const AuthContext = React.createContext<{
-  authState: AuthState;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
-}>({
-  authState: {
-    isAuthenticated: false,
-    user: null,
-    loading: true
-  },
+export const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  user: null,
+  loading: true,
   login: async () => false,
-  logout: () => {}
+  logout: async () => {},
 });
 
-const App: React.FC = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    loading: true
-  });
+// Auth provider component
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is already authenticated
+  // Check authentication status when the app loads
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const res = await axios.get('/api/auth/user', { withCredentials: true });
-        if (res.data.authenticated) {
-          setAuthState({
-            isAuthenticated: true,
-            user: res.data.user,
-            loading: false
-          });
+        const data = await authAPI.checkAuth();
+        if (data.authenticated) {
+          setUser(data.user);
+          setIsAuthenticated(true);
         } else {
-          setAuthState({
-            isAuthenticated: false,
-            user: null,
-            loading: false
-          });
+          setUser(null);
+          setIsAuthenticated(false);
         }
-      } catch (err) {
-        console.error('Error checking auth status:', err);
-        setAuthState({
-          isAuthenticated: false,
-          user: null,
-          loading: false
-        });
+      } catch (error) {
+        console.error('Failed to check authentication status:', error);
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -83,75 +63,117 @@ const App: React.FC = () => {
   // Login function
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const res = await axios.post('/login', { username, password }, {
-        headers: { 'Content-Type': 'application/json' },
-        withCredentials: true
-      });
-      
-      if (res.status === 200) {
-        const userRes = await axios.get('/api/auth/user', { withCredentials: true });
-        setAuthState({
-          isAuthenticated: true,
-          user: userRes.data.user,
-          loading: false
-        });
+      const data = await authAPI.login(username, password);
+      if (data.success) {
+        setUser(data.user);
+        setIsAuthenticated(true);
         return true;
       }
       return false;
-    } catch (err) {
-      console.error('Login error:', err);
+    } catch (error) {
+      console.error('Login error:', error);
       return false;
     }
   };
 
   // Logout function
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
-      await axios.get('/logout', { withCredentials: true });
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        loading: false
-      });
-    } catch (err) {
-      console.error('Logout error:', err);
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
-  // Protected route component
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (authState.loading) {
-      return <div>Loading...</div>;
-    }
-    
-    if (!authState.isAuthenticated) {
-      return <Navigate to="/login" />;
-    }
-    
-    return <>{children}</>;
+  // Context value
+  const value = {
+    user,
+    isAuthenticated,
+    loading,
+    login,
+    logout,
   };
 
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+// Route guard for protected routes
+interface ProtectedRouteProps {
+  element: React.ReactNode;
+  isAuthenticated: boolean;
+  loading: boolean;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, isAuthenticated, loading }) => {
+  const location = useLocation();
+
+  if (loading) {
+    return <div className="loading-spinner">Loading...</div>;
+  }
+
+  return isAuthenticated ? (
+    <>{element}</>
+  ) : (
+    <Navigate to="/login" state={{ from: location }} replace />
+  );
+};
+
+// Layout wrapper with navigation and footer
+interface LayoutProps {
+  isAuthenticated: boolean;
+  logout: () => void;
+  children: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ isAuthenticated, logout, children }) => {
   return (
-    <AuthContext.Provider value={{ authState, login, logout }}>
-      <Router>
-        <div className="d-flex flex-column min-vh-100">
-          <Navbar />
-          <main className="flex-grow-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              {/* Add more routes as needed */}
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
-    </AuthContext.Provider>
+    <div className="d-flex flex-column min-vh-100">
+      <AppNavbar isAuthenticated={isAuthenticated} logout={logout} />
+      
+      <main className="flex-grow-1">
+        {children}
+      </main>
+      
+      <Footer />
+    </div>
+  );
+};
+
+// Main App component
+const App: React.FC = () => {
+  return (
+    <Router>
+      <AuthProvider>
+        <AuthContext.Consumer>
+          {({ isAuthenticated, loading, logout }) => (
+            <Layout isAuthenticated={isAuthenticated} logout={logout}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected routes - will be expanded as more pages are added */}
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute 
+                      element={<div>Dashboard Content (To be implemented)</div>} 
+                      isAuthenticated={isAuthenticated}
+                      loading={loading}
+                    />
+                  } 
+                />
+                
+                {/* Catch-all route */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Layout>
+          )}
+        </AuthContext.Consumer>
+      </AuthProvider>
+    </Router>
   );
 };
 

@@ -1,41 +1,56 @@
 """
-API Routes for the Plant Pricing System
----------------------------------------
-These routes handle API requests from the React frontend.
+API Routes Module
+---------------
+This module provides API endpoints for the frontend to interact with the backend.
 """
 
 from flask import Blueprint, jsonify, request, current_app
-from flask_login import login_required, current_user
-from backend.models import db, User, Customer, Product, PriceList, Invoice, Quotation, Supplier, SupplierProduct
+from flask_login import login_user, current_user, logout_user, login_required
+from werkzeug.security import check_password_hash
+from backend.models import User, Customer, Product, Quotation, Invoice, PriceList, db
 
-# Import our custom logger
-try:
-    from utils.logger import logger
-except ImportError:
-    import logging
-    logger = logging.getLogger("plant_pricing_system")
-
-# Create a blueprint for API routes
+# Create the API blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 def register_api_routes(app):
-    """Register the API routes with the app"""
+    """Register API routes with the application"""
     app.register_blueprint(api_bp)
-    logger.info("API routes registered")
+    current_app.logger.info("API routes registered")
 
-# API routes
+# Authentication routes
+@api_bp.route('/auth/login', methods=['POST'])
+def login():
+    """API endpoint for user login"""
+    data = request.get_json()
+    
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'success': False, 'message': 'Missing username or password'}), 400
+    
+    user = User.query.filter_by(username=data['username']).first()
+    
+    if user and user.check_password(data['password']):
+        login_user(user)
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'is_admin': user.is_admin
+            }
+        })
+    
+    return jsonify({'success': False, 'message': 'Invalid username or password'}), 401
 
-@api_bp.route('/health', methods=['GET'])
-def health_check():
-    """Simple health check endpoint"""
-    return jsonify({
-        'status': 'ok',
-        'message': 'Plant Pricing System API is operational'
-    })
+@api_bp.route('/auth/logout', methods=['POST'])
+@login_required
+def logout():
+    """API endpoint for user logout"""
+    logout_user()
+    return jsonify({'success': True})
 
 @api_bp.route('/auth/user', methods=['GET'])
-def get_current_user():
-    """Get the current authenticated user"""
+def get_user():
+    """Get the current user's information"""
     if current_user.is_authenticated:
         return jsonify({
             'authenticated': True,
@@ -45,12 +60,10 @@ def get_current_user():
                 'is_admin': current_user.is_admin
             }
         })
-    else:
-        return jsonify({
-            'authenticated': False
-        })
+    
+    return jsonify({'authenticated': False}), 401
 
-# Customer endpoints
+# Customer APIs
 @api_bp.route('/customers', methods=['GET'])
 @login_required
 def get_customers():
@@ -71,7 +84,7 @@ def get_customers():
 @api_bp.route('/customers/<int:customer_id>', methods=['GET'])
 @login_required
 def get_customer(customer_id):
-    """Get a specific customer"""
+    """Get a specific customer by ID"""
     customer = Customer.query.get_or_404(customer_id)
     return jsonify({
         'id': customer.id,
@@ -81,7 +94,7 @@ def get_customer(customer_id):
         'address': customer.address
     })
 
-# Product endpoints
+# Product APIs
 @api_bp.route('/products', methods=['GET'])
 @login_required
 def get_products():
@@ -92,11 +105,10 @@ def get_products():
             {
                 'id': p.id,
                 'name': p.name,
-                'category': p.category,
                 'scientific_name': p.scientific_name,
+                'category': p.category,
                 'pot': p.pot,
-                'sku': p.sku,
-                'description': p.description
+                'sku': p.sku
             } for p in products
         ]
     })
@@ -104,23 +116,23 @@ def get_products():
 @api_bp.route('/products/<int:product_id>', methods=['GET'])
 @login_required
 def get_product(product_id):
-    """Get a specific product"""
+    """Get a specific product by ID"""
     product = Product.query.get_or_404(product_id)
     return jsonify({
         'id': product.id,
         'name': product.name,
-        'category': product.category,
         'scientific_name': product.scientific_name,
+        'category': product.category,
         'pot': product.pot,
         'sku': product.sku,
         'description': product.description
     })
 
-# Price list endpoints
+# Price List APIs
 @api_bp.route('/price-lists', methods=['GET'])
 @login_required
 def get_price_lists():
-    """Get all price lists with filtering options"""
+    """Get price lists with filtering options"""
     customer_id = request.args.get('customer_id', type=int)
     product_id = request.args.get('product_id', type=int)
     
@@ -150,28 +162,7 @@ def get_price_lists():
         ]
     })
 
-# Invoice endpoints
-@api_bp.route('/invoices', methods=['GET'])
-@login_required
-def get_invoices():
-    """Get all invoices"""
-    invoices = Invoice.query.all()
-    return jsonify({
-        'invoices': [
-            {
-                'id': i.id,
-                'customer_id': i.customer_id,
-                'customer_name': i.customer.name,
-                'invoice_number': i.invoice_number,
-                'invoice_date': i.invoice_date.isoformat(),
-                'total_amount': i.total_amount,
-                'currency': i.currency,
-                'file_path': i.file_path
-            } for i in invoices
-        ]
-    })
-
-# Quotation endpoints
+# Quotation APIs
 @api_bp.route('/quotations', methods=['GET'])
 @login_required
 def get_quotations():
@@ -187,104 +178,133 @@ def get_quotations():
                 'quotation_date': q.quotation_date.isoformat(),
                 'total_amount': q.total_amount,
                 'currency': q.currency,
-                'notes': q.notes,
-                'file_path': q.file_path
+                'items_count': len(q.items)
             } for q in quotations
         ]
     })
 
-# Supplier endpoints
-@api_bp.route('/suppliers', methods=['GET'])
+@api_bp.route('/quotations/<int:quotation_id>', methods=['GET'])
 @login_required
-def get_suppliers():
-    """Get all suppliers"""
-    suppliers = Supplier.query.all()
+def get_quotation(quotation_id):
+    """Get a specific quotation by ID"""
+    quotation = Quotation.query.get_or_404(quotation_id)
     return jsonify({
-        'suppliers': [
+        'id': quotation.id,
+        'customer_id': quotation.customer_id,
+        'customer_name': quotation.customer.name,
+        'quotation_number': quotation.quotation_number,
+        'quotation_date': quotation.quotation_date.isoformat(),
+        'total_amount': quotation.total_amount,
+        'currency': quotation.currency,
+        'notes': quotation.notes,
+        'items': [
             {
-                'id': s.id,
-                'name': s.name,
-                'contact_person': s.contact_person,
-                'email': s.email,
-                'phone': s.phone,
-                'address': s.address,
-                'is_inhouse': s.is_inhouse
-            } for s in suppliers
+                'id': item.id,
+                'product_id': item.product_id,
+                'description': item.description,
+                'scientific_name': item.scientific_name,
+                'pot_size': item.pot_size,
+                'height': item.height,
+                'quantity': item.quantity,
+                'selling_price': item.selling_price,
+                'vat_rate': item.vat_rate,
+                'supplier': item.supplier,
+                'cost_price': item.cost_price,
+                'total': item.total
+            } for item in quotation.items
         ]
     })
 
-# Supplier product endpoints
-@api_bp.route('/supplier-products', methods=['GET'])
+# Invoice APIs
+@api_bp.route('/invoices', methods=['GET'])
 @login_required
-def get_supplier_products():
-    """Get all supplier products with filtering options"""
-    supplier_id = request.args.get('supplier_id', type=int)
-    
-    query = SupplierProduct.query
-    
-    if supplier_id:
-        query = query.filter_by(supplier_id=supplier_id)
-    
-    supplier_products = query.all()
-    
+def get_invoices():
+    """Get all invoices"""
+    invoices = Invoice.query.all()
     return jsonify({
-        'supplier_products': [
+        'invoices': [
             {
-                'id': sp.id,
-                'supplier_id': sp.supplier_id,
-                'supplier_name': sp.supplier.name,
-                'product_name': sp.product_name,
-                'scientific_name': sp.scientific_name,
-                'height': sp.height,
-                'pot_size': sp.pot_size,
-                'price': sp.price,
-                'cost_price': sp.cost_price
-            } for sp in supplier_products
+                'id': i.id,
+                'customer_id': i.customer_id,
+                'customer_name': i.customer.name,
+                'invoice_number': i.invoice_number,
+                'invoice_date': i.invoice_date.isoformat(),
+                'total_amount': i.total_amount,
+                'currency': i.currency,
+                'items_count': len(i.items)
+            } for i in invoices
         ]
     })
 
-# Search endpoint
+@api_bp.route('/invoices/<int:invoice_id>', methods=['GET'])
+@login_required
+def get_invoice(invoice_id):
+    """Get a specific invoice by ID"""
+    invoice = Invoice.query.get_or_404(invoice_id)
+    return jsonify({
+        'id': invoice.id,
+        'customer_id': invoice.customer_id,
+        'customer_name': invoice.customer.name,
+        'invoice_number': invoice.invoice_number,
+        'invoice_date': invoice.invoice_date.isoformat(),
+        'total_amount': invoice.total_amount,
+        'currency': invoice.currency,
+        'items': [
+            {
+                'id': item.id,
+                'product_id': item.product_id,
+                'description': item.description,
+                'scientific_name': item.scientific_name,
+                'pot_size': item.pot_size,
+                'quantity': item.quantity,
+                'price': item.price,
+                'vat': item.vat,
+                'vat_percentage': item.vat_percentage,
+                'total': item.total
+            } for item in invoice.items
+        ]
+    })
+
+# Search API
 @api_bp.route('/search', methods=['GET'])
 @login_required
 def search():
-    """Search products and customers"""
-    query = request.args.get('query', '')
+    """Search across products, customers, etc."""
+    query = request.args.get('q', '')
     
-    if not query:
-        return jsonify({
-            'products': [],
-            'customers': []
-        })
+    if not query or len(query) < 2:
+        return jsonify({'results': {}}), 400
     
-    # Search for products
+    # Search in products
     products = Product.query.filter(
-        (Product.name.ilike(f'%{query}%')) | 
+        (Product.name.ilike(f'%{query}%')) |
         (Product.scientific_name.ilike(f'%{query}%')) |
-        (Product.description.ilike(f'%{query}%')) |
-        (Product.category.ilike(f'%{query}%'))
+        (Product.sku.ilike(f'%{query}%'))
     ).limit(10).all()
     
-    # Search for customers
+    # Search in customers
     customers = Customer.query.filter(
-        (Customer.name.ilike(f'%{query}%')) | 
+        (Customer.name.ilike(f'%{query}%')) |
         (Customer.email.ilike(f'%{query}%'))
     ).limit(10).all()
     
     return jsonify({
-        'products': [
-            {
-                'id': p.id,
-                'name': p.name,
-                'scientific_name': p.scientific_name,
-                'category': p.category,
-                'pot': p.pot
-            } for p in products
-        ],
-        'customers': [
-            {
-                'id': c.id,
-                'name': c.name,
-                'email': c.email
-            } for c in customers
-        ]
+        'results': {
+            'products': [
+                {
+                    'id': p.id,
+                    'name': p.name,
+                    'scientific_name': p.scientific_name,
+                    'category': p.category,
+                    'pot': p.pot
+                } for p in products
+            ],
+            'customers': [
+                {
+                    'id': c.id,
+                    'name': c.name,
+                    'email': c.email
+                } for c in customers
+            ]
+        }
     })
