@@ -316,10 +316,13 @@ def parse_invoice_excel(excel_path, customer_id=None):
                 price = 0.0
             
             # Check if product exists in the database
+            # Ensure we're keeping the scientific name separate from the product name/description
             product_data = {
-                'name': description,
-                'scientific_name': scientific_name
+                'name': description,  # This is the Product Name from columns M-S
+                'scientific_name': scientific_name  # This is the Scientific Name from columns E-L
             }
+            
+            logger.info(f"Creating/finding product with name: '{description}' and scientific name: '{scientific_name}'")
             
             product, message, is_new, was_created = verify_product_exists(
                 product_data,
