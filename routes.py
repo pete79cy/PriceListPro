@@ -1,5 +1,6 @@
 import os
 import uuid
+import re
 import traceback
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
@@ -1364,15 +1365,45 @@ def register_routes(app):
                 product_id_raw = request.form.get(f'product_id_{i}')
                 product_id = None if product_id_raw == 'None' else product_id_raw
                 
-                quantity = float(request.form.get(f'quantity_{i}', 1))
-                selling_price = float(request.form.get(f'selling_price_{i}', 0))
-                vat_rate = float(request.form.get(f'vat_rate_{i}', 19))
+                # Parse quantity with better error handling
+                try:
+                    quantity = float(request.form.get(f'quantity_{i}', 1))
+                except (ValueError, TypeError):
+                    quantity = 1
+                    logger.warning(f"Invalid quantity format in quotation form item {i}, using default of 1")
+                
+                # Parse selling price with better error handling
+                try:
+                    selling_price_raw = request.form.get(f'selling_price_{i}', '0')
+                    # Handle comma as decimal separator and remove currency symbols
+                    if isinstance(selling_price_raw, str):
+                        selling_price_raw = selling_price_raw.replace('€', '').replace(',', '.').strip()
+                        selling_price_raw = re.sub(r'[^\d.]', '', selling_price_raw) if selling_price_raw else '0'
+                    selling_price = float(selling_price_raw)
+                except (ValueError, TypeError):
+                    selling_price = 0
+                    logger.warning(f"Invalid selling price format in quotation form item {i}, using 0")
+                
+                # Parse VAT rate with better error handling
+                try:
+                    vat_rate = float(request.form.get(f'vat_rate_{i}', 19))
+                except (ValueError, TypeError):
+                    vat_rate = 19  # Default VAT rate
+                    logger.warning(f"Invalid VAT rate format in quotation form item {i}, using default of 19%")
+                
                 supplier = request.form.get(f'supplier_{i}')
                 
+                # Parse cost price with better error handling
                 try:
-                    cost_price = float(request.form.get(f'cost_price_{i}', 0))
+                    cost_price_raw = request.form.get(f'cost_price_{i}', '0')
+                    # Handle comma as decimal separator and remove currency symbols
+                    if isinstance(cost_price_raw, str):
+                        cost_price_raw = cost_price_raw.replace('€', '').replace(',', '.').strip()
+                        cost_price_raw = re.sub(r'[^\d.]', '', cost_price_raw) if cost_price_raw else '0'
+                    cost_price = float(cost_price_raw)
                 except (ValueError, TypeError):
                     cost_price = 0
+                    logger.warning(f"Invalid cost price format in quotation form item {i}, using 0")
                 
                 # Calculate item total
                 item_total = quantity * selling_price
@@ -1544,15 +1575,46 @@ def register_routes(app):
             scientific_name = request.form.get('scientific_name')
             pot_size = request.form.get('pot_size')
             height = request.form.get('height')
-            quantity = float(request.form.get('quantity', 1))
-            selling_price = float(request.form.get('selling_price', 0))
-            vat_rate = float(request.form.get('vat_rate', 19))
+            
+            # Parse quantity with better error handling
+            try:
+                quantity = float(request.form.get('quantity', 1))
+            except (ValueError, TypeError):
+                quantity = 1
+                logger.warning("Invalid quantity format in add quotation item, using default of 1")
+            
+            # Parse selling price with better error handling
+            try:
+                selling_price_raw = request.form.get('selling_price', '0')
+                # Handle comma as decimal separator and remove currency symbols
+                if isinstance(selling_price_raw, str):
+                    selling_price_raw = selling_price_raw.replace('€', '').replace(',', '.').strip()
+                    selling_price_raw = re.sub(r'[^\d.]', '', selling_price_raw) if selling_price_raw else '0'
+                selling_price = float(selling_price_raw)
+            except (ValueError, TypeError):
+                selling_price = 0
+                logger.warning("Invalid selling price format in add quotation item, using 0")
+            
+            # Parse VAT rate with better error handling
+            try:
+                vat_rate = float(request.form.get('vat_rate', 19))
+            except (ValueError, TypeError):
+                vat_rate = 19  # Default VAT rate
+                logger.warning("Invalid VAT rate format in add quotation item, using default of 19%")
+                
             supplier = request.form.get('supplier')
             
+            # Parse cost price with better error handling
             try:
-                cost_price = float(request.form.get('cost_price', 0))
+                cost_price_raw = request.form.get('cost_price', '0')
+                # Handle comma as decimal separator and remove currency symbols
+                if isinstance(cost_price_raw, str):
+                    cost_price_raw = cost_price_raw.replace('€', '').replace(',', '.').strip()
+                    cost_price_raw = re.sub(r'[^\d.]', '', cost_price_raw) if cost_price_raw else '0'
+                cost_price = float(cost_price_raw)
             except (ValueError, TypeError):
                 cost_price = 0
+                logger.warning("Invalid cost price format in add quotation item, using 0")
                 
             # Calculate total
             total = quantity * selling_price
@@ -1611,15 +1673,46 @@ def register_routes(app):
             item.scientific_name = request.form.get('scientific_name')
             item.pot_size = request.form.get('pot_size')
             item.height = request.form.get('height')
-            item.quantity = float(request.form.get('quantity', 1))
-            item.selling_price = float(request.form.get('selling_price', 0))
-            item.vat_rate = float(request.form.get('vat_rate', 19))
+            
+            # Parse quantity with better error handling
+            try:
+                item.quantity = float(request.form.get('quantity', 1))
+            except (ValueError, TypeError):
+                item.quantity = 1
+                logger.warning(f"Invalid quantity format in edit quotation item {item_id}, using default of 1")
+            
+            # Parse selling price with better error handling
+            try:
+                selling_price_raw = request.form.get('selling_price', '0')
+                # Handle comma as decimal separator and remove currency symbols
+                if isinstance(selling_price_raw, str):
+                    selling_price_raw = selling_price_raw.replace('€', '').replace(',', '.').strip()
+                    selling_price_raw = re.sub(r'[^\d.]', '', selling_price_raw) if selling_price_raw else '0'
+                item.selling_price = float(selling_price_raw)
+            except (ValueError, TypeError):
+                item.selling_price = 0
+                logger.warning(f"Invalid selling price format in edit quotation item {item_id}, using 0")
+            
+            # Parse VAT rate with better error handling
+            try:
+                item.vat_rate = float(request.form.get('vat_rate', 19))
+            except (ValueError, TypeError):
+                item.vat_rate = 19  # Default VAT rate
+                logger.warning(f"Invalid VAT rate format in edit quotation item {item_id}, using default of 19%")
+                
             item.supplier = request.form.get('supplier')
             
+            # Parse cost price with better error handling
             try:
-                item.cost_price = float(request.form.get('cost_price', 0))
+                cost_price_raw = request.form.get('cost_price', '0')
+                # Handle comma as decimal separator and remove currency symbols
+                if isinstance(cost_price_raw, str):
+                    cost_price_raw = cost_price_raw.replace('€', '').replace(',', '.').strip()
+                    cost_price_raw = re.sub(r'[^\d.]', '', cost_price_raw) if cost_price_raw else '0'
+                item.cost_price = float(cost_price_raw)
             except (ValueError, TypeError):
                 item.cost_price = 0
+                logger.warning(f"Invalid cost price format in edit quotation item {item_id}, using 0")
                 
             # Calculate new total
             new_total = item.quantity * item.selling_price
