@@ -848,6 +848,39 @@ def register_routes(app):
         category = request.form.get('category', '')
         return redirect(url_for('price_lists', customer_id=customer_id, category=category))
         
+    @app.route('/price-lists/batch-delete', methods=['POST'])
+    @login_required
+    def batch_delete_price_lists():
+        """Delete multiple price list entries at once"""
+        data = request.get_json()
+        price_ids = data.get('price_ids', [])
+        
+        if not price_ids:
+            return jsonify({'error': 'No price list entries selected'}), 400
+            
+        try:
+            # Get info before deleting for the success message
+            prices_info = []
+            for price_id in price_ids:
+                price = PriceList.query.get(price_id)
+                if price:
+                    product_name = price.product.name if price.product else "Unknown product"
+                    customer_name = price.customer.name if price.customer else "Unknown customer"
+                    prices_info.append(f"{product_name} for {customer_name}")
+            
+            # Delete the selected price list entries
+            PriceList.query.filter(PriceList.id.in_(price_ids)).delete(synchronize_session=False)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'{len(price_ids)} price list entries deleted successfully'
+            })
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error in batch delete price lists: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+            
     @app.route('/edit-price', methods=['POST'])
     @login_required
     def edit_price():
