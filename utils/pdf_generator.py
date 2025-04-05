@@ -392,7 +392,9 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
                 
                 # Calculate totals
                 supplier_totals[item.supplier]['qty'] += item.quantity
-                supplier_totals[item.supplier]['cost'] += item.quantity * (item.cost_price or 0)
+                # Make sure we correctly handle the cost_price field (could be None)
+                cost_price = item.cost_price if item.cost_price is not None else 0
+                supplier_totals[item.supplier]['cost'] += item.quantity * cost_price
         
         # Generate HTML content from the template
         html_content = render_template(
