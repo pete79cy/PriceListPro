@@ -167,6 +167,10 @@ def generate_supplier_pdf_report(quotation, supplier, upload_folder):
             total_cost=total_cost,
             currency=quotation.currency,
             date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            order_date=quotation.quotation_date,  # Use quotation date as order date
+            reference_number=quotation.quotation_number,  # Use quotation number as reference
+            subtotal=total_cost,  # Pass the calculated total cost as subtotal
+            grand_total=total_cost,  # Without VAT, grand total equals subtotal
             company=company,
             logo_data=logo_data,
             orientation=orientation
