@@ -1,0 +1,104 @@
+Below are some detailed suggestions to refine the summary section of your quotation report—focusing on grouping the Subtotal, VAT, and Total together, simplifying the VAT label, and enhancing the overall presentation:
+
+---
+
+### 1. Consolidate the Summary Block
+
+- **Group Subtotal, VAT, and Total Together:**  
+  Create a distinct container (e.g., a bordered box or a separate table) at the bottom of your report where these three items appear together. This block should visually stand out from the product details.
+
+- **Simplify the VAT Label:**  
+  Remove any reference to a specific percentage (e.g., "19%") so that the label simply reads "VAT". For example, instead of:
+  - "VAT (19.0%): €22.28" and "VAT (5.0%): €13.55"  
+  Combine them into:
+  - "VAT: €35.83"  
+  This simplifies the presentation and makes it clear at a glance.
+
+- **Ensure Clear Hierarchy:**  
+  Display the Subtotal, VAT, and Total in a clearly defined hierarchy. For example, the Total should be emphasized—using bold font and perhaps a larger size—while the Subtotal and VAT can be slightly less prominent.
+
+---
+
+### 2. Visual Styling Enhancements
+
+- **Use a Distinct Background and Border:**  
+  Surround the summary block with a light-colored background (e.g., light gray) and a top border to separate it from the rest of the content.
+  
+  Example CSS snippet:
+  ```css
+  .summary-block {
+      background-color: #f8f8f8;
+      padding: 10px;
+      border-top: 2px solid #000;
+      margin-top: 20px;
+      width: 100%;
+  }
+  .summary-block table {
+      width: 100%;
+      border-collapse: collapse;
+  }
+  .summary-block td {
+      padding: 5px;
+      text-align: right;
+  }
+  .summary-block .label {
+      font-weight: bold;
+  }
+  .summary-block .total {
+      font-size: 1.2em;
+      font-weight: bold;
+  }
+  ```
+
+- **Right-Align Numerical Data:**  
+  Ensure that the numbers (Subtotal, VAT, and Total) are right-aligned for easy comparison.
+
+- **Use Consistent Font and Size:**  
+  Choose a clean, modern sans-serif font for the summary block and maintain consistency with the rest of the document. Consider using a slightly larger font size for the Total to highlight it.
+
+---
+
+### 3. Example HTML Layout for the Summary Block
+
+If you’re generating your report in HTML (for conversion to PDF), consider a structure like the following:
+  
+```html
+<div class="summary-block">
+  <table>
+    <tr>
+      <td class="label">Subtotal:</td>
+      <td>€388.25</td>
+    </tr>
+    <tr>
+      <td class="label">VAT:</td>
+      <td>€35.83</td>
+    </tr>
+    <tr style="border-top: 2px solid #000;">
+      <td class="label total">Total:</td>
+      <td class="total">€424.08</td>
+    </tr>
+  </table>
+</div>
+```
+
+- **Notes:**
+  - The border on the Total row creates a visual separation between the line items and the final amount.
+  - The use of classes such as `.label` and `.total` allows you to apply distinct styles to emphasize key figures.
+
+---
+
+### 4. Additional Layout Considerations
+
+- **Landscape Orientation (if needed):**  
+  If the overall report still feels cramped, consider switching the report to landscape orientation to provide more horizontal space. This can help accommodate longer product lines and a wider summary section.
+
+- **Consistent Margins and Padding:**  
+  Ensure there is enough white space around the summary block to make it stand out without feeling disconnected from the rest of the document.
+
+---
+
+### Summary
+
+By consolidating the Subtotal, VAT, and Total into one cohesive block with a simplified VAT label, and by enhancing the visual styling with a distinct background, borders, and clear typography, the summary section will become much more user friendly. Users will quickly be able to grasp the key financial figures without distraction, making your quotation report more professional and easier to read.
+
+Let me know if you need further adjustments or specific code examples!
