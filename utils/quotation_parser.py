@@ -5,10 +5,42 @@ import uuid
 import traceback
 from datetime import datetime
 from app import db
-from models import Product, Customer, PriceList
+from models import Product, Customer, PriceList, Quotation
 from utils.logger import logger
 from utils.product_verification import verify_product_exists
 from utils.pdf_parser import extract_scientific_name, extract_pot_size
+
+def generate_unique_quotation_number():
+    """
+    Generate a unique quotation number with format PAK-YYYY-XXX
+    where YYYY is the current year and XXX is a sequential number 
+    starting from 001.
+    
+    Returns:
+        str: A unique quotation number
+    """
+    year = datetime.now().year
+    prefix = f"PAK-{year}-"
+    
+    # Find the highest sequential number in the current year
+    last_quotation = Quotation.query.filter(
+        Quotation.quotation_number.like(f"{prefix}%")
+    ).order_by(db.desc(Quotation.quotation_number)).first()
+    
+    if last_quotation:
+        # Extract the sequential number part
+        try:
+            last_seq_num = int(last_quotation.quotation_number.split('-')[2])
+            new_seq_num = last_seq_num + 1
+        except (IndexError, ValueError):
+            # If there's an error parsing the last number, start from 1
+            new_seq_num = 1
+    else:
+        # No existing quotations for this year
+        new_seq_num = 1
+    
+    # Format as 3-digit number with leading zeros
+    return f"{prefix}{new_seq_num:03d}"
 
 def parse_quantity_from_unit(unit_value):
     """
@@ -90,7 +122,7 @@ def extract_quotation_data_from_pdf(pdf_path, customer_id):
         quotation_data = {
             'products': [],
             'customer_id': customer_id,
-            'quotation_number': f"QT-{uuid.uuid4().hex[:8].upper()}",
+            'quotation_number': generate_unique_quotation_number(),
             'quotation_date': datetime.now().strftime('%Y-%m-%d')
         }
         
@@ -258,7 +290,7 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
         quotation_data = {
             'products': [],
             'customer_id': customer_id,
-            'quotation_number': f"QT-{uuid.uuid4().hex[:8].upper()}",
+            'quotation_number': generate_unique_quotation_number(),
             'quotation_date': datetime.now().strftime('%Y-%m-%d')
         }
         
