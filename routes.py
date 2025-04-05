@@ -1365,9 +1365,9 @@ def register_routes(app):
                 product_id_raw = request.form.get(f'product_id_{i}')
                 product_id = None if product_id_raw == 'None' else product_id_raw
                 
-                # Parse quantity with better error handling
+                # Parse quantity with better error handling - using integers
                 try:
-                    quantity = float(request.form.get(f'quantity_{i}', 1))
+                    quantity = int(request.form.get(f'quantity_{i}', 1))
                 except (ValueError, TypeError):
                     quantity = 1
                     logger.warning(f"Invalid quantity format in quotation form item {i}, using default of 1")
@@ -1666,9 +1666,9 @@ def register_routes(app):
             pot_size = request.form.get('pot_size')
             height = request.form.get('height')
             
-            # Parse quantity with better error handling
+            # Parse quantity with better error handling - using integers
             try:
-                quantity = float(request.form.get('quantity', 1))
+                quantity = int(request.form.get('quantity', 1))
             except (ValueError, TypeError):
                 quantity = 1
                 logger.warning("Invalid quantity format in add quotation item, using default of 1")
@@ -1778,9 +1778,9 @@ def register_routes(app):
             item.pot_size = request.form.get('pot_size')
             item.height = request.form.get('height')
             
-            # Parse quantity with better error handling
+            # Parse quantity with better error handling - using integers
             try:
-                item.quantity = float(request.form.get('quantity', 1))
+                item.quantity = int(request.form.get('quantity', 1))
             except (ValueError, TypeError):
                 item.quantity = 1
                 logger.warning(f"Invalid quantity format in edit quotation item {item_id}, using default of 1")
