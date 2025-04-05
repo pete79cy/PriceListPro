@@ -1,6 +1,7 @@
 """
 Supplier Manager - Functions for managing supplier data
 """
+import re
 from datetime import datetime
 from app import db
 from models import Supplier, SupplierProduct, QuotationItem
@@ -73,8 +74,8 @@ def update_supplier_from_quotation_item(item):
                         supplier_id=supplier.id,
                         product_name=existing_product.name,
                         scientific_name=existing_product.scientific_name,
-                        height=item.height,
-                        pot_size=existing_product.pot,
+                        height=item.height,  # Keep height from quotation item
+                        pot_size=item.pot_size or existing_product.pot,  # Use item's pot size if available, otherwise product's
                         price=item.selling_price,
                         cost_price=item.cost_price,
                         last_detected=datetime.utcnow()
@@ -87,13 +88,31 @@ def update_supplier_from_quotation_item(item):
         
         # If we're still here, no matching product was found in the main database
         # Now check for existing supplier product or create a new one
-        supplier_product = SupplierProduct.query.filter_by(
-            supplier_id=supplier.id,
-            product_name=item.description,
-            scientific_name=item.scientific_name,
-            height=item.height,
-            pot_size=item.pot_size
-        ).first()
+        # Check for existing supplier product with more flexible matching
+        # This helps avoid issues with height and pot_size field confusion
+        filter_conditions = [
+            SupplierProduct.supplier_id == supplier.id,
+            SupplierProduct.scientific_name == item.scientific_name  # Scientific name must match
+        ]
+        
+        # Add additional filters only if values are provided
+        if item.description:
+            filter_conditions.append(SupplierProduct.product_name == item.description)
+            
+        # For height and pot_size, we're more careful to avoid false matches
+        if item.pot_size:
+            filter_conditions.append(db.or_(
+                SupplierProduct.pot_size == item.pot_size,
+                SupplierProduct.height == item.pot_size  # Check in case fields were swapped
+            ))
+        
+        if item.height:
+            filter_conditions.append(db.or_(
+                SupplierProduct.height == item.height,
+                SupplierProduct.pot_size == item.height  # Check in case fields were swapped
+            ))
+            
+        supplier_product = SupplierProduct.query.filter(*filter_conditions).first()
         
         if supplier_product:
             # Update the existing product
@@ -102,13 +121,26 @@ def update_supplier_from_quotation_item(item):
             supplier_product.last_detected = datetime.utcnow()
             logger.info(f"Updated supplier product: {supplier_product.product_name}")
         else:
-            # Create a new supplier product
+            # Validate height and pot_size fields to avoid common errors
+            height = item.height
+            pot_size = item.pot_size
+            
+            # Common pot size patterns like "1L", "10cm", "P9" etc
+            pot_size_pattern = re.compile(r'^\d+[LCPcp][Mm]?$|^P\d+$|^\d+(\.\d+)?L$')
+            
+            # If height looks like a pot size and pot_size is empty, swap them
+            if height and not pot_size and pot_size_pattern.match(height):
+                logger.warning(f"Height value '{height}' looks like a pot size. Moving to pot_size field.")
+                pot_size = height
+                height = None
+            
+            # Create a new supplier product with validated fields
             supplier_product = SupplierProduct(
                 supplier_id=supplier.id,
                 product_name=item.description,
                 scientific_name=item.scientific_name,
-                height=item.height,
-                pot_size=item.pot_size,
+                height=height,
+                pot_size=pot_size,
                 price=item.selling_price,
                 cost_price=item.cost_price,
                 last_detected=datetime.utcnow()
