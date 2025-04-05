@@ -1,7 +1,3 @@
-{% extends 'layout.html' %}
-
-{% block title %}Dashboard - Plant Pricing System{% endblock %}
-
 {% block content %}
 <div class="container">
     <!-- Welcome Section with User Profile Info -->
@@ -279,4 +275,9 @@
 </script>
 {% endblock %}
 
+{% endblock %}
+
+{% block head %}
+<!-- Dashboard-specific CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 {% endblock %}

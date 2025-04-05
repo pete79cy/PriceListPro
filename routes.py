@@ -117,7 +117,7 @@ def register_routes(app):
             'invoices': Invoice.query.count(),
             'pending_updates': pending_update_count
         }
-        return render_template('dashboard.html', stats=stats, pending_update_count=pending_update_count)
+        return render_template('dashboard_improved.html', stats=stats, pending_update_count=pending_update_count)
     
     @app.route('/uploads', methods=['GET'])
     @login_required
