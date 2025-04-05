@@ -18,4 +18,6 @@ dependencies = [
     "xlrd>=2.0.1",
     "weasyprint>=65.0",
     "openai>=1.70.0",
+    "viberbot>=1.0.12",
+    "requests>=2.32.3",
 ]

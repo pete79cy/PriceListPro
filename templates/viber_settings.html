@@ -1,0 +1,378 @@
+{% extends 'layout.html' %}
+
+{% block title %}Viber Integration Settings{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">
+        <i class="fab fa-viber text-purple"></i> Viber Integration Settings
+    </h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog"></i> Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        This page allows you to configure the integration between your Plant Pricing System and Viber.
+                        With this integration, you can receive updates to supplier product information directly from Viber groups.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> How it works</h5>
+                        <p>The Viber integration lets suppliers update their product information by sending messages in a specific format to their Viber groups that you monitor.</p>
+                        <p>Message format example: <code>Product: Plant name, Scientific name: Latin name, Size: 20cm, Pot: 17cm, Price: €10.50</code></p>
+                        <p>When a supplier sends a message in this format, the system will automatically update the corresponding product in your database or create a new one if it doesn't exist.</p>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card border-primary mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-key"></i> Viber Authentication
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="auth_token" class="form-label">Viber Auth Token</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="auth_token" value="{{ viber_token or '' }}" placeholder="Enter your Viber auth token...">
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleToken">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            You can get this from the <a href="https://partners.viber.com/dashboard" target="_blank">Viber Admin Panel</a> when you create a bot.
+                                        </div>
+                                    </div>
+                                    <div class="d-grid gap-2 mt-3">
+                                        <button type="button" class="btn btn-primary" id="saveToken">
+                                            <i class="fas fa-save"></i> Save Token
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-success mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-link"></i> Webhook Setup
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        Set up the webhook to receive messages from Viber. This URL should be registered with Viber to receive message updates.
+                                    </p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="webhookUrl" value="{{ webhook_url }}" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" id="copyWebhookUrl">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-success" id="setWebhook">
+                                            <i class="fas fa-check-circle"></i> Set Webhook
+                                        </button>
+                                    </div>
+                                    <div id="webhookStatus" class="alert alert-light mt-3" style="display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exchange-alt"></i> Supplier - Viber Mapping
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Map your suppliers to their Viber conversation IDs or user IDs. This allows the system to know which supplier is sending a message.
+                    </p>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Make sure to use the correct conversation ID for group chats or user ID for direct messages.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <select class="form-select" id="supplierSelect">
+                            <option value="">-- Select a supplier --</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="viberId" class="form-label">Viber ID</label>
+                        <input type="text" class="form-control" id="viberId" placeholder="Enter Viber user ID or conversation ID...">
+                        <div class="form-text">
+                            This is the unique identifier for a Viber user or conversation group.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-primary" id="addMapping">
+                            <i class="fas fa-plus"></i> Add Mapping
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mt-4">Current Mappings</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Viber ID</th>
+                                    <th>Supplier</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mappingsTable">
+                                <!-- Mapping entries will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle visibility of the auth token
+    const toggleToken = document.getElementById('toggleToken');
+    const authToken = document.getElementById('auth_token');
+    
+    toggleToken.addEventListener('click', function() {
+        if (authToken.type === 'password') {
+            authToken.type = 'text';
+            toggleToken.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+            authToken.type = 'password';
+            toggleToken.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+    });
+    
+    // Save the auth token
+    const saveToken = document.getElementById('saveToken');
+    
+    saveToken.addEventListener('click', function() {
+        const token = authToken.value.trim();
+        
+        if (!token) {
+            alert('Please enter a valid Viber auth token.');
+            return;
+        }
+        
+        // Save the token (using a secure method)
+        fetch('/api/save-viber-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Token saved successfully!');
+            } else {
+                alert('Error saving token: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the token.');
+        });
+    });
+    
+    // Copy webhook URL to clipboard
+    const copyWebhookUrl = document.getElementById('copyWebhookUrl');
+    const webhookUrl = document.getElementById('webhookUrl');
+    
+    copyWebhookUrl.addEventListener('click', function() {
+        webhookUrl.select();
+        document.execCommand('copy');
+        alert('Webhook URL copied to clipboard!');
+    });
+    
+    // Set the webhook
+    const setWebhook = document.getElementById('setWebhook');
+    const webhookStatus = document.getElementById('webhookStatus');
+    
+    setWebhook.addEventListener('click', function() {
+        webhookStatus.style.display = 'block';
+        webhookStatus.className = 'alert alert-info mt-3';
+        webhookStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Setting webhook...';
+        
+        fetch('/viber-set-webhook')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                webhookStatus.className = 'alert alert-success mt-3';
+                webhookStatus.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+            } else {
+                webhookStatus.className = 'alert alert-danger mt-3';
+                webhookStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + data.message;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            webhookStatus.className = 'alert alert-danger mt-3';
+            webhookStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> An error occurred while setting the webhook.';
+        });
+    });
+    
+    // Supplier-Viber mapping functionality
+    const supplierSelect = document.getElementById('supplierSelect');
+    const viberId = document.getElementById('viberId');
+    const addMapping = document.getElementById('addMapping');
+    const mappingsTable = document.getElementById('mappingsTable');
+    
+    // Map of suppliers by ID for quick lookup
+    const suppliersMap = {
+        {% for supplier in suppliers %}
+        {{ supplier.id }}: "{{ supplier.name }}",
+        {% endfor %}
+    };
+    
+    // Current mappings (will be loaded from the server)
+    let currentMappings = {};
+    
+    // Load current mappings
+    function loadMappings() {
+        fetch('/viber-mapping')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                currentMappings = data.mapping || {};
+                renderMappings();
+            } else {
+                console.error('Error loading mappings:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    
+    // Render the mappings table
+    function renderMappings() {
+        mappingsTable.innerHTML = '';
+        
+        if (Object.keys(currentMappings).length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="3" class="text-center">No mappings found.</td>';
+            mappingsTable.appendChild(row);
+            return;
+        }
+        
+        for (const [id, supplierId] of Object.entries(currentMappings)) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${id}</td>
+                <td>${suppliersMap[supplierId] || 'Unknown Supplier'}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger delete-mapping" data-id="${id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            mappingsTable.appendChild(row);
+        }
+        
+        // Add delete event listeners
+        document.querySelectorAll('.delete-mapping').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                deleteMapping(id);
+            });
+        });
+    }
+    
+    // Add a new mapping
+    addMapping.addEventListener('click', function() {
+        const supplierId = supplierSelect.value;
+        const viberIdValue = viberId.value.trim();
+        
+        if (!supplierId) {
+            alert('Please select a supplier.');
+            return;
+        }
+        
+        if (!viberIdValue) {
+            alert('Please enter a Viber ID.');
+            return;
+        }
+        
+        // Add the mapping
+        currentMappings[viberIdValue] = supplierId;
+        
+        // Save the updated mappings
+        saveMappings();
+        
+        // Clear the inputs
+        supplierSelect.value = '';
+        viberId.value = '';
+    });
+    
+    // Delete a mapping
+    function deleteMapping(id) {
+        if (confirm('Are you sure you want to delete this mapping?')) {
+            delete currentMappings[id];
+            saveMappings();
+        }
+    }
+    
+    // Save the mappings to the server
+    function saveMappings() {
+        fetch('/viber-mapping', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(currentMappings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                renderMappings();
+            } else {
+                alert('Error saving mappings: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the mappings.');
+        });
+    }
+    
+    // Initial load
+    loadMappings();
+});
+</script>
+<style>
+    .text-purple {
+        color: #7360f2;
+    }
+</style>
+{% endblock %}

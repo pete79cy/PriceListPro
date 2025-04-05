@@ -74,3 +74,12 @@ with app.app_context():
     # Import and register routes
     from routes import register_routes
     register_routes(app)
+    
+    # Import and register Viber integration if available
+    try:
+        from viber_integration import register_viber_integration
+        register_viber_integration(app)
+        logger.info("Viber integration registered successfully")
+    except (ImportError, Exception) as e:
+        logger.warning(f"Viber integration could not be registered: {str(e)}")
+        pass

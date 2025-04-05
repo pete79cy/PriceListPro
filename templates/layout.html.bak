@@ -105,7 +105,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('company_settings') }}"><i class="fas fa-building"></i> Company Settings</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('ai_settings') }}"><i class="fas fa-robot"></i> AI Document Insights</a></li>
+                            {% if current_user.is_admin %}
                             {% if current_user.is_admin %}
                             <li><a class="dropdown-item" href="{{ url_for('viber_settings') }}"><i class="fab fa-viber"></i> Viber Integration</a></li>
                             {% endif %}
