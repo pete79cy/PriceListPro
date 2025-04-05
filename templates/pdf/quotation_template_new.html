@@ -2,134 +2,91 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Quotation {{ quotation.quotation_number }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotation - New Template</title>
     <style>
-        @page {
-            /* Switch to landscape orientation for better horizontal space */
-            size: A4 {{ orientation }};
-            margin: 1.5cm;
-            @top-center {
-                content: "ANDREAS PAKKOUTIS & SONS LTD | Quotation {{ quotation.quotation_number }}";
-                font-size: 9pt;
-                color: #666;
-            }
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 9pt;
-                color: #666;
-            }
-        }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10pt; /* Smaller font for better space usage */
-            line-height: 1.4; /* Tighter line spacing */
-            color: #333;
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background-color: white;
+            color: #333;
+            font-size: 10pt;
         }
-        /* Compact Header with branding elements */
-        .header {
+        header {
+            padding: 15px 0;
+            border-bottom: 2px solid #ddd;
+        }
+        .container {
             width: 100%;
-            margin-bottom: 1cm; /* Reduced spacing */
-            padding-bottom: 0.3cm;
-            border-bottom: 1px solid #eee;
-            background-color: #f9f9f9; /* Light background for header */
+            padding: 15px;
+            box-sizing: border-box;
         }
-        .company-info {
-            float: left;
-            width: 60%;
+        .logo {
+            max-height: 80px;
+            max-width: 300px;
         }
-        .quotation-info {
+        .header-info {
             float: right;
-            width: 40%;
             text-align: right;
+            font-size: 10pt;
+        }
+        .header-info p {
+            margin: 2px 0;
+        }
+        .company-details {
+            clear: both;
+            margin-top: 30px;
+            font-size: 9pt;
+        }
+        .company-details div {
+            margin-bottom: 3px;
+        }
+        .quotation-title {
+            text-align: center;
+            margin: 30px 0 10px 0;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        .quotation-number {
+            text-align: center;
+            margin: 0 0 30px 0;
+            font-size: 11pt;
+            color: #666;
         }
         .customer-info {
-            width: 100%;
-            margin-bottom: 0.8cm; /* Reduced spacing */
-            background-color: #f5f8fc;
-            padding: 0.3cm; /* Reduced padding */
-            border-radius: 4px;
-            border-left: 3px solid #224870; /* Brand accent */
+            margin-bottom: 30px;
+            font-size: 9pt;
         }
-        .clear {
-            clear: both;
+        .customer-info div {
+            margin-bottom: 3px;
         }
-        
-        /* Typography Optimizations */
-        h1 {
-            font-size: 18pt;
-            color: #224870;
-            margin-bottom: 0.2cm;
-            font-weight: 700;
-        }
-        h2 {
-            font-size: 13pt;
-            color: #224870;
-            margin-top: 0.6cm;
-            margin-bottom: 0.3cm;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.2cm;
-        }
-        
-        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.4cm 0; /* Reduced margin */
-            table-layout: fixed;
+            margin: 15px 0;
         }
-        
-        /* Ensure headers repeat on new pages */
-        thead {
-            display: table-header-group;
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 9pt;
         }
-        
         th {
             background-color: #e0e7f0;
-            padding: 0.2cm; /* Further reduced padding */
-            text-align: left;
             font-weight: bold;
-            font-size: 9pt; /* Smaller header font */
-            border: 1px solid #b0c4de;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #224870;
         }
-        
-        /* Even more compact cell styling */
-        td {
-            padding: 0.15cm 0.2cm; /* Further reduced padding */
-            border: 1px solid #ddd;
-            font-size: 9pt; /* Smaller font */
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            vertical-align: top;
-        }
-        
-        /* Enhanced zebra striping */
-        tbody tr:nth-child(odd) {
+        tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        
-        /* Right-align all numeric data */
-        .numeric {
-            text-align: right;
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
-        }
-        
-        /* Text alignment helpers */
-        .text-right {
+        .item-price, .item-total {
             text-align: right;
         }
-        .text-center {
+        .item-quantity {
             text-align: center;
         }
-        
-        /* Enhanced Summary Block with consolidated styling */
         .summary-block {
+            display: inline-block; /* Use inline-block to treat as a single unit */
             width: 40%;
             float: right;
             margin-top: 0.5cm;
@@ -148,16 +105,13 @@
             text-align: right;
             border: none;
             border-bottom: 1px solid #e0e7f0;
-            font-weight: 600;
-            font-size: 10pt;
         }
         .summary-block .label {
             font-weight: bold;
             text-align: left;
         }
         .summary-block .amount {
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
+            font-family: "Courier New", monospace;
             text-align: right;
         }
         .summary-block .total-row {
@@ -170,50 +124,53 @@
         
         /* Notes section */
         .notes {
+            clear: both;
             margin-top: 0.8cm;
             border-top: 1px solid #eee;
             padding-top: 0.3cm;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
-        
-        /* More compact terms and conditions */
-        .terms {
-            font-size: 8.5pt;
-            color: #555;
-            margin-top: 0.8cm;
+        .notes-label {
+            font-weight: bold;
+            margin-bottom: 0.2cm;
+        }
+        .signature-section {
+            margin-top: 1.5cm;
             page-break-inside: avoid;
-            background-color: #f9f9f9;
-            padding: 0.3cm;
-            border-radius: 4px;
+            break-inside: avoid;
         }
-        .terms h2 {
-            margin-top: 0;
-            font-size: 11pt;
-        }
-        .terms ol {
-            margin: 0.2cm 0;
-            padding-left: 1.2cm;
-        }
-        .terms li {
-            margin-bottom: 0.1cm;
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 60%;
+            margin-top: 1cm;
+            padding-top: 0.2cm;
+            text-align: center;
+            font-size: 0.9em;
         }
         
-        /* Enhanced Footer */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
+        /* Footer */
+        footer {
+            margin-top: 30px;
             font-size: 8pt;
             text-align: center;
             color: #777;
             border-top: 1px solid #eee;
-            padding-top: 0.2cm;
-            background-color: #f9f9f9;
+            padding-top: 15px;
         }
         
-        /* Ensure consistent print layout */
+        /* Page styling */
+        @page {
+            margin: 2cm;
+        }
+        
+        /* Print-specific styles */
         @media print {
+        .summary-block {
+            display: inline-block; /* Ensure consistent treatment as a single unit */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
             body {
                 font-size: 9.5pt;
             }
@@ -230,120 +187,117 @@
             tfoot {
                 display: table-footer-group;
             }
-        }
-        
-        /* Company logo styling */
-        .company-logo {
-            max-height: 45px;
-            margin-bottom: 5px;
-            float: left;
-            margin-right: 10px;
+            .page-break {
+                page-break-before: always;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-info">
+    <div class="container">
+        <header>
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" class="company-logo">
+            <img src="{{ company.logo_path }}" alt="Company Logo" class="logo">
             {% endif %}
-            <h1>{{ company.name }}</h1>
-            <p>
-                {{ company.address_line1 }}
-                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
-                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
-            </p>
+            <div class="header-info">
+                <p><strong>Quotation</strong></p>
+                <p>Number: {{ quotation.quotation_number }}</p>
+                <p>Date: {{ quotation.quotation_date.strftime('%d/%m/%Y') }}</p>
+                {% if quotation.valid_until %}
+                <p>Valid Until: {{ quotation.valid_until.strftime('%d/%m/%Y') }}</p>
+                {% endif %}
+            </div>
+        </header>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="company-details">
+            <div><strong>{{ company.name }}</strong></div>
+            {% if company.address_line1 %}<div>{{ company.address_line1 }}</div>{% endif %}
+            {% if company.address_line2 %}<div>{{ company.address_line2 }}</div>{% endif %}
+            {% if company.phone %}<div>Phone: {{ company.phone }}</div>{% endif %}
+            {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
         </div>
-        <div class="quotation-info">
-            <h1>QUOTATION</h1>
-            <p>
-                <strong>Number:</strong> {{ quotation.quotation_number }}<br>
-                <strong>Date:</strong> {{ quotation.quotation_date.strftime('%Y-%m-%d') }}<br>
-                <strong>Valid Until:</strong> {{ (quotation.quotation_date.replace(month=quotation.quotation_date.month+1) if quotation.quotation_date.month < 12 else quotation.quotation_date.replace(year=quotation.quotation_date.year+1, month=1)).strftime('%Y-%m-%d') }}
-            </p>
+        
+        <h1 class="quotation-title">Quotation</h1>
+        <div class="quotation-number">{{ quotation.quotation_number }}</div>
+        
+        <div class="customer-info">
+            <div><strong>Customer:</strong> {{ quotation.customer.name }}</div>
+            {% if quotation.customer.address %}<div>Address: {{ quotation.customer.address }}</div>{% endif %}
+            {% if quotation.customer.phone %}<div>Phone: {{ quotation.customer.phone }}</div>{% endif %}
+            {% if quotation.customer.email %}<div>Email: {{ quotation.customer.email }}</div>{% endif %}
         </div>
-        <div class="clear"></div>
-    </div>
-    
-    <div class="customer-info">
-        <h2>Customer Information</h2>
-        <p>
-            <strong>{{ customer.name }}</strong>
-            {% if customer.address %} | {{ customer.address }}{% endif %}
-            {% if customer.email %} | Email: {{ customer.email }}{% endif %}
-            {% if customer.phone %} | Phone: {{ customer.phone }}{% endif %}
-        </p>
-    </div>
-    
-    <h2>Quotation Details</h2>
-    <table>
-        <thead>
-            <tr>
-                <th width="3%">#</th>
-                <th width="25%">Description</th>
-                <th width="22%">Scientific Name</th>
-                <th width="8%">Pot Size</th>
-                <th width="8%">Height</th>
-                <th width="7%" class="text-right">Qty</th>
-                <th width="12%" class="text-right">Unit Price</th>
-                <th width="15%" class="text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td class="text-center">{{ loop.index }}</td>
-                <td>{{ item.description }}</td>
-                <td><em>{{ item.scientific_name or "" }}</em></td>
-                <td>{{ item.pot_size or "" }}</td>
-                <td>{{ item.height or "" }}</td>
-                <td class="numeric">{{ "%d"|format(item.quantity|int) }}</td>
-                <td class="numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
-                <td class="numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <div class="summary-block">
+        
         <table>
-            <tr>
-                <td class="label">Subtotal:</td>
-                <td class="amount">{{ currency }} {{ "%.2f"|format(subtotal) }}</td>
-            </tr>
-            {% if vat_list|length > 0 %}
-            <tr>
-                <td class="label">VAT:</td>
-                <td class="amount">{{ currency }} {{ "%.2f"|format(vat_list|map(attribute='amount')|sum) }}</td>
-            </tr>
-            {% endif %}
-            <tr class="total-row">
-                <td class="label total">Total:</td>
-                <td class="amount total">{{ currency }} {{ "%.2f"|format(grand_total) }}</td>
-            </tr>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 30%;">Description</th>
+                    <th style="width: 20%;">Scientific Name</th>
+                    <th style="width: 10%;">Pot Size</th>
+                    <th style="width: 10%;">Qty</th>
+                    <th style="width: 15%;">Unit Price</th>
+                    <th style="width: 10%;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in quotation.items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.scientific_name or '' }}</td>
+                    <td>{{ item.pot_size or '' }}</td>
+                    <td class="item-quantity">{{ item.quantity }}</td>
+                    <td class="item-price">{{ currency }}{{ "%.2f"|format(item.selling_price) }}</td>
+                    <td class="item-total">{{ currency }}{{ "%.2f"|format(item.selling_price * item.quantity) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
-    </div>
-    <div class="clear"></div>
-    
-    {% if quotation.notes %}
-    <div class="notes">
-        <h2>Notes</h2>
-        <p>{{ quotation.notes }}</p>
-    </div>
-    {% endif %}
-    
-    <div class="terms">
-        <h2>Terms & Conditions</h2>
-        <ol>
-            <li>This quotation is valid for 30 days from the date of issue.</li>
-            <li>Prices are subject to change without prior notice after the validity period.</li>
-            <li>Delivery timeframe will be confirmed upon order placement.</li>
-            <li>Payment terms: 50% advance, balance prior to delivery.</li>
-        </ol>
-    </div>
-    
-    <div class="footer">
-        <p>Quotation {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
+        
+        <div class="summary-block">
+            <table>
+                <tr>
+                    <td class="label">Subtotal:</td>
+                    <td class="amount">{{ currency }} {{ "%.2f"|format(subtotal) }}</td>
+                </tr>
+                {% if vat_list|length > 0 %}
+                <tr>
+                    <td class="label">VAT:</td>
+                    <td class="amount">{{ currency }} {{ "%.2f"|format(vat_list|map(attribute='amount')|sum) }}</td>
+                </tr>
+                {% for vat_item in vat_list %}
+                <tr>
+                    <td class="label">VAT {{ vat_item.rate }}%:</td>
+                    <td class="amount">{{ currency }} {{ "%.2f"|format(vat_item.amount) }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+                <tr class="total-row">
+                    <td class="label">Total:</td>
+                    <td class="amount total">{{ currency }} {{ "%.2f"|format(total) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div style="clear: both;"></div>
+        
+        {% if quotation.notes %}
+        <div class="notes">
+            <div class="notes-label">Notes:</div>
+            <div>{{ quotation.notes|replace('\n', '<br>')|safe }}</div>
+        </div>
+        {% endif %}
+        
+        <div class="signature-section">
+            <div class="signature-line">Authorized Signature</div>
+        </div>
+        
+        <footer>
+            <p>Thank you for your business! | {{ company.name }}</p>
+            <p>Generated on: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+        </footer>
     </div>
 </body>
 </html>

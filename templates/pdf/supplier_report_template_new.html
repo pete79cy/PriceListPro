@@ -122,6 +122,7 @@
         
         /* Enhanced Summary Block with consolidated styling */
         .summary-block {
+            display: inline-block; /* Use inline-block to treat as a single unit */
             width: 40%;
             float: right;
             margin-top: 0.5cm;
@@ -196,6 +197,11 @@
         
         /* Ensure consistent print layout */
         @media print {
+        .summary-block {
+            display: inline-block; /* Ensure consistent treatment as a single unit */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
             body {
                 font-size: 9pt;
             }
