@@ -2,126 +2,116 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supplier Report</title>
     <style>
-        @page {
-            /* Switch to landscape orientation for better horizontal space */
-            size: A4 {{ orientation }};
-            margin: 1.5cm;
-            @top-center {
-                content: "ANDREAS PAKKOUTIS & SONS LTD | Supplier Report";
-                font-size: 9pt;
-                color: #666;
-            }
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 9pt;
-                color: #666;
-            }
-        }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9.5pt; /* Smaller font */
-            line-height: 1.3; /* Tighter line height */
-            color: #333;
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background-color: white;
+            color: #333;
+            font-size: 10pt;
         }
-        /* Compact Header with branding elements */
-        .header {
+        header {
+            padding: 10px 0;
+            border-bottom: 2px solid #ddd;
+        }
+        .container {
             width: 100%;
-            margin-bottom: 0.8cm; /* Reduced spacing */
-            padding-bottom: 0.3cm;
-            border-bottom: 1px solid #eee;
-            background-color: #f9f9f9; /* Light background for header */
+            padding: 15px;
+            box-sizing: border-box;
         }
-        .company-info {
-            float: left;
-            width: 60%;
+        .logo {
+            max-height: 50px;
         }
-        .report-info {
+        .header-info {
             float: right;
-            width: 40%;
             text-align: right;
+            font-size: 9pt;
         }
-        .clear {
+        .header-info p {
+            margin: 2px 0;
+        }
+        .company-details {
             clear: both;
+            margin-top: 20px;
+            font-size: 9pt;
         }
-        
-        /* Typography Optimizations */
-        h1 {
-            font-size: 16pt;
-            color: #224870;
-            margin-bottom: 0.2cm;
-            font-weight: 700;
+        .company-details div {
+            margin-bottom: 3px;
         }
-        h2 {
-            font-size: 13pt;
-            color: #224870;
-            margin-top: 0.6cm;
-            margin-bottom: 0.3cm;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.2cm;
+        .report-title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14pt;
+            font-weight: bold;
         }
-        
-        /* Compact Table Styling */
+        .report-date {
+            text-align: right;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        .section-title {
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        .customer-info {
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        .customer-info div {
+            margin-bottom: 3px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.4cm 0; /* Reduced margin */
-            table-layout: fixed;
+            margin: 15px 0;
         }
-        
-        /* Ensure headers repeat on new pages */
-        thead {
-            display: table-header-group;
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 9pt;
         }
-        
         th {
             background-color: #e0e7f0;
-            padding: 0.15cm; /* Further reduced padding */
-            text-align: left;
             font-weight: bold;
-            font-size: 8.5pt; /* Smaller header font */
-            border: 1px solid #b0c4de;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #224870;
         }
-        
-        /* Even more compact cell styling */
-        td {
-            padding: 0.15cm; /* Further reduced padding */
-            border: 1px solid #ddd;
-            font-size: 9pt; /* Smaller font */
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            vertical-align: top;
-        }
-        
-        /* Enhanced zebra striping */
-        tbody tr:nth-child(odd) {
+        tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        
-        /* Right-align all numeric data */
-        .numeric {
-            text-align: right;
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
-        }
-        
-        /* Text alignment helpers */
-        .text-right {
+        .item-price {
             text-align: right;
         }
-        .text-center {
+        .item-quantity {
             text-align: center;
         }
-        
-        /* Enhanced Summary Block with consolidated styling */
+        .subtotal-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+        }
+        .total-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+            background-color: #e0e7f0;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            padding: 10px 0;
+            border-top: 1px solid #ddd;
+            font-size: 8pt;
+            text-align: center;
+            background-color: white;
+        }
+        .page-number:after {
+            content: counter(page);
+        }
         .summary-block {
+            display: inline-block; /* Use inline-block to treat as a single unit */
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             page-break-before: auto;
@@ -136,8 +126,6 @@
             border-top: 2px solid #000;
             margin-top: 20px;
             max-width: 300px;
-            position: relative;
-            display: block;
         }
         .summary-block table {
             width: 100%;
@@ -148,66 +136,20 @@
             text-align: right;
             border: none;
             border-bottom: 1px solid #e0e7f0;
-            font-weight: 600;
-            font-size: 10pt;
         }
-        .summary-block .label {
+        .summary-block .total-cell {
             font-weight: bold;
-            text-align: left;
-        }
-        .summary-block .amount {
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
-            text-align: right;
-        }
-        .summary-block .total-row {
             border-top: 2px solid #000;
-        }
-        .summary-block .total {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        
-        /* Enhanced Footer */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            font-size: 8pt;
-            text-align: center;
-            color: #777;
-            border-top: 1px solid #eee;
-            padding-top: 0.2cm;
-            background-color: #f9f9f9;
-        }
-        
-        /* Supplier heading styling */
-        .supplier-heading {
-            background-color: #e0e7f0;
-            color: #224870;
-            padding: 0.2cm;
-            margin-top: 0.5cm;
-            margin-bottom: 0.3cm;
-            font-weight: bold;
-            border-radius: 4px;
-            border-left: 3px solid #224870;
-        }
-        
-        /* Company logo styling */
-        .company-logo {
-            max-height: 45px;
-            margin-bottom: 5px;
-            float: left;
-            margin-right: 10px;
+            padding-top: 10px;
         }
         
         /* Ensure consistent print layout */
         @media print {
-        .summary-block {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
+            .summary-block {
+                display: inline-block; /* Ensure consistent treatment as a single unit */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
             body {
                 font-size: 9pt;
             }
@@ -228,80 +170,92 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-info">
+    <div class="container">
+        <header>
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" class="company-logo">
+            <img src="{{ company.logo_path }}" alt="Company Logo" class="logo">
             {% endif %}
-            <h1>{{ company.name }}</h1>
-            <p>
-                {{ company.address_line1 }}
-                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
-                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
-            </p>
+            <div class="header-info">
+                <p><strong>Supplier Report</strong></p>
+                <p>Quotation #: {{ quotation.quotation_number }}</p>
+                <p>Date: {{ quotation.quotation_date.strftime('%d/%m/%Y') }}</p>
+            </div>
+        </header>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="company-details">
+            <div><strong>{{ company.name }}</strong></div>
+            {% if company.address_line1 %}<div>{{ company.address_line1 }}</div>{% endif %}
+            {% if company.address_line2 %}<div>{{ company.address_line2 }}</div>{% endif %}
+            {% if company.phone %}<div>Phone: {{ company.phone }}</div>{% endif %}
+            {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
         </div>
-        <div class="report-info">
-            <h1>SUPPLIER REPORT</h1>
-            <p>
-                <strong>Quotation:</strong> {{ quotation.quotation_number }}<br>
-                <strong>Supplier:</strong> {{ supplier_name }}<br>
-                <strong>Date:</strong> {{ date_generated.split(' ')[0] }}
-            </p>
+        
+        <h1 class="report-title">Supplier Report: {{ supplier_name }}</h1>
+        
+        <div class="customer-info">
+            <div><strong>Customer:</strong> {{ quotation.customer.name }}</div>
+            {% if quotation.customer.address %}<div>Address: {{ quotation.customer.address }}</div>{% endif %}
+            {% if quotation.customer.phone %}<div>Phone: {{ quotation.customer.phone }}</div>{% endif %}
+            {% if quotation.customer.email %}<div>Email: {{ quotation.customer.email }}</div>{% endif %}
         </div>
-        <div class="clear"></div>
-    </div>
-    
-    <h2>Products Requested</h2>
-    
-    <table>
-        <thead>
-            <tr>
-                <th width="5%">#</th>
-                <th width="25%">Description</th>
-                <th width="25%">Scientific Name</th>
-                <th width="9%">Pot Size</th>
-                <th width="9%">Height</th>
-                <th width="7%" class="text-right">Qty</th>
-                <th width="10%" class="text-right">Unit Price</th>
-                <th width="10%" class="text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in supplier_items %}
-            <tr>
-                <td class="text-center">{{ loop.index }}</td>
-                <td>{{ item.description }}</td>
-                <td><em>{{ item.scientific_name or "" }}</em></td>
-                <td>{{ item.pot_size or "" }}</td>
-                <td>{{ item.height or "" }}</td>
-                <td class="numeric">{{ "%d"|format(item.quantity|int) }}</td>
-                <td class="numeric">{{ currency }} {{ "%.2f"|format(item.cost_price or 0.00) }}</td>
-                <td class="numeric">{{ currency }} {{ "%.2f"|format((item.cost_price or 0.00) * item.quantity) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <div class="summary-block">
+        
+        <h2 class="section-title">Items from {{ supplier_name }}</h2>
+        
         <table>
-            <tr>
-                <td class="label">Total Items:</td>
-                <td class="amount">{{ supplier_items|length }}</td>
-            </tr>
-            <tr>
-                <td class="label">Total Quantity:</td>
-                <td class="amount">{{ supplier_items|map(attribute='quantity')|sum|int }}</td>
-            </tr>
-            <tr class="total-row">
-                <td class="label total">Total Amount:</td>
-                <td class="amount total">{{ currency }} {{ "%.2f"|format(supplier_total) }}</td>
-            </tr>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 35%;">Description</th>
+                    <th style="width: 25%;">Scientific Name</th>
+                    <th style="width: 10%;">Pot Size</th>
+                    <th style="width: 10%;">Quantity</th>
+                    <th style="width: 15%;">Unit Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.scientific_name or '' }}</td>
+                    <td>{{ item.pot_size or '' }}</td>
+                    <td class="item-quantity">{{ item.quantity }}</td>
+                    <td class="item-price">{{ currency }}{{ "%.2f"|format(item.selling_price) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
+        
+        <div class="summary-block">
+            <table>
+                <tr>
+                    <td>Total Items:</td>
+                    <td>{{ items|length }}</td>
+                </tr>
+                <tr>
+                    <td>Total Quantity:</td>
+                    <td>{{ items|sum(attribute='quantity') }}</td>
+                </tr>
+                <tr class="total-cell">
+                    <td>Total Value:</td>
+                    <td>{{ currency }}{{ "%.2f"|format(items|sum(attribute='selling_price') * items|sum(attribute='quantity')) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="report-date">
+            <p>Generated on: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
     </div>
-    <div class="clear"></div>
     
-    <div class="footer">
-        <p>{{ company.name if company else "Supplier Report" }} | Generated on {{ date_generated }}</p>
-    </div>
+    <footer>
+        <div>
+            {{ company.name }} - Supplier Report for Quotation #{{ quotation.quotation_number }} - Page <span class="page-number"></span>
+        </div>
+    </footer>
 </body>
 </html>

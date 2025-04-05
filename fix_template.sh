@@ -1,0 +1,538 @@
+#!/bin/bash
+# Fix supplier_report_template.html
+cat > templates/pdf/supplier_report_template.html.new << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+            color: #333;
+            font-size: 10pt;
+        }
+        header {
+            padding: 10px 0;
+            border-bottom: 2px solid #ddd;
+        }
+        .container {
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .header-info {
+            float: right;
+            text-align: right;
+            font-size: 9pt;
+        }
+        .header-info p {
+            margin: 2px 0;
+        }
+        .company-details {
+            clear: both;
+            margin-top: 20px;
+            font-size: 9pt;
+        }
+        .company-details div {
+            margin-bottom: 3px;
+        }
+        .report-title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        .report-date {
+            text-align: right;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        .section-title {
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        .customer-info {
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        .customer-info div {
+            margin-bottom: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        th {
+            background-color: #e0e7f0;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .item-price {
+            text-align: right;
+        }
+        .item-quantity {
+            text-align: center;
+        }
+        .subtotal-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+        }
+        .total-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+            background-color: #e0e7f0;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            padding: 10px 0;
+            border-top: 1px solid #ddd;
+            font-size: 8pt;
+            text-align: center;
+            background-color: white;
+        }
+        .page-number:after {
+            content: counter(page);
+        }
+        .summary-block {
+            display: inline-block; /* Use inline-block to treat as a single unit */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-before: auto;
+            break-before: auto;
+            page-break-after: avoid;
+            break-after: avoid;
+            width: 40%;
+            float: right;
+            margin-top: 0.5cm;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-top: 2px solid #000;
+            margin-top: 20px;
+            max-width: 300px;
+        }
+        .summary-block table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .summary-block td {
+            padding: 5px;
+            text-align: right;
+            border: none;
+            border-bottom: 1px solid #e0e7f0;
+        }
+        .summary-block .total-cell {
+            font-weight: bold;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+        }
+        
+        /* Ensure consistent print layout */
+        @media print {
+            .summary-block {
+                display: inline-block; /* Ensure consistent treatment as a single unit */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            body {
+                font-size: 9pt;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            {% if company.logo_path %}
+            <img src="{{ company.logo_path }}" alt="Company Logo" class="logo">
+            {% endif %}
+            <div class="header-info">
+                <p><strong>Supplier Report</strong></p>
+                <p>Quotation #: {{ quotation.quotation_number }}</p>
+                <p>Date: {{ quotation.quotation_date.strftime('%d/%m/%Y') }}</p>
+            </div>
+        </header>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="company-details">
+            <div><strong>{{ company.name }}</strong></div>
+            {% if company.address_line1 %}<div>{{ company.address_line1 }}</div>{% endif %}
+            {% if company.address_line2 %}<div>{{ company.address_line2 }}</div>{% endif %}
+            {% if company.phone %}<div>Phone: {{ company.phone }}</div>{% endif %}
+            {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
+        </div>
+        
+        <h1 class="report-title">Supplier Report: {{ supplier_name }}</h1>
+        
+        <div class="customer-info">
+            <div><strong>Customer:</strong> {{ quotation.customer.name }}</div>
+            {% if quotation.customer.address %}<div>Address: {{ quotation.customer.address }}</div>{% endif %}
+            {% if quotation.customer.phone %}<div>Phone: {{ quotation.customer.phone }}</div>{% endif %}
+            {% if quotation.customer.email %}<div>Email: {{ quotation.customer.email }}</div>{% endif %}
+        </div>
+        
+        <h2 class="section-title">Items from {{ supplier_name }}</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 35%;">Description</th>
+                    <th style="width: 25%;">Scientific Name</th>
+                    <th style="width: 10%;">Pot Size</th>
+                    <th style="width: 10%;">Quantity</th>
+                    <th style="width: 15%;">Unit Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.scientific_name or '' }}</td>
+                    <td>{{ item.pot_size or '' }}</td>
+                    <td class="item-quantity">{{ item.quantity }}</td>
+                    <td class="item-price">{{ currency }}{{ "%.2f"|format(item.selling_price) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="summary-block">
+            <table>
+                <tr>
+                    <td>Total Items:</td>
+                    <td>{{ items|length }}</td>
+                </tr>
+                <tr>
+                    <td>Total Quantity:</td>
+                    <td>{{ items|sum(attribute='quantity') }}</td>
+                </tr>
+                <tr class="total-cell">
+                    <td>Total Value:</td>
+                    <td>{{ currency }}{{ "%.2f"|format(items|sum(attribute='selling_price') * items|sum(attribute='quantity')) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="report-date">
+            <p>Generated on: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+    </div>
+    
+    <footer>
+        <div>
+            {{ company.name }} - Supplier Report for Quotation #{{ quotation.quotation_number }} - Page <span class="page-number"></span>
+        </div>
+    </footer>
+</body>
+</html>
+EOF
+
+# Move the new file into place
+mv templates/pdf/supplier_report_template.html.new templates/pdf/supplier_report_template.html
+echo "Fixed supplier_report_template.html"
+
+# Fix custom_supplier_report_template.html
+cat > templates/pdf/custom_supplier_report_template.html.new << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Supplier Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: white;
+            color: #333;
+            font-size: 10pt;
+        }
+        header {
+            padding: 10px 0;
+            border-bottom: 2px solid #ddd;
+        }
+        .container {
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .header-info {
+            float: right;
+            text-align: right;
+            font-size: 9pt;
+        }
+        .header-info p {
+            margin: 2px 0;
+        }
+        .company-details {
+            clear: both;
+            margin-top: 20px;
+            font-size: 9pt;
+        }
+        .company-details div {
+            margin-bottom: 3px;
+        }
+        .report-title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        .report-date {
+            text-align: right;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        .section-title {
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        .customer-info {
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        .customer-info div {
+            margin-bottom: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        th {
+            background-color: #e0e7f0;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .item-price {
+            text-align: right;
+        }
+        .item-quantity {
+            text-align: center;
+        }
+        .subtotal-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+        }
+        .total-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+            background-color: #e0e7f0;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            padding: 10px 0;
+            border-top: 1px solid #ddd;
+            font-size: 8pt;
+            text-align: center;
+            background-color: white;
+        }
+        .page-number:after {
+            content: counter(page);
+        }
+        .summary-block {
+            display: inline-block; /* Use inline-block to treat as a single unit */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            width: 40%;
+            float: right;
+            margin-top: 0.5cm;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-top: 2px solid #000;
+            margin-top: 20px;
+            max-width: 300px;
+        }
+        .summary-block table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .summary-block td {
+            padding: 5px;
+            text-align: right;
+            border: none;
+            border-bottom: 1px solid #e0e7f0;
+        }
+        .summary-block .total-cell {
+            font-weight: bold;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+        }
+        
+        /* Ensure consistent print layout */
+        @media print {
+            .summary-block {
+                display: inline-block; /* Ensure consistent treatment as a single unit */
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            body {
+                font-size: 9pt;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            {% if company.logo_path %}
+            <img src="{{ company.logo_path }}" alt="Company Logo" class="logo">
+            {% endif %}
+            <div class="header-info">
+                <p><strong>Custom Supplier Report</strong></p>
+                <p>Quotation #: {{ quotation.quotation_number }}</p>
+                <p>Date: {{ quotation.quotation_date.strftime('%d/%m/%Y') }}</p>
+            </div>
+        </header>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="company-details">
+            <div><strong>{{ company.name }}</strong></div>
+            {% if company.address_line1 %}<div>{{ company.address_line1 }}</div>{% endif %}
+            {% if company.address_line2 %}<div>{{ company.address_line2 }}</div>{% endif %}
+            {% if company.phone %}<div>Phone: {{ company.phone }}</div>{% endif %}
+            {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
+        </div>
+        
+        <h1 class="report-title">{{ report_title }}</h1>
+        
+        <div class="customer-info">
+            <div><strong>Customer:</strong> {{ quotation.customer.name }}</div>
+            {% if quotation.customer.address %}<div>Address: {{ quotation.customer.address }}</div>{% endif %}
+            {% if quotation.customer.phone %}<div>Phone: {{ quotation.customer.phone }}</div>{% endif %}
+            {% if quotation.customer.email %}<div>Email: {{ quotation.customer.email }}</div>{% endif %}
+        </div>
+        
+        <h2 class="section-title">Included Items</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    {% for field in display_fields %}
+                    <th>{{ field.label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    {% for field in display_fields %}
+                    <td {% if field.align == 'right' %}class="item-price"{% elif field.align == 'center' %}class="item-quantity"{% endif %}>
+                        {% if field.name == 'selling_price' %}
+                            {{ currency }}{{ "%.2f"|format(item[field.name]) }}
+                        {% elif field.name == 'total' %}
+                            {{ currency }}{{ "%.2f"|format(item.selling_price * item.quantity) }}
+                        {% else %}
+                            {{ item[field.name]|default('') }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="summary-block">
+            <table>
+                <tr>
+                    <td>Total Items:</td>
+                    <td>{{ items|length }}</td>
+                </tr>
+                <tr>
+                    <td>Total Quantity:</td>
+                    <td>{{ items|sum(attribute='quantity') }}</td>
+                </tr>
+                <tr class="total-cell">
+                    <td>Total Value:</td>
+                    <td>{{ currency }}{{ "%.2f"|format(total_value) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div style="clear: both;"></div>
+        
+        <div class="report-date">
+            <p>Generated on: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+    </div>
+    
+    <footer>
+        <div>
+            {{ company.name }} - Custom Report for Quotation #{{ quotation.quotation_number }} - Page <span class="page-number"></span>
+        </div>
+    </footer>
+</body>
+</html>
+EOF
+
+# Move the new file into place
+mv templates/pdf/custom_supplier_report_template.html.new templates/pdf/custom_supplier_report_template.html
+echo "Fixed custom_supplier_report_template.html"
