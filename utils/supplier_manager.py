@@ -16,6 +16,9 @@ def update_supplier_from_quotation_item(item):
     Returns:
         bool: Whether the operation was successful
     """
+    # Import Product here to avoid circular imports
+    from models import Product
+    
     # If supplier is empty, set it to "In-house Production"
     if not item.supplier:
         item.supplier = "In-house Production"
@@ -40,6 +43,49 @@ def update_supplier_from_quotation_item(item):
             logger.warning(f"Could not determine supplier for item {item.id}")
             return False
         
+        # First check the main products database for an existing product with the same scientific name and pot size
+        existing_product = None
+        if item.scientific_name and item.pot_size:
+            existing_product = Product.query.filter(
+                db.func.lower(Product.scientific_name) == item.scientific_name.lower(),
+                db.func.lower(Product.pot) == item.pot_size.lower()
+            ).first()
+            
+            if existing_product:
+                logger.info(f"Found existing product in database: {existing_product.name} ({existing_product.scientific_name}, {existing_product.pot})")
+                
+                # Check if this product is already in the supplier's list
+                supplier_product = SupplierProduct.query.filter_by(
+                    supplier_id=supplier.id,
+                    scientific_name=existing_product.scientific_name,
+                    pot_size=existing_product.pot
+                ).first()
+                
+                if supplier_product:
+                    # Update the existing supplier product
+                    supplier_product.price = item.selling_price
+                    supplier_product.cost_price = item.cost_price
+                    supplier_product.last_detected = datetime.utcnow()
+                    logger.info(f"Updated existing supplier product: {supplier_product.product_name}")
+                else:
+                    # Create a new supplier product linked to the existing product
+                    supplier_product = SupplierProduct(
+                        supplier_id=supplier.id,
+                        product_name=existing_product.name,
+                        scientific_name=existing_product.scientific_name,
+                        height=item.height,
+                        pot_size=existing_product.pot,
+                        price=item.selling_price,
+                        cost_price=item.cost_price,
+                        last_detected=datetime.utcnow()
+                    )
+                    db.session.add(supplier_product)
+                    logger.info(f"Created new supplier product linked to existing product: {supplier_product.product_name}")
+                
+                db.session.commit()
+                return True
+        
+        # If we're still here, no matching product was found in the main database
         # Now check for existing supplier product or create a new one
         supplier_product = SupplierProduct.query.filter_by(
             supplier_id=supplier.id,
@@ -76,6 +122,9 @@ def update_supplier_from_quotation_item(item):
     
     except Exception as e:
         logger.error(f"Error updating supplier data: {str(e)}")
+        logger.error(f"Error details: {type(e).__name__}")
+        import traceback
+        logger.error(traceback.format_exc())
         db.session.rollback()
         return False
 
