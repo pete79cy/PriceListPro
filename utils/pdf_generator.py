@@ -392,8 +392,15 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
                 
                 # Calculate totals
                 supplier_totals[item.supplier]['qty'] += item.quantity
+                
+                # Debug logging to trace cost_price values
+                logger.debug(f"Item: {item.id}, Description: {item.description}, Cost Price: {item.cost_price}")
+                
                 # Make sure we correctly handle the cost_price field (could be None)
-                cost_price = item.cost_price if item.cost_price is not None else 0
+                cost_price = 0
+                if hasattr(item, 'cost_price') and item.cost_price is not None:
+                    cost_price = float(item.cost_price)
+                
                 supplier_totals[item.supplier]['cost'] += item.quantity * cost_price
         
         # Generate HTML content from the template
