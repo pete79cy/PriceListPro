@@ -48,23 +48,46 @@ def parse_quantity_from_unit(unit_value):
     - Pure numbers: "10" → 10.0
     - Numbers with text: "10 pcs" → 10.0
     - Ranges like "10-15" → We'll take the first number (10.0)
+    - European decimal format: "2,5" → 2.5
     - Default to 1.0 if no valid number found
     
     Args:
-        unit_value (str): The unit field value
+        unit_value (any): The unit field value (can be string, int, float)
         
     Returns:
         float: The extracted quantity or 1.0 if none found
     """
-    if not unit_value or not isinstance(unit_value, str):
+    # Handle direct numeric types
+    if isinstance(unit_value, (int, float)):
+        return float(unit_value)
+    
+    # If it's None or empty, return default
+    if not unit_value:
         return 1.0
+    
+    # Convert to string for processing    
+    unit_str = str(unit_value).strip()
+    
+    # If the string is a simple number, parse it directly
+    try:
+        # Replace comma with dot for European number format
+        cleaned_value = unit_str.replace(',', '.')
+        return float(cleaned_value)
+    except ValueError:
+        # Not a simple number, continue with regex
+        pass
         
     # Look for the first number pattern in the string
-    match = re.search(r'(\d+(?:\.\d+)?)', str(unit_value))
+    # This regex handles both dot and comma as decimal separators
+    match = re.search(r'(\d+(?:[.,]\d+)?)', unit_str)
     if match:
         try:
-            return float(match.group(1))
+            # Replace comma with dot for European number format
+            value = match.group(1).replace(',', '.')
+            return float(value)
         except (ValueError, TypeError):
+            # Log the failure for debugging
+            logger.warning(f"Failed to parse quantity from: {unit_value}")
             pass
             
     return 1.0
@@ -312,6 +335,11 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 logger.info(f"Skipping header-like row with description: {row.get('description')}")
                 continue
             
+            # Debugging: Log the data type of the row and the 'unit' field if it exists
+            logger.info(f"Row {index} type: {type(row)}")
+            if 'unit' in row:
+                logger.info(f"Unit field type: {type(row['unit'])}, value: {row['unit']}")
+                
             # Extract data from row based on our expected structure
             description = str(row.get('description', '')) if pd.notna(row.get('description', '')) else ''
             
@@ -330,7 +358,17 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             
             category = str(row.get('category', '')) if pd.notna(row.get('category', '')) else ''
             height = str(row.get('height', '')) if pd.notna(row.get('height', '')) else ''
-            unit = str(row.get('unit', '')) if pd.notna(row.get('unit', '')) else ''
+            # Check for direct numeric value in unit field
+            raw_unit_value = row.get('unit', '')
+            if pd.notna(raw_unit_value):
+                if isinstance(raw_unit_value, (int, float)) and raw_unit_value > 0:
+                    # If it's already a number, don't convert to string for parsing
+                    logger.info(f"Found direct numeric unit value: {raw_unit_value}, type: {type(raw_unit_value)}")
+                    unit = raw_unit_value  # Keep as numeric value
+                else:
+                    unit = str(raw_unit_value)
+            else:
+                unit = ''
             actual_size = str(row.get('actual_size', '')) if pd.notna(row.get('actual_size', '')) else ''
             supplier = str(row.get('supplier', '')) if pd.notna(row.get('supplier', '')) else ''
             
@@ -390,7 +428,9 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
             # Parse quantity with better error handling
             try:
                 quantity = parse_quantity_from_unit(unit)
-            except:
+                logger.info(f"Extracted quantity: {quantity} from unit value: {unit}")
+            except Exception as e:
+                logger.warning(f"Failed to parse quantity from unit value: {unit}, error: {str(e)}")
                 quantity = 1  # Default to 1 if parsing fails
             
             # Initialize product entry using our new format
