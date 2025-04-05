@@ -122,8 +122,12 @@
         
         /* Enhanced Summary Block with consolidated styling */
         .summary-block {
-            page-break-inside: avoid;
-            break-inside: avoid;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-before: auto;
+            break-before: auto;
+            page-break-after: avoid;
+            break-after: avoid;
             width: 40%;
             float: right;
             margin-top: 0.5cm;
@@ -132,6 +136,8 @@
             border-top: 2px solid #000;
             margin-top: 20px;
             max-width: 300px;
+            position: relative;
+            display: block;
         }
         .summary-block table {
             width: 100%;
@@ -199,7 +205,8 @@
         /* Ensure consistent print layout */
         @media print {
         .summary-block {
-            page-break-inside: avoid;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
             body {
                 font-size: 9pt;
