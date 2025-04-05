@@ -5,20 +5,35 @@
     <title>Supplier Products Report</title>
     <style>
         @page {
+            /* Switch to landscape orientation for better horizontal space */
             size: A4 {{ orientation }};
-            margin: 2cm;
+            margin: 1.5cm;
+            @top-center {
+                content: "ANDREAS PAKKOUTIS & SONS LTD | Supplier Products Report";
+                font-size: 9pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
         }
         body {
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9.5pt; /* Further reduced font size */
+            line-height: 1.3; /* Even tighter line spacing */
             color: #333;
             margin: 0;
             padding: 0;
         }
+        /* Compact Header with branding elements */
         .header {
             width: 100%;
-            margin-bottom: 1.5cm; /* Increased margin for better spacing */
+            margin-bottom: 0.8cm; /* Reduced spacing */
+            padding-bottom: 0.3cm;
+            border-bottom: 1px solid #eee;
+            background-color: #f9f9f9; /* Light background for header */
         }
         .company-info {
             float: left;
@@ -29,75 +44,87 @@
             width: 40%;
             text-align: right;
         }
-        .supplier-info {
-            width: 100%;
-            margin-bottom: 1.5cm; /* Increased margin for better spacing */
-            background-color: #f9f9f9; /* Light background for emphasis */
-            padding: 0.5cm;
-            border-radius: 4px;
-        }
         .clear {
             clear: both;
         }
+        
+        /* Typography Optimizations */
         h1 {
-            font-size: 18pt;
+            font-size: 16pt;
             color: #224870;
-            margin-bottom: 0.5cm;
+            margin-bottom: 0.2cm;
+            font-weight: 700;
         }
         h2 {
-            font-size: 14pt;
+            font-size: 13pt;
             color: #224870;
-            margin-top: 1cm;
-            margin-bottom: 0.5cm;
+            margin-top: 0.6cm;
+            margin-bottom: 0.3cm;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.2cm;
         }
         
-        /* Improved table styling */
+        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.8cm 0; /* Increased margin */
-            table-layout: fixed; /* Fixed table layout for consistent column widths */
+            margin: 0.4cm 0; /* Reduced margin */
+            table-layout: fixed;
         }
         
-        /* Table header styling */
+        /* Ensure headers repeat on new pages */
         thead {
-            display: table-header-group; /* Ensures header is repeated on page breaks */
+            display: table-header-group;
         }
         
         th {
-            background-color: #e6e6e6;
-            padding: 0.3cm; /* Increased padding */
+            background-color: #e0e7f0;
+            padding: 0.15cm; /* Further reduced padding */
             text-align: left;
             font-weight: bold;
-            font-size: 10pt;
-            border: 1px solid #999;
-            white-space: nowrap; /* Prevent header text wrapping */
+            font-size: 8.5pt; /* Smaller header font */
+            border: 1px solid #b0c4de;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #224870;
         }
         
-        /* Table cell styling */
+        /* Even more compact cell styling */
         td {
-            padding: 0.3cm; /* Increased padding */
+            padding: 0.15cm; /* Further reduced padding */
             border: 1px solid #ddd;
-            font-size: 10pt;
+            font-size: 9pt; /* Smaller font */
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
         }
         
-        /* Row styling for alternating colors */
-        tbody tr:nth-child(even) {
+        /* Enhanced zebra striping */
+        tbody tr:nth-child(odd) {
             background-color: #f9f9f9;
         }
         
-        /* Special column styling */
-        .numeric {
-            text-align: right;
-            font-family: 'Courier New', monospace; /* Monospace font for numerical data */
+        /* Supplier heading styling */
+        .supplier-heading {
+            background-color: #e0e7f0;
+            color: #224870;
+            padding: 0.2cm;
+            margin-top: 0.5cm;
+            margin-bottom: 0.3cm;
+            font-weight: bold;
+            border-radius: 4px;
+            border-left: 3px solid #224870;
         }
         
-        /* Text alignment classes */
+        /* Right-align all numeric data */
+        .numeric {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        
+        /* Text alignment helpers */
         .text-right {
             text-align: right;
         }
@@ -105,67 +132,58 @@
             text-align: center;
         }
         
-        /* Summary section */
+        /* Compact Summary Section */
         .summary {
-            width: 45%; /* Slightly wider */
+            width: 45%;
             float: right;
-            margin-top: 0.8cm;
-            background-color: #f5f5f5; /* Light background */
+            margin-top: 0.4cm;
+            background-color: #f5f8fc;
             padding: 0.3cm;
             border-radius: 4px;
+            border-top: 2px solid #224870; /* Brand accent */
         }
         .summary table {
             width: 100%;
+            margin: 0;
         }
         .summary td {
             border: none;
-            padding: 0.2cm 0.3cm;
-            border-bottom: 1px solid #ddd;
+            padding: 0.15cm;
+            border-bottom: 1px solid #e0e7f0;
         }
         .summary tr:last-child td {
-            border-top: 2px solid #999;
             font-weight: bold;
-            background-color: #e9e9e9; /* Highlight total row */
-            font-size: 11pt; /* Slightly larger font */
+            background-color: #e0e7f0;
+            font-size: 9.5pt;
+            padding: 0.2cm;
         }
         
-        /* Notes section */
-        .notes {
-            margin-top: 1.5cm; /* Increased margin */
-            border-top: 1px solid #ddd;
-            padding-top: 0.5cm;
-            page-break-inside: avoid;
-        }
-        
-        /* Footer */
+        /* Enhanced Footer */
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            font-size: 9pt;
+            font-size: 8pt;
             text-align: center;
             color: #777;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #eee;
             padding-top: 0.2cm;
             background-color: #f9f9f9;
         }
         
-        /* Additional style for supplier-specific sections */
-        .supplier-section {
-            margin-top: 1.5cm;
-            border-top: 2px solid #224870;
-            padding-top: 0.5cm;
-            page-break-before: always;
-        }
-        .supplier-section:first-child {
-            page-break-before: avoid;
+        /* Company logo styling */
+        .company-logo {
+            max-height: 45px;
+            margin-bottom: 5px;
+            float: left;
+            margin-right: 10px;
         }
         
-        /* Print-specific styles */
+        /* Ensure consistent print layout */
         @media print {
             body {
-                font-size: 11pt;
+                font-size: 9pt;
             }
             table {
                 page-break-inside: auto;
@@ -184,99 +202,221 @@
     </style>
 </head>
 <body>
+    {% if include_header %}
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 60px; margin-bottom: 10px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" class="company-logo">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
-                {{ company.address_line1 }}<br>
-                {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
-                {% if company.phone %}Phone: {{ company.phone }}<br>{% endif %}
-                {% if company.email %}Email: {{ company.email }}{% endif %}
+                {{ company.address_line1 }}
+                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
+                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
             </p>
         </div>
         <div class="report-info">
-            <h1>SUPPLIER PRODUCTS REPORT</h1>
+            <h1>PRODUCT CATALOG</h1>
             <p>
-                <strong>Date Generated:</strong> {{ date_generated }}<br>
-                <strong>Total Suppliers:</strong> {{ suppliers|length }}<br>
-                <strong>Total Products:</strong> {{ total_products }}
+                <strong>Products:</strong> {{ products_count }}<br>
+                {% if suppliers_count > 0 %}
+                <strong>Suppliers:</strong> {{ suppliers_count }}<br>
+                {% endif %}
+                <strong>Date:</strong> {{ date_generated.split(' ')[0] }}
             </p>
         </div>
         <div class="clear"></div>
     </div>
+    {% endif %}
     
-    {% for supplier_group in suppliers %}
-    <div class="supplier-section">
-        <div class="supplier-info">
-            <h2>{{ supplier_group.supplier.name }}</h2>
-            <p>
-                {% if supplier_group.supplier.address %}{{ supplier_group.supplier.address }}<br>{% endif %}
-                {% if supplier_group.supplier.contact_person %}Contact: {{ supplier_group.supplier.contact_person }}<br>{% endif %}
-                {% if supplier_group.supplier.email %}Email: {{ supplier_group.supplier.email }}<br>{% endif %}
-                {% if supplier_group.supplier.phone %}Phone: {{ supplier_group.supplier.phone }}{% endif %}
-                
-                {% if supplier_group.supplier.is_inhouse %}
-                <br><strong class="text-center" style="color: #224870;">(In-house Production)</strong>
-                {% endif %}
-            </p>
+    <h2>Product Report</h2>
+    
+    {% if group_by_supplier %}
+        {% for supplier_data in suppliers %}
+        <div class="supplier-heading">
+            {{ supplier_data.supplier.name }} ({{ supplier_data.products|length }} products)
         </div>
         
-        <h3>Products ({{ supplier_group.products|length }})</h3>
         <table>
             <thead>
                 <tr>
-                    <th width="5%">#</th>
-                    <th width="25%">Product Name</th>
-                    <th width="25%">Scientific Name</th>
-                    <th width="10%">Pot Size</th>
-                    <th width="10%">Height</th>
-                    <th width="10%" class="text-right numeric">Supplier Price</th>
-                    <th width="15%" class="text-right numeric">Last Updated</th>
+                    <th width="4%">#</th>
+                    {% if 'product_name' in fields %}
+                    <th width="{% if fields|length <= 3 %}30%{% else %}22%{% endif %}">Product</th>
+                    {% endif %}
+                    
+                    {% if 'scientific_name' in fields %}
+                    <th width="{% if fields|length <= 3 %}30%{% else %}20%{% endif %}">Scientific Name</th>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}8%{% endif %}">Pot Size</th>
+                    {% endif %}
+                    
+                    {% if 'height' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}8%{% endif %}">Height</th>
+                    {% endif %}
+                    
+                    {% if 'price' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Price</th>
+                    {% endif %}
+                    
+                    {% if 'cost_price' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Cost Price</th>
+                    {% endif %}
+                    
+                    {% if 'last_updated' in fields %}
+                    <th width="{% if fields|length <= 3 %}12%{% else %}10%{% endif %}" class="text-right">Last Updated</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
-                {% for product in supplier_group.products %}
+                {% for product in supplier_data.products %}
                 <tr>
-                    <td>{{ loop.index }}</td>
+                    <td class="text-center">{{ loop.index }}</td>
+                    
+                    {% if 'product_name' in fields %}
                     <td>{{ product.product_name }}</td>
+                    {% endif %}
+                    
+                    {% if 'scientific_name' in fields %}
                     <td><em>{{ product.scientific_name or "" }}</em></td>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in fields %}
                     <td>{{ product.pot_size or "" }}</td>
+                    {% endif %}
+                    
+                    {% if 'height' in fields %}
                     <td>{{ product.height or "" }}</td>
-                    <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(product.price) }}</td>
+                    {% endif %}
+                    
+                    {% if 'price' in fields %}
+                    <td class="numeric">€ {{ "%.2f"|format(product.price) }}</td>
+                    {% endif %}
+                    
+                    {% if 'cost_price' in fields %}
+                    <td class="numeric">
+                        {% if product.cost_price is defined and product.cost_price is not none %}
+                            € {{ "%.2f"|format(product.cost_price) }}
+                        {% else %}
+                            € 0.00
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                    
+                    {% if 'last_updated' in fields %}
                     <td class="text-right">{{ product.updated_at.strftime('%Y-%m-%d') }}</td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        
-        <div class="summary">
-            <table>
+        {% endfor %}
+    {% else %}
+        <table>
+            <thead>
                 <tr>
-                    <td><strong>Total Products:</strong></td>
-                    <td class="text-right numeric">{{ supplier_group.products|length }}</td>
+                    <th width="4%">#</th>
+                    {% if 'product_name' in fields %}
+                    <th width="{% if fields|length <= 3 %}30%{% else %}18%{% endif %}">Product</th>
+                    {% endif %}
+                    
+                    {% if 'supplier' in fields %}
+                    <th width="{% if fields|length <= 3 %}15%{% else %}12%{% endif %}">Supplier</th>
+                    {% endif %}
+                    
+                    {% if 'scientific_name' in fields %}
+                    <th width="{% if fields|length <= 3 %}25%{% else %}18%{% endif %}">Scientific Name</th>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}7%{% endif %}">Pot Size</th>
+                    {% endif %}
+                    
+                    {% if 'height' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}7%{% endif %}">Height</th>
+                    {% endif %}
+                    
+                    {% if 'price' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Price</th>
+                    {% endif %}
+                    
+                    {% if 'cost_price' in fields %}
+                    <th width="{% if fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Cost Price</th>
+                    {% endif %}
+                    
+                    {% if 'last_updated' in fields %}
+                    <th width="{% if fields|length <= 3 %}12%{% else %}10%{% endif %}" class="text-right">Last Updated</th>
+                    {% endif %}
                 </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
                 <tr>
-                    <td><strong>Average Price:</strong></td>
-                    <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(supplier_group.avg_price) }}</td>
+                    <td class="text-center">{{ loop.index }}</td>
+                    
+                    {% if 'product_name' in fields %}
+                    <td>{{ product.product_name }}</td>
+                    {% endif %}
+                    
+                    {% if 'supplier' in fields %}
+                    <td>{{ product.supplier.name }}</td>
+                    {% endif %}
+                    
+                    {% if 'scientific_name' in fields %}
+                    <td><em>{{ product.scientific_name or "" }}</em></td>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in fields %}
+                    <td>{{ product.pot_size or "" }}</td>
+                    {% endif %}
+                    
+                    {% if 'height' in fields %}
+                    <td>{{ product.height or "" }}</td>
+                    {% endif %}
+                    
+                    {% if 'price' in fields %}
+                    <td class="numeric">€ {{ "%.2f"|format(product.price) }}</td>
+                    {% endif %}
+                    
+                    {% if 'cost_price' in fields %}
+                    <td class="numeric">
+                        {% if product.cost_price is defined and product.cost_price is not none %}
+                            € {{ "%.2f"|format(product.cost_price) }}
+                        {% else %}
+                            € 0.00
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                    
+                    {% if 'last_updated' in fields %}
+                    <td class="text-right">{{ product.updated_at.strftime('%Y-%m-%d') }}</td>
+                    {% endif %}
                 </tr>
-            </table>
-        </div>
-        <div class="clear"></div>
-        
-        {% if supplier_group.notes %}
-        <div class="notes">
-            <h3>Notes</h3>
-            <p>{{ supplier_group.notes }}</p>
-        </div>
-        {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    
+    <div class="summary">
+        <table>
+            <tr>
+                <td><strong>Total Products:</strong></td>
+                <td class="numeric">{{ products_count }}</td>
+            </tr>
+            {% if suppliers_count > 0 %}
+            <tr>
+                <td><strong>Total Suppliers:</strong></td>
+                <td class="numeric">{{ suppliers_count }}</td>
+            </tr>
+            {% endif %}
+        </table>
     </div>
-    {% endfor %}
+    <div class="clear"></div>
     
     <div class="footer">
-        <p>Supplier Products Report | Generated on {{ date_generated }}</p>
+        <p>{{ company.name if company else "Product Report" }} | Generated on {{ date_generated }}</p>
     </div>
 </body>
 </html>

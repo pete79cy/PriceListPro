@@ -1,0 +1,116 @@
+Below are several detailed suggestions to improve the presentation of your quotation report, making it cleaner, more professional, and easier to read while accommodating more product lines per page:
+
+---
+
+### 1. Refine Header and Footer Design
+
+- **Unified Header:**  
+  - Replace repeated headers within the body with a single, fixed header that includes your logo, company name, and essential contact details.  
+  - Ensure the header is consistent on every page (e.g., "ANDREAS PAKKOUTIS & SONS LTD" along with the quotation number and date).
+
+- **Concise Footer:**  
+  - Use a footer that includes page numbers and a brief reference line (e.g., "Quotation PAK-2025-004 | Generated on ...") rather than repeating the full header details on each page.
+
+---
+
+### 2. Improve Table Layout and Formatting
+
+- **Repeat Only Essential Column Headers:**  
+  - Use a single table header section (e.g., with `<thead>`) that repeats automatically on page breaks. This avoids manual repetition in the content.
+  - Ensure column headers (e.g., Description, Scientific Name, Actual Size, Asked Size, Qty, Unit Price, Total) are clear and concise.
+
+- **Prevent Awkward Word Breaks:**  
+  - Adjust column widths to avoid splitting long product names across multiple lines.  
+  - Apply CSS properties such as:
+    ```css
+    th, td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    ```
+    Or allow controlled wrapping with proper hyphenation if needed.
+
+- **Right-Align Numeric Data:**  
+  - Apply a class for numeric cells:
+    ```css
+    .numeric {
+      text-align: right;
+    }
+    ```
+    This makes quantities, unit prices, and totals easier to compare.
+
+- **Zebra Striping and Subtle Borders:**  
+  - Enhance row differentiation using alternating row colors:
+    ```css
+    tbody tr:nth-child(odd) {
+      background-color: #f9f9f9;
+    }
+    ```
+  - Use thin, consistent borders around cells to clearly delineate data.
+
+---
+
+### 3. Enhance Typography and Spacing
+
+- **Modern, Legible Fonts:**  
+  - Choose a clean sans-serif font (like Arial, Helvetica, or Roboto) and define consistent font sizes for headers (e.g., 14–16pt) and body text (e.g., 10–12pt).
+
+- **Reduce Excessive Padding:**  
+  - Tighten the padding within cells and margins between sections to maximize space without compromising readability.
+  - For example:
+    ```css
+    td, th {
+      padding: 4px 6px;
+    }
+    ```
+
+- **Clear Section Separation:**  
+  - Use visual dividers or subtle background shading to separate sections such as Customer Information, Quotation Details, and Terms & Conditions.
+
+---
+
+### 4. Optimize Overall Layout for Density
+
+- **Landscape Orientation:**  
+  - Generate the report in landscape mode to provide more horizontal space for columns.  
+  - For example, with CSS if using WeasyPrint:
+    ```css
+    @page { size: A4 landscape; margin: 1cm; }
+    ```
+
+- **Compact Totals Section:**  
+  - Consolidate the totals (Subtotal, VAT, Total) into one visually distinct block at the end of the product list.  
+  - Use a bold font and a light background to emphasize these figures:
+    ```css
+    .totals {
+      font-weight: bold;
+      background-color: #f8f8f8;
+      border-top: 2px solid #000;
+    }
+    ```
+
+- **Minimize Repetition:**  
+  - Avoid repeating the same information (like generation details) within the product table. Instead, include them once in a header or footer.
+
+---
+
+### 5. Visual Branding and Professional Touches
+
+- **Incorporate Branding Elements:**  
+  - Include your company logo and brand colors in the header to reinforce identity.
+  - Use your brand’s color palette sparingly for accents (e.g., header background, total rows) while keeping the overall look clean.
+
+- **Cover Page or Summary Section:**  
+  - Consider adding a cover page or a summary section at the beginning that highlights key details (customer, quotation number, total amount) before diving into detailed product lines.
+
+- **Consistent Alignment and Grid System:**  
+  - Ensure all elements are aligned consistently—this includes headers, columns, and footers—to create a harmonious grid layout.
+
+---
+
+### Summary
+
+By applying these improvements—refining headers/footers, optimizing table layout and typography, reducing unnecessary spacing, and incorporating professional branding—you can create a quotation report that is not only user friendly and visually appealing but also capable of displaying more product lines per page. These changes will result in a more compact, clean, and professional document that enhances readability and usability.
+
+Let me know if you need further details or specific code examples to implement these improvements!

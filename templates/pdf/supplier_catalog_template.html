@@ -5,99 +5,126 @@
     <title>Supplier Catalog - {{ supplier.name }}</title>
     <style>
         @page {
+            /* Switch to landscape orientation for better horizontal space */
             size: A4 {{ orientation }};
-            margin: 2cm;
+            margin: 1.5cm;
+            @top-center {
+                content: "ANDREAS PAKKOUTIS & SONS LTD | Supplier Catalog";
+                font-size: 9pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
         }
         body {
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.4;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9.5pt; /* Further reduced font size */
+            line-height: 1.3; /* Even tighter line spacing */
             color: #333;
             margin: 0;
             padding: 0;
         }
+        /* Compact Header with branding elements */
         .header {
             width: 100%;
-            margin-bottom: 1.5cm; /* Increased margin for better spacing */
+            margin-bottom: 0.8cm; /* Reduced spacing */
+            padding-bottom: 0.3cm;
+            border-bottom: 1px solid #eee;
+            background-color: #f9f9f9; /* Light background for header */
         }
         .company-info {
             float: left;
             width: 60%;
         }
-        .catalog-info {
+        .report-info {
             float: right;
             width: 40%;
             text-align: right;
         }
-        .supplier-info {
-            width: 100%;
-            margin-bottom: 1.5cm; /* Increased margin for better spacing */
-            background-color: #f9f9f9; /* Light background for emphasis */
-            padding: 0.5cm;
-            border-radius: 4px;
-        }
         .clear {
             clear: both;
         }
+        
+        /* Typography Optimizations */
         h1 {
-            font-size: 18pt;
+            font-size: 16pt;
             color: #224870;
-            margin-bottom: 0.5cm;
+            margin-bottom: 0.2cm;
+            font-weight: 700;
         }
         h2 {
-            font-size: 14pt;
+            font-size: 13pt;
             color: #224870;
-            margin-top: 1cm;
-            margin-bottom: 0.5cm;
+            margin-top: 0.6cm;
+            margin-bottom: 0.3cm;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.2cm;
         }
         
-        /* Improved table styling */
+        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.8cm 0; /* Increased margin */
-            table-layout: fixed; /* Fixed table layout for consistent column widths */
+            margin: 0.4cm 0; /* Reduced margin */
+            table-layout: fixed;
         }
         
-        /* Table header styling */
+        /* Ensure headers repeat on new pages */
         thead {
-            display: table-header-group; /* Ensures header is repeated on page breaks */
+            display: table-header-group;
         }
         
         th {
-            background-color: #e6e6e6;
-            padding: 0.3cm; /* Increased padding */
+            background-color: #e0e7f0;
+            padding: 0.15cm; /* Further reduced padding */
             text-align: left;
             font-weight: bold;
-            font-size: 10pt;
-            border: 1px solid #999;
-            white-space: nowrap; /* Prevent header text wrapping */
+            font-size: 8.5pt; /* Smaller header font */
+            border: 1px solid #b0c4de;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #224870;
         }
         
-        /* Table cell styling */
+        /* Even more compact cell styling */
         td {
-            padding: 0.3cm; /* Increased padding */
+            padding: 0.15cm; /* Further reduced padding */
             border: 1px solid #ddd;
-            font-size: 10pt;
+            font-size: 9pt; /* Smaller font */
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
         }
         
-        /* Row styling for alternating colors */
-        tbody tr:nth-child(even) {
+        /* Enhanced zebra striping */
+        tbody tr:nth-child(odd) {
             background-color: #f9f9f9;
         }
         
-        /* Special column styling */
-        .numeric {
-            text-align: right;
-            font-family: 'Courier New', monospace; /* Monospace font for numerical data */
+        /* Category heading styling */
+        .category-heading {
+            background-color: #e0e7f0;
+            color: #224870;
+            padding: 0.2cm;
+            margin-top: 0.5cm;
+            margin-bottom: 0.3cm;
+            font-weight: bold;
+            border-radius: 4px;
+            border-left: 3px solid #224870;
         }
         
-        /* Text alignment classes */
+        /* Right-align all numeric data */
+        .numeric {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        
+        /* Text alignment helpers */
         .text-right {
             text-align: right;
         }
@@ -105,32 +132,58 @@
             text-align: center;
         }
         
-        /* Notes section */
-        .notes {
-            margin-top: 1.5cm; /* Increased margin */
-            border-top: 1px solid #ddd;
-            padding-top: 0.5cm;
-            page-break-inside: avoid;
+        /* Compact Summary Section */
+        .summary {
+            width: 45%;
+            float: right;
+            margin-top: 0.4cm;
+            background-color: #f5f8fc;
+            padding: 0.3cm;
+            border-radius: 4px;
+            border-top: 2px solid #224870; /* Brand accent */
+        }
+        .summary table {
+            width: 100%;
+            margin: 0;
+        }
+        .summary td {
+            border: none;
+            padding: 0.15cm;
+            border-bottom: 1px solid #e0e7f0;
+        }
+        .summary tr:last-child td {
+            font-weight: bold;
+            background-color: #e0e7f0;
+            font-size: 9.5pt;
+            padding: 0.2cm;
         }
         
-        /* Footer */
+        /* Enhanced Footer */
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            font-size: 9pt;
+            font-size: 8pt;
             text-align: center;
             color: #777;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #eee;
             padding-top: 0.2cm;
             background-color: #f9f9f9;
         }
         
-        /* Print-specific styles */
+        /* Company logo styling */
+        .company-logo {
+            max-height: 45px;
+            margin-bottom: 5px;
+            float: left;
+            margin-right: 10px;
+        }
+        
+        /* Ensure consistent print layout */
         @media print {
             body {
-                font-size: 11pt;
+                font-size: 9pt;
             }
             table {
                 page-break-inside: auto;
@@ -152,76 +205,91 @@
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 60px; margin-bottom: 10px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" class="company-logo">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
-                {{ company.address_line1 }}<br>
-                {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
-                {% if company.phone %}Phone: {{ company.phone }}<br>{% endif %}
-                {% if company.email %}Email: {{ company.email }}{% endif %}
+                {{ company.address_line1 }}
+                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
+                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
             </p>
         </div>
-        <div class="catalog-info">
+        <div class="report-info">
             <h1>SUPPLIER CATALOG</h1>
             <p>
-                <strong>Date Generated:</strong> {{ date_generated }}<br>
-                <strong>Number of Products:</strong> {{ products|length }}
+                <strong>Supplier:</strong> {{ supplier.name }}<br>
+                <strong>Contact:</strong> {{ supplier.contact_person or "Not specified" }}<br>
+                <strong>Items:</strong> {{ products_count }} in {{ categories_count }} categories
             </p>
         </div>
         <div class="clear"></div>
     </div>
     
-    <div class="supplier-info">
-        <h2>Supplier Information</h2>
-        <p>
-            <strong>{{ supplier.name }}</strong><br>
-            {% if supplier.address %}{{ supplier.address }}<br>{% endif %}
-            {% if supplier.contact_person %}Contact: {{ supplier.contact_person }}<br>{% endif %}
-            {% if supplier.email %}Email: {{ supplier.email }}<br>{% endif %}
-            {% if supplier.phone %}Phone: {{ supplier.phone }}{% endif %}
-        </p>
+    <h2>Complete Product Catalog as of {{ date_generated }}</h2>
+    
+    {% for category, products in categories.items() %}
+    <div class="category-heading">
+        {{ category }}
     </div>
     
-    <h2>Product Catalog</h2>
     <table>
         <thead>
             <tr>
-                <th width="5%">#</th>
+                <th width="4%">#</th>
                 <th width="30%">Product Name</th>
-                <th width="25%">Scientific Name</th>
                 <th width="10%">Pot Size</th>
-                <th width="10%">Height</th>
-                <th width="10%" class="text-right numeric">Price</th>
-                <th width="10%" class="text-right numeric">Last Updated</th>
+                <th width="12%">Height</th>
+                <th width="14%" class="text-right">Price</th>
+                <th width="14%" class="text-right">Cost Price</th>
+                <th width="16%" class="text-right">Last Updated</th>
             </tr>
         </thead>
         <tbody>
             {% for product in products %}
             <tr>
-                <td>{{ loop.index }}</td>
+                <td class="text-center">{{ loop.index }}</td>
                 <td>{{ product.product_name }}</td>
-                <td><em>{{ product.scientific_name or "" }}</em></td>
                 <td>{{ product.pot_size or "" }}</td>
                 <td>{{ product.height or "" }}</td>
-                <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(product.price) }}</td>
+                <td class="numeric">€ {{ "%.2f"|format(product.price) }}</td>
+                <td class="numeric">
+                    {% if product.cost_price is defined and product.cost_price is not none %}
+                        € {{ "%.2f"|format(product.cost_price) }}
+                    {% else %}
+                        € 0.00
+                    {% endif %}
+                </td>
                 <td class="text-right">{{ product.updated_at.strftime('%Y-%m-%d') }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% endfor %}
     
-    <div class="notes">
-        <h2>Notes</h2>
-        <p>
-            This catalog represents the current products available from {{ supplier.name }}. <br>
-            Prices are subject to change without prior notice. <br>
-            Please contact us for availability and ordering information.
-        </p>
+    <div class="summary">
+        <table>
+            <tr>
+                <td><strong>Total Products:</strong></td>
+                <td class="numeric">{{ products_count }}</td>
+            </tr>
+            <tr>
+                <td><strong>Categories:</strong></td>
+                <td class="numeric">{{ categories_count }}</td>
+            </tr>
+            <tr>
+                <td><strong>Contact:</strong></td>
+                <td>{{ supplier.contact_person or "N/A" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Email:</strong></td>
+                <td>{{ supplier.email or "N/A" }}</td>
+            </tr>
+        </table>
     </div>
+    <div class="clear"></div>
     
     <div class="footer">
-        <p>Supplier Catalog for {{ supplier.name }} | Generated on {{ date_generated }}</p>
+        <p>{{ company.name }} | Supplier: {{ supplier.name }} | Generated on {{ date_generated }}</p>
     </div>
 </body>
 </html>

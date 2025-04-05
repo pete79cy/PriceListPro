@@ -9,7 +9,7 @@
             size: A4 {{ orientation }};
             margin: 1.5cm;
             @top-center {
-                content: "Quotation {{ quotation.quotation_number }}";
+                content: "ANDREAS PAKKOUTIS & SONS LTD | Quotation {{ quotation.quotation_number }}";
                 font-size: 9pt;
                 color: #666;
             }
@@ -27,12 +27,13 @@
             margin: 0;
             padding: 0;
         }
-        /* Compact Header */
+        /* Compact Header with branding elements */
         .header {
             width: 100%;
-            margin-bottom: 1.2cm; /* Reduced spacing */
+            margin-bottom: 1cm; /* Reduced spacing */
             padding-bottom: 0.3cm;
             border-bottom: 1px solid #eee;
+            background-color: #f9f9f9; /* Light background for header */
         }
         .company-info {
             float: left;
@@ -45,10 +46,11 @@
         }
         .customer-info {
             width: 100%;
-            margin-bottom: 1cm; /* Reduced spacing */
+            margin-bottom: 0.8cm; /* Reduced spacing */
             background-color: #f5f8fc;
-            padding: 0.4cm; /* Reduced padding */
+            padding: 0.3cm; /* Reduced padding */
             border-radius: 4px;
+            border-left: 3px solid #224870; /* Brand accent */
         }
         .clear {
             clear: both;
@@ -58,14 +60,14 @@
         h1 {
             font-size: 18pt;
             color: #224870;
-            margin-bottom: 0.3cm;
+            margin-bottom: 0.2cm;
             font-weight: 700;
         }
         h2 {
-            font-size: 14pt;
+            font-size: 13pt;
             color: #224870;
-            margin-top: 0.8cm;
-            margin-bottom: 0.4cm;
+            margin-top: 0.6cm;
+            margin-bottom: 0.3cm;
             border-bottom: 1px solid #eee;
             padding-bottom: 0.2cm;
         }
@@ -74,7 +76,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.6cm 0; /* Reduced margin */
+            margin: 0.4cm 0; /* Reduced margin */
             table-layout: fixed;
         }
         
@@ -85,7 +87,7 @@
         
         th {
             background-color: #e0e7f0;
-            padding: 0.25cm; /* Reduced padding */
+            padding: 0.2cm; /* Further reduced padding */
             text-align: left;
             font-weight: bold;
             font-size: 9pt; /* Smaller header font */
@@ -96,11 +98,11 @@
             color: #224870;
         }
         
-        /* Compact cell styling */
+        /* Even more compact cell styling */
         td {
-            padding: 0.25cm; /* Reduced padding */
+            padding: 0.15cm 0.2cm; /* Further reduced padding */
             border: 1px solid #ddd;
-            font-size: 9.5pt; /* Slightly smaller font */
+            font-size: 9pt; /* Smaller font */
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
@@ -130,10 +132,11 @@
         .summary {
             width: 45%;
             float: right;
-            margin-top: 0.6cm;
+            margin-top: 0.4cm;
             background-color: #f5f8fc;
             padding: 0.3cm;
             border-radius: 4px;
+            border-top: 2px solid #224870; /* Brand accent */
         }
         .summary table {
             width: 100%;
@@ -141,7 +144,7 @@
         }
         .summary td {
             border: none;
-            padding: 0.2cm;
+            padding: 0.15cm;
             border-bottom: 1px solid #e0e7f0;
         }
         .summary tr:last-child td {
@@ -149,36 +152,37 @@
             font-weight: bold;
             background-color: #e0e7f0;
             font-size: 10pt;
-            padding: 0.3cm;
+            padding: 0.2cm;
         }
         
         /* Notes section */
         .notes {
-            margin-top: 1cm;
+            margin-top: 0.8cm;
             border-top: 1px solid #eee;
-            padding-top: 0.4cm;
+            padding-top: 0.3cm;
             page-break-inside: avoid;
         }
         
-        /* Compact terms and conditions */
+        /* More compact terms and conditions */
         .terms {
-            font-size: 9pt;
+            font-size: 8.5pt;
             color: #555;
-            margin-top: 1cm;
+            margin-top: 0.8cm;
             page-break-inside: avoid;
             background-color: #f9f9f9;
-            padding: 0.4cm;
+            padding: 0.3cm;
             border-radius: 4px;
         }
         .terms h2 {
             margin-top: 0;
+            font-size: 11pt;
         }
         .terms ol {
-            margin: 0.3cm 0;
+            margin: 0.2cm 0;
             padding-left: 1.2cm;
         }
         .terms li {
-            margin-bottom: 0.15cm;
+            margin-bottom: 0.1cm;
         }
         
         /* Enhanced Footer */
@@ -198,7 +202,7 @@
         /* Ensure consistent print layout */
         @media print {
             body {
-                font-size: 10pt;
+                font-size: 9.5pt;
             }
             table {
                 page-break-inside: auto;
@@ -214,13 +218,21 @@
                 display: table-footer-group;
             }
         }
+        
+        /* Company logo styling */
+        .company-logo {
+            max-height: 45px;
+            margin-bottom: 5px;
+            float: left;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 50px; margin-bottom: 8px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" class="company-logo">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
@@ -254,14 +266,14 @@
     <table>
         <thead>
             <tr>
-                <th width="4%">#</th>
-                <th width="24%">Description</th>
-                <th width="24%">Scientific Name</th>
-                <th width="10%">Actual Size</th>
-                <th width="10%">Asked Size</th>
-                <th width="8%" class="text-right">Qty</th>
-                <th width="10%" class="text-right">Unit Price</th>
-                <th width="10%" class="text-right">Total</th>
+                <th width="3%">#</th>
+                <th width="25%">Description</th>
+                <th width="22%">Scientific Name</th>
+                <th width="8%">Pot Size</th>
+                <th width="8%">Height</th>
+                <th width="7%" class="text-right">Qty</th>
+                <th width="12%" class="text-right">Unit Price</th>
+                <th width="15%" class="text-right">Total</th>
             </tr>
         </thead>
         <tbody>
@@ -318,7 +330,7 @@
     </div>
     
     <div class="footer">
-        <p>{{ company.name }} | Quotation {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
+        <p>Quotation {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
     </div>
 </body>
 </html>
