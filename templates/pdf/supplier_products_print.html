@@ -174,11 +174,13 @@
             {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
             {% if company.website %}<div>Web: {{ company.website }}</div>{% endif %}
         </div>
-        {% if company.logo_path %}
         <div class="col-md-4 text-right">
+            {% if company.logo_path %}
             <img src="{{ url_for('uploaded_file', filename=company.logo_path.split('/')[-1]) }}" alt="Company Logo" class="print-logo">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/pakkoutis_logo_300x100.png') }}" alt="Pakkoutis Logo" class="print-logo">
+            {% endif %}
         </div>
-        {% endif %}
     </div>
     {% else %}
     <div class="row">

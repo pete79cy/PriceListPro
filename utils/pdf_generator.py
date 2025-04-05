@@ -2,10 +2,51 @@ import os
 import uuid
 import base64
 from datetime import datetime
-from flask import render_template
+from flask import render_template, current_app
 from weasyprint import HTML
 from utils.logger import logger
 from models import CompanySettings
+
+def get_logo_data(company):
+    """
+    Get logo data as base64 string for PDF reports
+    
+    Args:
+        company: CompanySettings object with logo path
+        
+    Returns:
+        str: base64 encoded logo data with mime type
+    """
+    logo_data = None
+    
+    # First try to use company logo if available
+    if company and company.logo_path and os.path.exists(company.logo_path):
+        try:
+            with open(company.logo_path, "rb") as logo_file:
+                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
+                file_ext = os.path.splitext(company.logo_path)[1].strip('.').lower()
+                if not file_ext:
+                    file_ext = 'png'  # Default to PNG if no extension
+                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+            logger.info(f"Using company logo from {company.logo_path}")
+        except Exception as e:
+            logger.error(f"Error reading company logo: {str(e)}. Will try using default logo.")
+    
+    # If no company logo or error reading it, use the static logo
+    if not logo_data:
+        try:
+            static_logo_path = os.path.join(current_app.root_path, 'static', 'images', 'pakkoutis_logo_300x100.png')
+            if os.path.exists(static_logo_path):
+                with open(static_logo_path, "rb") as logo_file:
+                    encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
+                    logo_data = f"data:image/png;base64,{encoded_logo}"
+                logger.info(f"Using static Pakkoutis logo from {static_logo_path}")
+            else:
+                logger.warning(f"Static logo not found at {static_logo_path}")
+        except Exception as e:
+            logger.error(f"Error reading static logo: {str(e)}")
+    
+    return logo_data
 
 def generate_quotation_pdf(quotation, upload_folder):
     """
@@ -47,13 +88,8 @@ def generate_quotation_pdf(quotation, upload_folder):
         if not company:
             company = CompanySettings()  # Use default values if no settings exist
         
-        # Prepare logo data if available
-        logo_data = None
-        if company.logo_path and os.path.exists(company.logo_path):
-            with open(company.logo_path, "rb") as logo_file:
-                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
-                file_ext = os.path.splitext(company.logo_path)[1].strip('.')
-                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+        # Get logo data using the helper function (will use static logo if company logo is not available)
+        logo_data = get_logo_data(company)
         
         # Set the orientation based on company settings
         orientation = company.pdf_orientation  # 'portrait' or 'landscape'
@@ -115,13 +151,8 @@ def generate_supplier_pdf_report(quotation, supplier, upload_folder):
         if not company:
             company = CompanySettings()  # Use default values if no settings exist
         
-        # Prepare logo data if available
-        logo_data = None
-        if company.logo_path and os.path.exists(company.logo_path):
-            with open(company.logo_path, "rb") as logo_file:
-                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
-                file_ext = os.path.splitext(company.logo_path)[1].strip('.')
-                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+        # Get logo data using the helper function (will use static logo if company logo is not available)
+        logo_data = get_logo_data(company)
         
         # Set the orientation based on company settings
         orientation = company.pdf_orientation  # 'portrait' or 'landscape'
@@ -186,12 +217,8 @@ def generate_supplier_products_pdf(products, fields=None, group_by_supplier=True
             if not company:
                 company = CompanySettings()  # Use default values if no settings exist
             
-            # Prepare logo data if available
-            if company.logo_path and os.path.exists(company.logo_path):
-                with open(company.logo_path, "rb") as logo_file:
-                    encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
-                    file_ext = os.path.splitext(company.logo_path)[1].strip('.')
-                    logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+            # Get logo data using the helper function (will use static logo if company logo is not available)
+            logo_data = get_logo_data(company)
         
         # Set the orientation based on company settings or default to landscape for reports
         orientation = company.pdf_orientation if company else "landscape"
@@ -265,13 +292,8 @@ def generate_supplier_catalog_pdf(supplier, products):
         if not company:
             company = CompanySettings()  # Use default values if no settings exist
         
-        # Prepare logo data if available
-        logo_data = None
-        if company.logo_path and os.path.exists(company.logo_path):
-            with open(company.logo_path, "rb") as logo_file:
-                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
-                file_ext = os.path.splitext(company.logo_path)[1].strip('.')
-                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
+        # Get logo data using the helper function (will use static logo if company logo is not available)
+        logo_data = get_logo_data(company)
         
         # Set the orientation based on company settings
         orientation = company.pdf_orientation  # 'portrait' or 'landscape'
