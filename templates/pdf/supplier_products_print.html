@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4 {{ orientation }};
-            margin: 2cm;
+            margin: 1.5cm;
             @top-center {
                 content: "Supplier Products Report";
                 font-size: 9pt;
@@ -20,17 +20,17 @@
         }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 11pt;
-            line-height: 1.5;
+            font-size: 10pt; /* Smaller font for better space usage */
+            line-height: 1.4; /* Tighter line height */
             color: #333;
             margin: 0;
             padding: 0;
         }
-        /* Consolidated Header */
+        /* Compact Header */
         .header {
             width: 100%;
-            margin-bottom: 1.8cm;
-            padding-bottom: 0.5cm;
+            margin-bottom: 1.2cm; /* Reduced margin */
+            padding-bottom: 0.3cm;
             border-bottom: 1px solid #eee;
         }
         .company-info {
@@ -44,43 +44,42 @@
         }
         .filter-info {
             width: 100%;
-            margin-bottom: 1.8cm;
+            margin-bottom: 1cm; /* Reduced margin */
             background-color: #f5f8fc;
-            padding: 0.6cm;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 0.4cm; /* Reduced padding */
+            border-radius: 4px;
         }
         .clear {
             clear: both;
         }
         
-        /* Typography Improvements */
+        /* Typography Optimizations */
         h1 {
-            font-size: 20pt;
+            font-size: 18pt;
             color: #224870;
-            margin-bottom: 0.5cm;
+            margin-bottom: 0.3cm;
             font-weight: 700;
         }
         h2 {
-            font-size: 15pt;
+            font-size: 14pt;
             color: #224870;
-            margin-top: 1.2cm;
-            margin-bottom: 0.6cm;
+            margin-top: 0.8cm;
+            margin-bottom: 0.4cm;
             border-bottom: 1px solid #eee;
-            padding-bottom: 0.3cm;
+            padding-bottom: 0.2cm;
         }
         h3 {
-            font-size: 13pt;
+            font-size: 12pt;
             color: #224870;
-            margin-top: 1cm;
-            margin-bottom: 0.5cm;
+            margin-top: 0.5cm;
+            margin-bottom: 0.3cm;
         }
         
-        /* Enhanced Table Styling */
+        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1cm 0;
+            margin: 0.6cm 0; /* Reduced margin */
             table-layout: fixed;
         }
         
@@ -91,10 +90,10 @@
         
         th {
             background-color: #e0e7f0;
-            padding: 0.4cm;
+            padding: 0.25cm; /* Reduced padding */
             text-align: left;
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 9pt; /* Smaller header font */
             border: 1px solid #b0c4de;
             white-space: nowrap;
             overflow: hidden;
@@ -102,11 +101,11 @@
             color: #224870;
         }
         
-        /* Improved cell styling with more padding */
+        /* Compact cell styling */
         td {
-            padding: 0.4cm;
+            padding: 0.25cm; /* Reduced padding */
             border: 1px solid #ddd;
-            font-size: 10.5pt;
+            font-size: 9.5pt; /* Slightly smaller font */
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
@@ -132,15 +131,14 @@
             text-align: center;
         }
         
-        /* Highlighted Totals Section */
+        /* Compact Summary Section */
         .summary {
-            width: 48%;
+            width: 45%;
             float: right;
-            margin-top: 1cm;
+            margin-top: 0.6cm;
             background-color: #f5f8fc;
-            padding: 0.5cm;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+            padding: 0.3cm;
+            border-radius: 4px;
         }
         .summary table {
             width: 100%;
@@ -148,41 +146,49 @@
         }
         .summary td {
             border: none;
-            padding: 0.3cm 0.4cm;
+            padding: 0.2cm;
             border-bottom: 1px solid #e0e7f0;
         }
         .summary tr:last-child td {
             border-top: 2px solid #224870;
             font-weight: bold;
             background-color: #e0e7f0;
-            font-size: 12pt;
-            padding: 0.4cm;
+            font-size: 10pt;
+            padding: 0.3cm;
         }
         
         /* Notes section */
         .notes {
-            margin-top: 2cm;
+            margin-top: 1cm;
             border-top: 1px solid #eee;
-            padding-top: 0.7cm;
+            padding-top: 0.4cm;
             page-break-inside: avoid;
+        }
+        
+        /* Supplier header row */
+        .supplier-header {
+            background-color: #e0e7f0;
+            color: #224870;
+            font-weight: bold;
+            font-size: 11pt;
+            text-align: left;
         }
         
         /* Filter tags */
         .filter-tag {
             display: inline-block;
             background-color: #e0e7f0;
-            padding: 0.2cm 0.4cm;
-            margin: 0.2cm;
+            padding: 0.15cm 0.3cm;
+            margin: 0.15cm;
             border-radius: 4px;
-            font-size: 10pt;
+            font-size: 9pt;
             color: #224870;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         /* Supplier grouping */
         .supplier-group {
-            margin-top: 1.5cm;
-            padding-top: 0.8cm;
+            margin-top: 1cm;
+            padding-top: 0.5cm;
             border-top: 1px dashed #b0c4de;
         }
         .supplier-group:first-child {
@@ -195,18 +201,18 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            font-size: 9pt;
+            font-size: 8pt;
             text-align: center;
             color: #777;
             border-top: 1px solid #eee;
-            padding-top: 0.3cm;
+            padding-top: 0.2cm;
             background-color: #f9f9f9;
         }
         
         /* Ensure consistent print layout */
         @media print {
             body {
-                font-size: 11pt;
+                font-size: 10pt;
             }
             table {
                 page-break-inside: auto;
@@ -233,21 +239,20 @@
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 65px; margin-bottom: 12px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 50px; margin-bottom: 8px;">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
-                {{ company.address_line1 }}<br>
-                {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
-                {% if company.phone %}Phone: {{ company.phone }}<br>{% endif %}
-                {% if company.email %}Email: {{ company.email }}{% endif %}
+                {{ company.address_line1 }}
+                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
+                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
             </p>
         </div>
         <div class="report-info">
             <h1>SUPPLIER PRODUCTS REPORT</h1>
             <p>
-                <strong>Date Generated:</strong> {{ date_generated }}<br>
-                <strong>Total Products:</strong> {{ products|length }}
+                <strong>Date:</strong> {{ date_generated.split(' ')[0] }} | 
+                <strong>Products:</strong> {{ products|length }}
             </p>
         </div>
         <div class="clear"></div>
@@ -262,18 +267,57 @@
     </div>
     {% endif %}
     
+    {% if group_by_supplier %}
+    <!-- Unified table approach with supplier headers -->
+    <h2>Products by Supplier ({{ supplier_groups|length }} suppliers)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th width="4%">#</th>
+                <th width="25%">Product Name</th>
+                <th width="25%">Scientific Name</th>
+                <th width="12%">Pot Size</th>
+                <th width="12%">Height</th>
+                <th width="12%" class="text-right">Price</th>
+                <th width="10%" class="text-right">Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set row_index = 1 %}
+            {% for supplier in supplier_groups %}
+                <tr class="supplier-header">
+                    <td colspan="7">{{ supplier.name }} ({{ supplier.products|length }} products)</td>
+                </tr>
+                
+                {% for product in supplier.products %}
+                <tr>
+                    <td class="text-center">{{ row_index }}</td>
+                    <td>{{ product.product_name }}</td>
+                    <td><em>{{ product.scientific_name or "" }}</em></td>
+                    <td>{{ product.pot_size or "" }}</td>
+                    <td>{{ product.height or "" }}</td>
+                    <td class="numeric">{{ currency }} {{ "%.2f"|format(product.price) }}</td>
+                    <td class="text-right">{{ product.updated_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% set row_index = row_index + 1 %}
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <!-- Flat list of all products -->
     <h2>Product List</h2>
     <table>
         <thead>
             <tr>
-                <th width="5%">#</th>
-                <th width="20%">Supplier</th>
+                <th width="4%">#</th>
+                <th width="18%">Supplier</th>
                 <th width="20%">Product Name</th>
                 <th width="20%">Scientific Name</th>
                 <th width="10%">Pot Size</th>
                 <th width="10%">Height</th>
-                <th width="7%" class="text-right">Price</th>
-                <th width="8%" class="text-right">Last Updated</th>
+                <th width="9%" class="text-right">Price</th>
+                <th width="9%" class="text-right">Updated</th>
             </tr>
         </thead>
         <tbody>
@@ -291,6 +335,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
     
     <div class="summary">
         <table>
@@ -310,47 +355,11 @@
     </div>
     <div class="clear"></div>
     
-    {% if group_by_supplier %}
-    <div class="page-break"></div>
-    <h2>Products by Supplier</h2>
-    
-    {% for supplier in supplier_groups %}
-    <div class="supplier-group">
-        <h3>{{ supplier.name }} ({{ supplier.products|length }} products)</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th width="5%">#</th>
-                    <th width="25%">Product Name</th>
-                    <th width="25%">Scientific Name</th>
-                    <th width="15%">Pot Size</th>
-                    <th width="15%">Height</th>
-                    <th width="15%" class="text-right">Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for product in supplier.products %}
-                <tr>
-                    <td class="text-center">{{ loop.index }}</td>
-                    <td>{{ product.product_name }}</td>
-                    <td><em>{{ product.scientific_name or "" }}</em></td>
-                    <td>{{ product.pot_size or "" }}</td>
-                    <td>{{ product.height or "" }}</td>
-                    <td class="numeric">{{ currency }} {{ "%.2f"|format(product.price) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endfor %}
-    {% endif %}
-    
     <div class="notes">
         <h3>Notes</h3>
         <p>
-            This report provides an overview of products offered by various suppliers. <br>
-            Prices and availability may be subject to change. <br>
-            Last updated on {{ date_generated }}.
+            This report provides an overview of products offered by various suppliers.<br>
+            Prices and availability may be subject to change. Last updated on {{ date_generated.split(' ')[0] }}.
         </p>
     </div>
     

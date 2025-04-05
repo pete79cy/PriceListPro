@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4 {{ orientation }};
-            margin: 2cm;
+            margin: 1.5cm;
             @top-center {
                 content: "Supplier Order Report";
                 font-size: 9pt;
@@ -20,17 +20,17 @@
         }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 11pt;
-            line-height: 1.5;
+            font-size: 10pt; /* Smaller font for better space usage */
+            line-height: 1.4; /* Tighter line height */
             color: #333;
             margin: 0;
             padding: 0;
         }
-        /* Consolidated Header */
+        /* Compact Header */
         .header {
             width: 100%;
-            margin-bottom: 1.8cm;
-            padding-bottom: 0.5cm;
+            margin-bottom: 1.2cm; /* Reduced margin */
+            padding-bottom: 0.3cm;
             border-bottom: 1px solid #eee;
         }
         .company-info {
@@ -42,39 +42,37 @@
             width: 40%;
             text-align: right;
         }
-        .supplier-info {
-            width: 100%;
-            margin-bottom: 1.8cm;
-            background-color: #f9f9f9;
-            padding: 0.6cm;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
         .clear {
             clear: both;
         }
         
-        /* Typography Improvements */
+        /* Typography Optimizations */
         h1 {
-            font-size: 20pt;
+            font-size: 18pt;
             color: #224870;
-            margin-bottom: 0.5cm;
+            margin-bottom: 0.3cm;
             font-weight: 700;
         }
         h2 {
-            font-size: 15pt;
+            font-size: 14pt;
             color: #224870;
-            margin-top: 1.2cm;
-            margin-bottom: 0.6cm;
+            margin-top: 0.8cm;
+            margin-bottom: 0.4cm;
             border-bottom: 1px solid #eee;
-            padding-bottom: 0.3cm;
+            padding-bottom: 0.2cm;
+        }
+        h3 {
+            font-size: 12pt;
+            color: #224870;
+            margin-top: 0.5cm;
+            margin-bottom: 0.3cm;
         }
         
-        /* Enhanced Table Styling */
+        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1cm 0;
+            margin: 0.6cm 0; /* Reduced margin */
             table-layout: fixed;
         }
         
@@ -85,10 +83,10 @@
         
         th {
             background-color: #e0e7f0;
-            padding: 0.4cm;
+            padding: 0.25cm; /* Reduced padding */
             text-align: left;
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 9pt; /* Smaller header font */
             border: 1px solid #b0c4de;
             white-space: nowrap;
             overflow: hidden;
@@ -96,11 +94,11 @@
             color: #224870;
         }
         
-        /* Improved cell styling with more padding */
+        /* Compact cell styling */
         td {
-            padding: 0.4cm;
+            padding: 0.25cm; /* Reduced padding */
             border: 1px solid #ddd;
-            font-size: 10.5pt;
+            font-size: 9.5pt; /* Slightly smaller font */
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
@@ -109,6 +107,15 @@
         /* Enhanced zebra striping */
         tbody tr:nth-child(odd) {
             background-color: #f9f9f9;
+        }
+        
+        /* Supplier header row */
+        .supplier-header {
+            background-color: #e0e7f0;
+            color: #224870;
+            font-weight: bold;
+            font-size: 11pt;
+            text-align: left;
         }
         
         /* Right-align all numeric data */
@@ -126,15 +133,14 @@
             text-align: center;
         }
         
-        /* Highlighted Totals Section */
+        /* Compact Summary Section */
         .summary {
-            width: 48%;
+            width: 45%;
             float: right;
-            margin-top: 1cm;
+            margin-top: 0.6cm;
             background-color: #f5f8fc;
-            padding: 0.5cm;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+            padding: 0.3cm;
+            border-radius: 4px;
         }
         .summary table {
             width: 100%;
@@ -142,22 +148,22 @@
         }
         .summary td {
             border: none;
-            padding: 0.3cm 0.4cm;
+            padding: 0.2cm;
             border-bottom: 1px solid #e0e7f0;
         }
         .summary tr:last-child td {
             border-top: 2px solid #224870;
             font-weight: bold;
             background-color: #e0e7f0;
-            font-size: 12pt;
-            padding: 0.4cm;
+            font-size: 10pt;
+            padding: 0.3cm;
         }
         
         /* Notes section */
         .notes {
-            margin-top: 2cm;
+            margin-top: 1cm;
             border-top: 1px solid #eee;
-            padding-top: 0.7cm;
+            padding-top: 0.4cm;
             page-break-inside: avoid;
         }
         
@@ -167,26 +173,25 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            font-size: 9pt;
+            font-size: 8pt;
             text-align: center;
             color: #777;
             border-top: 1px solid #eee;
-            padding-top: 0.3cm;
+            padding-top: 0.2cm;
             background-color: #f9f9f9;
         }
         
-        /* Supplier section breaks */
-        .supplier-section {
-            page-break-before: always;
-        }
-        .supplier-section:first-child {
-            page-break-before: avoid;
+        /* Supplier totals row */
+        .supplier-total td {
+            border-top: 1px solid #999;
+            background-color: #f5f8fc;
+            font-weight: bold;
         }
         
         /* Ensure consistent print layout */
         @media print {
             body {
-                font-size: 11pt;
+                font-size: 10pt;
             }
             table {
                 page-break-inside: auto;
@@ -209,162 +214,202 @@
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 65px; margin-bottom: 12px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 50px; margin-bottom: 8px;">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
-                {{ company.address_line1 }}<br>
-                {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
-                {% if company.phone %}Phone: {{ company.phone }}<br>{% endif %}
-                {% if company.email %}Email: {{ company.email }}{% endif %}
+                {{ company.address_line1 }}
+                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
+                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
             </p>
         </div>
         <div class="report-info">
             <h1>SUPPLIER ORDER</h1>
             <p>
                 <strong>Reference:</strong> {{ quotation.quotation_number }}<br>
-                <strong>Order Date:</strong> {{ quotation.quotation_date.strftime('%Y-%m-%d') }}<br>
-                <strong>Report Generated:</strong> {{ date_generated }}
+                <strong>Order Date:</strong> {{ quotation.quotation_date.strftime('%Y-%m-%d') }}
             </p>
         </div>
         <div class="clear"></div>
     </div>
     {% endif %}
     
-    {% for supplier_name, items in grouped_items.items() %}
-    <div class="supplier-section">
-        <div class="supplier-info">
-            <h2>Supplier: {{ supplier_name }}</h2>
-            <p>
-                From Quotation #{{ quotation.quotation_number }} for {{ quotation.customer.name }}
-            </p>
-        </div>
-        
-        <h2>Order Details</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th width="5%">#</th>
-                    {% if 'description' in selected_fields %}
-                    <th width="{% if selected_fields|length <= 3 %}30%{% else %}20%{% endif %}">Description</th>
+    <h2>Order Details - Customer: {{ quotation.customer.name }}</h2>
+    
+    <!-- Unified table with supplier grouping -->
+    <table>
+        <thead>
+            <tr>
+                <th width="4%">#</th>
+                <th width="16%">Supplier</th>
+                
+                {% if 'description' in selected_fields %}
+                <th width="{% if selected_fields|length <= 3 %}25%{% else %}18%{% endif %}">Description</th>
+                {% endif %}
+                
+                {% if 'scientific_name' in selected_fields %}
+                <th width="{% if selected_fields|length <= 3 %}25%{% else %}18%{% endif %}">Scientific Name</th>
+                {% endif %}
+                
+                {% if 'pot_size' in selected_fields %}
+                <th width="{% if selected_fields|length <= 3 %}10%{% else %}8%{% endif %}">Pot Size</th>
+                {% endif %}
+                
+                {% if 'height' in selected_fields %}
+                <th width="{% if selected_fields|length <= 3 %}10%{% else %}8%{% endif %}">Height</th>
+                {% endif %}
+                
+                {% if 'quantity' in selected_fields %}
+                <th width="{% if selected_fields|length <= 3 %}10%{% else %}6%{% endif %}" class="text-right">Qty</th>
+                {% endif %}
+                
+                {% if include_prices %}
+                    {% if 'selling_price' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Sell Price</th>
                     {% endif %}
                     
-                    {% if 'scientific_name' in selected_fields %}
-                    <th width="{% if selected_fields|length <= 3 %}30%{% else %}20%{% endif %}">Scientific Name</th>
+                    {% if 'cost_price' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Cost Price</th>
                     {% endif %}
                     
-                    {% if 'pot_size' in selected_fields %}
-                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}">Pot Size</th>
+                    {% if 'total' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}10%{% else %}8%{% endif %}" class="text-right">Total</th>
                     {% endif %}
                     
-                    {% if 'height' in selected_fields %}
-                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}">Height</th>
+                    {% if 'vat_rate' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}10%{% else %}6%{% endif %}" class="text-right">VAT</th>
                     {% endif %}
-                    
-                    {% if 'quantity' in selected_fields %}
-                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}8%{% endif %}" class="text-right">Quantity</th>
-                    {% endif %}
-                    
-                    {% if include_prices %}
-                        {% if 'selling_price' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right">Selling Price</th>
-                        {% endif %}
-                        
-                        {% if 'cost_price' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right">Cost Price</th>
-                        {% endif %}
-                        
-                        {% if 'total' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right">Total</th>
-                        {% endif %}
-                        
-                        {% if 'vat_rate' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}7%{% endif %}" class="text-right">VAT</th>
-                        {% endif %}
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% set current_supplier = "" %}
+            {% set total_items = 0 %}
+            {% set row_index = 1 %}
+            
+            {% for supplier_name, items in grouped_items.items() %}
+                {% set total_items = total_items + items|length %}
+                
                 {% for item in items %}
-                <tr>
-                    <td class="text-center">{{ loop.index }}</td>
-                    
-                    {% if 'description' in selected_fields %}
-                    <td>{{ item.description }}</td>
-                    {% endif %}
-                    
-                    {% if 'scientific_name' in selected_fields %}
-                    <td><em>{{ item.scientific_name or "" }}</em></td>
-                    {% endif %}
-                    
-                    {% if 'pot_size' in selected_fields %}
-                    <td>{{ item.pot_size or "" }}</td>
-                    {% endif %}
-                    
-                    {% if 'height' in selected_fields %}
-                    <td>{{ item.height or "" }}</td>
-                    {% endif %}
-                    
-                    {% if 'quantity' in selected_fields %}
-                    <td class="numeric">{{ "%d"|format(item.quantity|int) }}</td>
-                    {% endif %}
-                    
-                    {% if include_prices %}
-                        {% if 'selling_price' in selected_fields %}
-                        <td class="numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
-                        {% endif %}
-                        
-                        {% if 'cost_price' in selected_fields %}
-                        <td class="numeric">
-                            {# Safely check if the item has a cost_price attribute and if it's not None #}
-                            {% if item.cost_price is defined and item.cost_price is not none %}
-                                {{ currency }} {{ "%.2f"|format(item.cost_price) }}
-                            {% else %}
-                                {{ currency }} 0.00
-                            {% endif %}
+                    {% if loop.first %}
+                    <tr class="supplier-header">
+                        <td colspan="{% if include_prices %}{{ 3 + selected_fields|length }}{% else %}{{ 2 + selected_fields|length }}{% endif %}">
+                            Supplier: {{ supplier_name }} ({{ items|length }} items)
                         </td>
-                        {% endif %}
-                        
-                        {% if 'total' in selected_fields %}
-                        <td class="numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
-                        {% endif %}
-                        
-                        {% if 'vat_rate' in selected_fields %}
-                        <td class="numeric">{{ "%.1f"|format(item.vat_rate) }}%</td>
-                        {% endif %}
+                    </tr>
                     {% endif %}
-                </tr>
+                    
+                    <tr>
+                        <td class="text-center">{{ row_index }}</td>
+                        <td>{{ supplier_name }}</td>
+                        
+                        {% if 'description' in selected_fields %}
+                        <td>{{ item.description }}</td>
+                        {% endif %}
+                        
+                        {% if 'scientific_name' in selected_fields %}
+                        <td><em>{{ item.scientific_name or "" }}</em></td>
+                        {% endif %}
+                        
+                        {% if 'pot_size' in selected_fields %}
+                        <td>{{ item.pot_size or "" }}</td>
+                        {% endif %}
+                        
+                        {% if 'height' in selected_fields %}
+                        <td>{{ item.height or "" }}</td>
+                        {% endif %}
+                        
+                        {% if 'quantity' in selected_fields %}
+                        <td class="numeric">{{ "%d"|format(item.quantity|int) }}</td>
+                        {% endif %}
+                        
+                        {% if include_prices %}
+                            {% if 'selling_price' in selected_fields %}
+                            <td class="numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                            {% endif %}
+                            
+                            {% if 'cost_price' in selected_fields %}
+                            <td class="numeric">
+                                {% if item.cost_price is defined and item.cost_price is not none %}
+                                    {{ currency }} {{ "%.2f"|format(item.cost_price) }}
+                                {% else %}
+                                    {{ currency }} 0.00
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            
+                            {% if 'total' in selected_fields %}
+                            <td class="numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                            {% endif %}
+                            
+                            {% if 'vat_rate' in selected_fields %}
+                            <td class="numeric">{{ "%.1f"|format(item.vat_rate) }}%</td>
+                            {% endif %}
+                        {% endif %}
+                    </tr>
+                    {% set row_index = row_index + 1 %}
+                    
+                    {% if loop.last and include_prices %}
+                    <tr class="supplier-total">
+                        <td colspan="{% if 'quantity' in selected_fields %}{{ 2 + (selected_fields|length - 1) }}{% else %}{{ 2 + selected_fields|length }}{% endif %}">
+                            <strong>Supplier Total:</strong>
+                        </td>
+                        
+                        {% if 'quantity' in selected_fields %}
+                        <td class="numeric"><strong>{{ "%.0f"|format(supplier_totals[supplier_name].qty) }}</strong></td>
+                        {% endif %}
+                        
+                        {% if include_prices %}
+                            {% if 'selling_price' in selected_fields %}
+                            <td></td>
+                            {% endif %}
+                            
+                            {% if 'cost_price' in selected_fields %}
+                            <td></td>
+                            {% endif %}
+                            
+                            {% if 'total' in selected_fields %}
+                            <td class="numeric"><strong>{{ currency }} {{ "%.2f"|format(supplier_totals[supplier_name].cost) }}</strong></td>
+                            {% endif %}
+                            
+                            {% if 'vat_rate' in selected_fields %}
+                            <td></td>
+                            {% endif %}
+                        {% endif %}
+                    </tr>
+                    {% endif %}
                 {% endfor %}
-            </tbody>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="summary">
+        <table>
+            <tr>
+                <td><strong>Total Items:</strong></td>
+                <td class="numeric">{{ total_items }}</td>
+            </tr>
+            <tr>
+                <td><strong>Total Suppliers:</strong></td>
+                <td class="numeric">{{ grouped_items|length }}</td>
+            </tr>
+            {% if include_prices %}
+            <tr class="totals">
+                <td><strong>Total Cost:</strong></td>
+                <td class="numeric">
+                    <strong>{{ currency }} {{ "%.2f"|format(supplier_totals.values()|map(attribute='cost')|sum) }}</strong>
+                </td>
+            </tr>
+            {% endif %}
         </table>
-        
-        {% if include_prices %}
-        <div class="summary">
-            <table>
-                <tr>
-                    <td><strong>Items:</strong></td>
-                    <td class="numeric">{{ items|length }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Total Quantity:</strong></td>
-                    <td class="numeric">{{ "%.2f"|format(supplier_totals[supplier_name].qty) }}</td>
-                </tr>
-                <tr class="totals">
-                    <td><strong>Total Cost:</strong></td>
-                    <td class="numeric"><strong>{{ currency }} {{ "%.2f"|format(supplier_totals[supplier_name].cost) }}</strong></td>
-                </tr>
-            </table>
-        </div>
-        <div class="clear"></div>
-        {% endif %}
     </div>
-    {% endfor %}
+    <div class="clear"></div>
     
     {% if include_terms %}
     <div class="notes">
         <h2>Order Terms</h2>
         <p>
-            Please confirm this order by contacting us at {{ company.email }} or by phone at {{ company.phone }}.<br>
+            Please confirm this order by contacting us at {{ company.email or 'our office' }} or by phone at {{ company.phone or 'our listed number' }}.<br>
             We request delivery within the agreed timeframe as discussed.
         </p>
     </div>
