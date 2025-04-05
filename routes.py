@@ -2068,21 +2068,94 @@ def register_routes(app):
         
         return redirect(url_for('supplier_products', supplier_id=supplier_id))
         
-    @app.route('/generate_supplier_report', methods=['POST'])
+    @app.route('/generate_supplier_report', methods=['GET', 'POST'])
     @login_required
     def generate_supplier_report():
-        """Generate a PDF report of selected supplier products"""
+        """Generate a customized report of selected supplier products"""
         import json
         from utils.pdf_generator import generate_supplier_products_pdf
         
+        # Handle GET requests for print-friendly view
+        if request.method == 'GET':
+            product_ids = request.args.get('product_ids')
+            fields = request.args.get('fields')
+            report_format = request.args.get('format', 'pdf')
+            group_by_supplier = request.args.get('group_by_supplier', 'true').lower() == 'true'
+            include_header = request.args.get('include_header', 'true').lower() == 'true'
+            
+            if not product_ids:
+                flash('No products selected for the report', 'warning')
+                return redirect(url_for('supplier_products'))
+            
+            try:
+                # Parse the JSON strings
+                product_ids = json.loads(product_ids)
+                fields = json.loads(fields) if fields else ["product_name", "scientific_name", "height", "pot_size", "price", "cost_price", "supplier"]
+                
+                # Get the products
+                products = SupplierProduct.query.filter(SupplierProduct.id.in_(product_ids)).all()
+                
+                if not products:
+                    flash('No valid products found for the report', 'warning')
+                    return redirect(url_for('supplier_products'))
+                
+                # Get company settings for the header
+                company = CompanySettings.query.first() if include_header else None
+                
+                # Group products by supplier if requested
+                if group_by_supplier:
+                    suppliers_dict = {}
+                    for product in products:
+                        if product.supplier_id not in suppliers_dict:
+                            suppliers_dict[product.supplier_id] = {
+                                'supplier': product.supplier,
+                                'products': []
+                            }
+                        suppliers_dict[product.supplier_id]['products'].append(product)
+                    
+                    # Sort suppliers and products
+                    suppliers_list = sorted(suppliers_dict.values(), key=lambda x: x['supplier'].name)
+                    for supplier in suppliers_list:
+                        supplier['products'].sort(key=lambda x: x.product_name)
+                else:
+                    # Just sort products by name without grouping
+                    products.sort(key=lambda x: x.product_name)
+                    suppliers_list = None
+                
+                # Render the print-friendly template
+                return render_template(
+                    'pdf/supplier_products_print.html',
+                    products=products,
+                    suppliers=suppliers_list,
+                    fields=fields,
+                    group_by_supplier=group_by_supplier,
+                    include_header=include_header,
+                    company=company,
+                    date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+                    products_count=len(products),
+                    suppliers_count=len(suppliers_dict) if group_by_supplier else 0
+                )
+                
+            except Exception as e:
+                logger.error(f"Error generating supplier print report: {str(e)}")
+                logger.error(traceback.format_exc())
+                flash(f'Error generating report: {str(e)}', 'danger')
+                return redirect(url_for('supplier_products'))
+        
+        # Handle POST requests for PDF download
         product_ids = request.form.get('product_ids')
+        fields = request.form.get('fields')
+        group_by_supplier = request.form.get('group_by_supplier', 'true').lower() == 'true'
+        include_header = request.form.get('include_header', 'true').lower() == 'true'
+        
         if not product_ids:
             flash('No products selected for the report', 'warning')
             return redirect(url_for('supplier_products'))
         
         try:
-            # Parse the JSON string of product IDs
+            # Parse the JSON strings
             product_ids = json.loads(product_ids)
+            fields = json.loads(fields) if fields else ["product_name", "scientific_name", "height", "pot_size", "price", "cost_price", "supplier"]
             
             # Get the products
             products = SupplierProduct.query.filter(SupplierProduct.id.in_(product_ids)).all()
@@ -2091,8 +2164,13 @@ def register_routes(app):
                 flash('No valid products found for the report', 'warning')
                 return redirect(url_for('supplier_products'))
             
-            # Generate the PDF
-            pdf_file, filename = generate_supplier_products_pdf(products)
+            # Generate the PDF with customization options
+            pdf_file, filename = generate_supplier_products_pdf(
+                products, 
+                fields=fields,
+                group_by_supplier=group_by_supplier,
+                include_header=include_header
+            )
             
             # Send the PDF as a download
             response = make_response(pdf_file)

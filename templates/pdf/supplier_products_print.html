@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}Supplier Products Print Report{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Print-specific styles */
+    @media print {
+        body {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+        }
+        
+        .navbar, .sidebar, .sticky-footer, .breadcrumb, .d-print-none {
+            display: none !important;
+        }
+        
+        .container-fluid {
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .card-header {
+            background-color: #fff !important;
+            border-bottom: 1px solid #ddd !important;
+            color: #000 !important;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background-color: #f0f0f0 !important;
+            color: #000 !important;
+        }
+        
+        td, th {
+            border: 1px solid #ddd !important;
+            padding: 4px 6px !important;
+        }
+        
+        .supplier-section {
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+        }
+        
+        a {
+            text-decoration: none !important;
+            color: #000 !important;
+        }
+        
+        /* Always show table headers when page breaks */
+        thead {
+            display: table-header-group;
+        }
+        
+        tfoot {
+            display: table-footer-group;
+        }
+        
+        /* Add page number */
+        @page {
+            margin: 1cm;
+        }
+    }
+    
+    /* On-screen styles for preview */
+    .print-header {
+        padding: 15px;
+        border-bottom: 1px solid #e3e6f0;
+        margin-bottom: 20px;
+    }
+    
+    .print-logo {
+        max-height: 60px;
+        max-width: 150px;
+    }
+    
+    .supplier-section {
+        margin-bottom: 30px;
+    }
+    
+    .meta-info {
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .print-footer {
+        margin-top: 30px;
+        border-top: 1px solid #e3e6f0;
+        padding-top: 10px;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .print-buttons {
+        margin-bottom: 20px;
+    }
+    
+    .field-description {
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row print-buttons d-print-none">
+        <div class="col-12">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <a href="{{ url_for('supplier_products') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Products
+            </a>
+        </div>
+    </div>
+
+    <div class="row field-description d-print-none">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Report Details</h6>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>Fields included:</strong> 
+                        {% for field in fields %}
+                            <span class="badge badge-info">{{ field|replace('_', ' ')|title }}</span>
+                        {% endfor %}
+                    </p>
+                    <p>
+                        <strong>Organization:</strong> 
+                        {% if group_by_supplier %}
+                        <span class="badge badge-success">Grouped by Supplier</span>
+                        {% else %}
+                        <span class="badge badge-primary">All Products</span>
+                        {% endif %}
+                    </p>
+                    <p>
+                        <strong>Header:</strong> 
+                        {% if include_header %}
+                        <span class="badge badge-success">Included</span>
+                        {% else %}
+                        <span class="badge badge-secondary">Not Included</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if include_header and company %}
+    <div class="row print-header">
+        <div class="col-md-8">
+            <h1 class="h3 mb-2 text-gray-800">Supplier Products Report</h1>
+            <div>{{ company.name }}</div>
+            {% if company.address_line1 %}<div>{{ company.address_line1 }}</div>{% endif %}
+            {% if company.address_line2 %}<div>{{ company.address_line2 }}</div>{% endif %}
+            {% if company.phone %}<div>Tel: {{ company.phone }}</div>{% endif %}
+            {% if company.email %}<div>Email: {{ company.email }}</div>{% endif %}
+            {% if company.website %}<div>Web: {{ company.website }}</div>{% endif %}
+        </div>
+        {% if company.logo_path %}
+        <div class="col-md-4 text-right">
+            <img src="{{ url_for('uploaded_file', filename=company.logo_path.split('/')[-1]) }}" alt="Company Logo" class="print-logo">
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-2 text-gray-800">Supplier Products Report</h1>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="meta-info">
+        <div>Generated on: {{ date_generated }}</div>
+        <div>Total Products: {{ products_count }}{% if group_by_supplier %} | Suppliers: {{ suppliers_count }}{% endif %}</div>
+    </div>
+
+    {% if group_by_supplier and suppliers %}
+    {% for supplier_group in suppliers %}
+    <div class="supplier-section">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">{{ supplier_group.supplier.name }}{% if supplier_group.supplier.is_inhouse %} (In-house){% endif %}</h6>
+                
+                {% if supplier_group.supplier.contact_person or supplier_group.supplier.email or supplier_group.supplier.phone %}
+                <div class="meta-info mt-2">
+                    {% if supplier_group.supplier.contact_person %}<div>Contact: {{ supplier_group.supplier.contact_person }}</div>{% endif %}
+                    {% if supplier_group.supplier.email %}<div>Email: {{ supplier_group.supplier.email }}</div>{% endif %}
+                    {% if supplier_group.supplier.phone %}<div>Phone: {{ supplier_group.supplier.phone }}</div>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                
+                                {% if 'scientific_name' in fields %}
+                                <th>Scientific Name</th>
+                                {% endif %}
+                                
+                                {% if 'height' in fields %}
+                                <th>Asked Size</th>
+                                {% endif %}
+                                
+                                {% if 'pot_size' in fields %}
+                                <th>Actual Size</th>
+                                {% endif %}
+                                
+                                {% if 'price' in fields %}
+                                <th>Price</th>
+                                {% endif %}
+                                
+                                {% if 'cost_price' in fields %}
+                                <th>Cost</th>
+                                {% endif %}
+                                
+                                {% if 'last_updated' in fields %}
+                                <th>Last Updated</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in supplier_group.products %}
+                            <tr>
+                                <td>{{ product.product_name }}</td>
+                                
+                                {% if 'scientific_name' in fields %}
+                                <td>{{ product.scientific_name or '-' }}</td>
+                                {% endif %}
+                                
+                                {% if 'height' in fields %}
+                                <td>{{ product.height or '-' }}</td>
+                                {% endif %}
+                                
+                                {% if 'pot_size' in fields %}
+                                <td>{{ product.pot_size or '-' }}</td>
+                                {% endif %}
+                                
+                                {% if 'price' in fields %}
+                                <td>€{{ "%.2f"|format(product.price) }}</td>
+                                {% endif %}
+                                
+                                {% if 'cost_price' in fields %}
+                                <td>{% if product.cost_price %}€{{ "%.2f"|format(product.cost_price) }}{% else %}-{% endif %}</td>
+                                {% endif %}
+                                
+                                {% if 'last_updated' in fields %}
+                                <td>{{ product.last_detected.strftime('%Y-%m-%d') }}</td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">All Products</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            
+                            {% if 'scientific_name' in fields %}
+                            <th>Scientific Name</th>
+                            {% endif %}
+                            
+                            {% if 'height' in fields %}
+                            <th>Asked Size</th>
+                            {% endif %}
+                            
+                            {% if 'pot_size' in fields %}
+                            <th>Actual Size</th>
+                            {% endif %}
+                            
+                            {% if 'price' in fields %}
+                            <th>Price</th>
+                            {% endif %}
+                            
+                            {% if 'cost_price' in fields %}
+                            <th>Cost</th>
+                            {% endif %}
+                            
+                            {% if 'supplier' in fields %}
+                            <th>Supplier</th>
+                            {% endif %}
+                            
+                            {% if 'last_updated' in fields %}
+                            <th>Last Updated</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ product.product_name }}</td>
+                            
+                            {% if 'scientific_name' in fields %}
+                            <td>{{ product.scientific_name or '-' }}</td>
+                            {% endif %}
+                            
+                            {% if 'height' in fields %}
+                            <td>{{ product.height or '-' }}</td>
+                            {% endif %}
+                            
+                            {% if 'pot_size' in fields %}
+                            <td>{{ product.pot_size or '-' }}</td>
+                            {% endif %}
+                            
+                            {% if 'price' in fields %}
+                            <td>€{{ "%.2f"|format(product.price) }}</td>
+                            {% endif %}
+                            
+                            {% if 'cost_price' in fields %}
+                            <td>{% if product.cost_price %}€{{ "%.2f"|format(product.cost_price) }}{% else %}-{% endif %}</td>
+                            {% endif %}
+                            
+                            {% if 'supplier' in fields %}
+                            <td>{{ product.supplier.name }}</td>
+                            {% endif %}
+                            
+                            {% if 'last_updated' in fields %}
+                            <td>{{ product.last_detected.strftime('%Y-%m-%d') }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="print-footer">
+        <p>This is a confidential document intended for internal use only.</p>
+        <p>Generated by Plant Management System | {{ date_generated }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Auto-trigger print dialog if in print mode
+        if (new URLSearchParams(window.location.search).get('auto_print') === 'true') {
+            setTimeout(function() {
+                window.print();
+            }, 1000);
+        }
+    });
+</script>
+{% endblock %}

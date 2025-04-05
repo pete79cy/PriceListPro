@@ -155,54 +155,81 @@ def generate_supplier_pdf_report(quotation, supplier, upload_folder):
         logger.error(f"Error generating supplier report PDF: {str(e)}")
         raise
 
-def generate_supplier_products_pdf(products):
+def generate_supplier_products_pdf(products, fields=None, group_by_supplier=True, include_header=True):
     """
-    Generate a PDF report for selected supplier products
+    Generate a customized PDF report for selected supplier products
     
     Args:
         products: List of SupplierProduct objects
+        fields: List of field names to include in the report (optional)
+        group_by_supplier: Whether to group products by supplier (optional)
+        include_header: Whether to include company header (optional)
         
     Returns:
         tuple: (PDF content as bytes, filename)
     """
     try:
-        # Get company settings
-        company = CompanySettings.query.first()
-        if not company:
-            company = CompanySettings()  # Use default values if no settings exist
+        # Set default fields if not provided
+        if fields is None:
+            fields = ["product_name", "scientific_name", "height", "pot_size", "price", "cost_price", "supplier", "last_updated"]
         
-        # Prepare logo data if available
+        # Always ensure product_name is included as it's required
+        if "product_name" not in fields:
+            fields.insert(0, "product_name")
+        
+        # Get company settings if header should be included
+        company = None
         logo_data = None
-        if company.logo_path and os.path.exists(company.logo_path):
-            with open(company.logo_path, "rb") as logo_file:
-                encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
-                file_ext = os.path.splitext(company.logo_path)[1].strip('.')
-                logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
         
-        # Set the orientation based on company settings
-        orientation = company.pdf_orientation  # 'portrait' or 'landscape'
+        if include_header:
+            company = CompanySettings.query.first()
+            if not company:
+                company = CompanySettings()  # Use default values if no settings exist
+            
+            # Prepare logo data if available
+            if company.logo_path and os.path.exists(company.logo_path):
+                with open(company.logo_path, "rb") as logo_file:
+                    encoded_logo = base64.b64encode(logo_file.read()).decode('utf-8')
+                    file_ext = os.path.splitext(company.logo_path)[1].strip('.')
+                    logo_data = f"data:image/{file_ext};base64,{encoded_logo}"
         
-        # Group products by supplier for better organization
-        suppliers_dict = {}
-        for product in products:
-            if product.supplier_id not in suppliers_dict:
-                suppliers_dict[product.supplier_id] = {
-                    'supplier': product.supplier,
-                    'products': []
-                }
-            suppliers_dict[product.supplier_id]['products'].append(product)
+        # Set the orientation based on company settings or default to landscape for reports
+        orientation = company.pdf_orientation if company else "landscape"
         
-        # Sort suppliers and products
-        suppliers_list = sorted(suppliers_dict.values(), key=lambda x: x['supplier'].name)
-        for supplier in suppliers_list:
-            supplier['products'].sort(key=lambda x: x.product_name)
+        suppliers_list = None
+        
+        # Group products by supplier if requested
+        if group_by_supplier:
+            suppliers_dict = {}
+            for product in products:
+                if product.supplier_id not in suppliers_dict:
+                    suppliers_dict[product.supplier_id] = {
+                        'supplier': product.supplier,
+                        'products': []
+                    }
+                suppliers_dict[product.supplier_id]['products'].append(product)
+            
+            # Sort suppliers and products
+            suppliers_list = sorted(suppliers_dict.values(), key=lambda x: x['supplier'].name)
+            for supplier in suppliers_list:
+                supplier['products'].sort(key=lambda x: x.product_name)
+            
+            suppliers_count = len(suppliers_list)
+        else:
+            # Just sort products by name without grouping
+            products.sort(key=lambda x: x.product_name)
+            suppliers_count = 0
         
         # Generate HTML content from the template
         html_content = render_template(
             'pdf/supplier_products_template.html',
             suppliers=suppliers_list,
+            products=products if not group_by_supplier else None,
             products_count=len(products),
-            suppliers_count=len(suppliers_list),
+            suppliers_count=suppliers_count,
+            fields=fields,
+            group_by_supplier=group_by_supplier,
+            include_header=include_header,
             date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
             company=company,
             logo_data=logo_data,
