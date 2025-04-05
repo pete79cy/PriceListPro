@@ -26,12 +26,17 @@ logger = logging.getLogger(__name__)
 # Create a blueprint for Viber integration
 viber_blueprint = Blueprint('viber', __name__)
 
+# Configure constants for Viber integration
+VIBER_AUTH_TOKEN = os.environ.get('VIBER_AUTH_TOKEN', '')
+VIBER_BOT_NAME = os.environ.get('VIBER_BOT_NAME', 'Supplier Price Bot')
+VIBER_BOT_AVATAR = os.environ.get('VIBER_BOT_AVATAR', '')
+
 # Initialize Viber bot
 try:
     viber_bot = ViberApi(BotConfiguration(
-        name=os.environ.get('VIBER_BOT_NAME', 'Supplier Price Bot'),
-        avatar=os.environ.get('VIBER_BOT_AVATAR', ''),
-        auth_token=os.environ.get('VIBER_AUTH_TOKEN', '')
+        name=VIBER_BOT_NAME,
+        avatar=VIBER_BOT_AVATAR,
+        auth_token=VIBER_AUTH_TOKEN
     ))
 except Exception as e:
     logger.warning(f"Failed to initialize Viber bot: {str(e)}")
