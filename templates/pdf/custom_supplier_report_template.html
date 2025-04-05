@@ -172,7 +172,7 @@
             <img src="{{ company.logo_path }}" alt="Company Logo" class="logo">
             {% endif %}
             <div class="header-info">
-                <p><strong>{{ report_title }}</strong></p>
+                <p><strong>Custom Supplier Report</strong></p>
                 <p>Quotation #: {{ quotation.quotation_number }}</p>
                 <p>Date: {{ quotation.quotation_date.strftime('%d/%m/%Y') }}</p>
             </div>
@@ -203,32 +203,23 @@
             <thead>
                 <tr>
                     <th style="width: 5%;">#</th>
-                    {% for field in selected_fields %}
-                    <th>{{ field|replace('_', ' ')|title }}</th>
+                    {% for field in display_fields %}
+                    <th>{{ field.label }}</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
-                {% set all_items = [] %}
-                {% for supplier, items in grouped_items.items() %}
-                    {% for item in items %}
-                        {% set _ = all_items.append(item) %}
-                    {% endfor %}
-                {% endfor %}
-                
-                {% for item in all_items %}
+                {% for item in items %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    {% for field in selected_fields %}
-                    <td {% if field == 'selling_price' or field == 'cost_price' or field == 'total' %}class="item-price"{% elif field == 'quantity' %}class="item-quantity"{% endif %}>
-                        {% if field == 'selling_price' %}
-                            {{ currency }} {{ "%.2f"|format(item.selling_price) }}
-                        {% elif field == 'total' %}
-                            {{ currency }} {{ "%.2f"|format(item.selling_price * item.quantity) }}
-                        {% elif field == 'cost_price' %}
-                            {{ currency }} {{ "%.2f"|format(item.cost_price|default(0)) }}
+                    {% for field in display_fields %}
+                    <td {% if field.align == 'right' %}class="item-price"{% elif field.align == 'center' %}class="item-quantity"{% endif %}>
+                        {% if field.name == 'selling_price' %}
+                            {{ currency }}{{ "%.2f"|format(item[field.name]) }}
+                        {% elif field.name == 'total' %}
+                            {{ currency }}{{ "%.2f"|format(item.selling_price * item.quantity) }}
                         {% else %}
-                            {{ item[field]|default('') }}
+                            {{ item[field.name]|default('') }}
                         {% endif %}
                     </td>
                     {% endfor %}
@@ -241,15 +232,15 @@
             <table>
                 <tr>
                     <td>Total Items:</td>
-                    <td>{{ all_items|length }}</td>
+                    <td>{{ items|length }}</td>
                 </tr>
                 <tr>
                     <td>Total Quantity:</td>
-                    <td>{{ all_items|sum(attribute='quantity') }}</td>
+                    <td>{{ items|sum(attribute='quantity') }}</td>
                 </tr>
                 <tr class="total-cell">
                     <td>Total Value:</td>
-                    <td>{{ currency }} {{ "%.2f"|format(total_value) }}</td>
+                    <td>{{ currency }}{{ "%.2f"|format(total_value) }}</td>
                 </tr>
             </table>
         </div>
@@ -257,13 +248,13 @@
         <div style="clear: both;"></div>
         
         <div class="report-date">
-            <p>Generated on: {{ date_generated }}</p>
+            <p>Generated on: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
         </div>
     </div>
     
     <footer>
         <div>
-            {{ company.name }} - {{ report_title }} for Quotation #{{ quotation.quotation_number }} - Page <span class="page-number"></span>
+            {{ company.name }} - Custom Report for Quotation #{{ quotation.quotation_number }} - Page <span class="page-number"></span>
         </div>
     </footer>
 </body>

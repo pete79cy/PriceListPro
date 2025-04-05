@@ -276,7 +276,7 @@
                 {% endif %}
                 <tr class="total-row">
                     <td class="label">Total:</td>
-                    <td class="amount total">{{ currency }} {{ "%.2f"|format(grand_total) }}</td>
+                    <td class="amount total">{{ currency }} {{ "%.2f"|format(total) }}</td>
                 </tr>
             </table>
         </div>
@@ -296,7 +296,7 @@
         
         <footer>
             <p>Thank you for your business! | {{ company.name }}</p>
-            <p>Generated on: {{ date_generated }}</p>
+            <p>Generated on: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
         </footer>
     </div>
 </body>
