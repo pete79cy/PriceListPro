@@ -7,18 +7,31 @@
         @page {
             size: A4 {{ orientation }};
             margin: 2cm;
+            @top-center {
+                content: "Supplier Order Report";
+                font-size: 9pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
         }
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 11pt;
-            line-height: 1.4;
+            line-height: 1.5;
             color: #333;
             margin: 0;
             padding: 0;
         }
+        /* Consolidated Header */
         .header {
             width: 100%;
-            margin-bottom: 1.5cm; /* Increased margin for better spacing */
+            margin-bottom: 1.8cm;
+            padding-bottom: 0.5cm;
+            border-bottom: 1px solid #eee;
         }
         .company-info {
             float: left;
@@ -31,73 +44,81 @@
         }
         .supplier-info {
             width: 100%;
-            margin-bottom: 1.5cm; /* Increased margin for better spacing */
-            background-color: #f9f9f9; /* Light background for emphasis */
-            padding: 0.5cm;
-            border-radius: 4px;
+            margin-bottom: 1.8cm;
+            background-color: #f9f9f9;
+            padding: 0.6cm;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .clear {
             clear: both;
         }
+        
+        /* Typography Improvements */
         h1 {
-            font-size: 18pt;
+            font-size: 20pt;
             color: #224870;
             margin-bottom: 0.5cm;
+            font-weight: 700;
         }
         h2 {
-            font-size: 14pt;
+            font-size: 15pt;
             color: #224870;
-            margin-top: 1cm;
-            margin-bottom: 0.5cm;
+            margin-top: 1.2cm;
+            margin-bottom: 0.6cm;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3cm;
         }
         
-        /* Improved table styling */
+        /* Enhanced Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.8cm 0; /* Increased margin */
-            table-layout: fixed; /* Fixed table layout for consistent column widths */
+            margin: 1cm 0;
+            table-layout: fixed;
         }
         
-        /* Table header styling */
+        /* Ensure headers repeat on new pages */
         thead {
-            display: table-header-group; /* Ensures header is repeated on page breaks */
+            display: table-header-group;
         }
         
         th {
-            background-color: #e6e6e6;
-            padding: 0.3cm; /* Increased padding */
+            background-color: #e0e7f0;
+            padding: 0.4cm;
             text-align: left;
             font-weight: bold;
             font-size: 10pt;
-            border: 1px solid #999;
-            white-space: nowrap; /* Prevent header text wrapping */
+            border: 1px solid #b0c4de;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #224870;
         }
         
-        /* Table cell styling */
+        /* Improved cell styling with more padding */
         td {
-            padding: 0.3cm; /* Increased padding */
+            padding: 0.4cm;
             border: 1px solid #ddd;
-            font-size: 10pt;
+            font-size: 10.5pt;
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
         }
         
-        /* Row styling for alternating colors */
-        tbody tr:nth-child(even) {
+        /* Enhanced zebra striping */
+        tbody tr:nth-child(odd) {
             background-color: #f9f9f9;
         }
         
-        /* Special column styling */
+        /* Right-align all numeric data */
         .numeric {
             text-align: right;
-            font-family: 'Courier New', monospace; /* Monospace font for numerical data */
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
         }
         
-        /* Text alignment classes */
+        /* Text alignment helpers */
         .text-right {
             text-align: right;
         }
@@ -105,39 +126,42 @@
             text-align: center;
         }
         
-        /* Summary section */
+        /* Highlighted Totals Section */
         .summary {
-            width: 45%; /* Slightly wider */
+            width: 48%;
             float: right;
-            margin-top: 0.8cm;
-            background-color: #f5f5f5; /* Light background */
-            padding: 0.3cm;
-            border-radius: 4px;
+            margin-top: 1cm;
+            background-color: #f5f8fc;
+            padding: 0.5cm;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.07);
         }
         .summary table {
             width: 100%;
+            margin: 0;
         }
         .summary td {
             border: none;
-            padding: 0.2cm 0.3cm;
-            border-bottom: 1px solid #ddd;
+            padding: 0.3cm 0.4cm;
+            border-bottom: 1px solid #e0e7f0;
         }
         .summary tr:last-child td {
-            border-top: 2px solid #999;
+            border-top: 2px solid #224870;
             font-weight: bold;
-            background-color: #e9e9e9; /* Highlight total row */
-            font-size: 11pt; /* Slightly larger font */
+            background-color: #e0e7f0;
+            font-size: 12pt;
+            padding: 0.4cm;
         }
         
         /* Notes section */
         .notes {
-            margin-top: 1.5cm; /* Increased margin */
-            border-top: 1px solid #ddd;
-            padding-top: 0.5cm;
+            margin-top: 2cm;
+            border-top: 1px solid #eee;
+            padding-top: 0.7cm;
             page-break-inside: avoid;
         }
         
-        /* Footer */
+        /* Enhanced Footer */
         .footer {
             position: fixed;
             bottom: 0;
@@ -146,8 +170,8 @@
             font-size: 9pt;
             text-align: center;
             color: #777;
-            border-top: 1px solid #ddd;
-            padding-top: 0.2cm;
+            border-top: 1px solid #eee;
+            padding-top: 0.3cm;
             background-color: #f9f9f9;
         }
         
@@ -159,7 +183,7 @@
             page-break-before: avoid;
         }
         
-        /* Print-specific styles */
+        /* Ensure consistent print layout */
         @media print {
             body {
                 font-size: 11pt;
@@ -185,7 +209,7 @@
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 60px; margin-bottom: 10px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 65px; margin-bottom: 12px;">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
@@ -238,24 +262,24 @@
                     {% endif %}
                     
                     {% if 'quantity' in selected_fields %}
-                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}8%{% endif %}" class="text-right numeric">Quantity</th>
+                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}8%{% endif %}" class="text-right">Quantity</th>
                     {% endif %}
                     
                     {% if include_prices %}
                         {% if 'selling_price' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right numeric">Selling Price</th>
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right">Selling Price</th>
                         {% endif %}
                         
                         {% if 'cost_price' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right numeric">Cost Price</th>
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right">Cost Price</th>
                         {% endif %}
                         
                         {% if 'total' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right numeric">Total</th>
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right">Total</th>
                         {% endif %}
                         
                         {% if 'vat_rate' in selected_fields %}
-                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}7%{% endif %}" class="text-right numeric">VAT</th>
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}7%{% endif %}" class="text-right">VAT</th>
                         {% endif %}
                     {% endif %}
                 </tr>
@@ -263,7 +287,7 @@
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>{{ loop.index }}</td>
+                    <td class="text-center">{{ loop.index }}</td>
                     
                     {% if 'description' in selected_fields %}
                     <td>{{ item.description }}</td>
@@ -282,16 +306,16 @@
                     {% endif %}
                     
                     {% if 'quantity' in selected_fields %}
-                    <td class="text-right numeric">{{ "%d"|format(item.quantity|int) }}</td>
+                    <td class="numeric">{{ "%d"|format(item.quantity|int) }}</td>
                     {% endif %}
                     
                     {% if include_prices %}
                         {% if 'selling_price' in selected_fields %}
-                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                        <td class="numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
                         {% endif %}
                         
                         {% if 'cost_price' in selected_fields %}
-                        <td class="text-right numeric">
+                        <td class="numeric">
                             {# Safely check if the item has a cost_price attribute and if it's not None #}
                             {% if item.cost_price is defined and item.cost_price is not none %}
                                 {{ currency }} {{ "%.2f"|format(item.cost_price) }}
@@ -302,11 +326,11 @@
                         {% endif %}
                         
                         {% if 'total' in selected_fields %}
-                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                        <td class="numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                         {% endif %}
                         
                         {% if 'vat_rate' in selected_fields %}
-                        <td class="text-right numeric">{{ "%.1f"|format(item.vat_rate) }}%</td>
+                        <td class="numeric">{{ "%.1f"|format(item.vat_rate) }}%</td>
                         {% endif %}
                     {% endif %}
                 </tr>
@@ -319,15 +343,15 @@
             <table>
                 <tr>
                     <td><strong>Items:</strong></td>
-                    <td class="text-right numeric">{{ items|length }}</td>
+                    <td class="numeric">{{ items|length }}</td>
                 </tr>
                 <tr>
                     <td><strong>Total Quantity:</strong></td>
-                    <td class="text-right numeric">{{ "%.2f"|format(supplier_totals[supplier_name].qty) }}</td>
+                    <td class="numeric">{{ "%.2f"|format(supplier_totals[supplier_name].qty) }}</td>
                 </tr>
-                <tr>
+                <tr class="totals">
                     <td><strong>Total Cost:</strong></td>
-                    <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(supplier_totals[supplier_name].cost) }}</td>
+                    <td class="numeric"><strong>{{ currency }} {{ "%.2f"|format(supplier_totals[supplier_name].cost) }}</strong></td>
                 </tr>
             </table>
         </div>
@@ -347,7 +371,7 @@
     {% endif %}
     
     <div class="footer">
-        <p>Custom Supplier Report | Reference {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
+        <p>{{ company.name }} | Reference {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
     </div>
 </body>
 </html>
