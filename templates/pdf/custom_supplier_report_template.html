@@ -282,7 +282,7 @@
                     {% endif %}
                     
                     {% if 'quantity' in selected_fields %}
-                    <td class="text-right numeric">{{ "%.2f"|format(item.quantity) }}</td>
+                    <td class="text-right numeric">{{ "%d"|format(item.quantity|int) }}</td>
                     {% endif %}
                     
                     {% if include_prices %}
