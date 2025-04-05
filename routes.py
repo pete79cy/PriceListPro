@@ -2421,3 +2421,37 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error in document analysis endpoint: {str(e)}")
             return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+    
+    @app.route('/api/price-assistant', methods=['GET'])
+    @login_required
+    def price_assistant():
+        """Get pricing suggestions for a product based on historical data"""
+        from utils.price_assistant import get_price_assistant
+        
+        # Get required parameters
+        scientific_name = request.args.get('scientific_name')
+        pot_size = request.args.get('pot_size', '')
+        customer_id = request.args.get('customer_id')
+        
+        # Validate parameters
+        if not scientific_name:
+            return jsonify({"error": "Scientific name is required"}), 400
+        if not customer_id:
+            return jsonify({"error": "Customer ID is required"}), 400
+            
+        try:
+            customer_id = int(customer_id)
+        except ValueError:
+            return jsonify({"error": "Invalid customer ID"}), 400
+            
+        # Get price assistant
+        price_assistant = get_price_assistant()
+        
+        # Get price history
+        result = price_assistant.get_price_history(
+            scientific_name=scientific_name,
+            pot_size=pot_size,
+            customer_id=customer_id
+        )
+        
+        return jsonify(result)
