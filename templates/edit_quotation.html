@@ -112,7 +112,12 @@
                                             <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control text-end price-input" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
+                                            <div class="input-group">
+                                                <input type="number" class="form-control text-end price-input" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
+                                                <button type="button" class="btn btn-outline-primary" onclick="getPriceSuggestion('{{ product.scientific_name }}', '', 'selling_price_{{ loop.index0 }}')" title="Get price suggestions based on historical data">
+                                                    <i class="fas fa-magic me-1"></i> Suggest Price
+                                                </button>
+                                            </div>
                                         </td>
                                         <td>
                                             <select class="form-select" name="vat_rate_{{ loop.index0 }}">
@@ -173,7 +178,7 @@
                         </div>
 
                         <input type="hidden" name="product_count" value="{{ products|length }}">
-                        
+
                         <div class="mt-4 d-flex justify-content-end">
                             <a href="{{ url_for('upload_quotation') }}" class="btn btn-secondary me-2">Cancel</a>
                             <button type="submit" class="btn btn-primary">Save Quotation</button>
@@ -202,22 +207,22 @@
         let vat19Total = 0;
         let vat5Total = 0;
         let vat0Total = 0;
-        
+
         const rows = document.querySelectorAll('#productTable tbody tr');
-        
+
         rows.forEach(row => {
             const quantityInput = row.querySelector('.quantity-input');
             const priceInput = row.querySelector('.price-input');
             const vatSelect = row.querySelector('select[name^="vat_rate_"]');
-            
+
             if (quantityInput && priceInput && vatSelect) {
                 const quantity = parseFloat(quantityInput.value) || 0;
                 const price = parseFloat(priceInput.value) || 0;
                 const vatRate = parseFloat(vatSelect.value) || 0;
-                
+
                 const rowSubtotal = quantity * price;
                 subtotal += rowSubtotal;
-                
+
                 // Add to the appropriate VAT total
                 if (vatRate === 19) {
                     vat19Total += rowSubtotal * 0.19;
@@ -228,7 +233,7 @@
                 }
             }
         });
-        
+
         // Update the summary display
         document.getElementById('subtotal').textContent = '€ ' + subtotal.toFixed(2);
         document.getElementById('vat19').textContent = '€ ' + vat19Total.toFixed(2);
