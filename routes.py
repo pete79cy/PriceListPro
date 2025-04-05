@@ -1409,6 +1409,19 @@ def register_routes(app):
                 item_total = quantity * selling_price
                 total_amount += item_total
                 
+                # Check for existing product with same scientific name and pot size
+                existing_product = None
+                if scientific_name and pot_size:
+                    existing_product = Product.query.filter(
+                        db.func.lower(Product.scientific_name) == scientific_name.lower(),
+                        db.func.lower(Product.pot) == pot_size.lower()
+                    ).first()
+                    
+                    if existing_product:
+                        logger.info(f"Found existing product in database: {existing_product.name} " +
+                                   f"({existing_product.scientific_name}, {existing_product.pot})")
+                        product_id = existing_product.id
+                
                 # Create quotation item
                 quotation_item = QuotationItem(
                     quotation_id=quotation.id,
@@ -1434,8 +1447,9 @@ def register_routes(app):
             from utils.supplier_manager import update_suppliers_from_quotation
             supplier_results = update_suppliers_from_quotation(quotation)
             
+            # Create a more detailed success message
             if supplier_results['success_count'] > 0:
-                flash(f'Quotation created successfully! {supplier_results["success_count"]} supplier product(s) updated.', 'success')
+                flash(f'Quotation created successfully! Products have been automatically added to supplier database and checked against existing products in main catalog.', 'success')
             else:
                 flash('Quotation created successfully!', 'success')
                 
@@ -1619,9 +1633,23 @@ def register_routes(app):
             # Calculate total
             total = quantity * selling_price
             
+            # Check for existing product with same scientific name and pot size
+            product_id = None
+            if scientific_name and pot_size:
+                existing_product = Product.query.filter(
+                    db.func.lower(Product.scientific_name) == scientific_name.lower(),
+                    db.func.lower(Product.pot) == pot_size.lower()
+                ).first()
+                
+                if existing_product:
+                    logger.info(f"Found existing product in database: {existing_product.name} " +
+                               f"({existing_product.scientific_name}, {existing_product.pot})")
+                    product_id = existing_product.id
+            
             # Create the new item
             new_item = QuotationItem(
                 quotation_id=quotation.id,
+                product_id=product_id,
                 description=description,
                 scientific_name=scientific_name,
                 pot_size=pot_size,
@@ -1714,6 +1742,18 @@ def register_routes(app):
                 item.cost_price = 0
                 logger.warning(f"Invalid cost price format in edit quotation item {item_id}, using 0")
                 
+            # Check for existing product with same scientific name and pot size
+            if item.scientific_name and item.pot_size:
+                existing_product = Product.query.filter(
+                    db.func.lower(Product.scientific_name) == item.scientific_name.lower(),
+                    db.func.lower(Product.pot) == item.pot_size.lower()
+                ).first()
+                
+                if existing_product:
+                    logger.info(f"Found existing product in database: {existing_product.name} " +
+                               f"({existing_product.scientific_name}, {existing_product.pot})")
+                    item.product_id = existing_product.id
+            
             # Calculate new total
             new_total = item.quantity * item.selling_price
             item.total = new_total
