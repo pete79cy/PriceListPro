@@ -114,7 +114,7 @@
                                         <td>
                                             <div class="input-group">
                                                 <input type="number" class="form-control text-end price-input" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
-                                                <button type="button" class="btn btn-outline-primary" onclick="getPriceSuggestion('{{ product.scientific_name }}', '{{ product.pot_size }}', 'selling_price_{{ loop.index0 }}')" title="Get price suggestions based on historical data">
+                                                <button type="button" class="btn btn-outline-primary" onclick="getPriceSuggestion('{{ product.scientific_name }}', '', 'selling_price_{{ loop.index0 }}')" title="Get price suggestions based on historical data">
                                                     <i class="fas fa-magic me-1"></i> Suggest Price
                                                 </button>
                                             </div>
