@@ -104,7 +104,7 @@ def generate_quotation_pdf(quotation, upload_folder):
             vat_list=vat_list,
             grand_total=grand_total,
             currency=quotation.currency,
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            date_generated=datetime.now().strftime('%d/%m/%Y %H:%M'),
             company=company,
             logo_data=logo_data,
             orientation=orientation
@@ -166,7 +166,7 @@ def generate_supplier_pdf_report(quotation, supplier, upload_folder):
             items=items,
             total_cost=total_cost,
             currency=quotation.currency,
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            date_generated=datetime.now().strftime('%d/%m/%Y %H:%M'),
             order_date=quotation.quotation_date,  # Use quotation date as order date
             reference_number=quotation.quotation_number,  # Use quotation number as reference
             subtotal=total_cost,  # Pass the calculated total cost as subtotal
@@ -261,7 +261,7 @@ def generate_supplier_products_pdf(products, fields=None, group_by_supplier=True
             fields=fields,
             group_by_supplier=group_by_supplier,
             include_header=include_header,
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            date_generated=datetime.now().strftime('%d/%m/%Y %H:%M'),
             company=company,
             logo_data=logo_data,
             orientation=orientation
@@ -322,7 +322,7 @@ def generate_supplier_catalog_pdf(supplier, products):
             categories=sorted_categories,
             products_count=len(products),
             categories_count=len(sorted_categories),
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            date_generated=datetime.now().strftime('%d/%m/%Y %H:%M'),
             company=company,
             logo_data=logo_data,
             orientation=orientation
@@ -415,7 +415,9 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             include_terms=include_terms,
             group_by_supplier=group_by_supplier,
             currency=quotation.currency,
-            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            date_generated=datetime.now().strftime('%d/%m/%Y %H:%M'),
+            report_title="Custom Supplier Report",
+            total_value=sum(supplier_totals[supplier]['cost'] for supplier in supplier_totals),
             company=company,
             logo_data=logo_data,
             orientation=orientation
