@@ -2005,7 +2005,7 @@ def register_routes(app):
         suppliers_list = Supplier.query.order_by(Supplier.name).all()
         return render_template('edit_supplier_product.html', product=product, suppliers=suppliers_list, today=datetime.utcnow())
     
-    @app.route('/delete_supplier_product/<int:id>')
+    @app.route('/delete_supplier_product/<int:id>', methods=['POST'])
     @login_required
     def delete_supplier_product(id):
         """Delete a supplier product"""
