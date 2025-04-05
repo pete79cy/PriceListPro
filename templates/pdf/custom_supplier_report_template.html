@@ -5,6 +5,7 @@
     <title>Custom Supplier Report</title>
     <style>
         @page {
+            /* Switch to landscape orientation for better horizontal space */
             size: A4 {{ orientation }};
             margin: 1.5cm;
             @top-center {
@@ -240,6 +241,16 @@
     <table>
         <thead>
             <tr>
+                <!-- Calculate column count based on selected fields and pricing options -->
+                {% set column_count = 2 %}  <!-- Start with index and supplier name -->
+                {% set column_count = column_count + selected_fields|length %}
+                {% if include_prices %}
+                    {% if 'selling_price' in selected_fields %}{% set column_count = column_count + 1 %}{% endif %}
+                    {% if 'cost_price' in selected_fields %}{% set column_count = column_count + 1 %}{% endif %}
+                    {% if 'total' in selected_fields %}{% set column_count = column_count + 1 %}{% endif %}
+                    {% if 'vat_rate' in selected_fields %}{% set column_count = column_count + 1 %}{% endif %}
+                {% endif %}
+                
                 <th width="4%">#</th>
                 <th width="16%">Supplier</th>
                 
@@ -293,7 +304,7 @@
                 {% for item in items %}
                     {% if loop.first %}
                     <tr class="supplier-header">
-                        <td colspan="{% if include_prices %}{{ 3 + selected_fields|length }}{% else %}{{ 2 + selected_fields|length }}{% endif %}">
+                        <td colspan="{{ column_count }}">
                             Supplier: {{ supplier_name }} ({{ items|length }} items)
                         </td>
                     </tr>
@@ -350,8 +361,16 @@
                     {% set row_index = row_index + 1 %}
                     
                     {% if loop.last and include_prices %}
+                    <!-- Calculate colspan correctly for supplier total row -->
+                    {% set subtotal_colspan = 2 %}  <!-- Start with supplier column and count -->
+                    {% for field in selected_fields %}
+                        {% if field != 'quantity' %}
+                            {% set subtotal_colspan = subtotal_colspan + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    
                     <tr class="supplier-total">
-                        <td colspan="{% if 'quantity' in selected_fields %}{{ 2 + (selected_fields|length - 1) }}{% else %}{{ 2 + selected_fields|length }}{% endif %}">
+                        <td colspan="{{ subtotal_colspan }}">
                             <strong>Supplier Total:</strong>
                         </td>
                         
@@ -361,11 +380,11 @@
                         
                         {% if include_prices %}
                             {% if 'selling_price' in selected_fields %}
-                            <td></td>
+                            <td class="numeric"></td>
                             {% endif %}
                             
                             {% if 'cost_price' in selected_fields %}
-                            <td></td>
+                            <td class="numeric"></td>
                             {% endif %}
                             
                             {% if 'total' in selected_fields %}
@@ -373,7 +392,7 @@
                             {% endif %}
                             
                             {% if 'vat_rate' in selected_fields %}
-                            <td></td>
+                            <td class="numeric"></td>
                             {% endif %}
                         {% endif %}
                     </tr>
