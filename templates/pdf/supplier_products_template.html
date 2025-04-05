@@ -101,6 +101,7 @@
     </style>
 </head>
 <body>
+    {% if include_header %}
     <div class="header">
         <div class="company-info">
             <h1>Supplier Products Report</h1>
@@ -120,12 +121,14 @@
         </div>
         {% endif %}
     </div>
+    {% endif %}
     
     <div class="meta-info">
         <div>Generated on: {{ date_generated }}</div>
-        <div>Total Products: {{ products_count }} | Suppliers: {{ suppliers_count }}</div>
+        <div>Total Products: {{ products_count }} | {% if group_by_supplier %}Suppliers: {{ suppliers_count }}{% endif %}</div>
     </div>
     
+    {% if group_by_supplier %}
     {% for supplier_group in suppliers %}
     <div class="supplier-section">
         <h2>{{ supplier_group.supplier.name }}{% if supplier_group.supplier.is_inhouse %} (In-house){% endif %}</h2>
@@ -141,31 +144,150 @@
         <table>
             <thead>
                 <tr>
-                    <th width="30%">Product Name</th>
-                    <th width="25%">Scientific Name</th>
-                    <th width="10%">Asked Size</th>
-                    <th width="10%">Actual Size</th>
-                    <th width="10%">Price</th>
-                    <th width="10%">Cost</th>
-                    <th width="10%">Last Updated</th>
+                    <!-- Always show product name -->
+                    <th width="{% if fields|length <= 3 %}40%{% elif fields|length <= 5 %}30%{% else %}20%{% endif %}">Product Name</th>
+                    
+                    {% if 'scientific_name' in fields %}
+                    <th width="{% if fields|length <= 3 %}30%{% elif fields|length <= 5 %}20%{% else %}15%{% endif %}">Scientific Name</th>
+                    {% endif %}
+                    
+                    {% if 'height' in fields %}
+                    <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Asked Size</th>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in fields %}
+                    <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Actual Size</th>
+                    {% endif %}
+                    
+                    {% if 'price' in fields %}
+                    <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Price</th>
+                    {% endif %}
+                    
+                    {% if 'cost_price' in fields %}
+                    <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Cost</th>
+                    {% endif %}
+                    
+                    {% if 'supplier' in fields and not group_by_supplier %}
+                    <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}15%{% endif %}">Supplier</th>
+                    {% endif %}
+                    
+                    {% if 'last_updated' in fields %}
+                    <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Last Updated</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for product in supplier_group.products %}
                 <tr>
                     <td>{{ product.product_name }}</td>
+                    
+                    {% if 'scientific_name' in fields %}
                     <td>{{ product.scientific_name or '-' }}</td>
+                    {% endif %}
+                    
+                    {% if 'height' in fields %}
                     <td>{{ product.height or '-' }}</td>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in fields %}
                     <td>{{ product.pot_size or '-' }}</td>
+                    {% endif %}
+                    
+                    {% if 'price' in fields %}
                     <td>€{{ "%.2f"|format(product.price) }}</td>
+                    {% endif %}
+                    
+                    {% if 'cost_price' in fields %}
                     <td>{% if product.cost_price %}€{{ "%.2f"|format(product.cost_price) }}{% else %}-{% endif %}</td>
+                    {% endif %}
+                    
+                    {% if 'supplier' in fields and not group_by_supplier %}
+                    <td>{{ product.supplier.name }}</td>
+                    {% endif %}
+                    
+                    {% if 'last_updated' in fields %}
                     <td>{{ product.last_detected.strftime('%Y-%m-%d') }}</td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% endfor %}
+    {% else %}
+    <!-- If not grouping by supplier, show a single table with all products -->
+    <table>
+        <thead>
+            <tr>
+                <!-- Always show product name -->
+                <th width="{% if fields|length <= 3 %}40%{% elif fields|length <= 5 %}30%{% else %}20%{% endif %}">Product Name</th>
+                
+                {% if 'scientific_name' in fields %}
+                <th width="{% if fields|length <= 3 %}30%{% elif fields|length <= 5 %}20%{% else %}15%{% endif %}">Scientific Name</th>
+                {% endif %}
+                
+                {% if 'height' in fields %}
+                <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Asked Size</th>
+                {% endif %}
+                
+                {% if 'pot_size' in fields %}
+                <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Actual Size</th>
+                {% endif %}
+                
+                {% if 'price' in fields %}
+                <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Price</th>
+                {% endif %}
+                
+                {% if 'cost_price' in fields %}
+                <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Cost</th>
+                {% endif %}
+                
+                {% if 'supplier' in fields %}
+                <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}15%{% endif %}">Supplier</th>
+                {% endif %}
+                
+                {% if 'last_updated' in fields %}
+                <th width="{% if fields|length <= 3 %}15%{% elif fields|length <= 5 %}10%{% else %}10%{% endif %}">Last Updated</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.product_name }}</td>
+                
+                {% if 'scientific_name' in fields %}
+                <td>{{ product.scientific_name or '-' }}</td>
+                {% endif %}
+                
+                {% if 'height' in fields %}
+                <td>{{ product.height or '-' }}</td>
+                {% endif %}
+                
+                {% if 'pot_size' in fields %}
+                <td>{{ product.pot_size or '-' }}</td>
+                {% endif %}
+                
+                {% if 'price' in fields %}
+                <td>€{{ "%.2f"|format(product.price) }}</td>
+                {% endif %}
+                
+                {% if 'cost_price' in fields %}
+                <td>{% if product.cost_price %}€{{ "%.2f"|format(product.cost_price) }}{% else %}-{% endif %}</td>
+                {% endif %}
+                
+                {% if 'supplier' in fields %}
+                <td>{{ product.supplier.name }}</td>
+                {% endif %}
+                
+                {% if 'last_updated' in fields %}
+                <td>{{ product.last_detected.strftime('%Y-%m-%d') }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
     
     <div class="footer">
         <p>This is a confidential document intended for internal use only.</p>

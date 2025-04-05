@@ -186,8 +186,8 @@
                 </div>
                 
                 <div class="text-end mt-3">
-                    <button type="button" class="btn btn-primary" id="generate-report" disabled>
-                        <i class="fas fa-file-pdf me-1"></i> Generate PDF Report
+                    <button type="button" class="btn btn-primary" id="customize-report" disabled>
+                        <i class="fas fa-file-pdf me-1"></i> Customize & Generate Report
                     </button>
                 </div>
             </div>
@@ -236,6 +236,142 @@
         </div>
     </div>
 </div>
+
+<!-- Customize Report Modal -->
+<div class="modal fade" id="customizeReportModal" tabindex="-1" aria-labelledby="customizeReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="customizeReportModalLabel">
+                    <i class="fas fa-file-pdf me-2"></i>Customize Supplier Products Report
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Customize your report with the options below:</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-table me-2"></i>Fields to Include</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="product_name" id="field_product_name" checked disabled>
+                                    <label class="form-check-label" for="field_product_name">
+                                        Product Name <span class="text-danger">*</span>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="scientific_name" id="field_scientific_name" checked>
+                                    <label class="form-check-label" for="field_scientific_name">
+                                        Scientific Name
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="height" id="field_height" checked>
+                                    <label class="form-check-label" for="field_height">
+                                        Height / Asked Size
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="pot_size" id="field_pot_size" checked>
+                                    <label class="form-check-label" for="field_pot_size">
+                                        Pot Size / Actual Size
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="price" id="field_price" checked>
+                                    <label class="form-check-label" for="field_price">
+                                        Selling Price
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="cost_price" id="field_cost_price" checked>
+                                    <label class="form-check-label" for="field_cost_price">
+                                        Cost Price
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="supplier" id="field_supplier">
+                                    <label class="form-check-label" for="field_supplier">
+                                        Supplier
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input report-field" type="checkbox" value="last_updated" id="field_last_updated" checked>
+                                    <label class="form-check-label" for="field_last_updated">
+                                        Last Updated Date
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Report Options</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Organization</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="group_by_supplier" id="group_by_supplier_true" value="true" checked>
+                                        <label class="form-check-label" for="group_by_supplier_true">
+                                            Group by Supplier
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="group_by_supplier" id="group_by_supplier_false" value="false">
+                                        <label class="form-check-label" for="group_by_supplier_false">
+                                            Flat List (No Grouping)
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Header</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="include_header" id="include_header" value="true" checked>
+                                        <label class="form-check-label" for="include_header">
+                                            Include Company Header
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Format</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="report_format" id="format_pdf" value="pdf" checked>
+                                        <label class="form-check-label" for="format_pdf">
+                                            PDF (Download)
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="report_format" id="format_print" value="print">
+                                        <label class="form-check-label" for="format_print">
+                                            Print (Browser View)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Products in Report:</strong> <span id="report-count" class="fw-bold">0</span> items selected
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="generate-report-btn">Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -248,231 +384,235 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         
-        // Checkbox and batch delete functionality
-        const selectAllCheckbox = document.getElementById('select-all');
-        const productCheckboxes = document.querySelectorAll('.product-checkbox');
-        const batchDeleteBtn = document.getElementById('batch-delete-btn');
-        const batchDeleteModal = new bootstrap.Modal(document.getElementById('batchDeleteModal'));
-        
-        // Update batch delete button state
-        function updateBatchDeleteBtn() {
-            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-            batchDeleteBtn.disabled = checkedBoxes.length === 0;
-            return checkedBoxes.length;
-        }
-        
-        // Select All checkbox
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                productCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateBatchDeleteBtn();
-            });
-        }
-        
-        // Individual checkboxes
-        productCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const allChecked = document.querySelectorAll('.product-checkbox').length === 
-                                   document.querySelectorAll('.product-checkbox:checked').length;
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = allChecked;
-                }
-                updateBatchDeleteBtn();
-            });
-        });
-        
-        // Batch delete button
-        if (batchDeleteBtn) {
-            batchDeleteBtn.addEventListener('click', function() {
-                const checkedCount = updateBatchDeleteBtn();
-                if (checkedCount > 0) {
-                    document.getElementById('selected-count').textContent = checkedCount;
-                    batchDeleteModal.show();
-                }
-            });
-        }
-        
-        // Confirm batch delete
-        const confirmBatchDeleteBtn = document.getElementById('confirm-batch-delete');
-        if (confirmBatchDeleteBtn) {
-            confirmBatchDeleteBtn.addEventListener('click', function() {
-                const selectedIds = [];
-                document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
-                    selectedIds.push(checkbox.value);
-                });
-                
-                // Create hidden inputs for each selected ID
-                const form = document.getElementById('batch-delete-form');
-                selectedIds.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'product_ids';
-                    input.value = id;
-                    form.appendChild(input);
-                });
-                
-                // Submit the form
-                form.submit();
-            });
-        }
-        
-        // Initialize the report builder sortable container
-        new Sortable(document.getElementById('report-items'), {
+        // Setup sortable
+        const reportItemsContainer = document.getElementById('report-items');
+        new Sortable(reportItemsContainer, {
             animation: 150,
-            ghostClass: 'bg-light',
-            onSort: function() {
-                updateReportBuilder();
-            }
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
         });
         
-        // Handle delete buttons
-        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.dataset.id;
-                const name = this.dataset.name;
-                document.getElementById('delete-product-name').textContent = name;
-                document.getElementById('delete-form').action = `/supplier-products/${id}/delete`;
-                deleteModal.show();
-            });
-        });
+        // Handle adding items to report
+        const addToReportButtons = document.querySelectorAll('.add-to-report');
+        const reportItems = document.getElementById('report-items');
+        const reportInstructions = document.getElementById('report-instruction');
+        const customizeReportButton = document.getElementById('customize-report');
         
-        // Handle add to report buttons
-        document.querySelectorAll('.add-to-report').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.dataset.id;
-                const row = this.closest('tr');
+        function updateReportInstructions() {
+            if (reportItems.children.length > 0) {
+                reportInstructions.style.display = 'none';
+                customizeReportButton.disabled = false;
                 
+                // Update the count in the modal
+                document.getElementById('report-count').textContent = reportItems.children.length;
+            } else {
+                reportInstructions.style.display = 'block';
+                customizeReportButton.disabled = true;
+            }
+        }
+        
+        addToReportButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.id;
+                
+                // Check if item already exists in report
+                if (document.querySelector(`.report-item[data-id="${productId}"]`)) {
+                    return; // Skip if already added
+                }
+                
+                // Get product info from row
+                const row = this.closest('tr');
                 const productName = row.cells[1].textContent;
                 const scientificName = row.cells[2].textContent;
                 const height = row.cells[3].textContent;
                 const potSize = row.cells[4].textContent;
-                const price = row.cells[5].textContent;
-                const costPrice = row.cells[6].textContent;
-                const supplier = row.cells[7].textContent;
+                const supplierName = row.cells[7].textContent;
                 
-                addProductToReport(id, {
-                    productName, 
-                    scientificName, 
-                    height, 
-                    potSize, 
-                    price, 
-                    costPrice, 
-                    supplier
+                // Create item card
+                const itemCard = document.createElement('div');
+                itemCard.className = 'col-md-4 mb-3';
+                itemCard.innerHTML = `
+                    <div class="card report-item" data-id="${productId}">
+                        <div class="card-body p-3">
+                            <button type="button" class="btn-close float-end remove-report-item" aria-label="Remove"></button>
+                            <h6 class="card-title mb-1">${productName}</h6>
+                            <p class="card-text mb-1 text-muted small">${scientificName}</p>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>${height} / ${potSize}</span>
+                                <span>${supplierName}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add to report container
+                reportItems.appendChild(itemCard);
+                
+                // Setup remove handler
+                itemCard.querySelector('.remove-report-item').addEventListener('click', function() {
+                    itemCard.remove();
+                    updateReportInstructions();
                 });
+                
+                updateReportInstructions();
             });
         });
         
-        // Clear report button
+        // Clear all report items
         document.getElementById('clear-report').addEventListener('click', function() {
-            document.getElementById('report-items').innerHTML = '';
-            document.getElementById('report-instruction').classList.remove('d-none');
-            document.getElementById('generate-report').disabled = true;
+            reportItems.innerHTML = '';
+            updateReportInstructions();
         });
         
-        // Generate report button
-        document.getElementById('generate-report').addEventListener('click', function() {
+        // Handle customize report button
+        document.getElementById('customize-report').addEventListener('click', function() {
+            const customizeReportModal = new bootstrap.Modal(document.getElementById('customizeReportModal'));
+            customizeReportModal.show();
+        });
+        
+        // Generate report
+        document.getElementById('generate-report-btn').addEventListener('click', function() {
             const reportItems = document.querySelectorAll('.report-item');
             if (reportItems.length === 0) {
                 return;
             }
             
+            // Get selected fields
+            const selectedFields = [];
+            document.querySelectorAll('.report-field:checked').forEach(checkbox => {
+                selectedFields.push(checkbox.value);
+            });
+            
+            // Get report format
+            const reportFormat = document.querySelector('input[name="report_format"]:checked').value;
+            
+            // Get other settings
+            const groupBySupplier = document.querySelector('input[name="group_by_supplier"]:checked').value;
+            const includeHeader = document.getElementById('include_header').checked;
+            
+            // Get product IDs
             const productIds = Array.from(reportItems).map(item => item.dataset.id);
             
-            // Create a form and submit it
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '{{ url_for("generate_supplier_report") }}';
+            if (reportFormat === 'print') {
+                // Open print-friendly page in new window
+                const url = new URL('{{ url_for("generate_supplier_report") }}', window.location.origin);
+                url.searchParams.append('product_ids', JSON.stringify(productIds));
+                url.searchParams.append('fields', JSON.stringify(selectedFields));
+                url.searchParams.append('format', 'print');
+                url.searchParams.append('group_by_supplier', groupBySupplier);
+                url.searchParams.append('include_header', includeHeader);
+                
+                window.open(url.toString(), '_blank');
+            } else {
+                // Submit POST form for PDF download
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("generate_supplier_report") }}';
+                
+                // Add form fields
+                const productIdsInput = document.createElement('input');
+                productIdsInput.type = 'hidden';
+                productIdsInput.name = 'product_ids';
+                productIdsInput.value = JSON.stringify(productIds);
+                form.appendChild(productIdsInput);
+                
+                const fieldsInput = document.createElement('input');
+                fieldsInput.type = 'hidden';
+                fieldsInput.name = 'fields';
+                fieldsInput.value = JSON.stringify(selectedFields);
+                form.appendChild(fieldsInput);
+                
+                const groupByInput = document.createElement('input');
+                groupByInput.type = 'hidden';
+                groupByInput.name = 'group_by_supplier'; 
+                groupByInput.value = groupBySupplier;
+                form.appendChild(groupByInput);
+                
+                const includeHeaderInput = document.createElement('input');
+                includeHeaderInput.type = 'hidden';
+                includeHeaderInput.name = 'include_header';
+                includeHeaderInput.value = includeHeader;
+                form.appendChild(includeHeaderInput);
+                
+                // Add to body and submit
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            }
             
-            // Add the product IDs as a hidden field
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'product_ids';
-            input.value = JSON.stringify(productIds);
-            form.appendChild(input);
+            // Close the modal
+            const customizeReportModal = bootstrap.Modal.getInstance(document.getElementById('customizeReportModal'));
+            customizeReportModal.hide();
+        });
+        
+        // Handle batch deletes
+        const selectAllCheckbox = document.getElementById('select-all');
+        const productCheckboxes = document.querySelectorAll('.product-checkbox');
+        const batchDeleteBtn = document.getElementById('batch-delete-btn');
+        
+        // Toggle all checkboxes
+        selectAllCheckbox.addEventListener('change', function() {
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
             
-            document.body.appendChild(form);
+            // Update delete button state
+            updateBatchDeleteButton();
+        });
+        
+        // Update batch delete button based on selection
+        productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateBatchDeleteButton);
+        });
+        
+        function updateBatchDeleteButton() {
+            const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
+            batchDeleteBtn.disabled = checkedCount === 0;
+        }
+        
+        // Open batch delete modal
+        batchDeleteBtn.addEventListener('click', function() {
+            const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
+            document.getElementById('selected-count').textContent = checkedCount;
+            
+            const batchDeleteModal = new bootstrap.Modal(document.getElementById('batchDeleteModal'));
+            batchDeleteModal.show();
+        });
+        
+        // Handle batch delete confirmation
+        document.getElementById('confirm-batch-delete').addEventListener('click', function() {
+            const form = document.getElementById('batch-delete-form');
+            const selectedIds = [];
+            
+            document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'product_ids';
+                input.value = checkbox.value;
+                form.appendChild(input);
+            });
+            
             form.submit();
         });
         
-        // Function to add a product to the report builder
-        function addProductToReport(id, data) {
-            // Check if product is already in the report
-            const existingItem = document.querySelector(`.report-item[data-id="${id}"]`);
-            if (existingItem) {
-                // Flash the existing item
-                existingItem.classList.add('bg-warning');
-                setTimeout(() => {
-                    existingItem.classList.remove('bg-warning');
-                }, 1000);
-                return;
-            }
-            
-            const reportItems = document.getElementById('report-items');
-            const instruction = document.getElementById('report-instruction');
-            
-            // Create a new card for the product
-            const card = document.createElement('div');
-            card.className = 'col-md-4 mb-3';
-            card.innerHTML = `
-                <div class="card report-item" data-id="${id}">
-                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 font-weight-bold text-primary">${data.productName}</h6>
-                        <button type="button" class="btn-close remove-report-item" aria-label="Remove"></button>
-                    </div>
-                    <div class="card-body py-2">
-                        <p class="mb-1"><small>${data.scientificName !== '-' ? data.scientificName : ''}</small></p>
-                        <div class="row mb-2">
-                            <div class="col-6">
-                                <p class="mb-0"><small><strong>Height:</strong> ${data.height}</small></p>
-                            </div>
-                            <div class="col-6">
-                                <p class="mb-0"><small><strong>Pot:</strong> ${data.potSize}</small></p>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6">
-                                <p class="mb-0"><small><strong>Price:</strong> ${data.price}</small></p>
-                            </div>
-                            <div class="col-6">
-                                <p class="mb-0"><small><strong>Supplier:</strong> ${data.supplier}</small></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Add event listener to the remove button
-            card.querySelector('.remove-report-item').addEventListener('click', function() {
-                card.remove();
-                updateReportBuilder();
-            });
-            
-            // Add the card to the report builder
-            reportItems.appendChild(card);
-            
-            // Hide the instruction if there are items
-            instruction.classList.add('d-none');
-            
-            // Enable the generate report button
-            document.getElementById('generate-report').disabled = false;
-        }
+        // Handle individual delete buttons
+        const deleteButtons = document.querySelectorAll('.delete-btn');
         
-        function updateReportBuilder() {
-            const reportItems = document.querySelectorAll('.report-item');
-            const instruction = document.getElementById('report-instruction');
-            const generateButton = document.getElementById('generate-report');
-            
-            if (reportItems.length === 0) {
-                instruction.classList.remove('d-none');
-                generateButton.disabled = true;
-            } else {
-                instruction.classList.add('d-none');
-                generateButton.disabled = false;
-            }
-        }
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.id;
+                const productName = this.dataset.name;
+                
+                // Update modal with product info
+                document.getElementById('delete-product-name').textContent = productName;
+                document.getElementById('delete-form').action = '{{ url_for("delete_supplier_product", id=0) }}'.replace('0', productId);
+                
+                // Show modal
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                deleteModal.show();
+            });
+        });
     });
 </script>
 {% endblock %}
