@@ -1,0 +1,96 @@
+/* Additional styles for improved dashboard */
+
+/* Make cards more interactive */
+.card.border-0.shadow-sm {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 0.5rem;
+}
+
+.card.border-0.shadow-sm:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Make stats more prominent */
+.display-4.fw-bold {
+    font-size: 2.5rem;
+    letter-spacing: -1px;
+}
+
+/* Enhance the action buttons */
+.btn-lg.btn-outline-primary,
+.btn-lg.btn-danger,
+.btn-lg.btn-outline-success {
+    transition: all 0.3s ease;
+    border-width: 2px;
+}
+
+.btn-lg.btn-outline-primary:hover,
+.btn-lg.btn-danger:hover,
+.btn-lg.btn-outline-success:hover {
+    transform: scale(1.05);
+}
+
+/* Add stretched link hover effect */
+.position-relative:hover .btn-sm {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+
+.position-relative:hover .text-primary {
+    color: var(--bs-primary) !important;
+}
+
+.position-relative:hover .text-success {
+    color: var(--bs-success) !important;
+}
+
+.position-relative:hover .text-info {
+    color: var(--bs-info) !important;
+}
+
+.position-relative:hover .text-warning {
+    color: var(--bs-warning) !important;
+}
+
+/* Add subtle animation to icons in tools list */
+.list-group-item-action .fa-lg {
+    transition: transform 0.3s ease;
+}
+
+.list-group-item-action:hover .fa-lg {
+    transform: translateX(5px);
+}
+
+/* Enhance welcome header */
+.card.bg-primary {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, #0056b3 100%) !important;
+}
+
+/* Custom shadow styles */
+.shadow-sm {
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.15) !important;
+}
+
+/* Add background patterns to cards (subtle) */
+.card.bg-light {
+    background-color: rgba(var(--bs-light-rgb), 0.8) !important;
+    background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Media queries for better responsiveness */
+@media (max-width: 767.98px) {
+    .display-4.fw-bold {
+        font-size: 2rem;
+    }
+    
+    .row.g-3 {
+        --bs-gutter-y: 1rem;
+    }
+    
+    .card.border-0.shadow-sm:hover {
+        transform: translateY(-3px);
+    }
+}

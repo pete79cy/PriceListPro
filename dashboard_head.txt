@@ -1,0 +1,8 @@
+{% extends 'layout.html' %}
+
+{% block head %}
+<!-- Dashboard-specific CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block title %}Dashboard - Plant Pricing System{% endblock %}
