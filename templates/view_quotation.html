@@ -48,11 +48,7 @@
                         </tr>
                         <tr>
                             <th>Total Amount:</th>
-                            <td>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount) }}</td>
-                        </tr>
-                        <tr>
-                            <th>Created:</th>
-                            <td>{{ quotation.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
                         </tr>
                     </table>
                 </div>
@@ -66,37 +62,35 @@
                 <div class="card-body">
                     <table class="table table-borderless">
                         <tr>
-                            <th style="width: 40%">Name:</th>
+                            <th style="width: 40%">Customer Name:</th>
                             <td>{{ quotation.customer.name }}</td>
                         </tr>
-                        {% if quotation.customer.email %}
                         <tr>
-                            <th>Email:</th>
-                            <td>{{ quotation.customer.email }}</td>
+                            <th>Customer Email:</th>
+                            <td>{{ quotation.customer.email or "Not specified" }}</td>
                         </tr>
-                        {% endif %}
-                        {% if quotation.customer.phone %}
                         <tr>
-                            <th>Phone:</th>
-                            <td>{{ quotation.customer.phone }}</td>
+                            <th>Customer Phone:</th>
+                            <td>{{ quotation.customer.phone or "Not specified" }}</td>
                         </tr>
-                        {% endif %}
-                        {% if quotation.customer.address %}
                         <tr>
-                            <th>Address:</th>
-                            <td>{{ quotation.customer.address }}</td>
+                            <th>Customer Address:</th>
+                            <td>{{ quotation.customer.address or "Not specified" }}</td>
                         </tr>
-                        {% endif %}
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mb-4">
+    <!-- Hidden input fields for JavaScript -->
+    <input type="hidden" id="quotation-id" value="{{ quotation.id }}">
+    <input type="hidden" id="customer-id" value="{{ quotation.customer_id }}">
+
+    <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Quotation Items</h5>
                     <div>
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
@@ -136,12 +130,17 @@
                                     <td>{{ item.supplier or "Not specified" }}</td>
                                     <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-warning btn-sm" 
-                                                onclick="editItem({{ item.id }}, '{{ item.description|e }}', '{{ item.scientific_name|e or '' }}', 
-                                                               '{{ item.pot_size|e or '' }}', '{{ item.height|e or '' }}', 
-                                                               '{{ item.quantity }}', '{{ item.selling_price }}', 
-                                                               '{{ item.vat_rate }}', '{{ item.supplier|e or '' }}', 
-                                                               '{{ item.cost_price or 0 }}')">
+                                        <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
+                                                data-id="{{ item.id }}"
+                                                data-description="{{ item.description|e }}"
+                                                data-scientific-name="{{ item.scientific_name|e or '' }}"
+                                                data-pot-size="{{ item.pot_size|e or '' }}"
+                                                data-height="{{ item.height|e or '' }}"
+                                                data-quantity="{{ item.quantity }}"
+                                                data-selling-price="{{ item.selling_price }}"
+                                                data-vat-rate="{{ item.vat_rate }}"
+                                                data-supplier="{{ item.supplier|e or '' }}"
+                                                data-cost-price="{{ item.cost_price or 0 }}">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
@@ -153,48 +152,15 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
+                            <tfoot>
+                                <tr class="table-light fw-bold">
+                                    <td colspan="9" class="text-end">Total Amount:</td>
+                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            {% if quotation.notes %}
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Notes</h5>
-                </div>
-                <div class="card-body">
-                    <p>{{ quotation.notes }}</p>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Summary</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-borderless">
-                        <tr>
-                            <th>Subtotal:</th>
-                            <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(subtotal) }}</td>
-                        </tr>
-                        {% for vat in vat_summary %}
-                        <tr>
-                            <th>VAT ({{ "%.1f"|format(vat.rate) }}%):</th>
-                            <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(vat.amount) }}</td>
-                        </tr>
-                        {% endfor %}
-                        <tr>
-                            <th><strong>Total:</strong></th>
-                            <td class="text-end"><strong>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount) }}</strong></td>
-                        </tr>
-                    </table>
                 </div>
             </div>
         </div>
@@ -416,34 +382,11 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Include our custom quotation.js -->
+<script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
+
+<!-- Initialize AI Insights for this quotation -->
 <script>
-function confirmDelete(deleteUrl) {
-    document.getElementById('confirmDeleteBtn').href = deleteUrl;
-    var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    deleteModal.show();
-}
-
-function editItem(id, description, scientific_name, pot_size, height, quantity, selling_price, vat_rate, supplier, cost_price) {
-    // Set form action URL with both quotation_id and item_id
-    document.getElementById('editItemForm').action = "/quotation/{{ quotation.id }}/item/" + id;
-    
-    // Fill the form fields with the item data
-    document.getElementById('edit_description').value = description;
-    document.getElementById('edit_scientific_name').value = scientific_name;
-    document.getElementById('edit_pot_size').value = pot_size;
-    document.getElementById('edit_height').value = height;
-    document.getElementById('edit_quantity').value = quantity;
-    document.getElementById('edit_selling_price').value = selling_price;
-    document.getElementById('edit_vat_rate').value = vat_rate;
-    document.getElementById('edit_supplier').value = supplier;
-    document.getElementById('edit_cost_price').value = cost_price;
-    
-    // Show the modal
-    var editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
-    editModal.show();
-}
-
-// Initialize AI Insights for this quotation
 document.addEventListener('DOMContentLoaded', function() {
     // Set up the quotation context for AI insights
     if (window.aiInsights) {
@@ -460,279 +403,6 @@ document.addEventListener('DOMContentLoaded', function() {
             window.aiInsights.showSidebar();
         }
     });
-    
-    // Price Assistant functionality
-    // Add price suggestion handlers
-    document.getElementById('priceAssistBtn').addEventListener('click', function() {
-        getPriceSuggestion('scientific_name', 'pot_size', 'selling_price');
-    });
-    
-    document.getElementById('editPriceAssistBtn').addEventListener('click', function() {
-        getPriceSuggestion('edit_scientific_name', 'edit_pot_size', 'edit_selling_price');
-    });
 });
-
-// Function to get price suggestions
-function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
-    const scientificName = document.getElementById(scientificNameId).value.trim();
-    const potSize = document.getElementById(potSizeId).value.trim();
-    const customerId = {{ quotation.customer_id }};
-    
-    if (!scientificName) {
-        showPriceAssistantMessage("Please enter a scientific name first", "warning");
-        return;
-    }
-    
-    // Show loading indicator
-    showPriceAssistantMessage("Looking for historical prices...", "info");
-    
-    // Call the price assistant API
-    fetch(`/api/price-assistant?scientific_name=${encodeURIComponent(scientificName)}&pot_size=${encodeURIComponent(potSize)}&customer_id=${customerId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                showPriceAssistantMessage(data.error, "danger");
-                return;
-            }
-            
-            if (data.suggested_price) {
-                // Update the price field
-                document.getElementById(sellingPriceId).value = data.suggested_price;
-                showPriceSuggestionModal(data, scientificName, potSize);
-            } else {
-                showPriceAssistantMessage("No historical price data found for this product", "warning");
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching price suggestions:', error);
-            showPriceAssistantMessage("Error retrieving price data: " + error.message, "danger");
-        });
-}
-
-// Show a message to the user
-function showPriceAssistantMessage(message, type) {
-    // Create a Bootstrap toast notification
-    const toastId = 'priceAssistantToast';
-    let toast = document.getElementById(toastId);
-    
-    if (!toast) {
-        // Create toast container if it doesn't exist
-        toast = document.createElement('div');
-        toast.className = 'toast align-items-center text-white bg-' + type;
-        toast.id = toastId;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
-        toast.style.right = '20px';
-        toast.style.zIndex = '9999';
-        
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-    } else {
-        // Update existing toast
-        toast.className = 'toast align-items-center text-white bg-' + type;
-        toast.querySelector('.toast-body').textContent = message;
-    }
-    
-    // Show the toast
-    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
-    bsToast.show();
-}
-
-// Show modal with detailed price suggestions
-function showPriceSuggestionModal(data, scientificName, potSize) {
-    // Create modal if it doesn't exist
-    const modalId = 'priceSuggestionModal';
-    let modal = document.getElementById(modalId);
-    
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.id = modalId;
-        modal.setAttribute('tabindex', '-1');
-        modal.setAttribute('aria-labelledby', 'priceSuggestionModalLabel');
-        modal.setAttribute('aria-hidden', 'true');
-        
-        modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="priceSuggestionModalLabel">Price Suggestions</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="priceSuggestionContent"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-    }
-    
-    // Update modal content
-    const modalContent = document.getElementById('priceSuggestionContent');
-    let content = `
-        <div class="alert alert-success">
-            <strong>Suggested Price: ${data.suggested_price.toFixed(2)} €</strong>
-            <p class="mb-0 small">Based on ${data.source}</p>
-        </div>
-        
-        <div class="card mb-3">
-            <div class="card-header bg-light">
-                <h6 class="mb-0">Price Information for "${scientificName}"${potSize ? ` (${potSize})` : ''}</h6>
-            </div>
-    `;
-    
-    // Show historical price list entries if available
-    if (data.price_lists && data.price_lists.length > 0) {
-        content += `
-            <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Price (€)</th>
-                            <th>Effective Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        data.price_lists.forEach(item => {
-            content += `
-                <tr>
-                    <td>${item.customer_name}</td>
-                    <td>${item.price.toFixed(2)}</td>
-                    <td>${item.effective_date || 'N/A'}</td>
-                </tr>
-            `;
-        });
-        
-        content += `
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        `;
-    } else {
-        content += `
-            <div class="card-body">
-                <p class="mb-0">No historical price list entries found for this product.</p>
-            </div>
-        </div>
-        `;
-    }
-    
-    // Show invoice history if available
-    if (data.invoices && data.invoices.length > 0) {
-        content += `
-            <div class="card mb-3">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0">Invoice History</h6>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Invoice #</th>
-                                <th>Customer</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th class="text-end">Price (€)</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        data.invoices.forEach(item => {
-            content += `
-                <tr>
-                    <td>${item.invoice_number}</td>
-                    <td>${item.customer_name}</td>
-                    <td>${item.description}</td>
-                    <td>${item.quantity}</td>
-                    <td class="text-end">${item.price.toFixed(2)}</td>
-                    <td>${item.date}</td>
-                </tr>
-            `;
-        });
-        
-        content += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Other customers pricing (if available)
-    if (data.other_quotations && data.other_quotations.length > 0) {
-        content += `
-            <div class="card mb-3">
-                <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0">Market Pricing (Other Customers)</h6>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Description</th>
-                                <th>Pot Size</th>
-                                <th class="text-center">Quantity</th>
-                                <th class="text-end">Price (€)</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        data.other_quotations.forEach(item => {
-            content += `
-                <tr>
-                    <td>${item.customer || 'N/A'}</td>
-                    <td>${item.description || 'N/A'}</td>
-                    <td>${item.pot_size || 'N/A'}</td>
-                    <td class="text-center">${Math.round(item.quantity)}</td>
-                    <td class="text-end">${item.price.toFixed(2)}</td>
-                    <td>${item.date}</td>
-                </tr>
-            `;
-        });
-        
-        content += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    }
-    
-    modalContent.innerHTML = content;
-    
-    // Show the modal
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
-}
 </script>
 {% endblock %}
