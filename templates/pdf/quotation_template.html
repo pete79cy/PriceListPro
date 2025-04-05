@@ -18,7 +18,7 @@
         }
         .header {
             width: 100%;
-            margin-bottom: 1cm;
+            margin-bottom: 1.5cm; /* Increased margin for better spacing */
         }
         .company-info {
             float: left;
@@ -31,7 +31,10 @@
         }
         .customer-info {
             width: 100%;
-            margin-bottom: 1cm;
+            margin-bottom: 1.5cm; /* Increased margin for better spacing */
+            background-color: #f9f9f9; /* Light background for emphasis */
+            padding: 0.5cm;
+            border-radius: 4px;
         }
         .clear {
             clear: both;
@@ -52,7 +55,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.5cm 0;
+            margin: 0.8cm 0; /* Increased margin */
             table-layout: fixed; /* Fixed table layout for consistent column widths */
         }
         
@@ -63,18 +66,19 @@
         
         th {
             background-color: #e6e6e6;
-            padding: 0.2cm;
+            padding: 0.3cm; /* Increased padding */
             text-align: left;
             font-weight: bold;
             font-size: 10pt;
             border: 1px solid #999;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
+            white-space: nowrap; /* Prevent header text wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         /* Table cell styling */
         td {
-            padding: 0.2cm;
+            padding: 0.3cm; /* Increased padding */
             border: 1px solid #ddd;
             font-size: 10pt;
             word-wrap: break-word;
@@ -82,9 +86,15 @@
             vertical-align: top;
         }
         
+        /* Row styling for alternating colors */
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
         /* Special column styling */
         .numeric {
             text-align: right;
+            font-family: 'Courier New', monospace; /* Monospace font for numerical data */
         }
         
         /* Text alignment classes */
@@ -97,28 +107,41 @@
         
         /* Summary section */
         .summary {
-            width: 40%;
+            width: 45%; /* Slightly wider */
             float: right;
-            margin-top: 0.5cm;
+            margin-top: 0.8cm;
+            background-color: #f5f5f5; /* Light background */
+            padding: 0.3cm;
+            border-radius: 4px;
         }
         .summary table {
             width: 100%;
         }
         .summary td {
             border: none;
-            padding: 0.1cm 0.3cm;
+            padding: 0.2cm 0.3cm;
             border-bottom: 1px solid #ddd;
         }
         .summary tr:last-child td {
             border-top: 2px solid #999;
             font-weight: bold;
+            background-color: #e9e9e9; /* Highlight total row */
+            font-size: 11pt; /* Slightly larger font */
         }
         
         /* Notes section */
         .notes {
-            margin-top: 1cm;
+            margin-top: 1.5cm; /* Increased margin */
             border-top: 1px solid #ddd;
             padding-top: 0.5cm;
+            page-break-inside: avoid;
+        }
+        
+        /* Terms and conditions styling */
+        .terms {
+            font-size: 10pt; /* Smaller font */
+            color: #555;
+            margin-top: 1.5cm;
             page-break-inside: avoid;
         }
         
@@ -126,12 +149,14 @@
         .footer {
             position: fixed;
             bottom: 0;
+            left: 0;
             width: 100%;
             font-size: 9pt;
             text-align: center;
             color: #777;
             border-top: 1px solid #ddd;
             padding-top: 0.2cm;
+            background-color: #f9f9f9;
         }
         
         /* Print-specific styles */
@@ -195,13 +220,13 @@
         <thead>
             <tr>
                 <th width="5%">#</th>
-                <th width="25%">Description</th>
-                <th width="20%">Scientific Name</th>
+                <th width="28%">Description</th>
+                <th width="22%">Scientific Name</th>
                 <th width="10%">Actual Size</th>
                 <th width="10%">Asked Size</th>
-                <th width="10%" class="text-right numeric">Quantity</th>
-                <th width="10%" class="text-right numeric">Unit Price</th>
-                <th width="10%" class="text-right numeric">Total</th>
+                <th width="7%" class="text-right numeric">Quantity</th>
+                <th width="9%" class="text-right numeric">Unit Price</th>
+                <th width="9%" class="text-right numeric">Total</th>
             </tr>
         </thead>
         <tbody>
@@ -232,7 +257,7 @@
                 <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(vat.amount) }}</td>
             </tr>
             {% endfor %}
-            <tr>
+            <tr class="totals">
                 <td><strong>Total:</strong></td>
                 <td class="text-right numeric"><strong>{{ currency }} {{ "%.2f"|format(grand_total) }}</strong></td>
             </tr>
@@ -247,7 +272,7 @@
     </div>
     {% endif %}
     
-    <div class="notes">
+    <div class="terms">
         <h2>Terms & Conditions</h2>
         <ol>
             <li>This quotation is valid for 30 days from the date of issue.</li>
