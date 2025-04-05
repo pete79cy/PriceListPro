@@ -291,7 +291,14 @@
                         {% endif %}
                         
                         {% if 'cost_price' in selected_fields %}
-                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.cost_price or 0) }}</td>
+                        <td class="text-right numeric">
+                            {# Safely check if the item has a cost_price attribute and if it's not None #}
+                            {% if item.cost_price is defined and item.cost_price is not none %}
+                                {{ currency }} {{ "%.2f"|format(item.cost_price) }}
+                            {% else %}
+                                {{ currency }} 0.00
+                            {% endif %}
+                        </td>
                         {% endif %}
                         
                         {% if 'total' in selected_fields %}
