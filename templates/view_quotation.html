@@ -17,6 +17,9 @@
                 <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-primary">
                     <i class="fas fa-file-pdf me-2"></i> Export PDF
                 </a>
+                <a href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}" class="btn btn-primary">
+                    <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
+                </a>
                 <button type="button" class="btn btn-primary" id="showAiInsightsButton">
                     <i class="fas fa-robot me-2"></i> AI Insights
                 </button>

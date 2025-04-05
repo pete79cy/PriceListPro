@@ -1559,6 +1559,82 @@ def register_routes(app):
             flash(f"Error generating supplier report: {str(e)}", 'danger')
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
+    @app.route('/quotation/<int:quotation_id>/custom_supplier_report', methods=['GET', 'POST'])
+    @login_required
+    def custom_supplier_report(quotation_id):
+        """Create a custom report with multiple suppliers and configurable fields"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        # Get unique suppliers from this quotation
+        suppliers = set(item.supplier for item in quotation.items if item.supplier)
+        
+        # Define available fields for customization
+        available_fields = [
+            {'key': 'description', 'label': 'Description', 'default': True},
+            {'key': 'scientific_name', 'label': 'Scientific Name', 'default': True},
+            {'key': 'pot_size', 'label': 'Pot Size', 'default': True},
+            {'key': 'height', 'label': 'Height', 'default': True},
+            {'key': 'quantity', 'label': 'Quantity', 'default': True},
+            {'key': 'selling_price', 'label': 'Selling Price', 'default': False},
+            {'key': 'cost_price', 'label': 'Cost Price', 'default': True},
+            {'key': 'total', 'label': 'Total', 'default': True},
+            {'key': 'vat_rate', 'label': 'VAT Rate', 'default': False}
+        ]
+        
+        if request.method == 'POST':
+            try:
+                # Get selected suppliers
+                selected_suppliers = request.form.getlist('suppliers')
+                
+                if not selected_suppliers:
+                    flash("Please select at least one supplier", "warning")
+                    return redirect(url_for('custom_supplier_report', quotation_id=quotation_id))
+                
+                # Get selected fields
+                selected_fields = request.form.getlist('fields')
+                
+                if not selected_fields:
+                    # Default to all fields if none selected
+                    selected_fields = [field['key'] for field in available_fields if field['default']]
+                
+                # Get report options
+                include_prices = request.form.get('include_prices') == 'on'
+                include_company_header = request.form.get('include_company_header') == 'on'
+                include_terms = request.form.get('include_terms') == 'on'
+                group_by_supplier = request.form.get('group_by_supplier') == 'on'
+                
+                # Generate the custom report
+                from utils.pdf_generator import generate_custom_supplier_report
+                pdf_file, filename = generate_custom_supplier_report(
+                    quotation, 
+                    selected_suppliers, 
+                    selected_fields,
+                    include_prices=include_prices,
+                    include_company_header=include_company_header,
+                    include_terms=include_terms,
+                    group_by_supplier=group_by_supplier
+                )
+                
+                # Send the PDF as a download
+                response = make_response(pdf_file)
+                response.headers['Content-Type'] = 'application/pdf'
+                response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+                return response
+                
+            except Exception as e:
+                logger.error(f"Error generating custom supplier report: {str(e)}")
+                logger.error(traceback.format_exc())
+                flash(f"Error generating report: {str(e)}", 'danger')
+                return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
+        # GET request - show the form
+        return render_template(
+            'custom_supplier_report.html',
+            quotation=quotation,
+            suppliers=sorted(suppliers),
+            available_fields=available_fields
+        )
+    
     @app.route('/quotation/<int:quotation_id>/delete')
     @login_required
     def delete_quotation(quotation_id):
