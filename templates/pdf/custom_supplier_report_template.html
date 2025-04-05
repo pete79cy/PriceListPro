@@ -122,6 +122,8 @@
         
         /* Enhanced Summary Block with consolidated styling */
         .summary-block {
+            page-break-inside: avoid;
+            break-inside: avoid;
             width: 40%;
             float: right;
             margin-top: 0.5cm;
@@ -196,6 +198,9 @@
         
         /* Ensure consistent print layout */
         @media print {
+        .summary-block {
+            page-break-inside: avoid;
+        }
             body {
                 font-size: 9pt;
             }
