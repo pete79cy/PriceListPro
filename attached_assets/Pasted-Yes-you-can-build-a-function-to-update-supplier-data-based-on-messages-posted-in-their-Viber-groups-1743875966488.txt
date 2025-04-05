@@ -1,0 +1,143 @@
+Yes, you can build a function to update supplier data based on messages posted in their Viber groups. Here’s a high-level plan for how you might approach this:
+
+---
+
+### 1. Create and Configure a Viber Bot
+
+- **Register a Viber Bot:**  
+  Sign up for a Viber bot (using the Viber Admin Panel) and obtain an authentication token.
+
+- **Set Up a Webhook:**  
+  Configure your bot to use a webhook URL in your Flask application. This webhook will receive incoming messages from groups where your bot is a member.
+
+- **Join the Groups:**  
+  Have your suppliers add your bot to their Viber groups so that it can receive their product announcements.
+
+---
+
+### 2. Listen for and Process Incoming Messages
+
+- **Webhook Endpoint:**  
+  In your Flask app, create a route that receives POST requests from Viber when a message is posted in a group.
+
+- **Parse Message Content:**  
+  Implement logic (using regex, NLP, or a structured parser) to extract product details such as:
+  - Product name
+  - Price
+  - Other details (size, SKU, etc.)
+
+- **Handle Variations:**  
+  Note that supplier messages might vary in format. You may need to implement rules or use machine learning/NLP to reliably extract the data.
+
+---
+
+### 3. Update Supplier Data
+
+- **Identify the Supplier:**  
+  You can use the sender's Viber ID or group information to map the message to a specific supplier in your database.
+
+- **Database Update:**  
+  Once you extract the product information, update or insert records in your SupplierProduct table. For example:
+  - Update the price if it has changed.
+  - Update the date of last detection.
+  - Add new products if they don’t already exist.
+
+- **Confirmation (Optional):**  
+  Optionally, have your bot send a confirmation message back to the group or to an admin channel.
+
+---
+
+### 4. Implementation Details (Example)
+
+Below is a simplified code snippet using Flask to set up the webhook and process incoming messages:
+
+```python
+from flask import Flask, request, jsonify
+import re
+from datetime import datetime
+
+app = Flask(__name__)
+
+# Example function to extract product details using regex (adjust as needed)
+def extract_product_info(message):
+    # This is a simple example. You might need a more robust parser.
+    # Let's assume messages follow a format: "Product: [name], Price: €[price]"
+    match = re.search(r'Product:\s*(.+?),\s*Price:\s*€(\d+(?:\.\d+)?)', message)
+    if match:
+        return {
+            'product_name': match.group(1).strip(),
+            'price': float(match.group(2))
+        }
+    return None
+
+# Endpoint to receive Viber webhook calls
+@app.route('/viber-webhook', methods=['POST'])
+def viber_webhook():
+    data = request.get_json()
+    event = data.get("event")
+    # Process only message events
+    if event == "message":
+        sender_id = data.get("sender", {}).get("id")
+        message_text = data.get("message", {}).get("text", "")
+        product_info = extract_product_info(message_text)
+        if product_info:
+            # Here, you would map the sender_id or group info to a supplier in your database.
+            supplier_id = get_supplier_id_from_viber(sender_id)  # Implement this mapping
+            update_supplier_product(supplier_id, product_info)
+    return jsonify(status=0)
+
+def update_supplier_product(supplier_id, product_info):
+    # Pseudo-code: update your SupplierProduct database table
+    # You might check if the product already exists for the supplier, update price and last_detected date,
+    # or insert a new record if not found.
+    product = SupplierProduct.query.filter_by(
+        supplier_id=supplier_id, product_name=product_info['product_name']
+    ).first()
+    if product:
+        product.price = product_info['price']
+        product.last_detected = datetime.utcnow()
+    else:
+        product = SupplierProduct(
+            supplier_id=supplier_id,
+            product_name=product_info['product_name'],
+            price=product_info['price'],
+            last_detected=datetime.utcnow()
+        )
+        db.session.add(product)
+    db.session.commit()
+
+def get_supplier_id_from_viber(sender_id):
+    # Implement a method to map a Viber sender ID (or group ID) to a supplier in your database.
+    # This might involve a lookup table that you maintain.
+    return 1  # Placeholder
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+---
+
+### 5. Testing and Refinement
+
+- **Format Consistency:**  
+  Work with your suppliers to ensure their messages follow a consistent pattern, or adjust your parser to handle variations.
+
+- **Logging and Error Handling:**  
+  Add logging to capture incoming messages and any parsing errors. This will help you refine your extraction logic.
+
+- **Security Considerations:**  
+  Validate incoming webhook requests (e.g., using Viber’s token or signature) to ensure they’re coming from Viber.
+
+---
+
+### 6. Deployment on Replit
+
+- **Set the Webhook URL:**  
+  When deploying on Replit, ensure your public URL is registered as the webhook URL in your Viber bot settings.
+  
+- **Monitor and Maintain:**  
+  Use Replit’s logging and monitoring tools to track the performance of your webhook and adjust as needed.
+
+---
+
+By following this plan, you can automatically update supplier data from messages posted in Viber groups. This approach leverages a Viber bot and webhook integration, combined with custom message parsing and database updates, to keep your supplier information up-to-date. Let me know if you need further details or assistance with any step of this integration!
