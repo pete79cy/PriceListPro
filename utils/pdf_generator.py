@@ -340,3 +340,86 @@ def generate_supplier_catalog_pdf(supplier, products):
     except Exception as e:
         logger.error(f"Error generating supplier catalog PDF: {str(e)}")
         raise
+        
+def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields, include_prices=True, 
+                                   include_company_header=True, include_terms=True, group_by_supplier=True):
+    """
+    Generate a custom PDF report for selected suppliers from a quotation
+    
+    Args:
+        quotation: The Quotation object
+        selected_suppliers: List of supplier names to include in the report
+        selected_fields: List of field names to include in the report
+        include_prices: Whether to include price information
+        include_company_header: Whether to include company header
+        include_terms: Whether to include terms and conditions
+        group_by_supplier: Whether to group items by supplier
+        
+    Returns:
+        tuple: (PDF content as bytes, filename)
+    """
+    try:
+        # Get company settings if header should be included
+        company = None
+        logo_data = None
+        
+        if include_company_header:
+            company = CompanySettings.query.first()
+            if not company:
+                company = CompanySettings()  # Use default values if no settings exist
+            
+            # Get logo data using the helper function (will use static logo if company logo is not available)
+            logo_data = get_logo_data(company)
+        
+        # Set the orientation based on company settings or default to landscape for reports
+        orientation = company.pdf_orientation if company else "landscape"
+        
+        # Group items by supplier
+        grouped_items = {}
+        supplier_totals = {}
+        
+        for item in quotation.items:
+            # Only include items from selected suppliers
+            if item.supplier in selected_suppliers:
+                if item.supplier not in grouped_items:
+                    grouped_items[item.supplier] = []
+                    supplier_totals[item.supplier] = {
+                        'qty': 0,
+                        'cost': 0
+                    }
+                
+                grouped_items[item.supplier].append(item)
+                
+                # Calculate totals
+                supplier_totals[item.supplier]['qty'] += item.quantity
+                supplier_totals[item.supplier]['cost'] += item.quantity * (item.cost_price or 0)
+        
+        # Generate HTML content from the template
+        html_content = render_template(
+            'pdf/custom_supplier_report_template.html',
+            quotation=quotation,
+            grouped_items=grouped_items,
+            supplier_totals=supplier_totals,
+            selected_fields=selected_fields,
+            include_prices=include_prices,
+            include_company_header=include_company_header,
+            include_terms=include_terms,
+            group_by_supplier=group_by_supplier,
+            currency=quotation.currency,
+            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            company=company,
+            logo_data=logo_data,
+            orientation=orientation
+        )
+        
+        # Generate a unique filename
+        filename = f"supplier_report_{quotation.quotation_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        # Generate PDF from HTML
+        pdf_content = HTML(string=html_content).write_pdf()
+        
+        return pdf_content, filename
+    
+    except Exception as e:
+        logger.error(f"Error generating custom supplier report PDF: {str(e)}")
+        raise

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Custom Supplier Report</title>
+    <style>
+        @page {
+            size: A4 {{ orientation }};
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            width: 100%;
+            margin-bottom: 1.5cm; /* Increased margin for better spacing */
+        }
+        .company-info {
+            float: left;
+            width: 60%;
+        }
+        .report-info {
+            float: right;
+            width: 40%;
+            text-align: right;
+        }
+        .supplier-info {
+            width: 100%;
+            margin-bottom: 1.5cm; /* Increased margin for better spacing */
+            background-color: #f9f9f9; /* Light background for emphasis */
+            padding: 0.5cm;
+            border-radius: 4px;
+        }
+        .clear {
+            clear: both;
+        }
+        h1 {
+            font-size: 18pt;
+            color: #224870;
+            margin-bottom: 0.5cm;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #224870;
+            margin-top: 1cm;
+            margin-bottom: 0.5cm;
+        }
+        
+        /* Improved table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.8cm 0; /* Increased margin */
+            table-layout: fixed; /* Fixed table layout for consistent column widths */
+        }
+        
+        /* Table header styling */
+        thead {
+            display: table-header-group; /* Ensures header is repeated on page breaks */
+        }
+        
+        th {
+            background-color: #e6e6e6;
+            padding: 0.3cm; /* Increased padding */
+            text-align: left;
+            font-weight: bold;
+            font-size: 10pt;
+            border: 1px solid #999;
+            white-space: nowrap; /* Prevent header text wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Table cell styling */
+        td {
+            padding: 0.3cm; /* Increased padding */
+            border: 1px solid #ddd;
+            font-size: 10pt;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+        }
+        
+        /* Row styling for alternating colors */
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* Special column styling */
+        .numeric {
+            text-align: right;
+            font-family: 'Courier New', monospace; /* Monospace font for numerical data */
+        }
+        
+        /* Text alignment classes */
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        
+        /* Summary section */
+        .summary {
+            width: 45%; /* Slightly wider */
+            float: right;
+            margin-top: 0.8cm;
+            background-color: #f5f5f5; /* Light background */
+            padding: 0.3cm;
+            border-radius: 4px;
+        }
+        .summary table {
+            width: 100%;
+        }
+        .summary td {
+            border: none;
+            padding: 0.2cm 0.3cm;
+            border-bottom: 1px solid #ddd;
+        }
+        .summary tr:last-child td {
+            border-top: 2px solid #999;
+            font-weight: bold;
+            background-color: #e9e9e9; /* Highlight total row */
+            font-size: 11pt; /* Slightly larger font */
+        }
+        
+        /* Notes section */
+        .notes {
+            margin-top: 1.5cm; /* Increased margin */
+            border-top: 1px solid #ddd;
+            padding-top: 0.5cm;
+            page-break-inside: avoid;
+        }
+        
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            font-size: 9pt;
+            text-align: center;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 0.2cm;
+            background-color: #f9f9f9;
+        }
+        
+        /* Supplier section breaks */
+        .supplier-section {
+            page-break-before: always;
+        }
+        .supplier-section:first-child {
+            page-break-before: avoid;
+        }
+        
+        /* Print-specific styles */
+        @media print {
+            body {
+                font-size: 11pt;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% if include_company_header %}
+    <div class="header">
+        <div class="company-info">
+            {% if company.logo_path %}
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 60px; margin-bottom: 10px;">
+            {% endif %}
+            <h1>{{ company.name }}</h1>
+            <p>
+                {{ company.address_line1 }}<br>
+                {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
+                {% if company.phone %}Phone: {{ company.phone }}<br>{% endif %}
+                {% if company.email %}Email: {{ company.email }}{% endif %}
+            </p>
+        </div>
+        <div class="report-info">
+            <h1>SUPPLIER ORDER</h1>
+            <p>
+                <strong>Reference:</strong> {{ quotation.quotation_number }}<br>
+                <strong>Order Date:</strong> {{ quotation.quotation_date.strftime('%Y-%m-%d') }}<br>
+                <strong>Report Generated:</strong> {{ date_generated }}
+            </p>
+        </div>
+        <div class="clear"></div>
+    </div>
+    {% endif %}
+    
+    {% for supplier_name, items in grouped_items.items() %}
+    <div class="supplier-section">
+        <div class="supplier-info">
+            <h2>Supplier: {{ supplier_name }}</h2>
+            <p>
+                From Quotation #{{ quotation.quotation_number }} for {{ quotation.customer.name }}
+            </p>
+        </div>
+        
+        <h2>Order Details</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">#</th>
+                    {% if 'description' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}30%{% else %}20%{% endif %}">Description</th>
+                    {% endif %}
+                    
+                    {% if 'scientific_name' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}30%{% else %}20%{% endif %}">Scientific Name</th>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}">Pot Size</th>
+                    {% endif %}
+                    
+                    {% if 'height' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}">Height</th>
+                    {% endif %}
+                    
+                    {% if 'quantity' in selected_fields %}
+                    <th width="{% if selected_fields|length <= 3 %}15%{% else %}8%{% endif %}" class="text-right numeric">Quantity</th>
+                    {% endif %}
+                    
+                    {% if include_prices %}
+                        {% if 'selling_price' in selected_fields %}
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right numeric">Selling Price</th>
+                        {% endif %}
+                        
+                        {% if 'cost_price' in selected_fields %}
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right numeric">Cost Price</th>
+                        {% endif %}
+                        
+                        {% if 'total' in selected_fields %}
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}10%{% endif %}" class="text-right numeric">Total</th>
+                        {% endif %}
+                        
+                        {% if 'vat_rate' in selected_fields %}
+                        <th width="{% if selected_fields|length <= 3 %}15%{% else %}7%{% endif %}" class="text-right numeric">VAT</th>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    
+                    {% if 'description' in selected_fields %}
+                    <td>{{ item.description }}</td>
+                    {% endif %}
+                    
+                    {% if 'scientific_name' in selected_fields %}
+                    <td><em>{{ item.scientific_name or "" }}</em></td>
+                    {% endif %}
+                    
+                    {% if 'pot_size' in selected_fields %}
+                    <td>{{ item.pot_size or "" }}</td>
+                    {% endif %}
+                    
+                    {% if 'height' in selected_fields %}
+                    <td>{{ item.height or "" }}</td>
+                    {% endif %}
+                    
+                    {% if 'quantity' in selected_fields %}
+                    <td class="text-right numeric">{{ "%.2f"|format(item.quantity) }}</td>
+                    {% endif %}
+                    
+                    {% if include_prices %}
+                        {% if 'selling_price' in selected_fields %}
+                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                        {% endif %}
+                        
+                        {% if 'cost_price' in selected_fields %}
+                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.cost_price or 0) }}</td>
+                        {% endif %}
+                        
+                        {% if 'total' in selected_fields %}
+                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.total or (item.quantity * item.selling_price)) }}</td>
+                        {% endif %}
+                        
+                        {% if 'vat_rate' in selected_fields %}
+                        <td class="text-right numeric">{{ "%.1f"|format(item.vat_rate) }}%</td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if include_prices %}
+        <div class="summary">
+            <table>
+                <tr>
+                    <td><strong>Items:</strong></td>
+                    <td class="text-right numeric">{{ items|length }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Total Quantity:</strong></td>
+                    <td class="text-right numeric">{{ "%.2f"|format(supplier_totals[supplier_name].qty) }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Total Cost:</strong></td>
+                    <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(supplier_totals[supplier_name].cost) }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="clear"></div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    
+    {% if include_terms %}
+    <div class="notes">
+        <h2>Order Terms</h2>
+        <p>
+            Please confirm this order by contacting us at {{ company.email }} or by phone at {{ company.phone }}.<br>
+            We request delivery within the agreed timeframe as discussed.
+        </p>
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <p>Custom Supplier Report | Reference {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
+    </div>
+</body>
+</html>
