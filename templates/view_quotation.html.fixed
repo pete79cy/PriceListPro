@@ -731,5 +731,159 @@ function showPriceSuggestionModal(data, scientificName, potSize) {
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
 }
+
+// Function to show detailed price suggestion information in a modal
+function showPriceSuggestionDetails(data, scientificName, potSize) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('priceSuggestionModal');
+    
+    if (!modal) {
+        // Create modal elements
+        modal = document.createElement('div');
+        modal.id = 'priceSuggestionModal';
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-labelledby', 'priceSuggestionModalLabel');
+        modal.setAttribute('aria-hidden', 'true');
+        
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="priceSuggestionModalLabel">Price Suggestions</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="priceSuggestionContent"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    // Update modal content
+    const modalContent = document.getElementById('priceSuggestionContent');
+    let content = `
+        <div class="alert alert-success">
+            <strong>Suggested Price: ${data.suggested_price.toFixed(2)} €</strong>
+            <p class="mb-0 small">Based on ${data.source}</p>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Price Information for "${scientificName}"${potSize ? ` (${potSize})` : ''}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-2 mb-2">
+                            <div class="small text-muted">Min Price</div>
+                            <div class="h4">${data.price_range.min ? data.price_range.min.toFixed(2) + ' €' : 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-2 mb-2 bg-light">
+                            <div class="small text-muted">Average Price</div>
+                            <div class="h4">${data.price_range.avg ? data.price_range.avg.toFixed(2) + ' €' : 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-2 mb-2">
+                            <div class="small text-muted">Max Price</div>
+                            <div class="h4">${data.price_range.max ? data.price_range.max.toFixed(2) + ' €' : 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Current customer price list
+    if (data.customer_price_list && data.customer_price_list.length > 0) {
+        content += `
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Customer Price List Entries</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        data.customer_price_list.forEach(item => {
+            const date = new Date(item.date).toLocaleDateString();
+            content += `
+                <tr>
+                    <td>${date}</td>
+                    <td>${item.price.toFixed(2)} €</td>
+                </tr>
+            `;
+        });
+        
+        content += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Previous invoices
+    if (data.previous_invoices && data.previous_invoices.length > 0) {
+        content += `
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Previous Invoice Entries</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        data.previous_invoices.forEach(item => {
+            const date = new Date(item.date).toLocaleDateString();
+            content += `
+                <tr>
+                    <td>${item.invoice_number}</td>
+                    <td>${date}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.price.toFixed(2)} €</td>
+                </tr>
+            `;
+        });
+        
+        content += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    modalContent.innerHTML = content;
+    
+    // Show the modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
 </script>
 {% endblock %}
