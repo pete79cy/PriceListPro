@@ -1,0 +1,70 @@
+To ensure that the summary section (Subtotal, VAT, and Total) is never split between pages, you can wrap it in a container and apply CSS rules to avoid page breaks within that container. Here’s a detailed approach:
+
+---
+
+### 1. Wrap the Summary in a Container
+
+Encapsulate the entire summary block (Subtotal, VAT, Total) inside a dedicated container. For example:
+
+```html
+<div class="summary-block">
+  <table>
+    <tr>
+      <td class="label">Subtotal:</td>
+      <td>€388.25</td>
+    </tr>
+    <tr>
+      <td class="label">VAT:</td>
+      <td>€35.83</td>
+    </tr>
+    <tr class="totals">
+      <td class="label">Total:</td>
+      <td>€424.08</td>
+    </tr>
+  </table>
+</div>
+```
+
+---
+
+### 2. Apply CSS to Prevent Page Breaks
+
+Add CSS rules to prevent the summary block from splitting across pages. If you're generating the report as a PDF (using tools like WeasyPrint or wkhtmltopdf), you can use the `page-break-inside` property:
+
+```css
+@media print {
+  .summary-block {
+    page-break-inside: avoid;
+  }
+}
+```
+
+For improved compatibility with modern browsers, you might also add:
+
+```css
+.summary-block {
+  break-inside: avoid;
+}
+```
+
+---
+
+### 3. Conditional Page Break (Optional Advanced Approach)
+
+If you need more control (for example, checking if the summary block fits on the current page), you could consider a JavaScript-based solution to measure the remaining space and insert a manual page break if needed. However, most PDF generators respect the `page-break-inside: avoid` rule, so CSS is typically sufficient.
+
+---
+
+### 4. Final Layout Considerations
+
+- **Ensure Consistency:**  
+  Make sure the summary block has enough padding and a distinct background (or border) so that it visually stands out from the product details.
+
+- **Test Thoroughly:**  
+  Generate sample PDFs to confirm that the summary block always stays together. Adjust margins or padding as needed to account for any variations in content length.
+
+---
+
+By wrapping the summary in a container with `page-break-inside: avoid`, you instruct the PDF converter to move the entire block to the next page if it cannot fit on the current one. This approach helps maintain a clean, professional presentation without splitting key totals across pages.
+
+Let me know if you need further refinements or additional code examples!
