@@ -2530,3 +2530,91 @@ def register_routes(app):
         )
         
         return jsonify(result)
+    
+    @app.route('/viber-settings', methods=['GET'])
+    @login_required
+    def viber_settings():
+        """
+        View and manage Viber integration settings
+        """
+        if not current_user.is_admin:
+            flash('You do not have permission to access this page.', 'danger')
+            return redirect(url_for('dashboard'))
+            
+        # Get all suppliers for the mapping dropdown
+        suppliers = Supplier.query.order_by(Supplier.name).all()
+        
+        # Check if Viber bot is configured
+        from viber_integration import VIBER_AUTH_TOKEN, VIBER_SUPPLIER_MAPPING
+        
+        is_configured = bool(VIBER_AUTH_TOKEN)
+        
+        return render_template(
+            'viber_settings.html',
+            is_configured=is_configured,
+            suppliers=suppliers,
+            supplier_mapping=VIBER_SUPPLIER_MAPPING
+        )
+        
+    @app.route('/viber-set-webhook', methods=['GET'])
+    @login_required
+    def viber_set_webhook():
+        """
+        Set the Viber webhook URL
+        """
+        if not current_user.is_admin:
+            flash('You do not have permission to access this page.', 'danger')
+            return redirect(url_for('dashboard'))
+            
+        # Import the viber integration functions
+        try:
+            import requests
+            # Get the current host for the webhook URL
+            host = request.host_url.rstrip('/')
+            webhook_url = f"{host}/viber-webhook"
+            
+            # Call the viber_integration module's set_webhook function directly
+            from viber_integration import viber_bot
+            if viber_bot:
+                # Set the webhook directly through the Viber API
+                result = viber_bot.set_webhook(webhook_url)
+                if isinstance(result, dict) and result.get('status') == 0:
+                    flash('Webhook set successfully to: ' + webhook_url, 'success')
+                else:
+                    flash(f'Error setting webhook: {result.get("status_message", "Unknown error")}', 'danger')
+            else:
+                flash('Viber bot is not configured. Please add VIBER_AUTH_TOKEN to your environment variables.', 'warning')
+        except Exception as e:
+            logger.error(f"Error setting Viber webhook: {str(e)}")
+            flash(f'Error setting webhook: {str(e)}', 'danger')
+            
+        return redirect(url_for('viber_settings'))
+        
+    @app.route('/viber-update-mapping', methods=['POST'])
+    @login_required
+    def update_viber_mapping():
+        """
+        Update the mapping between Viber IDs and suppliers
+        """
+        if not current_user.is_admin:
+            return jsonify({"status": "error", "message": "Unauthorized"}), 403
+            
+        try:
+            data = request.json
+            if not data or not isinstance(data, dict):
+                return jsonify({"status": "error", "message": "Invalid data format"}), 400
+                
+            # Update the VIBER_SUPPLIER_MAPPING in the viber_integration module directly
+            from viber_integration import VIBER_SUPPLIER_MAPPING
+            
+            # Update the global mapping in the module
+            for viber_id, supplier_id in data.items():
+                VIBER_SUPPLIER_MAPPING[viber_id] = supplier_id
+                
+            # Return success response
+            response = jsonify({"status": "success", "mapping": VIBER_SUPPLIER_MAPPING})
+            
+            return response
+        except Exception as e:
+            logger.error(f"Error updating Viber mapping: {str(e)}")
+            return jsonify({"status": "error", "message": str(e)}), 500
