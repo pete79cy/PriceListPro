@@ -295,7 +295,7 @@
                         {% endif %}
                         
                         {% if 'total' in selected_fields %}
-                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.total or (item.quantity * item.selling_price)) }}</td>
+                        <td class="text-right numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                         {% endif %}
                         
                         {% if 'vat_rate' in selected_fields %}
