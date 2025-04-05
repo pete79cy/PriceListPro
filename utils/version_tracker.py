@@ -13,7 +13,20 @@ def get_current_version():
     except FileNotFoundError:
         return '0.0.1'
 
-def log_deployment(version=None, notes=None):
+def increment_version(version_str, increment_type='patch'):
+    """Increment semantic version number"""
+    major, minor, patch = map(int, version_str.split('.'))
+    if increment_type == 'major':
+        major += 1
+        minor = patch = 0
+    elif increment_type == 'minor':
+        minor += 1
+        patch = 0
+    else:  # patch
+        patch += 1
+    return f"{major}.{minor}.{patch}"
+
+def log_deployment(version=None, notes=None, increment_type='patch'):
     try:
         # Read existing data or create new
         try:
@@ -25,9 +38,13 @@ def log_deployment(version=None, notes=None):
                 'deployments': []
             }
         
-        # Update version if provided
+        # Update version
+        current_version = data['version']
         if version:
-            data['version'] = version
+            new_version = version
+        else:
+            new_version = increment_version(current_version, increment_type)
+        data['version'] = new_version
             
         # Add deployment record
         deployment = {
