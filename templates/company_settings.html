@@ -26,8 +26,9 @@
                                         <label for="pdf_orientation" class="form-label">PDF Orientation</label>
                                         <select class="form-select" id="pdf_orientation" name="pdf_orientation">
                                             <option value="portrait" {% if company.pdf_orientation == 'portrait' %}selected{% endif %}>Portrait</option>
-                                            <option value="landscape" {% if company.pdf_orientation == 'landscape' %}selected{% endif %}>Landscape</option>
+                                            <option value="landscape" {% if company.pdf_orientation == 'landscape' %}selected{% endif %}>Landscape (Recommended)</option>
                                         </select>
+                                        <small class="form-text text-muted">Landscape mode allows more items per page for quotations and reports.</small>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
