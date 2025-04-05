@@ -5,8 +5,9 @@
     <title>Quotation {{ quotation.quotation_number }}</title>
     <style>
         @page {
+            /* Switch to landscape orientation for better horizontal space */
             size: A4 {{ orientation }};
-            margin: 2cm;
+            margin: 1.5cm;
             @top-center {
                 content: "Quotation {{ quotation.quotation_number }}";
                 font-size: 9pt;
@@ -20,17 +21,17 @@
         }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 11pt;
-            line-height: 1.5;
+            font-size: 10pt; /* Smaller font for better space usage */
+            line-height: 1.4; /* Tighter line spacing */
             color: #333;
             margin: 0;
             padding: 0;
         }
-        /* Consolidated Header */
+        /* Compact Header */
         .header {
             width: 100%;
-            margin-bottom: 1.8cm;
-            padding-bottom: 0.5cm;
+            margin-bottom: 1.2cm; /* Reduced spacing */
+            padding-bottom: 0.3cm;
             border-bottom: 1px solid #eee;
         }
         .company-info {
@@ -44,37 +45,36 @@
         }
         .customer-info {
             width: 100%;
-            margin-bottom: 1.8cm;
-            background-color: #f9f9f9;
-            padding: 0.6cm;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 1cm; /* Reduced spacing */
+            background-color: #f5f8fc;
+            padding: 0.4cm; /* Reduced padding */
+            border-radius: 4px;
         }
         .clear {
             clear: both;
         }
         
-        /* Typography Improvements */
+        /* Typography Optimizations */
         h1 {
-            font-size: 20pt;
+            font-size: 18pt;
             color: #224870;
-            margin-bottom: 0.5cm;
+            margin-bottom: 0.3cm;
             font-weight: 700;
         }
         h2 {
-            font-size: 15pt;
+            font-size: 14pt;
             color: #224870;
-            margin-top: 1.2cm;
-            margin-bottom: 0.6cm;
+            margin-top: 0.8cm;
+            margin-bottom: 0.4cm;
             border-bottom: 1px solid #eee;
-            padding-bottom: 0.3cm;
+            padding-bottom: 0.2cm;
         }
         
-        /* Enhanced Table Styling */
+        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1cm 0;
+            margin: 0.6cm 0; /* Reduced margin */
             table-layout: fixed;
         }
         
@@ -85,10 +85,10 @@
         
         th {
             background-color: #e0e7f0;
-            padding: 0.4cm;
+            padding: 0.25cm; /* Reduced padding */
             text-align: left;
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 9pt; /* Smaller header font */
             border: 1px solid #b0c4de;
             white-space: nowrap;
             overflow: hidden;
@@ -96,11 +96,11 @@
             color: #224870;
         }
         
-        /* Improved cell styling with more padding */
+        /* Compact cell styling */
         td {
-            padding: 0.4cm;
+            padding: 0.25cm; /* Reduced padding */
             border: 1px solid #ddd;
-            font-size: 10.5pt;
+            font-size: 9.5pt; /* Slightly smaller font */
             word-wrap: break-word;
             overflow-wrap: break-word;
             vertical-align: top;
@@ -109,11 +109,6 @@
         /* Enhanced zebra striping */
         tbody tr:nth-child(odd) {
             background-color: #f9f9f9;
-        }
-        
-        /* Prevent text splitting in important cells */
-        .no-wrap {
-            white-space: nowrap;
         }
         
         /* Right-align all numeric data */
@@ -131,15 +126,14 @@
             text-align: center;
         }
         
-        /* Highlighted Totals Section */
+        /* Compact Totals Section with emphasis */
         .summary {
-            width: 48%;
+            width: 45%;
             float: right;
-            margin-top: 1cm;
+            margin-top: 0.6cm;
             background-color: #f5f8fc;
-            padding: 0.5cm;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+            padding: 0.3cm;
+            border-radius: 4px;
         }
         .summary table {
             width: 100%;
@@ -147,33 +141,44 @@
         }
         .summary td {
             border: none;
-            padding: 0.3cm 0.4cm;
+            padding: 0.2cm;
             border-bottom: 1px solid #e0e7f0;
         }
         .summary tr:last-child td {
             border-top: 2px solid #224870;
             font-weight: bold;
             background-color: #e0e7f0;
-            font-size: 12pt;
-            padding: 0.4cm;
-        }
-        
-        /* Notes and Terms sections */
-        .notes {
-            margin-top: 2cm;
-            border-top: 1px solid #eee;
-            padding-top: 0.7cm;
-            page-break-inside: avoid;
-        }
-        
-        .terms {
             font-size: 10pt;
-            color: #555;
-            margin-top: 1.8cm;
-            background-color: #f9f9f9;
-            padding: 0.6cm;
-            border-radius: 6px;
+            padding: 0.3cm;
+        }
+        
+        /* Notes section */
+        .notes {
+            margin-top: 1cm;
+            border-top: 1px solid #eee;
+            padding-top: 0.4cm;
             page-break-inside: avoid;
+        }
+        
+        /* Compact terms and conditions */
+        .terms {
+            font-size: 9pt;
+            color: #555;
+            margin-top: 1cm;
+            page-break-inside: avoid;
+            background-color: #f9f9f9;
+            padding: 0.4cm;
+            border-radius: 4px;
+        }
+        .terms h2 {
+            margin-top: 0;
+        }
+        .terms ol {
+            margin: 0.3cm 0;
+            padding-left: 1.2cm;
+        }
+        .terms li {
+            margin-bottom: 0.15cm;
         }
         
         /* Enhanced Footer */
@@ -182,18 +187,18 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            font-size: 9pt;
+            font-size: 8pt;
             text-align: center;
             color: #777;
             border-top: 1px solid #eee;
-            padding-top: 0.3cm;
+            padding-top: 0.2cm;
             background-color: #f9f9f9;
         }
         
         /* Ensure consistent print layout */
         @media print {
             body {
-                font-size: 11pt;
+                font-size: 10pt;
             }
             table {
                 page-break-inside: auto;
@@ -215,14 +220,13 @@
     <div class="header">
         <div class="company-info">
             {% if company.logo_path %}
-            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 65px; margin-bottom: 12px;">
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" style="max-height: 50px; margin-bottom: 8px;">
             {% endif %}
             <h1>{{ company.name }}</h1>
             <p>
-                {{ company.address_line1 }}<br>
-                {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
-                {% if company.phone %}Phone: {{ company.phone }}<br>{% endif %}
-                {% if company.email %}Email: {{ company.email }}{% endif %}
+                {{ company.address_line1 }}
+                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
+                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
             </p>
         </div>
         <div class="quotation-info">
@@ -239,10 +243,10 @@
     <div class="customer-info">
         <h2>Customer Information</h2>
         <p>
-            <strong>{{ customer.name }}</strong><br>
-            {% if customer.address %}{{ customer.address }}<br>{% endif %}
-            {% if customer.email %}Email: {{ customer.email }}<br>{% endif %}
-            {% if customer.phone %}Phone: {{ customer.phone }}{% endif %}
+            <strong>{{ customer.name }}</strong>
+            {% if customer.address %} | {{ customer.address }}{% endif %}
+            {% if customer.email %} | Email: {{ customer.email }}{% endif %}
+            {% if customer.phone %} | Phone: {{ customer.phone }}{% endif %}
         </p>
     </div>
     
@@ -250,14 +254,14 @@
     <table>
         <thead>
             <tr>
-                <th width="5%">#</th>
-                <th width="28%">Description</th>
-                <th width="22%">Scientific Name</th>
+                <th width="4%">#</th>
+                <th width="24%">Description</th>
+                <th width="24%">Scientific Name</th>
                 <th width="10%">Actual Size</th>
                 <th width="10%">Asked Size</th>
-                <th width="7%" class="text-right">Quantity</th>
-                <th width="9%" class="text-right">Unit Price</th>
-                <th width="9%" class="text-right">Total</th>
+                <th width="8%" class="text-right">Qty</th>
+                <th width="10%" class="text-right">Unit Price</th>
+                <th width="10%" class="text-right">Total</th>
             </tr>
         </thead>
         <tbody>

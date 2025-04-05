@@ -1,0 +1,93 @@
+Here are several detailed suggestions to improve your quotation report layout—making it more user friendly and able to display more product lines per page:
+
+---
+
+### 1. Optimize Layout for Higher Density
+
+- **Landscape Orientation:**  
+  Use landscape mode for the PDF to gain additional horizontal space.  
+  *Implementation:* Set your PDF generator (e.g., with WeasyPrint:  
+  ```css
+  @page { size: A4 landscape; margin: 1cm; }
+  ```  
+  or with wkhtmltopdf using `--orientation Landscape`) so that columns have more room.
+
+- **Compact Font & Reduced Spacing:**  
+  - Use a slightly smaller yet readable font for table data.
+  - Decrease cell padding and margins to minimize wasted space while maintaining clarity.
+  
+- **Fixed Column Widths:**  
+  Set specific widths for columns (for instance, a wider column for "Description" and narrower columns for "Quantity" and "Unit Price"). This helps fit more columns and lines per page.
+
+---
+
+### 2. Streamline Header and Footer Content
+
+- **Single, Repeating Header:**  
+  Instead of including the “Quotation PAK-2025-004 | Generated on...” line multiple times in the body, define it as a fixed header (or repeat it only once per page).  
+  *Benefits:* This reduces visual clutter and reserves more space for product details.
+
+- **Consolidated Footer:**  
+  Use a concise footer with just essential information like page numbers and company name, rather than duplicating the entire header.
+
+---
+
+### 3. Table Structure and Data Grouping
+
+- **Unified Table Header:**  
+  Use a single table header that is repeated on each new page if the table spans multiple pages.  
+  *Implementation:* If using HTML/CSS, wrap headers in `<thead>` and data rows in `<tbody>`, so your PDF converter can automatically repeat headers on page breaks.
+
+- **Clear Column Labels:**  
+  Make sure column labels (e.g., “Description”, “Scientific Name”, “Actual Size”, “Asked Size”, “Quantity”, “Unit Price”, “Total”) are concise and do not wrap unnecessarily. Consider abbreviating where possible if space is limited.
+
+- **Right-Align Numeric Data:**  
+  Right-align columns that hold numbers to help with readability and comparison:
+  ```css
+  .numeric { text-align: right; }
+  ```
+
+- **Zebra Striping:**  
+  Apply alternating row colors to enhance row differentiation:
+  ```css
+  tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+  ```
+
+---
+
+### 4. Enhance Visual Hierarchy and Readability
+
+- **Emphasize Totals Section:**  
+  Clearly separate and highlight the subtotal, VAT, and total by using bold fonts, a different background color, or a border on the totals row.  
+  *Example:*  
+  ```css
+  .totals {
+    font-weight: bold;
+    background-color: #f8f8f8;
+    border-top: 2px solid #000;
+  }
+  ```
+
+- **Reduce Redundant Information:**  
+  Remove repetitive text that appears on every page (like multiple occurrences of the generation timestamp) and keep it in a header/footer format.
+
+- **Improve Spacing Between Sections:**  
+  Use subtle dividers or increased spacing to clearly separate the "Customer Information," "Quotation Details," and "Terms & Conditions" sections.
+
+---
+
+### 5. Consider Interactive or Dynamic Options (for Digital Viewing)
+
+- **Collapsible Sections:**  
+  If the quotation report is viewed digitally, you could allow sections (like long product lists) to collapse or expand, letting users focus on the parts they need.
+  
+- **Search or Filter Options:**  
+  Provide an on-screen search or filter function for users to quickly find specific product lines within long lists.
+
+---
+
+### Summary
+
+By switching to landscape orientation, reducing unnecessary white space, consolidating repeated headers/footers, and optimizing the table structure, your quotation report can display more product lines per page while remaining clear and user friendly. These changes will help produce a cleaner, professional report that better utilizes available space without sacrificing readability. 
+
+Let me know if you need further details or code examples for implementing these improvements!
