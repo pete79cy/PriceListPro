@@ -1,0 +1,93 @@
+Here are several suggestions to improve the layout and overall readability of the report:
+
+---
+
+### 1. Header & Footer Consistency
+
+- **Consolidate the Header:**  
+  Instead of having the report header ("Quotation PAK-2025-004 | Generated on...") repeated within the body, configure your PDF generation tool to include a fixed header on each page. This keeps the body cleaner while still providing necessary identification information.
+
+- **Streamline the Footer:**  
+  Move the company name, quotation number, and generation timestamp to a dedicated footer. This can also include page numbers and a concise summary (e.g., "Page 1 of 3").
+
+---
+
+### 2. Table Formatting and Readability
+
+- **Clear Table Header:**  
+  Define a single, clear table header that is repeated on subsequent pages if needed. Use distinct sections for columns like Description, Scientific Name, Actual Size, Asked Size, Quantity, Unit Price, and Total.  
+  - *Tip:* Use HTML `<thead>` for the header and `<tbody>` for the data if you're generating HTML for PDF conversion.
+
+- **Prevent Text Splitting:**  
+  Adjust column widths and use properties such as `white-space: nowrap;` or controlled word wrapping so that product names (especially long ones) do not break awkwardly across lines.
+
+- **Right-Align Numerical Data:**  
+  Align columns containing numbers (Quantity, Unit Price, Total) to the right for better visual comparison.
+  ```css
+  .numeric { text-align: right; }
+  ```
+
+- **Zebra Striping:**  
+  Apply alternating row colors to improve row differentiation:
+  ```css
+  tbody tr:nth-child(odd) {
+      background-color: #f9f9f9;
+  }
+  ```
+
+- **Borders and Gridlines:**  
+  Introduce subtle borders around table cells to delineate data clearly without overwhelming the layout.
+
+---
+
+### 3. Typography and Spacing
+
+- **Consistent Font Usage:**  
+  Use a clean, modern sans-serif font (such as Arial, Helvetica, or Roboto) with consistent sizes. Increase the font size for headers and totals for emphasis.
+
+- **Adequate Padding and Margins:**  
+  Increase cell padding and margins around the table and sections to prevent the report from feeling cramped.
+
+- **Section Separation:**  
+  Use clear section dividers or headings to separate "Customer Information," "Quotation Details," and "Terms & Conditions." This guides the reader’s eye through the document.
+
+---
+
+### 4. Totals and Summary Section
+
+- **Highlight Totals:**  
+  Make the totals section (Subtotal, VAT, Total) stand out by using bold fonts, larger text, or a contrasting background color.
+  ```css
+  .totals {
+      font-weight: bold;
+      background-color: #f8f8f8;
+      border-top: 2px solid #000;
+  }
+  ```
+
+- **Condense Repeated Data:**  
+  Remove any redundant repetition of summary information within the body. Present the totals only once, at the end of the table, with a clear separator from the list of items.
+
+---
+
+### 5. Orientation and Responsiveness
+
+- **Consider Landscape Orientation:**  
+  If the table is too wide, switching to landscape mode can provide more horizontal space. Use your PDF generator’s settings (e.g., CSS `@page { size: A4 landscape; }` with WeasyPrint) to set the page orientation.
+
+- **Responsive Layout:**  
+  Even if the final output is a PDF, designing with responsiveness in mind can help ensure that the layout adapts well to various paper sizes and formats.
+
+---
+
+### 6. Visual Enhancements
+
+- **Use Icons or Visual Cues:**  
+  Adding small icons or visual markers for key sections (like customer details or important totals) can make the report more engaging and easier to navigate.
+
+- **Clean Up Color Scheme:**  
+  Stick to a minimal color palette that enhances readability. Use one or two accent colors for headers and totals while keeping the rest of the text in a neutral color.
+
+---
+
+By applying these improvements, the report will become cleaner, more professional, and user-friendly—making it easier for your customers and internal teams to review and understand the quotation details. Let me know if you need further guidance or specific implementation examples for any of these suggestions!
