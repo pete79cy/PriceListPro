@@ -2282,7 +2282,6 @@ def register_routes(app):
         company.address_line2 = request.form.get('address_line2') or None
         company.phone = request.form.get('phone') or None
         company.email = request.form.get('email') or None
-        company.website = request.form.get('website') or None
         company.pdf_orientation = request.form.get('pdf_orientation', 'portrait')  # Default to portrait if not provided
         
         # Handle logo upload if provided
