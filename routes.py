@@ -2618,3 +2618,11 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error updating Viber mapping: {str(e)}")
             return jsonify({"status": "error", "message": str(e)}), 500
+
+    @app.route('/viber-docs', methods=['GET'])
+    @login_required
+    def viber_docs():
+        """
+        View documentation for the Viber integration
+        """
+        return render_template('viber_integration_docs.html')
