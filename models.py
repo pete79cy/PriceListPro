@@ -169,6 +169,22 @@ class Supplier(db.Model):
     
     def __repr__(self):
         return f'<Supplier {self.name}>'
+        
+    def to_dict(self):
+        """Convert supplier object to dictionary for JSON serialization"""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "contact_person": self.contact_person,
+            "email": self.email,
+            "phone": self.phone,
+            "address": self.address,
+            "notes": self.notes,
+            "is_inhouse": self.is_inhouse,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "product_count": len(self.products) if self.products else 0
+        }
 
 class SupplierProduct(db.Model):
     id = db.Column(db.Integer, primary_key=True)

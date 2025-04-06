@@ -1,36 +1,26 @@
+"""
+Logger setup for the application.
+"""
 import logging
-import os
-from datetime import datetime
 
-# Create logs directory if it doesn't exist
-os.makedirs('logs', exist_ok=True)
+# Create a custom logger
+logger = logging.getLogger('plant_pricing_system')
 
-# Configure logging
-def setup_logger():
-    """Set up logger for the application"""
-    # Create a logger
-    logger = logging.getLogger('plant_pricing_system')
-    logger.setLevel(logging.DEBUG)
+# Check if handlers are already configured to avoid duplicate log messages
+if not logger.handlers:
+    # Set the level of the logger
+    logger.setLevel(logging.INFO)
     
-    # Create a file handler with a unique name including timestamp
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    file_handler = logging.FileHandler(f'logs/app_{timestamp}.log')
-    file_handler.setLevel(logging.DEBUG)
-    
-    # Create a console handler
+    # Create a handler to send log messages to the console
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     
-    # Create a formatter and add it to the handlers
+    # Create a formatter for the logs
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
     
-    # Add the handlers to the logger
-    logger.addHandler(file_handler)
+    # Add the handler to the logger
     logger.addHandler(console_handler)
     
-    return logger
-
-# Create and export the logger
-logger = setup_logger()
+    # Prevent propagation to root logger to avoid duplicate logs
+    logger.propagate = False

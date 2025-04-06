@@ -1,253 +1,128 @@
 """
-Supplier Manager - Functions for managing supplier data
+Supplier management module with functions for searching and organizing supplier products.
 """
-import re
 from datetime import datetime
 from app import db
-from models import Supplier, SupplierProduct, QuotationItem
+from models import SupplierProduct, Supplier
+from sqlalchemy import or_
 from utils.logger import logger
 
-def update_supplier_from_quotation_item(item):
+def search_supplier_products(query='', supplier_id=None, limit=100):
     """
-    Update or create supplier product data based on a quotation item
+    Search for supplier products with filters.
     
     Args:
-        item (QuotationItem): The quotation item containing supplier information
-    
-    Returns:
-        bool: Whether the operation was successful
-    """
-    # Import Product here to avoid circular imports
-    from models import Product
-    
-    # If supplier is empty, set it to "In-house Production"
-    if not item.supplier:
-        item.supplier = "In-house Production"
-        # Save the updated item
-        db.session.commit()
-        
-    try:
-        # Get or create the supplier
-        supplier = Supplier.query.filter_by(name=item.supplier).first()
-            
-        if not supplier:
-            # Create a new supplier with the name
-            supplier = Supplier(
-                name=item.supplier,
-                is_inhouse="in-house" in item.supplier.lower() or item.supplier == "In-house Production"
-            )
-            db.session.add(supplier)
-            db.session.flush()  # Get the ID without committing yet
-            logger.info(f"Created new supplier: {supplier.name}")
-        
-        if not supplier:
-            logger.warning(f"Could not determine supplier for item {item.id}")
-            return False
-        
-        # First check the main products database for an existing product with the same scientific name and pot size
-        existing_product = None
-        if item.scientific_name and item.pot_size:
-            existing_product = Product.query.filter(
-                db.func.lower(Product.scientific_name) == item.scientific_name.lower(),
-                db.func.lower(Product.pot) == item.pot_size.lower()
-            ).first()
-            
-            if existing_product:
-                logger.info(f"Found existing product in database: {existing_product.name} ({existing_product.scientific_name}, {existing_product.pot})")
-                
-                # Check if this product is already in the supplier's list
-                supplier_product = SupplierProduct.query.filter_by(
-                    supplier_id=supplier.id,
-                    scientific_name=existing_product.scientific_name,
-                    pot_size=existing_product.pot
-                ).first()
-                
-                if supplier_product:
-                    # Update the existing supplier product
-                    supplier_product.price = item.selling_price
-                    supplier_product.cost_price = item.cost_price
-                    supplier_product.last_detected = datetime.utcnow()
-                    logger.info(f"Updated existing supplier product: {supplier_product.product_name}")
-                else:
-                    # Create a new supplier product linked to the existing product
-                    supplier_product = SupplierProduct(
-                        supplier_id=supplier.id,
-                        product_name=existing_product.name,
-                        scientific_name=existing_product.scientific_name,
-                        height=item.height,  # Keep height from quotation item
-                        pot_size=item.pot_size or existing_product.pot,  # Use item's pot size if available, otherwise product's
-                        price=item.selling_price,
-                        cost_price=item.cost_price,
-                        last_detected=datetime.utcnow()
-                    )
-                    db.session.add(supplier_product)
-                    logger.info(f"Created new supplier product linked to existing product: {supplier_product.product_name}")
-                
-                db.session.commit()
-                return True
-        
-        # If we're still here, no matching product was found in the main database
-        # Now check for existing supplier product or create a new one
-        # Check for existing supplier product with more flexible matching
-        # This helps avoid issues with height and pot_size field confusion
-        filter_conditions = [
-            SupplierProduct.supplier_id == supplier.id,
-            SupplierProduct.scientific_name == item.scientific_name  # Scientific name must match
-        ]
-        
-        # Add additional filters only if values are provided
-        if item.description:
-            filter_conditions.append(SupplierProduct.product_name == item.description)
-            
-        # For height and pot_size, we're more careful to avoid false matches
-        if item.pot_size:
-            filter_conditions.append(db.or_(
-                SupplierProduct.pot_size == item.pot_size,
-                SupplierProduct.height == item.pot_size  # Check in case fields were swapped
-            ))
-        
-        if item.height:
-            filter_conditions.append(db.or_(
-                SupplierProduct.height == item.height,
-                SupplierProduct.pot_size == item.height  # Check in case fields were swapped
-            ))
-            
-        supplier_product = SupplierProduct.query.filter(*filter_conditions).first()
-        
-        if supplier_product:
-            # Update the existing product
-            supplier_product.price = item.selling_price
-            supplier_product.cost_price = item.cost_price
-            supplier_product.last_detected = datetime.utcnow()
-            logger.info(f"Updated supplier product: {supplier_product.product_name}")
-        else:
-            # Validate height and pot_size fields to avoid common errors
-            height = item.height
-            pot_size = item.pot_size
-            
-            # Common pot size patterns like "1L", "10cm", "P9" etc
-            pot_size_pattern = re.compile(r'^\d+[LCPcp][Mm]?$|^P\d+$|^\d+(\.\d+)?L$')
-            
-            # If height looks like a pot size and pot_size is empty, swap them
-            if height and not pot_size and pot_size_pattern.match(height):
-                logger.warning(f"Height value '{height}' looks like a pot size. Moving to pot_size field.")
-                pot_size = height
-                height = None
-            
-            # Create a new supplier product with validated fields
-            supplier_product = SupplierProduct(
-                supplier_id=supplier.id,
-                product_name=item.description,
-                scientific_name=item.scientific_name,
-                height=height,
-                pot_size=pot_size,
-                price=item.selling_price,
-                cost_price=item.cost_price,
-                last_detected=datetime.utcnow()
-            )
-            db.session.add(supplier_product)
-            logger.info(f"Created new supplier product: {supplier_product.product_name}")
-        
-        # Commit changes
-        db.session.commit()
-        return True
-    
-    except Exception as e:
-        logger.error(f"Error updating supplier data: {str(e)}")
-        logger.error(f"Error details: {type(e).__name__}")
-        import traceback
-        logger.error(traceback.format_exc())
-        db.session.rollback()
-        return False
-
-def update_suppliers_from_quotation(quotation):
-    """
-    Update all supplier data from a quotation
-    
-    Args:
-        quotation (Quotation): The quotation containing items with supplier info
-        
-    Returns:
-        dict: Summary of operations (success_count, error_count)
-    """
-    success_count = 0
-    error_count = 0
-    
-    for item in quotation.items:
-        if update_supplier_from_quotation_item(item):
-            success_count += 1
-        else:
-            error_count += 1
-    
-    return {
-        'success_count': success_count,
-        'error_count': error_count
-    }
-
-def search_supplier_products(query, supplier_id=None, limit=50):
-    """
-    Search for supplier products based on keywords
-    
-    Args:
-        query (str): The search query
+        query (str): Search query for product name, scientific name, etc.
         supplier_id (int, optional): Filter by supplier ID
         limit (int, optional): Maximum number of results to return
         
     Returns:
-        list: Matching supplier products
+        list: List of SupplierProduct objects matching the search criteria
     """
-    if not query or len(query) < 2:
-        # Return recent products if query is too short
-        base_query = SupplierProduct.query.order_by(SupplierProduct.last_detected.desc())
-        if supplier_id:
-            base_query = base_query.filter_by(supplier_id=supplier_id)
-        return base_query.limit(limit).all()
+    # Start with a base query
+    products_query = SupplierProduct.query
     
-    # Convert query to lowercase for case-insensitive matching
-    search_term = f"%{query.lower()}%"
-    
-    # Build the search query
-    base_query = SupplierProduct.query.filter(
-        db.or_(
-            db.func.lower(SupplierProduct.product_name).like(search_term),
-            db.func.lower(SupplierProduct.scientific_name).like(search_term),
-            db.func.lower(SupplierProduct.height).like(search_term),
-            db.func.lower(SupplierProduct.pot_size).like(search_term)
-        )
-    )
-    
-    # Add supplier filter if specified
+    # Add filter by supplier if specified
     if supplier_id:
-        base_query = base_query.filter_by(supplier_id=supplier_id)
+        try:
+            supplier_id = int(supplier_id)
+            products_query = products_query.filter(SupplierProduct.supplier_id == supplier_id)
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid supplier_id in search_supplier_products: {supplier_id}")
     
-    # Add ordering and limit
-    results = base_query.order_by(SupplierProduct.last_detected.desc()).limit(limit).all()
+    # Add search filter if a query was provided
+    if query and query.strip():
+        search_query = f"%{query.strip()}%"
+        products_query = products_query.filter(
+            or_(
+                SupplierProduct.product_name.ilike(search_query),
+                SupplierProduct.scientific_name.ilike(search_query),
+                SupplierProduct.pot_size.ilike(search_query),
+                SupplierProduct.height.ilike(search_query),
+                SupplierProduct.notes.ilike(search_query)
+            )
+        )
     
-    return results
+    # Add join to supplier to get supplier info for sorting
+    products_query = products_query.join(Supplier)
+    
+    # Order by supplier name and then product name
+    products_query = products_query.order_by(Supplier.name, SupplierProduct.product_name)
+    
+    # Apply limit
+    if limit:
+        products_query = products_query.limit(limit)
+    
+    # Execute query and return results
+    return products_query.all()
 
-def get_supplier_by_name_or_create(name):
+def get_supplier_products_by_ids(product_ids):
     """
-    Get a supplier by name or create a new one if not found
+    Get supplier products by their IDs.
     
     Args:
-        name (str): Supplier name
+        product_ids (list): List of supplier product IDs
         
     Returns:
-        Supplier: The supplier object (existing or new)
+        list: List of SupplierProduct objects with the given IDs
     """
-    if not name:
-        return None
+    if not product_ids:
+        return []
+    
+    # Convert all IDs to integers
+    valid_ids = []
+    for pid in product_ids:
+        try:
+            valid_ids.append(int(pid))
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid product ID: {pid}")
+    
+    # Query and return results
+    return SupplierProduct.query.filter(SupplierProduct.id.in_(valid_ids)).all()
+
+def group_products_by_supplier(products):
+    """
+    Group a list of supplier products by their supplier.
+    
+    Args:
+        products (list): List of SupplierProduct objects
         
-    supplier = Supplier.query.filter(db.func.lower(Supplier.name) == name.lower()).first()
+    Returns:
+        dict: Dictionary with supplier names as keys and lists of products as values
+    """
+    result = {}
     
-    if not supplier:
-        is_inhouse = "in-house" in name.lower()
-        supplier = Supplier(
-            name=name,
-            is_inhouse=is_inhouse
-        )
-        db.session.add(supplier)
-        db.session.commit()
-        logger.info(f"Created new supplier: {name}")
+    for product in products:
+        supplier_name = product.supplier.name if product.supplier else "Unknown"
+        
+        if supplier_name not in result:
+            result[supplier_name] = []
+            
+        result[supplier_name].append(product)
     
-    return supplier
+    return result
+
+def update_supplier_product_last_detected(product_id):
+    """
+    Update the last_detected timestamp for a supplier product.
+    
+    Args:
+        product_id (int): ID of the supplier product
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        product = SupplierProduct.query.get(product_id)
+        if product:
+            product.last_detected = datetime.utcnow()
+            db.session.commit()
+            logger.info(f"Updated last_detected for supplier product ID {product_id}")
+            return True
+        else:
+            logger.warning(f"Supplier product ID {product_id} not found for updating last_detected")
+            return False
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating last_detected for supplier product ID {product_id}: {str(e)}")
+        return False
