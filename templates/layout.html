@@ -120,6 +120,15 @@
                             <li><a class="dropdown-item" href="{{ url_for('company_settings') }}"><i class="fas fa-building"></i> Company Settings</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('ai_settings') }}"><i class="fas fa-robot"></i> AI Document Insights</a></li>
                             {% if current_user.is_admin %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="aiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-robot"></i> AI Insights
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="aiDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('ai_settings') }}"><i class="fas fa-cog"></i> AI Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('ai_insights_feedback_dashboard') }}"><i class="fas fa-star"></i> Feedback Dashboard</a></li>
+                        </ul>
+                    </li>
                             {# Viber integration temporarily hidden for future use
                             <li><a class="dropdown-item" href="{{ url_for('viber_settings') }}"><i class="fab fa-viber"></i> Viber Integration</a></li>
                             #}

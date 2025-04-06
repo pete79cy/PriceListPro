@@ -98,5 +98,105 @@
     "timestamp": "2025-04-06T18:22:15.770399",
     "comment": "Very helpful insight, saved me time analyzing the data.",
     "insight_type": "seasonal_trends"
+  },
+  {
+    "id": 11,
+    "document_type": "invoice",
+    "document_id": 76,
+    "user_id": 5,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:30:26.643352",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "inventory_analysis"
+  },
+  {
+    "id": 12,
+    "document_type": "excel",
+    "document_id": 2,
+    "user_id": 4,
+    "rating": 3,
+    "timestamp": "2025-04-06T18:30:26.643964",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "pricing_anomalies"
+  },
+  {
+    "id": 13,
+    "document_type": "quotation",
+    "document_id": 61,
+    "user_id": 4,
+    "rating": 3,
+    "timestamp": "2025-04-06T18:30:26.657343",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "seasonal_trends"
+  },
+  {
+    "id": 14,
+    "document_type": "quotation",
+    "document_id": 37,
+    "user_id": 3,
+    "rating": 4,
+    "timestamp": "2025-04-06T18:30:26.658286",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "supplier_recommendations"
+  },
+  {
+    "id": 15,
+    "document_type": "pdf",
+    "document_id": 96,
+    "user_id": 1,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:30:26.659293",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "pricing_anomalies"
+  },
+  {
+    "id": 16,
+    "document_type": "pdf",
+    "document_id": 48,
+    "user_id": 1,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:30:26.660231",
+    "comment": "Extremely accurate prediction of price trends.",
+    "insight_type": "seasonal_trends"
+  },
+  {
+    "id": 17,
+    "document_type": "invoice",
+    "document_id": 99,
+    "user_id": 3,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:30:26.676786",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": null
+  },
+  {
+    "id": 18,
+    "document_type": "quotation",
+    "document_id": 48,
+    "user_id": 4,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:30:26.678492",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "seasonal_trends"
+  },
+  {
+    "id": 19,
+    "document_type": "invoice",
+    "document_id": 98,
+    "user_id": 1,
+    "rating": 4,
+    "timestamp": "2025-04-06T18:30:26.679417",
+    "comment": "The analysis missed some key factors.",
+    "insight_type": "pricing_anomalies"
+  },
+  {
+    "id": 20,
+    "document_type": "quotation",
+    "document_id": 20,
+    "user_id": 3,
+    "rating": 1,
+    "timestamp": "2025-04-06T18:30:26.680413",
+    "comment": "Helped me identify an issue with our supplier pricing.",
+    "insight_type": null
   }
 ]
