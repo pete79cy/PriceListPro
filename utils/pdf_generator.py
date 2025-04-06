@@ -881,11 +881,33 @@ def generate_custom_supplier_report_with_dejavu(quotation, selected_suppliers, s
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
 
-        # Font registration
+        # Font registration - using Ubuntu font (stored as DejaVu) for better Unicode support
         font_path = os.path.join(current_app.root_path, 'static/fonts/DejaVuSans.ttf')
+        bold_font_path = os.path.join(current_app.root_path, 'static/fonts/DejaVuSans-Bold.ttf')
+        italic_font_path = os.path.join(current_app.root_path, 'static/fonts/DejaVuSans-Italic.ttf')
+        
+        # Add regular font
         pdf.add_font("DejaVu", "", font_path, uni=True)
-        pdf.add_font("DejaVu", "B", font_path, uni=True)
-        pdf.add_font("DejaVu", "I", font_path, uni=True)
+        logger.info(f"Added Ubuntu Regular font (as DejaVu) from {font_path}")
+        
+        # Add bold font if available
+        if os.path.exists(bold_font_path):
+            pdf.add_font("DejaVu", "B", bold_font_path, uni=True)
+            logger.info(f"Added Ubuntu Bold font from {bold_font_path}")
+        else:
+            # Fall back to regular font for bold if bold font not available
+            pdf.add_font("DejaVu", "B", font_path, uni=True)
+            logger.info("Bold font not found, using regular font for bold style")
+            
+        # Add italic font if available
+        if os.path.exists(italic_font_path):
+            pdf.add_font("DejaVu", "I", italic_font_path, uni=True)
+            logger.info(f"Added Ubuntu Italic font from {italic_font_path}")
+        else:
+            # Fall back to regular font for italic if italic font not available
+            pdf.add_font("DejaVu", "I", font_path, uni=True)
+            logger.info("Italic font not found, using regular font for italic style")
+            
         pdf.set_font("DejaVu", '', 10)
 
         # Load company details
