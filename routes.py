@@ -192,12 +192,27 @@ def register_routes(app):
             # Get some stats for the dashboard
             pending_update_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
             
+            # Get counts for the dashboard
+            customer_count = Customer.query.count()
+            product_count = Product.query.count()
+            price_list_count = PriceList.query.count() 
+            invoice_count = Invoice.query.count()
+            
+            # Build stats dictionary
             stats = {
-                'customers': Customer.query.count(),
-                'products': Product.query.count(),
-                'price_lists': PriceList.query.count(),
-                'invoices': Invoice.query.count(),
+                'customers': customer_count,
+                'products': product_count,
+                'price_lists': price_list_count,
+                'invoices': invoice_count,
                 'pending_updates': pending_update_count
+            }
+            
+            # Dynamic card coloring based on thresholds
+            card_classes = {
+                'customers': 'bg-primary' if customer_count > 10 else 'bg-warning',
+                'products': 'bg-success' if product_count > 20 else 'bg-info',
+                'price_lists': 'bg-info' if price_list_count > 5 else 'bg-secondary',
+                'invoices': 'bg-warning' if invoice_count > 0 else 'bg-light text-dark'
             }
             
             # Get recent activities for the dashboard
@@ -269,7 +284,8 @@ def register_routes(app):
             invoice_labels_json = invoice_chart_json
             
             return render_template('dashboard_improved.html', 
-                                  stats=stats, 
+                                  stats=stats,
+                                  card_classes=card_classes,
                                   pending_update_count=pending_update_count,
                                   recent_activities=recent_activities,
                                   category_labels_json=category_labels_json,
@@ -323,12 +339,27 @@ def register_routes(app):
         # Get some stats for the dashboard
         pending_update_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
         
+        # Get counts for the dashboard
+        customer_count = Customer.query.count()
+        product_count = Product.query.count()
+        price_list_count = PriceList.query.count() 
+        invoice_count = Invoice.query.count()
+        
+        # Build stats dictionary
         stats = {
-            'customers': Customer.query.count(),
-            'products': Product.query.count(),
-            'price_lists': PriceList.query.count(),
-            'invoices': Invoice.query.count(),
+            'customers': customer_count,
+            'products': product_count,
+            'price_lists': price_list_count,
+            'invoices': invoice_count,
             'pending_updates': pending_update_count
+        }
+        
+        # Dynamic card coloring based on thresholds
+        card_classes = {
+            'customers': 'bg-primary' if customer_count > 10 else 'bg-warning',
+            'products': 'bg-success' if product_count > 20 else 'bg-info',
+            'price_lists': 'bg-info' if price_list_count > 5 else 'bg-secondary',
+            'invoices': 'bg-warning' if invoice_count > 0 else 'bg-light text-dark'
         }
         
         # Get recent activities for the dashboard
@@ -400,7 +431,8 @@ def register_routes(app):
         invoice_labels_json = invoice_chart_json
         
         return render_template('dashboard_improved.html', 
-                              stats=stats, 
+                              stats=stats,
+                              card_classes=card_classes,
                               pending_update_count=pending_update_count,
                               recent_activities=recent_activities,
                               category_labels_json=category_labels_json,

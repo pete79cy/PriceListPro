@@ -1,0 +1,71 @@
+Recommended Improvements
+1. Empty State for Recent Activities
+
+Make the dashboard friendlier when no activities exist:
+
+{% if recent_activities %}
+    <ul class="list-group">
+        {% for activity in recent_activities %}
+        <li class="list-group-item">{{ activity.date }}: {{ activity.description }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <div class="alert alert-info">No recent activities yet.</div>
+{% endif %}
+
+2. Dynamic Metric Coloring (optional)
+
+Change card color based on value thresholds:
+
+    Low customer count → warning
+
+    High avg order value → success
+
+Server-side example:
+
+card_classes = {
+    "customers": "bg-info" if stats.customers > 50 else "bg-warning",
+    ...
+}
+
+3. Auto-Submit Filter
+
+Use JavaScript to auto-submit the form on filter change:
+
+document.getElementById("customer-category-filter").addEventListener("change", function () {
+    document.getElementById("search-form").submit();
+});
+
+4. Add Sort Option
+
+Allow sorting by:
+
+    Name (A–Z)
+
+    Total Orders
+
+    Most Recent Activity
+
+Add to form:
+
+<div class="col-md-3">
+    <select class="form-select" name="sort">
+        <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Most Recent</option>
+        <option value="name" {% if sort == 'name' %}selected{% endif %}>Name A–Z</option>
+        <option value="orders" {% if sort == 'orders' %}selected{% endif %}>Total Orders</option>
+    </select>
+</div>
+
+🧪 Suggested Tests
+Test Case	Purpose
+Dashboard loads with all metrics populated	Verifies base functionality
+Filters work with search and dropdown simultaneously	Validates input combo handling
+Empty recent activities shows friendly message	UX resilience check
+Special characters in search query	Input sanitization and encoding
+🚀 Next Feature Ideas
+
+a. Add customer list/table with pagination under the dashboard
+b. Enable export of customer stats as CSV/Excel
+c. Implement activity filtering by date range (with a date picker)
+
+Let me know what you'd like help with next — I can write full code for any feature above.
