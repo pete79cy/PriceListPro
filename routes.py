@@ -148,8 +148,8 @@ def register_routes(app):
             
             # Create chart data
             category_chart_data = {
-                'labels': [category[0] if category[0] else 'Uncategorized' for category in product_categories],
-                'values': [category[1] for category in product_categories]
+                'labels': [str(category[0]) if category[0] else 'Uncategorized' for category in product_categories],
+                'values': [int(category[1]) for category in product_categories]
             }
             
             # Get invoices per month for past 6 months
@@ -163,8 +163,8 @@ def register_routes(app):
             
             # Create chart data for invoices
             invoice_chart_data = {
-                'labels': [count[0] for count in invoice_counts],
-                'values': [count[1] for count in invoice_counts]
+                'labels': [str(count[0]) for count in invoice_counts],
+                'values': [int(count[1]) for count in invoice_counts]
             }
             
             return render_template('dashboard_improved.html', 
@@ -238,8 +238,8 @@ def register_routes(app):
         
         # Create chart data
         category_chart_data = {
-            'labels': [category[0] if category[0] else 'Uncategorized' for category in product_categories],
-            'values': [category[1] for category in product_categories]
+            'labels': [str(category[0]) if category[0] else 'Uncategorized' for category in product_categories],
+            'values': [int(category[1]) for category in product_categories]
         }
         
         # Get invoices per month for past 6 months
@@ -253,8 +253,8 @@ def register_routes(app):
         
         # Create chart data for invoices
         invoice_chart_data = {
-            'labels': [count[0] for count in invoice_counts],
-            'values': [count[1] for count in invoice_counts]
+            'labels': [str(count[0]) for count in invoice_counts],
+            'values': [int(count[1]) for count in invoice_counts]
         }
         
         return render_template('dashboard_improved.html', 
