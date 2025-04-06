@@ -825,9 +825,9 @@ def register_routes(app):
             category_id = request.form.get('category_id')
             
             # Validate email if provided
-            from utils.validation import validate_email, sanitize_input
+            from utils.validation import is_valid_email, sanitize_input
             
-            if email and not validate_email(email):
+            if email and not is_valid_email(email):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers = Customer.query.all()
                 categories = CustomerCategory.query.all()
@@ -2585,7 +2585,7 @@ def register_routes(app):
     def add_supplier():
         """Add a new supplier or get existing one"""
         from utils.supplier_utils import get_supplier_by_name_or_create
-        from utils.validation import validate_email, sanitize_input
+        from utils.validation import is_valid_email, sanitize_input
         
         name = request.form.get('name', '').strip()
         contact_person = request.form.get('contact_person')
@@ -2600,7 +2600,7 @@ def register_routes(app):
             return redirect(url_for('suppliers'))
             
         # Validate email if provided
-        if email and not validate_email(email):
+        if email and not is_valid_email(email):
             flash('Invalid email address format. Please check and try again.', 'danger')
             return redirect(url_for('suppliers'))
             
@@ -2656,8 +2656,8 @@ def register_routes(app):
             return redirect(url_for('suppliers'))
             
         # Validate email if provided
-        from utils.validation import validate_email, sanitize_input
-        if email and not validate_email(email):
+        from utils.validation import is_valid_email, sanitize_input
+        if email and not is_valid_email(email):
             flash('Invalid email address format. Please check and try again.', 'danger')
             suppliers_list = Supplier.query.order_by(Supplier.name).all()
             return render_template('edit_supplier.html', supplier=supplier, suppliers=suppliers_list)
