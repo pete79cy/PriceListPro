@@ -1889,6 +1889,54 @@ def register_routes(app):
         suppliers_list = Supplier.query.order_by(Supplier.name).all()
         return render_template('suppliers.html', suppliers=suppliers_list)
         
+    @app.route('/api/suppliers')
+    @login_required
+    def api_suppliers():
+        """API endpoint to get suppliers as JSON"""
+        try:
+            format_type = request.args.get('format', 'detailed')
+            query = request.args.get('q', '')
+            
+            # Base query
+            suppliers_query = Supplier.query
+            
+            # Apply search filter if query provided
+            if query:
+                suppliers_query = suppliers_query.filter(
+                    db.or_(
+                        Supplier.name.ilike(f'%{query}%'),
+                        Supplier.contact_person.ilike(f'%{query}%'),
+                        Supplier.email.ilike(f'%{query}%')
+                    )
+                )
+            
+            # Order results by name
+            suppliers_list = suppliers_query.order_by(Supplier.name).all()
+            
+            # Log the number of suppliers found for debugging
+            logger.info(f"API suppliers found: {len(suppliers_list)}")
+            
+            # Format results based on requested format
+            if format_type == 'simple':
+                # Simple format: just id and name for dropdowns
+                result = [{"id": s.id, "name": s.name} for s in suppliers_list]
+            else:
+                # Detailed format: full supplier information
+                result = [s.to_dict() for s in suppliers_list]
+            
+            return jsonify({
+                "status": "success",
+                "count": len(result),
+                "suppliers": result
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in API suppliers endpoint: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": str(e)
+            }), 500
+        
     @app.route('/add_supplier', methods=['POST'])
     @login_required
     def add_supplier():
