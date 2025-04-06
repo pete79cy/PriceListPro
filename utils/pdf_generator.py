@@ -1,82 +1,11 @@
 import os
 import uuid
 import base64
-import io
-import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import render_template, current_app
 from weasyprint import HTML
-from fpdf import FPDF
 from utils.logger import logger
 from models import CompanySettings
-
-def sanitize_text_for_latin1(text):
-    """
-    Sanitize text to ensure it's compatible with latin-1 encoding
-    
-    Args:
-        text: Text to sanitize
-        
-    Returns:
-        str: Sanitized text compatible with latin-1 encoding
-    """
-    if text is None:
-        return ""
-        
-    # Replace common problematic characters
-    text = str(text)
-    text = text.replace('€', 'EUR')
-    text = text.replace('£', 'GBP')
-    text = text.replace('©', '(c)')
-    text = text.replace('®', '(R)')
-    text = text.replace('™', '(TM)')
-    text = text.replace('…', '...')
-    
-    # Replace any other characters outside of latin-1 range with closest ASCII equivalent
-    result = ""
-    for char in text:
-        try:
-            char.encode('latin-1')
-            result += char
-        except UnicodeEncodeError:
-            # If can't encode to latin-1, replace with '?'
-            result += '?'
-    
-    return result
-
-class PDF(FPDF):
-    """Custom PDF class with header, footer and watermark capabilities"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Store company settings object
-        self.company = None  # Will be set later to a CompanySettings instance
-        
-    # Type hint accessor methods for company property
-    def set_company(self, company_settings):
-        """Set the company settings object safely"""
-        self.company = company_settings
-    
-    def header(self):
-        if self.company:
-            self.set_font("Helvetica", 'B', 12)
-            self.cell(0, 10, self.company.name, ln=True)
-            self.set_font("Helvetica", '', 10)
-            self.cell(0, 5, self.company.address_line1 or '', ln=True)
-            self.cell(0, 5, self.company.email or '', ln=True)
-            self.ln(5)
-
-    def footer(self):
-        self.set_y(-15)
-        self.set_font("Helvetica", 'I', 8)
-        self.set_text_color(128)
-        self.cell(0, 10, f"Page {self.page_no()} / {{nb}}", align='C')
-
-    def add_watermark(self, text):
-        self.set_font("Helvetica", 'B', 40)
-        self.set_text_color(240, 240, 240)
-        self.rotate(45, x=self.w / 3, y=self.h / 2)
-        self.text(self.w / 3, self.h / 2, text)
-        self.rotate(0)
 
 def get_logo_data(company):
     """
@@ -412,14 +341,10 @@ def generate_supplier_catalog_pdf(supplier, products):
         logger.error(f"Error generating supplier catalog PDF: {str(e)}")
         raise
         
-
-
-def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields,
-                                    include_prices=True, include_company_header=True,
-                                    include_terms=True, group_by_supplier=True,
-                                    notes=None):
+def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields, include_prices=True, 
+                                   include_company_header=True, include_terms=True, group_by_supplier=True):
     """
-    Generate a custom PDF report for selected suppliers from a quotation using FPDF
+    Generate a custom PDF report for selected suppliers from a quotation
     
     Args:
         quotation: The Quotation object
@@ -429,175 +354,80 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
         include_company_header: Whether to include company header
         include_terms: Whether to include terms and conditions
         group_by_supplier: Whether to group items by supplier
-        notes: Optional notes to include in the report
         
     Returns:
         tuple: (PDF content as bytes, filename)
     """
     try:
-        pdf = PDF()
-        pdf.alias_nb_pages()
-        pdf.add_page()
-
-        # Company settings
+        # Get company settings if header should be included
         company = None
+        logo_data = None
+        
         if include_company_header:
             company = CompanySettings.query.first()
             if not company:
                 company = CompanySettings()  # Use default values if no settings exist
-            pdf.set_company(company)
+            
+            # Get logo data using the helper function (will use static logo if company logo is not available)
+            logo_data = get_logo_data(company)
         
-        # Cover page content
-        pdf.set_font("Helvetica", 'B', 16)
-        pdf.cell(0, 10, f"Quotation Report: {quotation.quotation_number}", ln=True)
-        pdf.set_font("Helvetica", '', 12)
-        pdf.cell(0, 10, f"Date Issued: {quotation.quotation_date.strftime('%Y-%m-%d')}", ln=True)
+        # Set the orientation based on company settings or default to landscape for reports
+        orientation = company.pdf_orientation if company else "landscape"
         
-        # Valid until date (30 days from quotation date if not specified)
-        valid_until = quotation.quotation_date + timedelta(days=30)
-        pdf.cell(0, 10, f"Valid Until: {valid_until.strftime('%Y-%m-%d')}", ln=True)
-        
-        # Handle potential non-latin1 characters in customer name
-        customer_name = quotation.customer.name if quotation.customer else 'N/A'
-        # Sanitize customer name for latin-1 encoding
-        customer_name = sanitize_text_for_latin1(customer_name)
-        
-        pdf.cell(0, 10, f"Customer: {customer_name}", ln=True)
-        # Join suppliers but ensure they don't contain non-latin1 characters
-        safe_suppliers = [sanitize_text_for_latin1(s) for s in selected_suppliers]
-        pdf.cell(0, 10, f"Suppliers Included: {', '.join(safe_suppliers)}", ln=True)
-        pdf.ln(10)
-
-        # Add watermark
-        pdf.add_watermark("CONFIDENTIAL")
-
-        # Group items by supplier if needed
+        # Group items by supplier
         grouped_items = {}
+        supplier_totals = {}
         
         for item in quotation.items:
             # Only include items from selected suppliers
             if item.supplier in selected_suppliers:
                 if item.supplier not in grouped_items:
                     grouped_items[item.supplier] = []
+                    supplier_totals[item.supplier] = {
+                        'qty': 0,
+                        'cost': 0
+                    }
                 
                 grouped_items[item.supplier].append(item)
-
-        # Process by supplier
-        for supplier_name in selected_suppliers:
-            items = grouped_items.get(supplier_name, [])
-            if not items:
-                continue
-
-            pdf.set_font("Helvetica", 'B', 14)
-            pdf.set_text_color(0)
-            pdf.cell(0, 10, f"Supplier: {supplier_name}", ln=True)
-            pdf.set_font("Helvetica", 'B', 10)
-
-            # Table headers
-            headers = ["Item", "Qty"]
-            if include_prices:
-                headers.extend(["Unit Price", "Total"])
-            
-            # Add other selected fields from selected_fields
-            for field in selected_fields:
-                if field not in ['description', 'quantity', 'selling_price', 'total']:
-                    headers.append(field.replace('_', ' ').title())
-            
-            # Calculate column width based on page width and number of columns
-            col_width = pdf.w / len(headers)
-            
-            # Print headers
-            for header in headers:
-                pdf.cell(col_width, 8, header, border=1)
-            pdf.ln()
-
-            # Table rows
-            pdf.set_font("Helvetica", '', 10)
-            total = 0
-            fill = False
-            
-            for item in items:
-                pdf.set_fill_color(245 if fill else 255)
                 
-                # Item description - Safely handle special characters
-                safe_description = sanitize_text_for_latin1(item.description[:30])
-                pdf.cell(col_width, 8, safe_description, border=1, fill=fill)
+                # Calculate totals
+                supplier_totals[item.supplier]['qty'] += item.quantity
                 
-                # Quantity
-                pdf.cell(col_width, 8, str(item.quantity), border=1, fill=fill)
+                # Debug logging to trace cost_price values
+                logger.debug(f"Item: {item.id}, Description: {item.description}, Cost Price: {item.cost_price}")
                 
-                # Price columns if included
-                if include_prices:
-                    # Use a standard currency symbol that's compatible with latin-1 encoding
-                    currency_symbol = "$" if quotation.currency == "€" else quotation.currency
-                    pdf.cell(col_width, 8, f"{currency_symbol}{item.selling_price:.2f}", border=1, fill=fill)
-                    line_total = item.selling_price * item.quantity
-                    total += line_total
-                    pdf.cell(col_width, 8, f"{currency_symbol}{line_total:.2f}", border=1, fill=fill)
+                # Make sure we correctly handle the cost_price field (could be None)
+                cost_price = 0
+                if hasattr(item, 'cost_price') and item.cost_price is not None:
+                    cost_price = float(item.cost_price)
                 
-                # Additional fields
-                for field in selected_fields:
-                    if field not in ['description', 'quantity', 'selling_price', 'total']:
-                        value = getattr(item, field, '')
-                        if value is not None:
-                            # Sanitize the value for latin-1 encoding
-                            safe_value = sanitize_text_for_latin1(str(value)[:20])
-                            pdf.cell(col_width, 8, safe_value, border=1, fill=fill)
-                        else:
-                            pdf.cell(col_width, 8, '', border=1, fill=fill)
-                
-                pdf.ln()
-                fill = not fill
-
-            # Supplier subtotal
-            if include_prices:
-                pdf.set_font("Helvetica", 'B', 10)
-                pdf.cell(col_width * 3, 8, "Subtotal", border=1)
-                # Use a standard currency symbol that's compatible with latin-1 encoding
-                currency_symbol = "$" if quotation.currency == "€" else quotation.currency
-                pdf.cell(col_width, 8, f"{currency_symbol}{total:.2f}", border=1)
-                pdf.ln(15)
-
-        # Notes section
-        if notes:
-            pdf.add_page()
-            pdf.set_font("Helvetica", 'I', 10)
-            pdf.set_text_color(50)
-            # Sanitize notes for latin-1 encoding
-            safe_notes = sanitize_text_for_latin1(notes)
-            pdf.multi_cell(0, 10, f"Notes: {safe_notes}", border=1)
-            pdf.ln()
-
-        # Terms and Conditions
-        if include_terms and company:
-            pdf.add_page()
-            pdf.set_font("Helvetica", 'B', 12)
-            pdf.cell(0, 10, "Terms and Conditions", ln=True)
-            pdf.set_font("Helvetica", '', 10)
-            terms_text = "Standard terms apply. All prices are subject to change."
-            if hasattr(company, 'terms') and company.terms:
-                terms_text = company.terms
-            # Sanitize terms for latin-1 encoding
-            safe_terms = sanitize_text_for_latin1(terms_text)
-            pdf.multi_cell(0, 6, safe_terms)
-            pdf.ln()
-
-        # Final output - get PDF as string and convert to bytes
-        pdf_output = io.BytesIO()
-        # Get PDF as string (dest='S') and convert to bytes with latin1 encoding
-        pdf_str = pdf.output(dest='S')
-        if isinstance(pdf_str, str):
-            pdf_bytes = pdf_str.encode('latin1')  # For older FPDF versions
-        else:
-            pdf_bytes = pdf_str  # For newer FPDF versions
-            
-        pdf_output.write(pdf_bytes)
-        pdf_output.seek(0)
+                supplier_totals[item.supplier]['cost'] += item.quantity * cost_price
+        
+        # Generate HTML content from the template
+        html_content = render_template(
+            'pdf/custom_supplier_report_template.html',
+            quotation=quotation,
+            grouped_items=grouped_items,
+            supplier_totals=supplier_totals,
+            selected_fields=selected_fields,
+            include_prices=include_prices,
+            include_company_header=include_company_header,
+            include_terms=include_terms,
+            group_by_supplier=group_by_supplier,
+            currency=quotation.currency,
+            date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
+            company=company,
+            logo_data=logo_data,
+            orientation=orientation
+        )
         
         # Generate a unique filename
         filename = f"supplier_report_{quotation.quotation_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         
-        return pdf_output.read(), filename
+        # Generate PDF from HTML
+        pdf_content = HTML(string=html_content).write_pdf()
+        
+        return pdf_content, filename
     
     except Exception as e:
         logger.error(f"Error generating custom supplier report PDF: {str(e)}")
