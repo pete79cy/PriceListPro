@@ -102,63 +102,67 @@
     <!-- Stats Cards Row -->
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100 position-relative">
-                <div class="card-body text-center">
-                    <i class="fas fa-users text-primary fa-2x mb-2"></i>
-                    <h1 class="display-4 text-primary fw-bold">{{ stats.customers }}</h1>
-                    <h5 class="card-title">Customers</h5>
-                    <p class="card-text text-muted">Total registered customers</p>
+            <a href="{{ url_for('customers') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 position-relative">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users text-primary fa-2x mb-2"></i>
+                        <h1 class="display-4 text-primary fw-bold">{{ stats.customers }}</h1>
+                        <h5 class="card-title">Customers</h5>
+                        <p class="card-text text-muted">Total registered customers</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 text-center">
+                        <span class="btn btn-sm btn-outline-primary">View Customers</span>
+                    </div>
                 </div>
-                <a href="{{ url_for('customers') }}" class="stretched-link"></a>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-sm btn-outline-primary">View Customers</span>
-                </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100 position-relative">
-                <div class="card-body text-center">
-                    <i class="fas fa-leaf text-success fa-2x mb-2"></i>
-                    <h1 class="display-4 text-success fw-bold">{{ stats.products }}</h1>
-                    <h5 class="card-title">Products</h5>
-                    <p class="card-text text-muted">Total products in database</p>
+            <a href="{{ url_for('products') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 position-relative">
+                    <div class="card-body text-center">
+                        <i class="fas fa-leaf text-success fa-2x mb-2"></i>
+                        <h1 class="display-4 text-success fw-bold">{{ stats.products }}</h1>
+                        <h5 class="card-title">Products</h5>
+                        <p class="card-text text-muted">Total products in database</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 text-center">
+                        <span class="btn btn-sm btn-outline-success">View Products</span>
+                    </div>
                 </div>
-                <a href="{{ url_for('products') }}" class="stretched-link"></a>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-sm btn-outline-success">View Products</span>
-                </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100 position-relative">
-                <div class="card-body text-center">
-                    <i class="fas fa-tags text-info fa-2x mb-2"></i>
-                    <h1 class="display-4 text-info fw-bold">{{ stats.price_lists }}</h1>
-                    <h5 class="card-title">Price Lists</h5>
-                    <p class="card-text text-muted">Total price list entries</p>
+            <a href="{{ url_for('price_lists') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 position-relative">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tags text-info fa-2x mb-2"></i>
+                        <h1 class="display-4 text-info fw-bold">{{ stats.price_lists }}</h1>
+                        <h5 class="card-title">Price Lists</h5>
+                        <p class="card-text text-muted">Total price list entries</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 text-center">
+                        <span class="btn btn-sm btn-outline-info">View Price Lists</span>
+                    </div>
                 </div>
-                <a href="{{ url_for('price_lists') }}" class="stretched-link"></a>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-sm btn-outline-info">View Price Lists</span>
-                </div>
-            </div>
+            </a>
         </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm h-100 position-relative">
-                <div class="card-body text-center">
-                    <i class="fas fa-file-invoice text-warning fa-2x mb-2"></i>
-                    <h1 class="display-4 text-warning fw-bold">{{ stats.invoices }}</h1>
-                    <h5 class="card-title">Invoices</h5>
-                    <p class="card-text text-muted">Total invoices processed</p>
+            <a href="{{ url_for('invoices') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 position-relative">
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-invoice text-warning fa-2x mb-2"></i>
+                        <h1 class="display-4 text-warning fw-bold">{{ stats.invoices }}</h1>
+                        <h5 class="card-title">Invoices</h5>
+                        <p class="card-text text-muted">Total invoices processed</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 text-center">
+                        <span class="btn btn-sm btn-outline-warning">View Invoices</span>
+                    </div>
                 </div>
-                <a href="{{ url_for('invoices') }}" class="stretched-link"></a>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-sm btn-outline-warning">View Invoices</span>
-                </div>
-            </div>
+            </a>
         </div>
     </div>
     
@@ -268,6 +272,69 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Recent Activity -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i> Recent Activity</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% if recent_activities %}
+                        {% for item in recent_activities %}
+                        <div class="list-group-item list-group-item-action py-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="{{ item.icon }} text-{{ 'danger' if item.type == 'price_update' and 'Pending' in item.message else 'success' if item.type == 'invoice' else 'primary' if item.type == 'upload' else 'warning' if item.type == 'quotation' else 'secondary' }} fa-lg"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0 small">{{ item.message }}</p>
+                                    <small class="text-muted">{{ item.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item py-3">
+                            <p class="text-muted mb-0 text-center">No recent activity to display</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section - After recent activity -->
+    <div class="row mt-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i> Product Categories</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Distribution of products by category</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Monthly Invoices</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px">
+                        <canvas id="invoiceChart"></canvas>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Number of invoices per month</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -276,12 +343,71 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <script>
-// Ready for future charts to be added here
-// Example placeholder for future feature:
-// const ctx = document.getElementById('activity-chart').getContext('2d');
-// const myChart = new Chart(ctx, { ... }); 
+// Initialize charts once the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Product Categories Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ category_chart_data.labels | tojson }},
+            datasets: [{
+                data: {{ category_chart_data.values | tojson }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(199, 199, 199, 0.7)',
+                    'rgba(83, 102, 255, 0.7)',
+                    'rgba(40, 159, 64, 0.7)',
+                    'rgba(210, 199, 199, 0.7)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // Invoices Per Month Chart
+    const invoiceCtx = document.getElementById('invoiceChart').getContext('2d');
+    const invoiceChart = new Chart(invoiceCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ invoice_chart_data.labels | tojson }},
+            datasets: [{
+                label: 'Invoices',
+                data: {{ invoice_chart_data.values | tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+});
 </script>
 {% endblock %}
 
 {% endblock %}
-

@@ -3,13 +3,12 @@ import uuid
 import re
 import traceback
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
 from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings
 from flask_login import login_user, logout_user, login_required, current_user
-from datetime import datetime
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
@@ -20,6 +19,78 @@ from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
 from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
 from utils.feedback_collector import get_feedback_collector
+
+# Helper function to get recent activities 
+def get_recent_activities(limit=5):
+    """
+    Get a list of recent activities from various sources.
+    
+    Args:
+        limit (int): Maximum number of activities to return
+        
+    Returns:
+        list: List of activity dictionaries with timestamp and message
+    """
+    activities = []
+    
+    # Add recent file uploads
+    uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(limit).all()
+    for upload in uploads:
+        timestamp = upload.upload_date
+        file_type = upload.file_type.capitalize()
+        customer_name = "N/A"
+        if upload.customer_id:
+            customer = Customer.query.get(upload.customer_id)
+            if customer:
+                customer_name = customer.name
+        
+        activities.append({
+            'timestamp': timestamp,
+            'message': f"{file_type} upload: {upload.filename} for {customer_name}",
+            'type': 'upload',
+            'icon': 'fas fa-upload'
+        })
+    
+    # Add recent invoices
+    invoices = Invoice.query.order_by(Invoice.created_at.desc()).limit(limit).all()
+    for invoice in invoices:
+        customer = Customer.query.get(invoice.customer_id)
+        customer_name = customer.name if customer else "Unknown Customer"
+        activities.append({
+            'timestamp': invoice.created_at,
+            'message': f"Invoice {invoice.invoice_number} created for {customer_name}",
+            'type': 'invoice',
+            'icon': 'fas fa-file-invoice'
+        })
+    
+    # Add recent price update requests
+    updates = ProductUpdateRequest.query.order_by(ProductUpdateRequest.created_at.desc()).limit(limit).all()
+    for update in updates:
+        product = Product.query.get(update.product_id)
+        product_name = product.name if product else "Unknown Product"
+        status = update.status.capitalize()
+        activities.append({
+            'timestamp': update.created_at,
+            'message': f"Price update for {product_name}: {update.old_price} → {update.new_price} ({status})",
+            'type': 'price_update',
+            'icon': 'fas fa-tags'
+        })
+        
+    # Add recent quotations
+    quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(limit).all()
+    for quotation in quotations:
+        customer = Customer.query.get(quotation.customer_id)
+        customer_name = customer.name if customer else "Unknown Customer"
+        activities.append({
+            'timestamp': quotation.created_at,
+            'message': f"Quotation {quotation.quotation_number} created for {customer_name}",
+            'type': 'quotation',
+            'icon': 'fas fa-file-contract'
+        })
+    
+    # Sort all activities by timestamp (newest first) and limit the total
+    activities.sort(key=lambda x: x['timestamp'], reverse=True)
+    return activities[:limit]
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -65,7 +136,43 @@ def register_routes(app):
                 'invoices': Invoice.query.count(),
                 'pending_updates': pending_update_count
             }
-            return render_template('dashboard_improved.html', stats=stats, pending_update_count=pending_update_count)
+            
+            # Get recent activities for the dashboard
+            recent_activities = get_recent_activities(limit=5)
+            
+            # Get data for charts
+            # Get product categories for pie chart
+            product_categories = db.session.query(Product.category, db.func.count(Product.id)).filter(
+                Product.category.isnot(None)
+            ).group_by(Product.category).all()
+            
+            # Create chart data
+            category_chart_data = {
+                'labels': [category[0] if category[0] else 'Uncategorized' for category in product_categories],
+                'values': [category[1] for category in product_categories]
+            }
+            
+            # Get invoices per month for past 6 months
+            six_months_ago = datetime.utcnow() - timedelta(days=180)
+            invoice_counts = db.session.query(
+                db.func.strftime('%Y-%m', Invoice.invoice_date).label('month'), 
+                db.func.count(Invoice.id)
+            ).filter(
+                Invoice.invoice_date >= six_months_ago
+            ).group_by('month').order_by('month').all()
+            
+            # Create chart data for invoices
+            invoice_chart_data = {
+                'labels': [count[0] for count in invoice_counts],
+                'values': [count[1] for count in invoice_counts]
+            }
+            
+            return render_template('dashboard_improved.html', 
+                                  stats=stats, 
+                                  pending_update_count=pending_update_count,
+                                  recent_activities=recent_activities,
+                                  category_chart_data=category_chart_data,
+                                  invoice_chart_data=invoice_chart_data)
         # Otherwise show the login page
         return render_template('index.html')
         
@@ -119,7 +226,43 @@ def register_routes(app):
             'invoices': Invoice.query.count(),
             'pending_updates': pending_update_count
         }
-        return render_template('dashboard_improved.html', stats=stats, pending_update_count=pending_update_count)
+        
+        # Get recent activities for the dashboard
+        recent_activities = get_recent_activities(limit=5)
+        
+        # Get data for charts
+        # Get product categories for pie chart
+        product_categories = db.session.query(Product.category, db.func.count(Product.id)).filter(
+            Product.category.isnot(None)
+        ).group_by(Product.category).all()
+        
+        # Create chart data
+        category_chart_data = {
+            'labels': [category[0] if category[0] else 'Uncategorized' for category in product_categories],
+            'values': [category[1] for category in product_categories]
+        }
+        
+        # Get invoices per month for past 6 months
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
+        invoice_counts = db.session.query(
+            db.func.strftime('%Y-%m', Invoice.invoice_date).label('month'), 
+            db.func.count(Invoice.id)
+        ).filter(
+            Invoice.invoice_date >= six_months_ago
+        ).group_by('month').order_by('month').all()
+        
+        # Create chart data for invoices
+        invoice_chart_data = {
+            'labels': [count[0] for count in invoice_counts],
+            'values': [count[1] for count in invoice_counts]
+        }
+        
+        return render_template('dashboard_improved.html', 
+                              stats=stats, 
+                              pending_update_count=pending_update_count,
+                              recent_activities=recent_activities,
+                              category_chart_data=category_chart_data,
+                              invoice_chart_data=invoice_chart_data)
     
     @app.route('/uploads', methods=['GET'])
     @login_required
