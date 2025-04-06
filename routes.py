@@ -791,22 +791,65 @@ def register_routes(app):
         results = search_price_list(query, customer_id)
         return jsonify(results)
     
+    @app.route('/api/categories', methods=['GET'])
+    @login_required
+    def get_categories():
+        """API endpoint to get all customer categories"""
+        try:
+            categories = CustomerCategory.query.order_by(CustomerCategory.name).all()
+            
+            # Format categories as JSON
+            categories_list = [{
+                'id': c.id,
+                'name': c.name,
+                'description': c.description,
+                'customer_count': Customer.query.filter_by(category_id=c.id).count()
+            } for c in categories]
+            
+            return jsonify(categories_list)
+        except Exception as e:
+            logger.error(f"Error in API categories endpoint: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
     @app.route('/api/customers/search', methods=['GET'])
     @login_required
     def search_customers():
         """API endpoint for searching customers by name, email or phone"""
         query = request.args.get('q', '')
+        category_id = request.args.get('category_id')
         
-        if len(query) < 2:
+        if len(query) < 2 and not category_id:
             return jsonify([])
             
-        customers = Customer.query.filter(
-            db.or_(
-                Customer.name.ilike(f'%{query}%'),
-                Customer.email.ilike(f'%{query}%'),
-                Customer.phone.ilike(f'%{query}%')
+        # Build the filter conditions
+        filter_conditions = []
+        
+        if query:
+            filter_conditions.append(
+                db.or_(
+                    Customer.name.ilike(f'%{query}%'),
+                    Customer.email.ilike(f'%{query}%'),
+                    Customer.phone.ilike(f'%{query}%')
+                )
             )
-        ).limit(20).all()
+        
+        if category_id:
+            try:
+                category_id = int(category_id)
+                filter_conditions.append(Customer.category_id == category_id)
+            except (ValueError, TypeError):
+                # If category_id is not a valid integer, ignore it
+                logger.warning(f"Invalid category_id provided: {category_id}")
+                pass
+        
+        # Apply filters
+        if filter_conditions:
+            query_obj = Customer.query.filter(db.and_(*filter_conditions))
+        else:
+            query_obj = Customer.query
+            
+        # Order by name and limit results
+        customers = query_obj.order_by(Customer.name).limit(50).all()
         
         # Get customer categories for display
         categories = {}
@@ -814,16 +857,51 @@ def register_routes(app):
             categories[category.id] = category.name
             
         # Format results with additional information
-        results = [{
-            'id': c.id,
-            'name': c.name,
-            'email': c.email or '',
-            'phone': c.phone or '',
-            'category': categories.get(c.category_id, 'Uncategorized'),
-            'category_id': c.category_id,
-            'address': c.address or '',
-            'created_at': c.created_at.strftime('%Y-%m-%d') if c.created_at else ''
-        } for c in customers]
+        results = []
+        for c in customers:
+            # Count related data
+            invoice_count = len(c.invoices)
+            price_list_count = len(c.price_lists)
+            contact_count = len(c.contacts)
+            
+            # Calculate last order date
+            last_order_date = None
+            if c.invoices:
+                invoice_dates = [i.invoice_date for i in c.invoices if i.invoice_date]
+                if invoice_dates:
+                    last_order_date = max(invoice_dates)
+            
+            # Calculate last contact date
+            last_contact_date = None
+            if c.contacts:
+                contact_dates = [co.contact_date for co in c.contacts if co.contact_date]
+                if contact_dates:
+                    last_contact_date = max(contact_dates)
+            
+            result = {
+                'id': c.id,
+                'name': c.name,
+                'email': c.email or '',
+                'phone': c.phone or '',
+                'category': categories.get(c.category_id, 'Uncategorized'),
+                'category_id': c.category_id,
+                'address': c.address or '',
+                'created_at': c.created_at.strftime('%Y-%m-%d') if c.created_at else '',
+                'invoice_count': invoice_count,
+                'price_list_count': price_list_count,
+                'contact_count': contact_count,
+                'last_order_date': last_order_date.strftime('%Y-%m-%d') if last_order_date else None,
+                'last_contact_date': last_contact_date.strftime('%Y-%m-%d %H:%M') if last_contact_date else None,
+            }
+            
+            # Validate email if present
+            if c.email:
+                from utils.validation import is_valid_email
+                result['email_valid'] = is_valid_email(c.email)
+            else:
+                result['email_valid'] = None
+                
+            results.append(result)
         
         return jsonify(results)
     

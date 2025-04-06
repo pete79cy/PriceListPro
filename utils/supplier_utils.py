@@ -1,229 +1,190 @@
 """
-Utility functions for supplier management.
-
-This module provides reusable functions for CRUD operations on suppliers,
-with proper error handling, validation, and standardized return values.
+Supplier utilities for the application.
+This module provides functions to manage suppliers with data validation.
 """
+import logging
+import re
 from datetime import datetime
+
 from sqlalchemy.exc import IntegrityError
 from app import db
 from models import Supplier
-from utils.logger import logger
-from utils.validation import validate_email
+from utils.validation import is_valid_email, sanitize_input
 
-def get_supplier_by_name_or_create(
-    name, 
-    contact_person=None, 
-    email=None, 
-    phone=None, 
-    address=None, 
-    notes=None, 
-    is_inhouse=False
-):
+logger = logging.getLogger(__name__)
+
+def get_supplier_by_name_or_create(name, email=None, phone=None, contact_person=None, address=None):
     """
     Get a supplier by name or create a new one if it doesn't exist.
+    Validates email before adding to the database.
     
     Args:
         name (str): The name of the supplier
-        contact_person (str, optional): Contact person name
-        email (str, optional): Contact email
-        phone (str, optional): Contact phone number
-        address (str, optional): Physical address
-        notes (str, optional): Additional notes
-        is_inhouse (bool, optional): Whether this is an in-house production
+        email (str, optional): The email of the supplier
+        phone (str, optional): The phone number of the supplier
+        contact_person (str, optional): The contact person of the supplier
+        address (str, optional): The address of the supplier
         
     Returns:
-        tuple: (supplier, created) where supplier is the Supplier object and
-               created is a boolean indicating if a new supplier was created or
-               (None, False) if validation fails
+        tuple: (Supplier object, bool indicating if it was created)
     """
-    # Basic validation - name is required
-    if not name or not name.strip():
-        logger.warning("Attempted to get or create supplier with empty name")
+    # Sanitize inputs
+    name = sanitize_input(name)
+    email = sanitize_input(email) if email else None
+    phone = sanitize_input(phone) if phone else None
+    contact_person = sanitize_input(contact_person) if contact_person else None
+    address = sanitize_input(address) if address else None
+    
+    if not name:
+        logger.error("Cannot create supplier with empty name")
         return None, False
     
-    # Validate email if provided
-    if email and not validate_email(email):
-        logger.warning(f"Attempted to create supplier with invalid email: {email}")
-        return None, False
+    # Check if email is valid
+    if email and not is_valid_email(email):
+        logger.warning(f"Invalid email for supplier {name}: {email}")
+        email = None  # Clear invalid email
     
-    # Normalize the name (strip whitespace)
-    name = name.strip()
-    
-    # Check if supplier already exists (case-insensitive)
-    supplier = Supplier.query.filter(db.func.lower(Supplier.name) == db.func.lower(name)).first()
+    # Try to find existing supplier
+    supplier = Supplier.query.filter(Supplier.name == name).first()
     
     if supplier:
-        logger.info(f"Found existing supplier: {supplier.name}")
-        return supplier, False
-    
-    try:
+        created = False
+        # Update supplier details if provided and different
+        modified = False
+        
+        if email and email != supplier.email:
+            supplier.email = email
+            modified = True
+            
+        if phone and phone != supplier.phone:
+            supplier.phone = phone
+            modified = True
+            
+        if contact_person and contact_person != supplier.contact_person:
+            supplier.contact_person = contact_person
+            modified = True
+            
+        if address and address != supplier.address:
+            supplier.address = address
+            modified = True
+            
+        if modified:
+            supplier.updated_at = datetime.utcnow()
+            db.session.commit()
+            logger.info(f"Updated supplier: {name}")
+    else:
         # Create new supplier
         supplier = Supplier(
             name=name,
-            contact_person=contact_person,
             email=email,
             phone=phone,
-            address=address,
-            notes=notes,
-            is_inhouse=is_inhouse,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            contact_person=contact_person,
+            address=address
         )
         
-        db.session.add(supplier)
-        db.session.commit()
-        
-        logger.info(f"Created new supplier: {supplier.name}")
-        return supplier, True
-        
-    except IntegrityError as e:
-        # Handle the case where a supplier with this name might have been created
-        # in another concurrent request (race condition)
-        db.session.rollback()
-        logger.error(f"Integrity error creating supplier '{name}': {str(e)}")
-        
-        # Try to find the supplier again
-        supplier = Supplier.query.filter(db.func.lower(Supplier.name) == db.func.lower(name)).first()
-        if supplier:
-            return supplier, False
-        
-        # If still not found, propagate the error
-        raise e
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error creating supplier '{name}': {str(e)}")
-        raise e
+        try:
+            db.session.add(supplier)
+            db.session.commit()
+            created = True
+            logger.info(f"Created new supplier: {name}")
+        except IntegrityError as e:
+            db.session.rollback()
+            logger.error(f"Failed to create supplier {name}: {str(e)}")
+            return None, False
+    
+    return supplier, created
 
-def update_supplier(
-    supplier_id,
-    name=None, 
-    contact_person=None, 
-    email=None, 
-    phone=None, 
-    address=None, 
-    notes=None, 
-    is_inhouse=None
-):
+def update_supplier(supplier_id, name=None, email=None, phone=None, contact_person=None, address=None):
     """
-    Update an existing supplier.
+    Update an existing supplier with validated information.
     
     Args:
         supplier_id (int): The ID of the supplier to update
         name (str, optional): New name for the supplier
-        contact_person (str, optional): New contact person name
-        email (str, optional): New contact email
-        phone (str, optional): New contact phone number
-        address (str, optional): New physical address
-        notes (str, optional): New additional notes
-        is_inhouse (bool, optional): New in-house production status
+        email (str, optional): New email for the supplier
+        phone (str, optional): New phone number for the supplier
+        contact_person (str, optional): New contact person for the supplier
+        address (str, optional): New address for the supplier
         
     Returns:
-        tuple: (supplier, success, message) where supplier is the Supplier object,
-               success is a boolean indicating if update was successful, and
-               message is a string explaining any failure
+        bool: True if successful, False otherwise
     """
-    # Get the supplier
     supplier = Supplier.query.get(supplier_id)
-    
     if not supplier:
-        return None, False, "Supplier not found"
+        logger.error(f"Supplier with ID {supplier_id} not found")
+        return False
     
-    # Validate email if provided
-    if email is not None and email and not validate_email(email):
-        logger.warning(f"Attempted to update supplier with invalid email: {email}")
-        return supplier, False, "Invalid email address format"
+    modified = False
     
-    try:
-        # Update the supplier fields if provided
-        if name is not None and name.strip():
-            # Check if another supplier already has this name
-            if supplier.name.lower() != name.strip().lower():
-                existing = Supplier.query.filter(
-                    db.and_(
-                        db.func.lower(Supplier.name) == db.func.lower(name.strip()),
-                        Supplier.id != supplier_id
-                    )
-                ).first()
-                
-                if existing:
-                    return supplier, False, f"A supplier with the name '{name.strip()}' already exists"
-                    
-            supplier.name = name.strip()
-            
-        if contact_person is not None:
-            supplier.contact_person = contact_person
-            
-        if email is not None:
+    # Update fields if provided
+    if name:
+        name = sanitize_input(name)
+        if name and name != supplier.name:
+            supplier.name = name
+            modified = True
+    
+    if email is not None:  # Allow clearing email by passing empty string
+        email = sanitize_input(email)
+        if email and not is_valid_email(email):
+            logger.warning(f"Invalid email for supplier {supplier.name}: {email}")
+        elif email != supplier.email:
             supplier.email = email
-            
-        if phone is not None:
+            modified = True
+    
+    if phone is not None:
+        phone = sanitize_input(phone)
+        if phone != supplier.phone:
             supplier.phone = phone
-            
-        if address is not None:
+            modified = True
+    
+    if contact_person is not None:
+        contact_person = sanitize_input(contact_person)
+        if contact_person != supplier.contact_person:
+            supplier.contact_person = contact_person
+            modified = True
+    
+    if address is not None:
+        address = sanitize_input(address)
+        if address != supplier.address:
             supplier.address = address
-            
-        if notes is not None:
-            supplier.notes = notes
-            
-        if is_inhouse is not None:
-            supplier.is_inhouse = is_inhouse
-        
-        # Update the updated_at timestamp
+            modified = True
+    
+    if modified:
         supplier.updated_at = datetime.utcnow()
-        
-        # Commit the changes
-        db.session.commit()
-        
-        logger.info(f"Updated supplier ID {supplier_id}: {supplier.name}")
-        return supplier, True, "Supplier updated successfully"
-        
-    except IntegrityError as e:
-        db.session.rollback()
-        logger.error(f"Integrity error updating supplier ID {supplier_id}: {str(e)}")
-        return supplier, False, f"Database integrity error: {str(e)}"
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating supplier ID {supplier_id}: {str(e)}")
-        return supplier, False, f"Error updating supplier: {str(e)}"
+        try:
+            db.session.commit()
+            logger.info(f"Updated supplier: {supplier.name}")
+            return True
+        except IntegrityError as e:
+            db.session.rollback()
+            logger.error(f"Failed to update supplier {supplier.name}: {str(e)}")
+            return False
+    
+    return True  # No changes needed
 
 def delete_supplier(supplier_id):
     """
-    Delete a supplier and all related records.
+    Delete a supplier and all related products.
     
     Args:
         supplier_id (int): The ID of the supplier to delete
         
     Returns:
-        tuple: (success, message) where success is a boolean indicating 
-               if deletion was successful and message is a string with details
+        bool: True if successful, False otherwise
     """
-    # Get the supplier
     supplier = Supplier.query.get(supplier_id)
-    
     if not supplier:
-        return False, "Supplier not found"
+        logger.error(f"Supplier with ID {supplier_id} not found")
+        return False
     
     try:
-        # Count related products (for the message)
-        product_count = len(supplier.products)
-        
-        # Delete the supplier (cascade will delete related products)
+        # Delete all supplier products first
+        supplier_name = supplier.name  # Save for logging
         db.session.delete(supplier)
         db.session.commit()
-        
-        logger.info(f"Deleted supplier ID {supplier_id}: {supplier.name}")
-        
-        # Provide detailed success message
-        message = f"Supplier '{supplier.name}' deleted successfully"
-        if product_count > 0:
-            message += f" along with {product_count} related product(s)"
-            
-        return True, message
-        
+        logger.info(f"Deleted supplier: {supplier_name}")
+        return True
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error deleting supplier ID {supplier_id}: {str(e)}")
-        return False, f"Error deleting supplier: {str(e)}"
+        logger.error(f"Failed to delete supplier {supplier.name}: {str(e)}")
+        return False

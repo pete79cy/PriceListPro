@@ -1,73 +1,89 @@
-from email_validator import validate_email as validate_email_external, EmailNotValidError
+"""
+Validation utilities for the application.
+This module provides functions to validate user inputs.
+"""
+import logging
 import re
+from email_validator import validate_email, EmailNotValidError
 
-def validate_email(email):
+# Set up logging
+logger = logging.getLogger(__name__)
+
+def is_valid_email(email):
     """
     Validate an email address.
     
     Args:
-        email: The email address to validate
+        email (str): The email address to validate
         
     Returns:
-        True if the email is valid, False otherwise
+        bool: True if the email is valid, False otherwise
     """
     if not email:
         return False
         
-    # First try the email validator library 
-    try:
-        # Use the email-validator library for robust validation
-        validate_email_external(email)
-        return True
-    except Exception:
-        # If the library fails (possibly not installed), fall back to regex
-        pass
-        
-    # Fallback to a simple regex pattern for basic validation
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email))
-
-
-def sanitize_input(text):
-    """
-    Sanitize input text to prevent injection attacks.
-    
-    Args:
-        text: The text to sanitize
-        
-    Returns:
-        Sanitized text string
-    """
-    if not text:
-        return ""
-        
-    # Remove any HTML/script tags
-    sanitized = re.sub(r'<[^>]*>', '', text)
-    
-    # Replace special characters
-    sanitized = sanitized.replace('&', '&amp;')
-    sanitized = sanitized.replace('<', '&lt;')
-    sanitized = sanitized.replace('>', '&gt;')
-    sanitized = sanitized.replace('"', '&quot;')
-    sanitized = sanitized.replace("'", '&#x27;')
-    
-    return sanitized
-
-
-def validate_phone(phone):
-    """
-    Validate a phone number.
-    
-    Args:
-        phone: The phone number to validate
-        
-    Returns:
-        True if the phone number is valid, False otherwise
-    """
-    if not phone:
+    # Basic validation for common typos
+    if ' ' in email or email.count('@') != 1:
         return False
+    
+    try:
+        # Validate email with email_validator library
+        validation = validate_email(email, check_deliverability=False)
+        return True
+    except EmailNotValidError as e:
+        logger.debug(f"Invalid email: {email} - {str(e)}")
+        return False
+
+def sanitize_input(value, max_length=None):
+    """
+    Sanitize user input to prevent common issues.
+    
+    Args:
+        value (str): The input value to sanitize
+        max_length (int, optional): Maximum length for the value
         
-    # Simple validation pattern for international phone numbers
-    # Allows +, spaces, dashes, and parentheses
-    pattern = r'^[+]?[\s./0-9()\-]{10,}$'
-    return bool(re.match(pattern, phone))
+    Returns:
+        str: The sanitized value
+    """
+    if value is None:
+        return None
+    
+    # Convert to string if not already
+    value = str(value)
+    
+    # Trim whitespace
+    value = value.strip()
+    
+    # Truncate to max_length if specified
+    if max_length and len(value) > max_length:
+        value = value[:max_length]
+    
+    return value
+
+def sanitize_email(email):
+    """
+    Sanitize and normalize an email address.
+    
+    Args:
+        email (str): The email address to sanitize
+        
+    Returns:
+        str: The sanitized email address, or None if invalid
+    """
+    if not email:
+        return None
+    
+    # Sanitize input first
+    email = sanitize_input(email)
+    
+    # Convert to lowercase
+    email = email.lower()
+    
+    # Remove any spaces
+    email = email.replace(' ', '')
+    
+    # Validate the sanitized email
+    if is_valid_email(email):
+        return email
+    else:
+        return None

@@ -1,9 +1,15 @@
-from app import app
+from app import app, db
 from utils.version_tracker import get_current_version, log_deployment
 from utils.logger import logger
+from admin import init_admin_views  # Import the admin initialization function
+
+# Initialize Flask-Admin with the app and db
+with app.app_context():
+    init_admin_views(app, db)
 
 if __name__ == "__main__":
     version = get_current_version()
     logger.info(f"Starting application version {version}")
     log_deployment()
+    logger.info("Flask-Admin is enabled")
     app.run(host="0.0.0.0", port=5000, debug=True)

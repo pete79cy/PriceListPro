@@ -1,0 +1,20 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container">
+    <div class="jumbotron">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome to the Administrative Dashboard!</p>
+        <p>Use the navigation menu above to manage:</p>
+        <ul>
+            <li>Customers</li>
+            <li>Customer Categories</li>
+            <li>Contact History</li>
+            <li>Customer Statistics</li>
+        </ul>
+        <p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Main Site</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -20,4 +20,5 @@ dependencies = [
     "openai>=1.70.0",
     "viberbot>=1.0.12",
     "requests>=2.32.3",
+    "flask-admin>=1.6.1",
 ]
