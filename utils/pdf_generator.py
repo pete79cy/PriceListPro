@@ -367,6 +367,12 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
         from datetime import timedelta
 
         class PDF(FPDF):
+            def __init__(self):
+                # Initialize with UTF-8 support for Euro symbol (€)
+                super().__init__(orientation='P')
+                # Set utf8 encoding to handle Euro symbol
+                self.set_auto_page_break(auto=True, margin=15)
+                
             def header(self):
                 if hasattr(self, 'company') and self.company:
                     self.set_font("Helvetica", 'B', 12)
@@ -393,7 +399,7 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                 self.rotate(0)
                 self.set_text_color(0)
 
-        # Initialize PDF object
+        # Initialize PDF object with UTF-8 support
         pdf = PDF()
         pdf.alias_nb_pages()
         
@@ -510,7 +516,11 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                         unit_price = item.cost_price
                     
                     # Format prices
-                    currency = quotation.currency if hasattr(quotation, 'currency') else '€'
+                    # Handle Euro symbol specifically for encoding compatibility
+                    currency = quotation.currency if hasattr(quotation, 'currency') else 'EUR '
+                    if currency == '€':
+                        currency = 'EUR '  # Replace Euro symbol with text representation
+                        
                     pdf.cell(col_widths[2], 8, f"{currency}{unit_price:.2f}", border=1, fill=fill)
                     
                     # Calculate line total
@@ -525,7 +535,9 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             if include_prices:
                 pdf.set_font("Helvetica", 'B', 10)
                 pdf.cell(col_widths[0] + col_widths[1], 8, "Subtotal", border=1)
-                currency = quotation.currency if hasattr(quotation, 'currency') else '€'
+                currency = quotation.currency if hasattr(quotation, 'currency') else 'EUR '
+                if currency == '€':
+                    currency = 'EUR '  # Replace Euro symbol with text representation
                 pdf.cell(col_widths[2] + col_widths[3], 8, f"{currency}{total:.2f}", border=1)
                 pdf.ln(15)
 
@@ -614,6 +626,7 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
         # Group items by supplier
         grouped_items = {}
         supplier_totals = {}
+        total_cost = 0.0  # Initialize total cost
         
         for item in quotation.items:
             # Only include items from selected suppliers
@@ -638,7 +651,9 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
                 if hasattr(item, 'cost_price') and item.cost_price is not None:
                     cost_price = float(item.cost_price)
                 
-                supplier_totals[item.supplier]['cost'] += item.quantity * cost_price
+                item_total_cost = item.quantity * cost_price
+                supplier_totals[item.supplier]['cost'] += item_total_cost
+                total_cost += item_total_cost
         
         # Generate HTML content from the template
         html_content = render_template(
@@ -656,7 +671,8 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             company=company,
             logo_data=logo_data,
             orientation=orientation,
-            notes=notes  # Pass notes to template
+            notes=notes,  # Pass notes to template
+            total_cost=total_cost  # Add total_cost variable
         )
         
         # Generate a unique filename
