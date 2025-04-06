@@ -1,0 +1,116 @@
+Perfect. Let's build a **Flask Admin Dashboard** using [Flask-Admin](https://flask-admin.readthedocs.io/en/latest/) to:
+
+- Manage `CustomerCategory`, `Customer`, and `CustomerContact`
+- View **Customer Stats** visually (inline or via chart view)
+
+---
+
+## ✅ STEP-BY-STEP PLAN
+
+### 1. **Install Flask-Admin**
+```bash
+pip install flask-admin
+```
+
+---
+
+### 2. **Set Up Flask-Admin in Your App**
+
+Add this to your `app.py` or wherever you initialize the app:
+
+```python
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+from yourapp.models import db, Customer, CustomerCategory, CustomerContact
+
+admin = Admin(app, name='Dashboard', template_mode='bootstrap4')
+
+# Register views
+admin.add_view(ModelView(CustomerCategory, db.session))
+admin.add_view(ModelView(Customer, db.session))
+admin.add_view(ModelView(CustomerContact, db.session))
+```
+
+---
+
+### 3. **Add Customer Stats View (Read-Only)**
+Create a **custom admin view** to show stats:
+
+```python
+from flask_admin.base import BaseView, expose
+from flask import render_template
+
+class CustomerStatsView(BaseView):
+    @expose('/')
+    def index(self):
+        customers = Customer.query.all()
+        stats = [{
+            'name': c.name,
+            'total_invoices': len(c.invoices),
+            'total_price_lists': len(c.price_lists),
+            'last_order': max((i.invoice_date for i in c.invoices), default=None),
+            'avg_order_value': round(
+                sum(i.total_amount for i in c.invoices) / len(c.invoices), 2
+            ) if c.invoices else 0
+        } for c in customers]
+        return self.render('admin/customer_stats.html', stats=stats)
+```
+
+Register it:
+```python
+admin.add_view(CustomerStatsView(name='Customer Stats'))
+```
+
+---
+
+### 4. **Create Template `templates/admin/customer_stats.html`**
+
+```html
+{% extends 'admin/master.html' %}
+{% block body %}
+<h2>Customer Statistics</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Total Invoices</th>
+      <th>Total Price Lists</th>
+      <th>Last Order</th>
+      <th>Average Order Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in stats %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>{{ c.total_invoices }}</td>
+      <td>{{ c.total_price_lists }}</td>
+      <td>{{ c.last_order }}</td>
+      <td>${{ c.avg_order_value }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+```
+
+---
+
+## 🛡 BONUS: Secure the Admin Panel
+
+```python
+from flask_admin import AdminIndexView
+from flask_login import current_user
+
+class SecureAdmin(AdminIndexView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+```
+
+---
+
+## 🧩 Suggestions for Next Turn
+
+a. Want to add charts (bar/pie) to stats using Chart.js or Plotly?  
+b. Need to customize filters/sorting in admin views?  
+c. Should we restrict access to admin using Flask-Login roles?

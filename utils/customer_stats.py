@@ -1,78 +1,110 @@
-from models import Customer, Invoice, PriceList
-from sqlalchemy import func
+"""
+Customer statistics utility functions.
+This module provides functions to calculate statistics for customers.
+"""
+import logging
 from datetime import datetime
+from sqlalchemy import func
 
-def get_customer_stats(customer_id):
+logger = logging.getLogger(__name__)
+
+def get_customer_stats(customer_id, db):
     """
     Get statistics for a specific customer.
     
     Args:
-        customer_id: The ID of the customer to get statistics for
+        customer_id (int): The ID of the customer
+        db: SQLAlchemy database instance
         
     Returns:
-        A dictionary containing various statistics about the customer:
-        - total_invoices: The total number of invoices for the customer
-        - last_invoice_date: The date of the customer's most recent invoice
-        - total_spent: The total amount spent by the customer across all invoices
-        - product_count: The number of unique products the customer has purchased
-        - avg_order_value: The average value of the customer's orders
+        dict: A dictionary containing customer statistics
     """
-    # Get customer object
+    from models import Customer, Invoice, PriceList
+    
     customer = Customer.query.get(customer_id)
     if not customer:
-        return None
+        logger.warning(f"Customer ID {customer_id} not found when calculating statistics")
+        return {
+            'total_invoices': 0,
+            'total_price_lists': 0,
+            'last_order_date': None,
+            'average_order_value': 0,
+            'total_spent': 0
+        }
     
-    # Get invoice statistics
-    invoice_stats = {}
-    invoice_stats['total_invoices'] = Invoice.query.filter_by(customer_id=customer_id).count()
+    # Get customer invoices
+    invoices = customer.invoices
     
-    # Get the last invoice date
-    last_invoice = Invoice.query.filter_by(customer_id=customer_id).order_by(Invoice.invoice_date.desc()).first()
-    invoice_stats['last_invoice_date'] = last_invoice.invoice_date if last_invoice else None
+    # Calculate statistics
+    total_invoices = len(invoices)
+    total_price_lists = len(customer.price_lists)
     
-    # Calculate total spent
-    invoice_stats['total_spent'] = Invoice.query.with_entities(
-        func.sum(Invoice.total_amount)
-    ).filter_by(customer_id=customer_id).scalar() or 0
+    # Calculate last order date
+    last_order_date = None
+    if invoices:
+        invoice_dates = [i.invoice_date for i in invoices if i.invoice_date]
+        if invoice_dates:
+            last_order_date = max(invoice_dates)
     
-    # Get price list statistics
-    price_list_stats = {}
-    price_list_stats['product_count'] = PriceList.query.filter_by(customer_id=customer_id).count()
+    # Calculate average order value and total spent
+    total_spent = sum(i.total_amount or 0 for i in invoices)
+    average_order_value = total_spent / total_invoices if total_invoices > 0 else 0
     
-    # Average order value
-    if invoice_stats['total_invoices'] > 0:
-        invoice_stats['avg_order_value'] = invoice_stats['total_spent'] / invoice_stats['total_invoices']
-    else:
-        invoice_stats['avg_order_value'] = 0
-    
-    # Combine stats
-    stats = {
-        **invoice_stats,
-        **price_list_stats,
-        'contact_info': {
-            'email': customer.email,
-            'phone': customer.phone,
-            'address': customer.address
-        },
-        'updated_at': datetime.utcnow()
+    return {
+        'total_invoices': total_invoices,
+        'total_price_lists': total_price_lists,
+        'last_order_date': last_order_date,
+        'average_order_value': average_order_value,
+        'total_spent': total_spent
     }
-    
-    return stats
 
-
-def get_latest_customer_contact(customer_id):
+def get_all_customer_stats(db):
     """
-    Get the latest contact record for a customer.
+    Get statistics for all customers.
     
     Args:
-        customer_id: The ID of the customer
+        db: SQLAlchemy database instance
         
     Returns:
-        The most recent CustomerContact object for the customer, or None if no contacts exist
+        dict: A dictionary containing overall statistics
     """
-    customer = Customer.query.get(customer_id)
-    if not customer or not customer.contacts:
-        return None
+    from models import Customer, Invoice, PriceList
     
-    # Contacts are sorted by contact_date in descending order
-    return sorted(customer.contacts, key=lambda c: c.contact_date, reverse=True)[0]
+    # Get all customers
+    customers = Customer.query.all()
+    
+    # Calculate overall statistics
+    total_customers = len(customers)
+    total_invoices = 0
+    total_order_value = 0
+    
+    customer_stats = []
+    
+    for customer in customers:
+        stats = get_customer_stats(customer.id, db)
+        
+        total_invoices += stats['total_invoices']
+        total_order_value += stats['total_spent']
+        
+        customer_stats.append({
+            'id': customer.id,
+            'name': customer.name,
+            'email': customer.email,
+            'category': customer.category.name if customer.category else None,
+            'total_invoices': stats['total_invoices'],
+            'total_price_lists': stats['total_price_lists'],
+            'last_order_date': stats['last_order_date'],
+            'average_order_value': stats['average_order_value'],
+            'total_spent': stats['total_spent']
+        })
+    
+    # Calculate overall average
+    average_per_customer = total_order_value / total_customers if total_customers > 0 else 0
+    
+    return {
+        'customer_stats': customer_stats,
+        'total_customers': total_customers,
+        'total_invoices': total_invoices,
+        'total_order_value': total_order_value,
+        'average_per_customer': average_per_customer
+    }
