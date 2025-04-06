@@ -511,7 +511,7 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             
             # Add price columns if needed
             if include_prices:
-                headers.extend(["Unit Price", "Total"])
+                headers.extend(["Cost Price", "Total Cost"])
                 col_widths.extend([30, 30])
             
             # Draw header row
@@ -561,14 +561,14 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                 
                 # Price cells
                 if include_prices:
-                    # Get price
+                    # Get price - for supplier reports, we should prioritize cost_price
                     unit_price = 0
-                    if hasattr(item, 'selling_price'):
-                        unit_price = item.selling_price
+                    if hasattr(item, 'cost_price') and item.cost_price is not None:
+                        unit_price = item.cost_price
                     elif hasattr(item, 'price'):
                         unit_price = item.price
-                    elif hasattr(item, 'cost_price'):
-                        unit_price = item.cost_price
+                    elif hasattr(item, 'selling_price'):
+                        unit_price = item.selling_price
                     
                     # Format prices
                     # Handle Euro symbol specifically for encoding compatibility
@@ -651,14 +651,14 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             for supplier_name, items in grouped_items.items():
                 supplier_cost = 0
                 for item in items:
-                    # Calculate supplier total
+                    # Calculate supplier total based on cost_price
                     unit_price = 0
-                    if hasattr(item, 'selling_price'):
-                        unit_price = item.selling_price
+                    if hasattr(item, 'cost_price') and item.cost_price is not None:
+                        unit_price = item.cost_price
                     elif hasattr(item, 'price'):
                         unit_price = item.price
-                    elif hasattr(item, 'cost_price'):
-                        unit_price = item.cost_price
+                    elif hasattr(item, 'selling_price'):
+                        unit_price = item.selling_price
                     
                     supplier_cost += unit_price * item.quantity
                 
