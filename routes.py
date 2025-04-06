@@ -126,6 +126,7 @@ def register_routes(app):
     def index():
         # If user is already logged in, show the dashboard
         if current_user.is_authenticated:
+            import json
             # Get some stats for the dashboard
             pending_update_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
             
@@ -148,14 +149,12 @@ def register_routes(app):
                 ).group_by(Product.category).all()
                 
                 # Convert SQLAlchemy result to Python native types for JSON serialization
-                product_categories_list = [(str(category[0]) if category[0] else 'Uncategorized', int(category[1])) 
-                                        for category in product_categories]
+                category_labels = []
+                category_values = []
                 
-                # Create chart data
-                category_chart_data = {
-                    'labels': [item[0] for item in product_categories_list],
-                    'values': [item[1] for item in product_categories_list]
-                }
+                for category in product_categories:
+                    category_labels.append(str(category[0]) if category[0] else 'Uncategorized')
+                    category_values.append(int(category[1]))
                 
                 # Get invoices per month for past 6 months
                 six_months_ago = datetime.utcnow() - timedelta(days=180)
@@ -167,25 +166,35 @@ def register_routes(app):
                 ).group_by('month').order_by('month').all()
                 
                 # Convert SQLAlchemy result to Python native types for JSON serialization
-                invoice_counts_list = [(str(count[0]), int(count[1])) for count in invoice_counts]
+                invoice_labels = []
+                invoice_values = []
                 
-                # Create chart data for invoices
-                invoice_chart_data = {
-                    'labels': [item[0] for item in invoice_counts_list],
-                    'values': [item[1] for item in invoice_counts_list]
-                }
+                for count in invoice_counts:
+                    invoice_labels.append(str(count[0]))
+                    invoice_values.append(int(count[1]))
+                
             except Exception as e:
                 # Log the error and provide empty chart data if there's an issue
                 app.logger.error(f"Error generating chart data in index: {str(e)}")
-                category_chart_data = {'labels': [], 'values': []}
-                invoice_chart_data = {'labels': [], 'values': []}
+                category_labels = []
+                category_values = []
+                invoice_labels = []
+                invoice_values = []
+            
+            # Convert data to JSON strings directly
+            category_labels_json = json.dumps(category_labels)
+            category_values_json = json.dumps(category_values)
+            invoice_labels_json = json.dumps(invoice_labels)
+            invoice_values_json = json.dumps(invoice_values)
             
             return render_template('dashboard_improved.html', 
                                   stats=stats, 
                                   pending_update_count=pending_update_count,
                                   recent_activities=recent_activities,
-                                  category_chart_data=category_chart_data,
-                                  invoice_chart_data=invoice_chart_data)
+                                  category_labels_json=category_labels_json,
+                                  category_values_json=category_values_json,
+                                  invoice_labels_json=invoice_labels_json,
+                                  invoice_values_json=invoice_values_json)
         # Otherwise show the login page
         return render_template('index.html')
         
@@ -229,6 +238,7 @@ def register_routes(app):
     @app.route('/dashboard')
     @login_required
     def dashboard():
+        import json
         # Get some stats for the dashboard
         pending_update_count = ProductUpdateRequest.query.filter_by(status='Pending').count()
         
@@ -251,14 +261,12 @@ def register_routes(app):
             ).group_by(Product.category).all()
             
             # Convert SQLAlchemy result to Python native types for JSON serialization
-            product_categories_list = [(str(category[0]) if category[0] else 'Uncategorized', int(category[1])) 
-                                    for category in product_categories]
+            category_labels = []
+            category_values = []
             
-            # Create chart data
-            category_chart_data = {
-                'labels': [item[0] for item in product_categories_list],
-                'values': [item[1] for item in product_categories_list]
-            }
+            for category in product_categories:
+                category_labels.append(str(category[0]) if category[0] else 'Uncategorized')
+                category_values.append(int(category[1]))
             
             # Get invoices per month for past 6 months
             six_months_ago = datetime.utcnow() - timedelta(days=180)
@@ -270,25 +278,35 @@ def register_routes(app):
             ).group_by('month').order_by('month').all()
             
             # Convert SQLAlchemy result to Python native types for JSON serialization
-            invoice_counts_list = [(str(count[0]), int(count[1])) for count in invoice_counts]
+            invoice_labels = []
+            invoice_values = []
             
-            # Create chart data for invoices
-            invoice_chart_data = {
-                'labels': [item[0] for item in invoice_counts_list],
-                'values': [item[1] for item in invoice_counts_list]
-            }
+            for count in invoice_counts:
+                invoice_labels.append(str(count[0]))
+                invoice_values.append(int(count[1]))
+            
         except Exception as e:
             # Log the error and provide empty chart data if there's an issue
             app.logger.error(f"Error generating chart data: {str(e)}")
-            category_chart_data = {'labels': [], 'values': []}
-            invoice_chart_data = {'labels': [], 'values': []}
+            category_labels = []
+            category_values = []
+            invoice_labels = []
+            invoice_values = []
+        
+        # Convert data to JSON strings directly
+        category_labels_json = json.dumps(category_labels)
+        category_values_json = json.dumps(category_values)
+        invoice_labels_json = json.dumps(invoice_labels)
+        invoice_values_json = json.dumps(invoice_values)
         
         return render_template('dashboard_improved.html', 
                               stats=stats, 
                               pending_update_count=pending_update_count,
                               recent_activities=recent_activities,
-                              category_chart_data=category_chart_data,
-                              invoice_chart_data=invoice_chart_data)
+                              category_labels_json=category_labels_json,
+                              category_values_json=category_values_json,
+                              invoice_labels_json=invoice_labels_json,
+                              invoice_values_json=invoice_values_json)
     
     @app.route('/uploads', methods=['GET'])
     @login_required

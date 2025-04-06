@@ -1,337 +1,208 @@
 {% extends 'layout.html' %}
 
-{% block head %}
-<!-- Dashboard-specific CSS -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
-{% block title %}Dashboard - Plant Pricing System{% endblock %}
 {% block content %}
-<div class="container">
-    <!-- Welcome Section with User Profile Info -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card bg-primary text-white shadow-sm border-0">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center">
-                        <div class="me-3">
-                            <i class="fas fa-user-circle fa-3x"></i>
-                        </div>
-                        <div>
-                            <h2 class="mb-1">Welcome back, {{ current_user.username }}!</h2>
-                            <p class="mb-0">
-                                {% if current_user.is_admin %}
-                                <span class="badge bg-danger">Admin</span>
-                                {% endif %}
-                                <small class="ms-2">Last login: 
-                                    {% if current_user.last_login %}
-                                        {{ current_user.last_login.strftime('%Y-%m-%d %H:%M') }}
-                                    {% else %}
-                                        N/A
-                                    {% endif %}
-                                </small>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Pending Updates Alert - High Priority Notice -->
-    {% if stats.pending_updates > 0 %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-danger shadow-sm">
-                <div class="card-header bg-danger text-white d-flex align-items-center">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <h5 class="mb-0">Pending Price Updates</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h3>You have {{ stats.pending_updates }} pending price update{% if stats.pending_updates != 1 %}s{% endif %} requiring review</h3>
-                            <p class="mb-0">These are price changes detected from recent imports that need your approval or rejection.</p>
-                        </div>
-                        <a href="{{ url_for('pending_updates') }}" class="btn btn-danger btn-lg">
-                            <i class="fas fa-tasks me-2"></i> Review Updates
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Quick Actions - Most Important Section First -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <a href="{{ url_for('uploads') }}" class="btn btn-lg btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
-                                <i class="fas fa-upload fa-2x mb-2"></i>
-                                <span>Upload Files</span>
-                            </a>
-                        </div>
-                        <div class="col-md-4">
-                            <a href="{{ url_for('pending_updates') }}" class="btn btn-lg {% if stats.pending_updates > 0 %}btn-danger{% else %}btn-outline-primary{% endif %} w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
-                                <i class="fas fa-tasks fa-2x mb-2"></i>
-                                <span>Manage Price Updates</span>
-                                {% if stats.pending_updates > 0 %}
-                                <span class="badge bg-white text-danger mt-1">{{ stats.pending_updates }}</span>
-                                {% endif %}
-                            </a>
-                        </div>
-                        <div class="col-md-4">
-                            <a href="{{ url_for('quotations') }}" class="btn btn-lg btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
-                                <i class="fas fa-file-contract fa-2x mb-2"></i>
-                                <span>New Quotation</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Dashboard</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item active">Dashboard</li>
+    </ol>
     
     <!-- Stats Cards Row -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ url_for('customers') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 position-relative">
-                    <div class="card-body text-center">
-                        <i class="fas fa-users text-primary fa-2x mb-2"></i>
-                        <h1 class="display-4 text-primary fw-bold">{{ stats.customers }}</h1>
-                        <h5 class="card-title">Customers</h5>
-                        <p class="card-text text-muted">Total registered customers</p>
-                    </div>
-                    <div class="card-footer bg-transparent border-0 text-center">
-                        <span class="btn btn-sm btn-outline-primary">View Customers</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ url_for('products') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 position-relative">
-                    <div class="card-body text-center">
-                        <i class="fas fa-leaf text-success fa-2x mb-2"></i>
-                        <h1 class="display-4 text-success fw-bold">{{ stats.products }}</h1>
-                        <h5 class="card-title">Products</h5>
-                        <p class="card-text text-muted">Total products in database</p>
-                    </div>
-                    <div class="card-footer bg-transparent border-0 text-center">
-                        <span class="btn btn-sm btn-outline-success">View Products</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ url_for('price_lists') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 position-relative">
-                    <div class="card-body text-center">
-                        <i class="fas fa-tags text-info fa-2x mb-2"></i>
-                        <h1 class="display-4 text-info fw-bold">{{ stats.price_lists }}</h1>
-                        <h5 class="card-title">Price Lists</h5>
-                        <p class="card-text text-muted">Total price list entries</p>
-                    </div>
-                    <div class="card-footer bg-transparent border-0 text-center">
-                        <span class="btn btn-sm btn-outline-info">View Price Lists</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ url_for('invoices') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 position-relative">
-                    <div class="card-body text-center">
-                        <i class="fas fa-file-invoice text-warning fa-2x mb-2"></i>
-                        <h1 class="display-4 text-warning fw-bold">{{ stats.invoices }}</h1>
-                        <h5 class="card-title">Invoices</h5>
-                        <p class="card-text text-muted">Total invoices processed</p>
-                    </div>
-                    <div class="card-footer bg-transparent border-0 text-center">
-                        <span class="btn btn-sm btn-outline-warning">View Invoices</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-    
     <div class="row">
-        <!-- Additional Tools -->
-        <div class="col-lg-8 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-tools me-2"></i> Tools & Resources</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        <a href="{{ url_for('search') }}" class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-search fa-lg text-primary me-3"></i>
-                                <div>
-                                    <h6 class="mb-1 fw-bold">Search Products and Prices</h6>
-                                    <p class="text-muted mb-0 small">Find products and pricing information quickly</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="{{ url_for('download_template') }}" class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-file-excel fa-lg text-success me-3"></i>
-                                <div>
-                                    <h6 class="mb-1 fw-bold">Download Excel Template</h6>
-                                    <p class="text-muted mb-0 small">Get the template for price list uploads</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="{{ url_for('invoices') }}" class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-file-invoice fa-lg text-warning me-3"></i>
-                                <div>
-                                    <h6 class="mb-1 fw-bold">View Invoices</h6>
-                                    <p class="text-muted mb-0 small">Browse processed invoices and their details</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="{{ url_for('supplier_products') }}" class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-truck fa-lg text-info me-3"></i>
-                                <div>
-                                    <h6 class="mb-1 fw-bold">Supplier Products</h6>
-                                    <p class="text-muted mb-0 small">Manage supplier product catalog and availability</p>
-                                </div>
-                            </div>
-                        </a>
-                        <a href="{{ url_for('test_encoding') }}" class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-language fa-lg text-secondary me-3"></i>
-                                <div>
-                                    <h6 class="mb-1 fw-bold">Test Encoding Support</h6>
-                                    <p class="text-muted mb-0 small">Verify special character handling support</p>
-                                </div>
-                            </div>
-                        </a>
+        <!-- Customer Stats Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4 dashboard-card" data-href="{{ url_for('customers') }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.customers }}</h4>
+                            <div>Customers</div>
+                        </div>
+                        <div class="icon-container">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
                     </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{{ url_for('customers') }}">View Details</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
         </div>
         
-        <!-- System Information Card - Smaller and Less Prominent -->
-        <div class="col-lg-4 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> System Information</h5>
-                </div>
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-database me-2 text-success"></i> Database</span>
-                            <span class="badge bg-success">Connected</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-code-branch me-2 text-secondary"></i> Version</span>
-                            <span>1.0.0</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-clock me-2 text-primary"></i> Last Login</span>
-                            <span>
-                                {% if current_user.last_login %}
-                                    {{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-calendar-plus me-2 text-info"></i> Account Created</span>
-                            <span>{{ current_user.created_at.strftime('%Y-%m-%d') }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <!-- Help Box -->
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-body bg-light">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-question-circle text-primary fa-2x me-3"></i>
-                        <h5 class="mb-0">Need Help?</h5>
+        <!-- Products Stats Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4 dashboard-card" data-href="{{ url_for('products') }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.products }}</h4>
+                            <div>Products</div>
+                        </div>
+                        <div class="icon-container">
+                            <i class="fas fa-leaf fa-2x"></i>
+                        </div>
                     </div>
-                    <p class="small text-muted mb-2">Have questions about using the system?</p>
-                    <button class="btn btn-sm btn-primary w-100" data-bs-toggle="modal" data-bs-target="#helpModal">
-                        <i class="fas fa-book me-1"></i> View Documentation
-                    </button>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{{ url_for('products') }}">View Details</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
-            
-            <!-- Recent Activity -->
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i> Recent Activity</h5>
+        </div>
+        
+        <!-- Price Lists Stats Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4 dashboard-card" data-href="{{ url_for('price_lists') }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.price_lists }}</h4>
+                            <div>Price Lists</div>
+                        </div>
+                        <div class="icon-container">
+                            <i class="fas fa-euro-sign fa-2x"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="list-group list-group-flush">
-                    {% if recent_activities %}
-                        {% for item in recent_activities %}
-                        <div class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex">
-                                <div class="me-3">
-                                    <i class="{{ item.icon }} text-{{ 'danger' if item.type == 'price_update' and 'Pending' in item.message else 'success' if item.type == 'invoice' else 'primary' if item.type == 'upload' else 'warning' if item.type == 'quotation' else 'secondary' }} fa-lg"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0 small">{{ item.message }}</p>
-                                    <small class="text-muted">{{ item.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                                </div>
-                            </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{{ url_for('price_lists') }}">View Details</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invoices Stats Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4 dashboard-card" data-href="{{ url_for('invoices') }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.invoices }}</h4>
+                            <div>Invoices</div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="list-group-item py-3">
-                            <p class="text-muted mb-0 text-center">No recent activity to display</p>
+                        <div class="icon-container">
+                            <i class="fas fa-file-invoice fa-2x"></i>
                         </div>
-                    {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{{ url_for('invoices') }}">View Details</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Charts Section - After recent activity -->
-    <div class="row mt-4">
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i> Product Categories</h5>
+    <!-- Pending Updates & Activity Row -->
+    <div class="row">
+        <!-- Pending Updates Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card {% if pending_update_count > 0 %}bg-danger{% else %}bg-secondary{% endif %} text-white mb-4 dashboard-card" data-href="{{ url_for('pending_updates') }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                {{ pending_update_count }}
+                                {% if pending_update_count > 0 %}
+                                <span class="badge badge-pill badge-warning">!</span>
+                                {% endif %}
+                            </h4>
+                            <div>Pending Updates</div>
+                        </div>
+                        <div class="icon-container">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{{ url_for('pending_updates') }}">
+                        {% if pending_update_count > 0 %}
+                        Review Updates
+                        {% else %}
+                        No Updates
+                        {% endif %}
+                    </a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="col-xl-9 col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-history me-1"></i>
+                    Recent Activities
                 </div>
                 <div class="card-body">
-                    <div style="height: 300px">
+                    <div class="activity-list">
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        {% if 'upload' in activity.message.lower() %}
+                                            <i class="fas fa-file-upload"></i>
+                                        {% elif 'price' in activity.message.lower() %}
+                                            <i class="fas fa-euro-sign"></i>
+                                        {% elif 'invoice' in activity.message.lower() %}
+                                            <i class="fas fa-file-invoice"></i>
+                                        {% elif 'customer' in activity.message.lower() %}
+                                            <i class="fas fa-user"></i>
+                                        {% elif 'product' in activity.message.lower() %}
+                                            <i class="fas fa-leaf"></i>
+                                        {% elif 'analyze' in activity.message.lower() %}
+                                            <i class="fas fa-brain"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="activity-details">
+                                        <div class="activity-message">{{ activity.message }}</div>
+                                        <div class="activity-time">
+                                            {{ activity.timestamp.strftime('%d %b %Y, %H:%M') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No recent activities found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- Product Categories Pie Chart -->
+        <div class="col-xl-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie me-1"></i>
+                    Product Categories
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
                         <canvas id="categoryChart"></canvas>
                     </div>
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Distribution of products by category</small>
-                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Monthly Invoices</h5>
+        <!-- Invoices Per Month Bar Chart -->
+        <div class="col-xl-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar me-1"></i>
+                    Monthly Invoices (Last 6 months)
                 </div>
                 <div class="card-body">
-                    <div style="height: 300px">
+                    <div class="chart-container">
                         <canvas id="invoiceChart"></canvas>
-                    </div>
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Number of invoices per month</small>
                     </div>
                 </div>
             </div>
@@ -350,9 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryChart = new Chart(categoryCtx, {
         type: 'pie',
         data: {
-            labels: {{ category_chart_data.labels | tojson }},
+            labels: {{ category_labels_json | safe }},
             datasets: [{
-                data: {{ category_chart_data.values | tojson }},
+                data: {{ category_values_json | safe }},
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.7)',
                     'rgba(54, 162, 235, 0.7)',
@@ -364,6 +235,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     'rgba(83, 102, 255, 0.7)',
                     'rgba(40, 159, 64, 0.7)',
                     'rgba(210, 199, 199, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(159, 159, 159, 1)',
+                    'rgba(83, 102, 255, 1)',
+                    'rgba(40, 159, 64, 1)',
+                    'rgba(210, 199, 199, 1)'
                 ],
                 borderWidth: 1
             }]
@@ -384,10 +267,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const invoiceChart = new Chart(invoiceCtx, {
         type: 'bar',
         data: {
-            labels: {{ invoice_chart_data.labels | tojson }},
+            labels: {{ invoice_labels_json | safe }},
             datasets: [{
                 label: 'Invoices',
-                data: {{ invoice_chart_data.values | tojson }},
+                data: {{ invoice_values_json | safe }},
                 backgroundColor: 'rgba(54, 162, 235, 0.7)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
@@ -406,8 +289,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Make cards clickable
+    document.querySelectorAll('.dashboard-card').forEach(card => {
+        card.addEventListener('click', function() {
+            window.location.href = this.dataset.href;
+        });
+    });
 });
 </script>
 {% endblock %}
-
 {% endblock %}
