@@ -2194,23 +2194,56 @@ def register_routes(app):
                 include_terms = request.form.get('include_terms') == 'on'
                 group_by_supplier = request.form.get('group_by_supplier') == 'on'
                 use_fpdf = request.form.get('use_fpdf') == 'on'
-                use_dejavu = request.form.get('use_dejavu') == 'on'
+                use_ubuntu = request.form.get('use_ubuntu') == 'on'
+                use_dejavu = False  # Removed DejaVu option from the form
                 notes = request.form.get('notes', '')
                 
                 # Generate the custom report
                 from utils.pdf_generator import generate_custom_supplier_report
-                pdf_file, filename = generate_custom_supplier_report(
-                    quotation, 
-                    selected_suppliers, 
-                    selected_fields,
-                    include_prices=include_prices,
-                    include_company_header=include_company_header,
-                    include_terms=include_terms,
-                    group_by_supplier=group_by_supplier,
-                    notes=notes if notes else None,
-                    use_fpdf=use_fpdf,
-                    use_dejavu=use_dejavu
-                )
+                from utils.pdf_generator_update import generate_custom_supplier_report_with_ubuntu
+
+                # If using Ubuntu fonts
+                if use_ubuntu:
+                    try:
+                        pdf_file, filename = generate_custom_supplier_report_with_ubuntu(
+                            quotation, 
+                            selected_suppliers, 
+                            selected_fields,
+                            include_prices=include_prices,
+                            include_company_header=include_company_header,
+                            include_terms=include_terms,
+                            group_by_supplier=group_by_supplier,
+                            notes=notes if notes else None
+                        )
+                    except Exception as e:
+                        logger.error(f"Error generating report with Ubuntu font: {str(e)}")
+                        logger.error(traceback.format_exc())
+                        flash(f"Error generating report with Ubuntu font, falling back to standard method: {str(e)}", 'warning')
+                        # Fall back to standard method
+                        pdf_file, filename = generate_custom_supplier_report(
+                            quotation, 
+                            selected_suppliers, 
+                            selected_fields,
+                            include_prices=include_prices,
+                            include_company_header=include_company_header,
+                            include_terms=include_terms,
+                            group_by_supplier=group_by_supplier,
+                            notes=notes if notes else None,
+                            use_fpdf=False  # Default to WeasyPrint as a fallback
+                        )
+                else:
+                    # Original PDF generation method
+                    pdf_file, filename = generate_custom_supplier_report(
+                        quotation, 
+                        selected_suppliers, 
+                        selected_fields,
+                        include_prices=include_prices,
+                        include_company_header=include_company_header,
+                        include_terms=include_terms,
+                        group_by_supplier=group_by_supplier,
+                        notes=notes if notes else None,
+                        use_fpdf=use_fpdf
+                    )
                 
                 # Send the PDF as a download
                 response = make_response(pdf_file)

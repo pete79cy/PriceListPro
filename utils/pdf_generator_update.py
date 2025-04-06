@@ -128,18 +128,19 @@ def generate_custom_supplier_report_with_ubuntu(quotation, selected_suppliers, s
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
 
-        # Font registration - we're using Ubuntu font but keeping DejaVu as the font name for compatibility
-        print("Registering fonts...")
+        # Font registration - we're using Ubuntu font but keeping DejaVu as the font family name for compatibility
+        logger.info("Registering Ubuntu fonts...")
         # Use absolute paths
         base_dir = os.getcwd()
-        font_path = os.path.join(base_dir, 'static/fonts/DejaVuSans.ttf')
-        font_bold_path = os.path.join(base_dir, 'static/fonts/DejaVuSans-Bold.ttf')
-        font_italic_path = os.path.join(base_dir, 'static/fonts/DejaVuSans-Italic.ttf')
+        font_path = os.path.join(base_dir, 'static/fonts/Ubuntu-R.ttf')
+        font_bold_path = os.path.join(base_dir, 'static/fonts/Ubuntu-B.ttf')
+        font_italic_path = os.path.join(base_dir, 'static/fonts/Ubuntu-RI.ttf')
         
-        print(f"Font path: {font_path}, exists: {os.path.exists(font_path)}")
-        print(f"Font bold path: {font_bold_path}, exists: {os.path.exists(font_bold_path)}")
-        print(f"Font italic path: {font_italic_path}, exists: {os.path.exists(font_italic_path)}")
+        logger.info(f"Font path: {font_path}, exists: {os.path.exists(font_path)}")
+        logger.info(f"Font bold path: {font_bold_path}, exists: {os.path.exists(font_bold_path)}")
+        logger.info(f"Font italic path: {font_italic_path}, exists: {os.path.exists(font_italic_path)}")
         
+        # Add Ubuntu fonts with DejaVu family name for backward compatibility
         pdf.add_font("DejaVu", "", font_path, uni=True)
         if os.path.exists(font_bold_path):
             pdf.add_font("DejaVu", "B", font_bold_path, uni=True)
@@ -183,18 +184,34 @@ def generate_custom_supplier_report_with_ubuntu(quotation, selected_suppliers, s
         pdf.multi_cell(0, 6, safe_encode(f"Suppliers Included: {', '.join(selected_suppliers)}"))
         pdf.ln(6)
 
-        # Process each supplier
+        # Process items based on grouping preference
         grand_total = 0
         currency = quotation.currency if hasattr(quotation, 'currency') and quotation.currency else '€'
         
-        for supplier in selected_suppliers:
-            # Get items for this supplier
-            items = [i for i in quotation.items if i.supplier == supplier]
-            if not items:
-                continue
+        if group_by_supplier:
+            # Process each supplier
+            for supplier in selected_suppliers:
+                # Get items for this supplier
+                items = [i for i in quotation.items if i.supplier == supplier]
+                if not items:
+                    continue
+                    
+                # Draw supplier section
+                subtotal = draw_supplier_section(pdf, supplier, items, include_prices, "DejaVu", currency, selected_fields)
+                grand_total += subtotal
+        else:
+            # Process all items together, sorted by description
+            all_items = []
+            for supplier in selected_suppliers:
+                supplier_items = [i for i in quotation.items if i.supplier == supplier]
+                all_items.extend(supplier_items)
                 
-            # Draw supplier section
-            subtotal = draw_supplier_section(pdf, supplier, items, include_prices, "DejaVu", currency, selected_fields)
+            # Sort by description
+            all_items.sort(key=lambda x: x.description if x.description else "")
+            
+            # Only show "All Suppliers" if there are multiple suppliers
+            section_title = "All Suppliers" if len(selected_suppliers) > 1 else (selected_suppliers[0] if selected_suppliers else "Items")
+            subtotal = draw_supplier_section(pdf, section_title, all_items, include_prices, "DejaVu", currency, selected_fields)
             grand_total += subtotal
 
         # Notes section
@@ -229,33 +246,36 @@ def generate_custom_supplier_report_with_ubuntu(quotation, selected_suppliers, s
         # Generate PDF
         # Get output as bytes directly - try with different encodings if needed
         try:
-            print("Generating PDF output...")
+            logger.info("Generating PDF output with Ubuntu font...")
             pdf_bytes = pdf.output(dest='S').encode('latin1')
-            print(f"Successfully generated PDF of size {len(pdf_bytes)} bytes")
+            logger.info(f"Successfully generated PDF of size {len(pdf_bytes)} bytes")
         except Exception as e:
-            print(f"Error with Latin-1 encoding: {str(e)}")
+            logger.warning(f"Error with Latin-1 encoding: {str(e)}")
             # Try without encoding - fpdf2 may handle it differently
             try:
                 pdf_bytes = pdf.output(dest='S')
                 if isinstance(pdf_bytes, bytes):
-                    print(f"Alternative method generated PDF of size {len(pdf_bytes)} bytes")
+                    logger.info(f"Alternative method generated PDF of size {len(pdf_bytes)} bytes")
                 else:
-                    print(f"Output is not bytes but {type(pdf_bytes)}")
+                    logger.info(f"Output is not bytes but {type(pdf_bytes)}")
                     # Convert string to bytes if needed
                     if isinstance(pdf_bytes, str):
                         pdf_bytes = pdf_bytes.encode('utf-8')
             except Exception as inner_e:
-                print(f"Error with alternative method: {str(inner_e)}")
+                logger.error(f"Error with alternative method: {str(inner_e)}")
                 raise
         
         # Create a timestamped filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"test_ubuntu_report_{timestamp}.pdf"
+        supplier_list = '_'.join(selected_suppliers[:2])  # Include first two suppliers in filename
+        if len(selected_suppliers) > 2:
+            supplier_list += "_and_more"
+        filename = f"supplier_report_{quotation.quotation_number}_{timestamp}.pdf"
         
-        # Also save directly to a file for testing
+        # Also save directly to a file for easy access
         with open(filename, "wb") as f:
             f.write(pdf_bytes)
-        print(f"PDF directly saved to {filename} with size {os.path.getsize(filename)} bytes")
+        logger.info(f"PDF saved to {filename} with size {os.path.getsize(filename)} bytes")
         
         return pdf_bytes, filename
 
