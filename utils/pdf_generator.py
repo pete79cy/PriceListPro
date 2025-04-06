@@ -362,6 +362,12 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
     Returns:
         tuple: (PDF content as bytes, filename)
     """
+    # Helper function to safely encode strings for Latin-1 encoding
+    def safe_encode(text):
+        if not text:
+            return ""
+        # Replace any non-Latin1 characters with their closest equivalents or '?'
+        return str(text).encode('latin-1', 'replace').decode('latin-1')
     try:
         from fpdf import FPDF
         import io
@@ -476,7 +482,7 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             # Add supplier section header
             pdf.add_page()
             pdf.set_font("Helvetica", 'B', 14)
-            pdf.cell(0, 10, f"Supplier: {supplier_name}", ln=True)
+            pdf.cell(0, 10, f"Supplier: {safe_encode(supplier_name)}", ln=True)
             pdf.ln(5)
             
             # Table headers
@@ -555,8 +561,8 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                     else:
                         value = 'N/A'
                     
-                    # Print cell with value
-                    pdf.cell(col_widths[field_index], 8, str(value), border=1, fill=fill)
+                    # Print cell with value - use safe encoding
+                    pdf.cell(col_widths[field_index], 8, safe_encode(str(value)), border=1, fill=fill)
                     field_index += 1
                 
                 # Get quantity value for calculations
@@ -669,7 +675,7 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                 pdf.set_fill_color(245 if fill else 255)
                 
                 # Supplier name
-                pdf.cell(col_widths[0], 8, supplier_name, border=1, fill=fill)
+                pdf.cell(col_widths[0], 8, safe_encode(supplier_name), border=1, fill=fill)
                 
                 # Item count
                 pdf.cell(col_widths[1], 8, str(len(items)), border=1, fill=fill)
@@ -699,7 +705,7 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             pdf.cell(0, 10, "Notes", ln=True)
             pdf.set_font("Helvetica", 'I', 10)
             pdf.set_text_color(50)
-            pdf.multi_cell(0, 7, notes, border=1)
+            pdf.multi_cell(0, 7, safe_encode(notes), border=1)
             pdf.ln()
 
         # Terms and Conditions
@@ -714,7 +720,7 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             if hasattr(company, 'terms') and company.terms:
                 terms_text = company.terms
                 
-            pdf.multi_cell(0, 6, terms_text)
+            pdf.multi_cell(0, 6, safe_encode(terms_text))
             pdf.ln()
 
         # Create filename with timestamp for uniqueness
