@@ -504,9 +504,9 @@ def register_routes(app):
             category_id = request.form.get('category_id')
             
             # Validate email if provided
-            from utils.validation import is_valid_email
+            from utils.validation import validate_email, sanitize_input
             
-            if email and not is_valid_email(email):
+            if email and not validate_email(email):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers = Customer.query.all()
                 categories = CustomerCategory.query.all()
@@ -789,6 +789,42 @@ def register_routes(app):
             return jsonify({'error': 'No customer selected'}), 400
         
         results = search_price_list(query, customer_id)
+        return jsonify(results)
+    
+    @app.route('/api/customers/search', methods=['GET'])
+    @login_required
+    def search_customers():
+        """API endpoint for searching customers by name, email or phone"""
+        query = request.args.get('q', '')
+        
+        if len(query) < 2:
+            return jsonify([])
+            
+        customers = Customer.query.filter(
+            db.or_(
+                Customer.name.ilike(f'%{query}%'),
+                Customer.email.ilike(f'%{query}%'),
+                Customer.phone.ilike(f'%{query}%')
+            )
+        ).limit(20).all()
+        
+        # Get customer categories for display
+        categories = {}
+        for category in CustomerCategory.query.all():
+            categories[category.id] = category.name
+            
+        # Format results with additional information
+        results = [{
+            'id': c.id,
+            'name': c.name,
+            'email': c.email or '',
+            'phone': c.phone or '',
+            'category': categories.get(c.category_id, 'Uncategorized'),
+            'category_id': c.category_id,
+            'address': c.address or '',
+            'created_at': c.created_at.strftime('%Y-%m-%d') if c.created_at else ''
+        } for c in customers]
+        
         return jsonify(results)
     
     @app.route('/download/template')
@@ -2150,14 +2186,14 @@ def register_routes(app):
     def add_supplier():
         """Add a new supplier or get existing one"""
         from utils.supplier_utils import get_supplier_by_name_or_create
-        from utils.validation import is_valid_email
+        from utils.validation import validate_email, sanitize_input
         
         name = request.form.get('name', '').strip()
         contact_person = request.form.get('contact_person')
         email = request.form.get('email')
         phone = request.form.get('phone')
         address = request.form.get('address')
-        notes = request.form.get('notes')
+        notes = sanitize_input(request.form.get('notes', ''))
         is_inhouse = request.form.get('is_inhouse') == '1'
         
         if not name:
@@ -2165,7 +2201,7 @@ def register_routes(app):
             return redirect(url_for('suppliers'))
             
         # Validate email if provided
-        if email and not is_valid_email(email):
+        if email and not validate_email(email):
             flash('Invalid email address format. Please check and try again.', 'danger')
             return redirect(url_for('suppliers'))
             
@@ -2221,11 +2257,14 @@ def register_routes(app):
             return redirect(url_for('suppliers'))
             
         # Validate email if provided
-        from utils.validation import is_valid_email
-        if email and not is_valid_email(email):
+        from utils.validation import validate_email, sanitize_input
+        if email and not validate_email(email):
             flash('Invalid email address format. Please check and try again.', 'danger')
             suppliers_list = Supplier.query.order_by(Supplier.name).all()
             return render_template('edit_supplier.html', supplier=supplier, suppliers=suppliers_list)
+            
+        # Sanitize notes
+        notes = sanitize_input(notes)
             
         try:
             # Update the supplier using our utility function

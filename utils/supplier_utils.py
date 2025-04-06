@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from app import db
 from models import Supplier
 from utils.logger import logger
+from utils.validation import validate_email
 
 def get_supplier_by_name_or_create(
     name, 
@@ -33,11 +34,17 @@ def get_supplier_by_name_or_create(
         
     Returns:
         tuple: (supplier, created) where supplier is the Supplier object and
-               created is a boolean indicating if a new supplier was created
+               created is a boolean indicating if a new supplier was created or
+               (None, False) if validation fails
     """
     # Basic validation - name is required
     if not name or not name.strip():
         logger.warning("Attempted to get or create supplier with empty name")
+        return None, False
+    
+    # Validate email if provided
+    if email and not validate_email(email):
+        logger.warning(f"Attempted to create supplier with invalid email: {email}")
         return None, False
     
     # Normalize the name (strip whitespace)
@@ -122,6 +129,11 @@ def update_supplier(
     
     if not supplier:
         return None, False, "Supplier not found"
+    
+    # Validate email if provided
+    if email is not None and email and not validate_email(email):
+        logger.warning(f"Attempted to update supplier with invalid email: {email}")
+        return supplier, False, "Invalid email address format"
     
     try:
         # Update the supplier fields if provided
