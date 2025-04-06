@@ -42,7 +42,7 @@ def test_supplier_report_generation():
             pdf_content, filename = generate_custom_supplier_report(
                 quotation=quotation,
                 selected_suppliers=suppliers[:2],  # Use first two suppliers
-                selected_fields=['description', 'quantity', 'supplier', 'unit'],
+                selected_fields=['description', 'quantity', 'supplier', 'unit', 'height'],
                 include_prices=True,
                 notes="This is a test report generated using WeasyPrint.",
                 use_fpdf=False  # Use WeasyPrint
@@ -62,7 +62,7 @@ def test_supplier_report_generation():
             pdf_content, filename = generate_custom_supplier_report(
                 quotation=quotation,
                 selected_suppliers=suppliers[:2],  # Use first two suppliers
-                selected_fields=['description', 'quantity', 'part_number', 'reference'],
+                selected_fields=['description', 'quantity', 'part_number', 'reference', 'height'],
                 include_prices=True,
                 notes="This is a test report generated using FPDF with supplier summary.",
                 use_fpdf=True  # Use FPDF
