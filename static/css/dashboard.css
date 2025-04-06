@@ -1,5 +1,96 @@
 /* Additional styles for improved dashboard */
 
+/* Dashboard card styles */
+.dashboard-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card .icon-container {
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover .icon-container {
+    transform: scale(1.2);
+}
+
+/* Dynamic card colors */
+.card.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+}
+
+.card.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%) !important;
+}
+
+.card.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+}
+
+.card.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+}
+
+.card.bg-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0062cc 100%) !important;
+}
+
+.card.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #545b62 100%) !important;
+}
+
+/* Activity list styling */
+.activity-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    flex: 0 0 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 50%;
+    margin-right: 15px;
+    color: #007bff;
+}
+
+.activity-details {
+    flex: 1;
+}
+
+.activity-message {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.activity-time {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
 /* Make cards more interactive */
 .card.border-0.shadow-sm {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -80,6 +171,31 @@
     background-size: 20px 20px;
 }
 
+/* Chart styling */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Badge styling for pending updates */
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
 /* Media queries for better responsiveness */
 @media (max-width: 767.98px) {
     .display-4.fw-bold {
@@ -92,5 +208,9 @@
     
     .card.border-0.shadow-sm:hover {
         transform: translateY(-3px);
+    }
+    
+    .chart-container {
+        height: 250px;
     }
 }

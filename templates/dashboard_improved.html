@@ -13,7 +13,7 @@
     <div class="row">
         <!-- Customer Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4 dashboard-card" data-href="{{ url_for('customers') }}">
+            <div class="card {{ card_classes.customers if card_classes is defined and card_classes.customers else 'bg-primary' }} text-white mb-4 dashboard-card" data-href="{{ url_for('customers') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -34,7 +34,7 @@
         
         <!-- Products Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-success text-white mb-4 dashboard-card" data-href="{{ url_for('products') }}">
+            <div class="card {{ card_classes.products if card_classes is defined and card_classes.products else 'bg-success' }} text-white mb-4 dashboard-card" data-href="{{ url_for('products') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -55,7 +55,7 @@
         
         <!-- Price Lists Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-info text-white mb-4 dashboard-card" data-href="{{ url_for('price_lists') }}">
+            <div class="card {{ card_classes.price_lists if card_classes is defined and card_classes.price_lists else 'bg-info' }} text-white mb-4 dashboard-card" data-href="{{ url_for('price_lists') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -76,7 +76,7 @@
         
         <!-- Invoices Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-white mb-4 dashboard-card" data-href="{{ url_for('invoices') }}">
+            <div class="card {{ card_classes.invoices if card_classes is defined and card_classes.invoices else 'bg-warning' }} text-white mb-4 dashboard-card" data-href="{{ url_for('invoices') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -143,7 +143,9 @@
                             {% for activity in recent_activities %}
                                 <div class="activity-item">
                                     <div class="activity-icon">
-                                        {% if 'upload' in activity.message.lower() %}
+                                        {% if activity.icon is defined %}
+                                            <i class="{{ activity.icon }}"></i>
+                                        {% elif 'upload' in activity.message.lower() %}
                                             <i class="fas fa-file-upload"></i>
                                         {% elif 'price' in activity.message.lower() %}
                                             <i class="fas fa-euro-sign"></i>
@@ -168,7 +170,9 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <p>No recent activities found.</p>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> No recent activities yet.
+                            </div>
                         {% endif %}
                     </div>
                 </div>
@@ -296,6 +300,16 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = this.dataset.href;
         });
     });
+    
+    // Auto-submit filter form when selection changes (customer category filter)
+    const filterSelects = document.querySelectorAll('.auto-submit-filter');
+    if (filterSelects) {
+        filterSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.closest('form').submit();
+            });
+        });
+    }
 });
 </script>
 {% endblock %}
