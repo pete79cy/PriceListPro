@@ -20,21 +20,48 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+class CustomerCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    customers = db.relationship('Customer', backref='category', lazy=True)
+    
+    def __repr__(self):
+        return f'<CustomerCategory {self.name}>'
+
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     address = db.Column(db.String(200), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('customer_category.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     price_lists = db.relationship('PriceList', backref='customer', lazy=True)
     invoices = db.relationship('Invoice', backref='customer', lazy=True)
+    contacts = db.relationship('CustomerContact', backref='customer', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f'<Customer {self.name}>'
+
+class CustomerContact(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    contact_date = db.Column(db.DateTime, default=datetime.utcnow)
+    contact_type = db.Column(db.String(50), nullable=False)  # e.g. phone, email, meeting
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<CustomerContact {self.contact_type} on {self.contact_date}>'
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)

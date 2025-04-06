@@ -6,7 +6,7 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings
+from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from utils.excel_parser import parse_excel_file
@@ -501,6 +501,16 @@ def register_routes(app):
             email = request.form.get('email')
             phone = request.form.get('phone')
             address = request.form.get('address')
+            category_id = request.form.get('category_id')
+            
+            # Validate email if provided
+            from utils.validation import is_valid_email
+            
+            if email and not is_valid_email(email):
+                flash('Invalid email address format. Please check and try again.', 'danger')
+                customers = Customer.query.all()
+                categories = CustomerCategory.query.all()
+                return render_template('customers.html', customers=customers, categories=categories)
             
             if customer_id:  # Update existing
                 customer = Customer.query.get_or_404(customer_id)
@@ -508,9 +518,11 @@ def register_routes(app):
                 customer.email = email
                 customer.phone = phone
                 customer.address = address
+                if category_id:
+                    customer.category_id = category_id
                 flash(f'Customer {name} updated successfully!', 'success')
             else:  # Create new
-                customer = Customer(name=name, email=email, phone=phone, address=address)
+                customer = Customer(name=name, email=email, phone=phone, address=address, category_id=category_id if category_id else None)
                 db.session.add(customer)
                 flash(f'Customer {name} added successfully!', 'success')
             
@@ -519,7 +531,97 @@ def register_routes(app):
         
         # GET request - show customers
         customers_list = Customer.query.all()
-        return render_template('customers.html', customers=customers_list)
+        categories = CustomerCategory.query.all()
+        return render_template('customers.html', customers=customers_list, categories=categories)
+    
+    @app.route('/customers/<int:customer_id>', methods=['GET'])
+    @login_required
+    def customer_detail(customer_id):
+        """Show customer details including stats and contact history"""
+        customer = Customer.query.get_or_404(customer_id)
+        
+        # Get customer statistics
+        from utils.customer_stats import get_customer_stats
+        stats = get_customer_stats(customer_id)
+        
+        # Get customer contacts
+        contacts = customer.contacts
+        
+        # Get price lists for this customer
+        price_lists = PriceList.query.filter_by(customer_id=customer_id).all()
+        
+        # Get invoices for this customer
+        invoices = Invoice.query.filter_by(customer_id=customer_id).all()
+        
+        # Get all available categories for the contact form
+        categories = CustomerCategory.query.all()
+        
+        return render_template('customer_detail.html', 
+                               customer=customer, 
+                               stats=stats, 
+                               contacts=contacts,
+                               price_lists=price_lists,
+                               invoices=invoices,
+                               categories=categories)
+                               
+    @app.route('/customers/<int:customer_id>/add_contact', methods=['POST'])
+    @login_required
+    def add_customer_contact(customer_id):
+        """Add a new contact record for a customer"""
+        customer = Customer.query.get_or_404(customer_id)
+        
+        contact_type = request.form.get('contact_type')
+        notes = request.form.get('notes')
+        contact_date = request.form.get('contact_date')
+        
+        if not contact_type or not notes:
+            flash('Contact type and notes are required.', 'danger')
+            return redirect(url_for('customer_detail', customer_id=customer_id))
+            
+        try:
+            # Create a new contact record
+            if contact_date:
+                contact_date = datetime.strptime(contact_date, '%Y-%m-%d')
+            else:
+                contact_date = datetime.utcnow()
+                
+            contact = CustomerContact(
+                customer_id=customer_id,
+                contact_type=contact_type,
+                notes=notes,
+                contact_date=contact_date
+            )
+            
+            db.session.add(contact)
+            db.session.commit()
+            
+            flash('Customer contact record added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding contact record: {str(e)}', 'danger')
+            
+        return redirect(url_for('customer_detail', customer_id=customer_id))
+        
+    @app.route('/customers/<int:customer_id>/delete_contact/<int:contact_id>', methods=['POST'])
+    @login_required
+    def delete_customer_contact(customer_id, contact_id):
+        """Delete a customer contact record"""
+        contact = CustomerContact.query.get_or_404(contact_id)
+        
+        # Verify the contact belongs to the specified customer
+        if contact.customer_id != customer_id:
+            flash('Invalid contact record.', 'danger')
+            return redirect(url_for('customer_detail', customer_id=customer_id))
+            
+        try:
+            db.session.delete(contact)
+            db.session.commit()
+            flash('Contact record deleted successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting contact record: {str(e)}', 'danger')
+            
+        return redirect(url_for('customer_detail', customer_id=customer_id))
     
     @app.route('/customers/<int:customer_id>/delete', methods=['POST'])
     @login_required
@@ -529,6 +631,60 @@ def register_routes(app):
         db.session.commit()
         flash(f'Customer {customer.name} deleted successfully!', 'success')
         return redirect(url_for('customers'))
+    
+    @app.route('/customer_categories', methods=['GET', 'POST'])
+    @login_required
+    def customer_categories():
+        """View and manage customer categories"""
+        if request.method == 'POST':
+            name = request.form.get('name')
+            description = request.form.get('description', '')
+            category_id = request.form.get('category_id')
+            
+            if not name:
+                flash('Category name is required.', 'danger')
+                categories = CustomerCategory.query.all()
+                return render_template('customer_categories.html', categories=categories)
+                
+            if category_id:  # Update existing category
+                category = CustomerCategory.query.get_or_404(category_id)
+                category.name = name
+                category.description = description
+                flash(f'Category {name} updated successfully!', 'success')
+            else:  # Create new category
+                category = CustomerCategory(name=name, description=description)
+                db.session.add(category)
+                flash(f'Category {name} added successfully!', 'success')
+                
+            db.session.commit()
+            return redirect(url_for('customer_categories'))
+            
+        # GET request - show categories
+        categories = CustomerCategory.query.all()
+        return render_template('customer_categories.html', categories=categories)
+        
+    @app.route('/customer_categories/<int:category_id>/delete', methods=['POST'])
+    @login_required
+    def delete_customer_category(category_id):
+        """Delete a customer category"""
+        category = CustomerCategory.query.get_or_404(category_id)
+        
+        # Check if any customers use this category
+        customers_count = Customer.query.filter_by(category_id=category_id).count()
+        if customers_count > 0:
+            flash(f'Cannot delete category {category.name} as it is used by {customers_count} customers.', 'danger')
+            return redirect(url_for('customer_categories'))
+            
+        try:
+            category_name = category.name
+            db.session.delete(category)
+            db.session.commit()
+            flash(f'Category {category_name} deleted successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting category: {str(e)}', 'danger')
+            
+        return redirect(url_for('customer_categories'))
     
     @app.route('/products', methods=['GET', 'POST'])
     @login_required
@@ -1994,6 +2150,7 @@ def register_routes(app):
     def add_supplier():
         """Add a new supplier or get existing one"""
         from utils.supplier_utils import get_supplier_by_name_or_create
+        from utils.validation import is_valid_email
         
         name = request.form.get('name', '').strip()
         contact_person = request.form.get('contact_person')
@@ -2005,6 +2162,11 @@ def register_routes(app):
         
         if not name:
             flash('Supplier name is required.', 'danger')
+            return redirect(url_for('suppliers'))
+            
+        # Validate email if provided
+        if email and not is_valid_email(email):
+            flash('Invalid email address format. Please check and try again.', 'danger')
             return redirect(url_for('suppliers'))
             
         try:
@@ -2057,6 +2219,13 @@ def register_routes(app):
         if not name:
             flash('Supplier name is required.', 'danger')
             return redirect(url_for('suppliers'))
+            
+        # Validate email if provided
+        from utils.validation import is_valid_email
+        if email and not is_valid_email(email):
+            flash('Invalid email address format. Please check and try again.', 'danger')
+            suppliers_list = Supplier.query.order_by(Supplier.name).all()
+            return render_template('edit_supplier.html', supplier=supplier, suppliers=suppliers_list)
             
         try:
             # Update the supplier using our utility function
