@@ -2,6 +2,7 @@ import os
 import uuid
 import re
 import traceback
+import time
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
@@ -12,12 +13,13 @@ from datetime import datetime
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
-from utils.logger import logger
+from utils.logger import logger, log_with_context, log_api_request
 from utils.excel_template import ensure_template_exists
 from utils.invoice_excel_parser import parse_invoice_excel, update_price_list_from_invoice
 from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
 from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
+from utils.feedback_collector import get_feedback_collector
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
@@ -3020,3 +3022,207 @@ def register_routes(app):
         View documentation for the Viber integration
         """
         return render_template('viber_integration_docs.html')
+        
+    # AI Insights Feedback API Routes
+    @app.route('/api/feedback/submit', methods=['POST'])
+    @login_required
+    def submit_feedback():
+        """Submit user feedback for AI-generated insights"""
+        start_time = time.time()
+        
+        try:
+            data = request.json
+            
+            # Validate required fields
+            required_fields = ['document_type', 'document_id', 'rating']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({
+                        'status': 'error', 
+                        'message': f'Missing required field: {field}'
+                    }), 400
+            
+            # Get feedback collector
+            feedback_collector = get_feedback_collector()
+            
+            # Extract data
+            document_type = data['document_type']
+            document_id = data['document_id']
+            rating = data['rating']
+            comment = data.get('comment')
+            insight_type = data.get('insight_type')
+            user_id = current_user.id
+            
+            # Record feedback
+            success = feedback_collector.add_feedback(
+                document_type=document_type,
+                document_id=document_id,
+                user_id=user_id,
+                rating=rating,
+                comment=comment,
+                insight_type=insight_type
+            )
+            
+            # Calculate and log API request timing
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            log_api_request(
+                endpoint='/api/feedback/submit',
+                method='POST',
+                status_code=200 if success else 500,
+                duration_ms=duration_ms,
+                user_id=user_id,
+                document_type=document_type,
+                document_id=document_id
+            )
+            
+            if success:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Feedback recorded successfully'
+                })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to record feedback'
+                }), 500
+                
+        except Exception as e:
+            # Log the error with context
+            log_with_context(
+                'error',
+                f"Error recording feedback: {str(e)}",
+                traceback=traceback.format_exc()
+            )
+            
+            return jsonify({
+                'status': 'error',
+                'message': f'Error recording feedback: {str(e)}'
+            }), 500
+    
+    @app.route('/api/feedback/stats', methods=['GET'])
+    @login_required
+    def get_feedback_stats():
+        """Get statistics on collected AI insights feedback"""
+        start_time = time.time()
+        
+        try:
+            # Get optional filters from query parameters
+            document_type = request.args.get('document_type')
+            days = request.args.get('days', 30)
+            
+            try:
+                days = int(days)
+            except ValueError:
+                days = 30  # Default to 30 days if invalid
+            
+            # Get feedback collector
+            feedback_collector = get_feedback_collector()
+            
+            # Get statistics
+            stats = feedback_collector.get_feedback_stats(
+                document_type=document_type,
+                days=days
+            )
+            
+            # Calculate and log API request timing
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            log_api_request(
+                endpoint='/api/feedback/stats',
+                method='GET',
+                status_code=200,
+                duration_ms=duration_ms,
+                user_id=current_user.id,
+                document_type=document_type,
+                days=days
+            )
+            
+            return jsonify({
+                'status': 'success',
+                'data': stats
+            })
+            
+        except Exception as e:
+            # Log the error with context
+            log_with_context(
+                'error',
+                f"Error getting feedback stats: {str(e)}",
+                traceback=traceback.format_exc()
+            )
+            
+            return jsonify({
+                'status': 'error',
+                'message': f'Error getting feedback stats: {str(e)}'
+            }), 500
+    
+    @app.route('/api/feedback/recent', methods=['GET'])
+    @login_required
+    def get_recent_feedback():
+        """Get recent feedback entries for AI insights"""
+        start_time = time.time()
+        
+        try:
+            # Get optional filters from query parameters
+            document_type = request.args.get('document_type')
+            limit = request.args.get('limit', 10)
+            
+            try:
+                limit = int(limit)
+            except ValueError:
+                limit = 10  # Default to 10 if invalid
+            
+            # Get feedback collector
+            feedback_collector = get_feedback_collector()
+            
+            # Get recent entries
+            entries = feedback_collector.get_recent_feedback(
+                limit=limit,
+                document_type=document_type
+            )
+            
+            # Calculate and log API request timing
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            log_api_request(
+                endpoint='/api/feedback/recent',
+                method='GET',
+                status_code=200,
+                duration_ms=duration_ms,
+                user_id=current_user.id,
+                document_type=document_type,
+                limit=limit
+            )
+            
+            return jsonify({
+                'status': 'success',
+                'data': entries
+            })
+            
+        except Exception as e:
+            # Log the error with context
+            log_with_context(
+                'error',
+                f"Error getting recent feedback: {str(e)}",
+                traceback=traceback.format_exc()
+            )
+            
+            return jsonify({
+                'status': 'error',
+                'message': f'Error getting recent feedback: {str(e)}'
+            }), 500
+            
+    # AI Insights UI Feedback Page
+    @app.route('/ai-insights/feedback', methods=['GET'])
+    @login_required
+    def ai_insights_feedback_dashboard():
+        """Display the AI insights feedback dashboard"""
+        # Get feedback collector
+        feedback_collector = get_feedback_collector()
+        
+        # Get stats and recent entries
+        stats = feedback_collector.get_feedback_stats()
+        recent_entries = feedback_collector.get_recent_feedback(limit=10)
+        
+        return render_template(
+            'ai_insights_feedback.html', 
+            stats=stats,
+            recent_entries=recent_entries
+        )

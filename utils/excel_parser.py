@@ -2,9 +2,10 @@ import pandas as pd
 import logging
 import traceback
 import re
+import time
 from app import db
 from models import Customer, Product, PriceList
-from utils.logger import logger
+from utils.logger import logger, log_with_context, log_document_processing, TimingLogger
 from utils.product_management import find_or_create_product, create_or_update_price_list
 from utils.product_verification import batch_verify_products, extract_products_from_excel
 
@@ -82,7 +83,16 @@ def parse_excel_file(file_path, customer_id, upload_id):
     Returns:
         dict: Stats about the import (new products, price entries, etc.)
     """
-    logger.info(f"Parsing Excel file: {file_path} for customer: {customer_id}")
+    start_time = time.time()
+    
+    # Use structured logging for the start of processing
+    log_document_processing(
+        document_type="excel",
+        document_id=upload_id,
+        status="started",
+        customer_id=customer_id,
+        file_path=file_path
+    )
     
     # Initialize stats
     stats = {
@@ -91,8 +101,13 @@ def parse_excel_file(file_path, customer_id, upload_id):
         'errors': []
     }
     
-    # Log detailed information for debugging
-    logger.debug(f"Excel parse starting - file: {file_path}, customer_id: {customer_id}, upload_id: {upload_id}")
+    # Use context-rich logging with detailed fields
+    log_with_context('info', 
+                    "Excel parse starting", 
+                    file=file_path,
+                    customer_id=customer_id,
+                    upload_id=upload_id,
+                    operation="excel_parse")
     
     try:
         # Read the Excel file with error handling
@@ -348,15 +363,52 @@ def parse_excel_file(file_path, customer_id, upload_id):
         
         # Commit all changes
         db.session.commit()
-        logger.info(f"Excel import complete. Stats: {stats}")
+        
+        # Calculate processing duration and log structured completion information
+        duration_ms = round((time.time() - start_time) * 1000, 2)
+        
+        # Log completion with structured data
+        log_document_processing(
+            document_type="excel",
+            document_id=upload_id,
+            status="completed",
+            duration_ms=duration_ms,
+            customer_id=customer_id,
+            stats=stats,
+            new_products=stats['new_products'],
+            price_entries=stats['price_entries']
+        )
+        
         return stats
         
     except Exception as e:
         db.session.rollback()
         error_message = f"Error parsing Excel file: {str(e)}"
-        logger.error(error_message)
-        logger.error(f"Full traceback: {traceback.format_exc()}")
+        
+        # Calculate duration even for errors
+        duration_ms = round((time.time() - start_time) * 1000, 2)
+        
+        # Log the error with context
+        log_with_context('error', 
+                        f"Excel file parsing failed: {error_message}",
+                        document_type="excel",
+                        document_id=upload_id, 
+                        customer_id=customer_id,
+                        duration_ms=duration_ms,
+                        error=str(e),
+                        traceback=traceback.format_exc())
+        
         stats['errors'].append(error_message)
+        
+        # Also log completion but with error status
+        log_document_processing(
+            document_type="excel",
+            document_id=upload_id,
+            status="failed",
+            duration_ms=duration_ms,
+            customer_id=customer_id,
+            error=str(e)
+        )
         
         # Return stats with error information instead of raising exception
         # This allows the web interface to display the error message

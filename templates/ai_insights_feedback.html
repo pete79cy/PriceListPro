@@ -1,0 +1,99 @@
+{% extends 'layout.html' %}
+
+{% block title %}AI Insights Feedback Dashboard{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="display-5 mb-4">AI Insights Feedback Dashboard</h1>
+    
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="display-3 fw-bold text-primary">{{ stats.average_rating }}</h3>
+                    <p class="lead">Average Rating</p>
+                    <div class="text-muted">Based on {{ stats.total_count }} ratings</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Rating Distribution</h5>
+                    <canvas id="ratingDistributionChart" data-ratings="{{ stats.rating_distribution|tojson }}"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Document Types</h5>
+                    <canvas id="documentTypeChart" data-counts="{{ stats.document_type_counts|tojson }}"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Recent Feedback</h4>
+                </div>
+                <div class="card-body">
+                    {% if recent_entries|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Document Type</th>
+                                    <th>Document ID</th>
+                                    <th>Rating</th>
+                                    <th>Insight Type</th>
+                                    <th>Comment</th>
+                                    <th>Date/Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in recent_entries %}
+                                <tr>
+                                    <td>{{ entry.id }}</td>
+                                    <td>{{ entry.document_type }}</td>
+                                    <td>{{ entry.document_id }}</td>
+                                    <td>
+                                        {% for _ in range(entry.rating) %}
+                                        <i class="fas fa-star text-warning"></i>
+                                        {% endfor %}
+                                        {% for _ in range(5 - entry.rating) %}
+                                        <i class="far fa-star text-muted"></i>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ entry.insight_type or '-' }}</td>
+                                    <td>{{ entry.comment or '-' }}</td>
+                                    <td>{{ entry.timestamp }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">No feedback entries yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/ai_feedback.js') }}"></script>
+{% endblock %}

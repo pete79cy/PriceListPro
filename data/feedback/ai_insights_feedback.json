@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "document_type": "invoice",
+    "document_id": 66,
+    "user_id": 4,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:22:15.767554",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "pricing_anomalies"
+  },
+  {
+    "id": 2,
+    "document_type": "quotation",
+    "document_id": 14,
+    "user_id": 5,
+    "rating": 3,
+    "timestamp": "2025-04-06T18:22:15.767845",
+    "comment": "Very helpful insight, saved me time analyzing the data.",
+    "insight_type": "pricing_anomalies"
+  },
+  {
+    "id": 3,
+    "document_type": "quotation",
+    "document_id": 52,
+    "user_id": 3,
+    "rating": 3,
+    "timestamp": "2025-04-06T18:22:15.768079",
+    "comment": null,
+    "insight_type": "seasonal_trends"
+  },
+  {
+    "id": 4,
+    "document_type": "invoice",
+    "document_id": 85,
+    "user_id": 4,
+    "rating": 4,
+    "timestamp": "2025-04-06T18:22:15.768270",
+    "comment": "Extremely accurate prediction of price trends.",
+    "insight_type": null
+  },
+  {
+    "id": 5,
+    "document_type": "excel",
+    "document_id": 60,
+    "user_id": 1,
+    "rating": 1,
+    "timestamp": "2025-04-06T18:22:15.768457",
+    "comment": "The analysis missed some key factors.",
+    "insight_type": "inventory_analysis"
+  },
+  {
+    "id": 6,
+    "document_type": "invoice",
+    "document_id": 10,
+    "user_id": 4,
+    "rating": 5,
+    "timestamp": "2025-04-06T18:22:15.768658",
+    "comment": "Helped me identify an issue with our supplier pricing.",
+    "insight_type": "pricing_anomalies"
+  },
+  {
+    "id": 7,
+    "document_type": "pdf",
+    "document_id": 39,
+    "user_id": 3,
+    "rating": 5,
+    "timestamp": "2025-04-06T18:22:15.768882",
+    "comment": "Extremely accurate prediction of price trends.",
+    "insight_type": "inventory_analysis"
+  },
+  {
+    "id": 8,
+    "document_type": "pdf",
+    "document_id": 59,
+    "user_id": 3,
+    "rating": 2,
+    "timestamp": "2025-04-06T18:22:15.769116",
+    "comment": "Very helpful insight, saved me time analyzing the data.",
+    "insight_type": "inventory_analysis"
+  },
+  {
+    "id": 9,
+    "document_type": "pdf",
+    "document_id": 93,
+    "user_id": 1,
+    "rating": 4,
+    "timestamp": "2025-04-06T18:22:15.769422",
+    "comment": "Somewhat useful but could be more specific.",
+    "insight_type": "supplier_recommendations"
+  },
+  {
+    "id": 10,
+    "document_type": "pdf",
+    "document_id": 56,
+    "user_id": 2,
+    "rating": 5,
+    "timestamp": "2025-04-06T18:22:15.770399",
+    "comment": "Very helpful insight, saved me time analyzing the data.",
+    "insight_type": "seasonal_trends"
+  }
+]

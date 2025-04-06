@@ -72,6 +72,16 @@
                             <li><a class="dropdown-item" href="{{ url_for('supplier_products') }}"><i class="fas fa-leaf"></i> Supplier Products</a></li>
                         </ul>
                     </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="aiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-robot"></i> AI Insights
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="aiDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('ai_settings') }}"><i class="fas fa-cog"></i> AI Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('ai_insights_feedback_dashboard') }}"><i class="fas fa-star"></i> Feedback Dashboard</a></li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('pending_updates') }}">
                             <i class="fas fa-tasks"></i> Price Updates

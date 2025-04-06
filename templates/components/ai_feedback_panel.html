@@ -1,0 +1,35 @@
+{% macro render_feedback_form(document_type, document_id, insight_type=None) %}
+<div class="ai-feedback mt-4 border-top pt-3">
+    <h5><i class="fas fa-star text-warning"></i> Rate this insight</h5>
+    <p class="text-muted small">Your feedback helps us improve our AI analysis.</p>
+    
+    <form class="ai-feedback-form">
+        <div class="form-content">
+            <input type="hidden" name="document_type" value="{{ document_type }}">
+            <input type="hidden" name="document_id" value="{{ document_id }}">
+            {% if insight_type %}
+            <input type="hidden" name="insight_type" value="{{ insight_type }}">
+            {% endif %}
+            <input type="hidden" name="rating" value="0">
+            
+            <div class="mb-3">
+                <div class="rating-stars">
+                    {% for i in range(1, 6) %}
+                    <span class="rating-star" data-rating="{{ i }}">★</span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <textarea name="comment" class="form-control form-control-sm" placeholder="Additional comments (optional)" rows="2"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-sm btn-primary" disabled>Submit Feedback</button>
+        </div>
+        
+        <div class="feedback-thank-you mt-2" style="display: none;">
+            Thank you for your feedback! Your input helps us improve.
+        </div>
+    </form>
+</div>
+{% endmacro %}
