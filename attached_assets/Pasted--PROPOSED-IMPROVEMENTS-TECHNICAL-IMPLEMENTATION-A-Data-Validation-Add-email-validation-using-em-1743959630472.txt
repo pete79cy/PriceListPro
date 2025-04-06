@@ -1,0 +1,75 @@
+✅ PROPOSED IMPROVEMENTS – TECHNICAL IMPLEMENTATION
+A. Data Validation
+
+Add email validation using email_validator.
+
+from email_validator import validate_email, EmailNotValidError
+
+def is_valid_email(email):
+    if not email:
+        return True  # Optional field
+    try:
+        validate_email(email)
+        return True
+    except EmailNotValidError:
+        return False
+
+Use this in POST routes before committing data.
+B. Customer Category
+
+Define a new model and link to Customer.
+
+class CustomerCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(200))
+
+# Extend Customer model
+category_id = db.Column(db.Integer, db.ForeignKey('customer_category.id'))
+category = db.relationship('CustomerCategory', backref='customers')
+
+C. Customer Contact History
+
+class CustomerContact(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    contact_date = db.Column(db.DateTime, default=datetime.utcnow)
+    contact_type = db.Column(db.String(50))  # e.g. phone, email
+    notes = db.Column(db.Text)
+
+D. Customer Search API
+
+from sqlalchemy import or_
+
+@app.route('/api/customers/search')
+def search_customers():
+    query = request.args.get('q', '')
+    customers = Customer.query.filter(
+        or_(
+            Customer.name.ilike(f"%{query}%"),
+            Customer.email.ilike(f"%{query}%"),
+            Customer.phone.ilike(f"%{query}%")
+        )
+    ).all()
+    return jsonify([{
+        'id': c.id,
+        'name': c.name,
+        'email': c.email
+    } for c in customers])
+
+E. Customer Statistics Utility
+
+def get_customer_stats(customer_id):
+    customer = Customer.query.get(customer_id)
+    if not customer:
+        return {}
+
+    invoices = customer.invoices
+    return {
+        'total_invoices': len(invoices),
+        'total_price_lists': len(customer.price_lists),
+        'last_order_date': max([i.invoice_date for i in invoices]) if invoices else None,
+        'average_order_value': (
+            sum([i.total_amount for i in invoices]) / len(invoices)
+        ) if invoices else 0
+    }
