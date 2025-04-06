@@ -141,31 +141,44 @@ def register_routes(app):
             recent_activities = get_recent_activities(limit=5)
             
             # Get data for charts
-            # Get product categories for pie chart
-            product_categories = db.session.query(Product.category, db.func.count(Product.id)).filter(
-                Product.category.isnot(None)
-            ).group_by(Product.category).all()
-            
-            # Create chart data
-            category_chart_data = {
-                'labels': [str(category[0]) if category[0] else 'Uncategorized' for category in product_categories],
-                'values': [int(category[1]) for category in product_categories]
-            }
-            
-            # Get invoices per month for past 6 months
-            six_months_ago = datetime.utcnow() - timedelta(days=180)
-            invoice_counts = db.session.query(
-                db.func.to_char(Invoice.invoice_date, 'YYYY-MM').label('month'), 
-                db.func.count(Invoice.id)
-            ).filter(
-                Invoice.invoice_date >= six_months_ago
-            ).group_by('month').order_by('month').all()
-            
-            # Create chart data for invoices
-            invoice_chart_data = {
-                'labels': [str(count[0]) for count in invoice_counts],
-                'values': [int(count[1]) for count in invoice_counts]
-            }
+            try:
+                # Get product categories for pie chart
+                product_categories = db.session.query(Product.category, db.func.count(Product.id)).filter(
+                    Product.category.isnot(None)
+                ).group_by(Product.category).all()
+                
+                # Convert SQLAlchemy result to Python native types for JSON serialization
+                product_categories_list = [(str(category[0]) if category[0] else 'Uncategorized', int(category[1])) 
+                                        for category in product_categories]
+                
+                # Create chart data
+                category_chart_data = {
+                    'labels': [item[0] for item in product_categories_list],
+                    'values': [item[1] for item in product_categories_list]
+                }
+                
+                # Get invoices per month for past 6 months
+                six_months_ago = datetime.utcnow() - timedelta(days=180)
+                invoice_counts = db.session.query(
+                    db.func.to_char(Invoice.invoice_date, 'YYYY-MM').label('month'), 
+                    db.func.count(Invoice.id)
+                ).filter(
+                    Invoice.invoice_date >= six_months_ago
+                ).group_by('month').order_by('month').all()
+                
+                # Convert SQLAlchemy result to Python native types for JSON serialization
+                invoice_counts_list = [(str(count[0]), int(count[1])) for count in invoice_counts]
+                
+                # Create chart data for invoices
+                invoice_chart_data = {
+                    'labels': [item[0] for item in invoice_counts_list],
+                    'values': [item[1] for item in invoice_counts_list]
+                }
+            except Exception as e:
+                # Log the error and provide empty chart data if there's an issue
+                app.logger.error(f"Error generating chart data in index: {str(e)}")
+                category_chart_data = {'labels': [], 'values': []}
+                invoice_chart_data = {'labels': [], 'values': []}
             
             return render_template('dashboard_improved.html', 
                                   stats=stats, 
@@ -230,32 +243,45 @@ def register_routes(app):
         # Get recent activities for the dashboard
         recent_activities = get_recent_activities(limit=5)
         
-        # Get data for charts
-        # Get product categories for pie chart
-        product_categories = db.session.query(Product.category, db.func.count(Product.id)).filter(
-            Product.category.isnot(None)
-        ).group_by(Product.category).all()
-        
-        # Create chart data
-        category_chart_data = {
-            'labels': [str(category[0]) if category[0] else 'Uncategorized' for category in product_categories],
-            'values': [int(category[1]) for category in product_categories]
-        }
-        
-        # Get invoices per month for past 6 months
-        six_months_ago = datetime.utcnow() - timedelta(days=180)
-        invoice_counts = db.session.query(
-            db.func.to_char(Invoice.invoice_date, 'YYYY-MM').label('month'), 
-            db.func.count(Invoice.id)
-        ).filter(
-            Invoice.invoice_date >= six_months_ago
-        ).group_by('month').order_by('month').all()
-        
-        # Create chart data for invoices
-        invoice_chart_data = {
-            'labels': [str(count[0]) for count in invoice_counts],
-            'values': [int(count[1]) for count in invoice_counts]
-        }
+        try:
+            # Get data for charts
+            # Get product categories for pie chart
+            product_categories = db.session.query(Product.category, db.func.count(Product.id)).filter(
+                Product.category.isnot(None)
+            ).group_by(Product.category).all()
+            
+            # Convert SQLAlchemy result to Python native types for JSON serialization
+            product_categories_list = [(str(category[0]) if category[0] else 'Uncategorized', int(category[1])) 
+                                    for category in product_categories]
+            
+            # Create chart data
+            category_chart_data = {
+                'labels': [item[0] for item in product_categories_list],
+                'values': [item[1] for item in product_categories_list]
+            }
+            
+            # Get invoices per month for past 6 months
+            six_months_ago = datetime.utcnow() - timedelta(days=180)
+            invoice_counts = db.session.query(
+                db.func.to_char(Invoice.invoice_date, 'YYYY-MM').label('month'), 
+                db.func.count(Invoice.id)
+            ).filter(
+                Invoice.invoice_date >= six_months_ago
+            ).group_by('month').order_by('month').all()
+            
+            # Convert SQLAlchemy result to Python native types for JSON serialization
+            invoice_counts_list = [(str(count[0]), int(count[1])) for count in invoice_counts]
+            
+            # Create chart data for invoices
+            invoice_chart_data = {
+                'labels': [item[0] for item in invoice_counts_list],
+                'values': [item[1] for item in invoice_counts_list]
+            }
+        except Exception as e:
+            # Log the error and provide empty chart data if there's an issue
+            app.logger.error(f"Error generating chart data: {str(e)}")
+            category_chart_data = {'labels': [], 'values': []}
+            invoice_chart_data = {'labels': [], 'values': []}
         
         return render_template('dashboard_improved.html', 
                               stats=stats, 
