@@ -2,12 +2,47 @@ import os
 import uuid
 import base64
 import io
+import re
 from datetime import datetime, timedelta
 from flask import render_template, current_app
 from weasyprint import HTML
 from fpdf import FPDF
 from utils.logger import logger
 from models import CompanySettings
+
+def sanitize_text_for_latin1(text):
+    """
+    Sanitize text to ensure it's compatible with latin-1 encoding
+    
+    Args:
+        text: Text to sanitize
+        
+    Returns:
+        str: Sanitized text compatible with latin-1 encoding
+    """
+    if text is None:
+        return ""
+        
+    # Replace common problematic characters
+    text = str(text)
+    text = text.replace('€', 'EUR')
+    text = text.replace('£', 'GBP')
+    text = text.replace('©', '(c)')
+    text = text.replace('®', '(R)')
+    text = text.replace('™', '(TM)')
+    text = text.replace('…', '...')
+    
+    # Replace any other characters outside of latin-1 range with closest ASCII equivalent
+    result = ""
+    for char in text:
+        try:
+            char.encode('latin-1')
+            result += char
+        except UnicodeEncodeError:
+            # If can't encode to latin-1, replace with '?'
+            result += '?'
+    
+    return result
 
 class PDF(FPDF):
     """Custom PDF class with header, footer and watermark capabilities"""
@@ -422,8 +457,15 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
         valid_until = quotation.quotation_date + timedelta(days=30)
         pdf.cell(0, 10, f"Valid Until: {valid_until.strftime('%Y-%m-%d')}", ln=True)
         
-        pdf.cell(0, 10, f"Customer: {quotation.customer.name if quotation.customer else 'N/A'}", ln=True)
-        pdf.cell(0, 10, f"Suppliers Included: {', '.join(selected_suppliers)}", ln=True)
+        # Handle potential non-latin1 characters in customer name
+        customer_name = quotation.customer.name if quotation.customer else 'N/A'
+        # Sanitize customer name for latin-1 encoding
+        customer_name = sanitize_text_for_latin1(customer_name)
+        
+        pdf.cell(0, 10, f"Customer: {customer_name}", ln=True)
+        # Join suppliers but ensure they don't contain non-latin1 characters
+        safe_suppliers = [sanitize_text_for_latin1(s) for s in selected_suppliers]
+        pdf.cell(0, 10, f"Suppliers Included: {', '.join(safe_suppliers)}", ln=True)
         pdf.ln(10)
 
         # Add watermark
@@ -477,25 +519,30 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             for item in items:
                 pdf.set_fill_color(245 if fill else 255)
                 
-                # Item description
-                pdf.cell(col_width, 8, item.description[:30], border=1, fill=fill)
+                # Item description - Safely handle special characters
+                safe_description = sanitize_text_for_latin1(item.description[:30])
+                pdf.cell(col_width, 8, safe_description, border=1, fill=fill)
                 
                 # Quantity
                 pdf.cell(col_width, 8, str(item.quantity), border=1, fill=fill)
                 
                 # Price columns if included
                 if include_prices:
-                    pdf.cell(col_width, 8, f"{quotation.currency}{item.selling_price:.2f}", border=1, fill=fill)
+                    # Use a standard currency symbol that's compatible with latin-1 encoding
+                    currency_symbol = "$" if quotation.currency == "€" else quotation.currency
+                    pdf.cell(col_width, 8, f"{currency_symbol}{item.selling_price:.2f}", border=1, fill=fill)
                     line_total = item.selling_price * item.quantity
                     total += line_total
-                    pdf.cell(col_width, 8, f"{quotation.currency}{line_total:.2f}", border=1, fill=fill)
+                    pdf.cell(col_width, 8, f"{currency_symbol}{line_total:.2f}", border=1, fill=fill)
                 
                 # Additional fields
                 for field in selected_fields:
                     if field not in ['description', 'quantity', 'selling_price', 'total']:
                         value = getattr(item, field, '')
                         if value is not None:
-                            pdf.cell(col_width, 8, str(value)[:20], border=1, fill=fill)
+                            # Sanitize the value for latin-1 encoding
+                            safe_value = sanitize_text_for_latin1(str(value)[:20])
+                            pdf.cell(col_width, 8, safe_value, border=1, fill=fill)
                         else:
                             pdf.cell(col_width, 8, '', border=1, fill=fill)
                 
@@ -506,7 +553,9 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             if include_prices:
                 pdf.set_font("Helvetica", 'B', 10)
                 pdf.cell(col_width * 3, 8, "Subtotal", border=1)
-                pdf.cell(col_width, 8, f"{quotation.currency}{total:.2f}", border=1)
+                # Use a standard currency symbol that's compatible with latin-1 encoding
+                currency_symbol = "$" if quotation.currency == "€" else quotation.currency
+                pdf.cell(col_width, 8, f"{currency_symbol}{total:.2f}", border=1)
                 pdf.ln(15)
 
         # Notes section
@@ -514,7 +563,9 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             pdf.add_page()
             pdf.set_font("Helvetica", 'I', 10)
             pdf.set_text_color(50)
-            pdf.multi_cell(0, 10, f"Notes: {notes}", border=1)
+            # Sanitize notes for latin-1 encoding
+            safe_notes = sanitize_text_for_latin1(notes)
+            pdf.multi_cell(0, 10, f"Notes: {safe_notes}", border=1)
             pdf.ln()
 
         # Terms and Conditions
@@ -526,7 +577,9 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             terms_text = "Standard terms apply. All prices are subject to change."
             if hasattr(company, 'terms') and company.terms:
                 terms_text = company.terms
-            pdf.multi_cell(0, 6, terms_text)
+            # Sanitize terms for latin-1 encoding
+            safe_terms = sanitize_text_for_latin1(terms_text)
+            pdf.multi_cell(0, 6, safe_terms)
             pdf.ln()
 
         # Final output - get PDF as string and convert to bytes
