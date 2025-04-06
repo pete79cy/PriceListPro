@@ -33,64 +33,126 @@ def get_recent_activities(limit=5):
     """
     activities = []
     
-    # Add recent file uploads
-    uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(limit).all()
-    for upload in uploads:
-        timestamp = upload.upload_date
-        file_type = upload.file_type.capitalize()
-        customer_name = "N/A"
-        if upload.customer_id:
-            customer = Customer.query.get(upload.customer_id)
-            if customer:
-                customer_name = customer.name
+    try:
+        # Add recent file uploads
+        try:
+            uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(limit).all()
+            for upload in uploads:
+                try:
+                    timestamp = upload.upload_date
+                    file_type = upload.file_type.capitalize() if upload.file_type else "File"
+                    customer_name = "N/A"
+                    
+                    # Safely try to get customer name
+                    if upload.customer_id:
+                        try:
+                            customer = Customer.query.get(upload.customer_id)
+                            if customer:
+                                customer_name = customer.name
+                        except Exception as e:
+                            logger.error(f"Error getting customer for activity log: {str(e)}")
+                    
+                    activities.append({
+                        'timestamp': timestamp,
+                        'message': f"{file_type} upload: {upload.filename} for {customer_name}",
+                        'type': 'upload',
+                        'icon': 'fas fa-upload'
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing upload for activity log: {str(e)}")
+                    continue  # Skip this upload but continue with others
+        except Exception as e:
+            logger.error(f"Error getting uploads for activity log: {str(e)}")
         
-        activities.append({
-            'timestamp': timestamp,
-            'message': f"{file_type} upload: {upload.filename} for {customer_name}",
-            'type': 'upload',
-            'icon': 'fas fa-upload'
-        })
-    
-    # Add recent invoices
-    invoices = Invoice.query.order_by(Invoice.created_at.desc()).limit(limit).all()
-    for invoice in invoices:
-        customer = Customer.query.get(invoice.customer_id)
-        customer_name = customer.name if customer else "Unknown Customer"
-        activities.append({
-            'timestamp': invoice.created_at,
-            'message': f"Invoice {invoice.invoice_number} created for {customer_name}",
-            'type': 'invoice',
-            'icon': 'fas fa-file-invoice'
-        })
-    
-    # Add recent price update requests
-    updates = ProductUpdateRequest.query.order_by(ProductUpdateRequest.created_at.desc()).limit(limit).all()
-    for update in updates:
-        product = Product.query.get(update.product_id)
-        product_name = product.name if product else "Unknown Product"
-        status = update.status.capitalize()
-        activities.append({
-            'timestamp': update.created_at,
-            'message': f"Price update for {product_name}: {update.old_price} → {update.new_price} ({status})",
-            'type': 'price_update',
-            'icon': 'fas fa-tags'
-        })
+        # Add recent invoices with error handling
+        try:
+            invoices = Invoice.query.order_by(Invoice.created_at.desc()).limit(limit).all()
+            for invoice in invoices:
+                try:
+                    customer_name = "Unknown Customer"
+                    if invoice.customer_id:
+                        customer = Customer.query.get(invoice.customer_id)
+                        if customer:
+                            customer_name = customer.name
+                    
+                    activities.append({
+                        'timestamp': invoice.created_at,
+                        'message': f"Invoice {invoice.invoice_number} created for {customer_name}",
+                        'type': 'invoice',
+                        'icon': 'fas fa-file-invoice'
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing invoice for activity log: {str(e)}")
+                    continue  # Skip this invoice but continue with others
+        except Exception as e:
+            logger.error(f"Error getting invoices for activity log: {str(e)}")
         
-    # Add recent quotations
-    quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(limit).all()
-    for quotation in quotations:
-        customer = Customer.query.get(quotation.customer_id)
-        customer_name = customer.name if customer else "Unknown Customer"
-        activities.append({
-            'timestamp': quotation.created_at,
-            'message': f"Quotation {quotation.quotation_number} created for {customer_name}",
-            'type': 'quotation',
-            'icon': 'fas fa-file-contract'
-        })
+        # Add recent price update requests with error handling
+        try:
+            updates = ProductUpdateRequest.query.order_by(ProductUpdateRequest.created_at.desc()).limit(limit).all()
+            for update in updates:
+                try:
+                    product_name = "Unknown Product"
+                    if update.product_id:
+                        product = Product.query.get(update.product_id)
+                        if product:
+                            product_name = product.name
+                    
+                    status = update.status.capitalize() if update.status else "Unknown"
+                    old_price = update.old_price if hasattr(update, 'old_price') else "0.00"
+                    new_price = update.new_price if hasattr(update, 'new_price') else "0.00"
+                    
+                    activities.append({
+                        'timestamp': update.created_at,
+                        'message': f"Price update for {product_name}: {old_price} → {new_price} ({status})",
+                        'type': 'price_update',
+                        'icon': 'fas fa-tags'
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing price update for activity log: {str(e)}")
+                    continue
+        except Exception as e:
+            logger.error(f"Error getting price updates for activity log: {str(e)}")
+        
+        # Add recent quotations with error handling
+        try:
+            quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(limit).all()
+            for quotation in quotations:
+                try:
+                    customer_name = "Unknown Customer"
+                    if quotation.customer_id:
+                        customer = Customer.query.get(quotation.customer_id)
+                        if customer:
+                            customer_name = customer.name
+                            
+                    quotation_number = quotation.quotation_number if hasattr(quotation, 'quotation_number') else "Unknown"
+                    
+                    activities.append({
+                        'timestamp': quotation.created_at,
+                        'message': f"Quotation {quotation_number} created for {customer_name}",
+                        'type': 'quotation',
+                        'icon': 'fas fa-file-contract'
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing quotation for activity log: {str(e)}")
+                    continue
+        except Exception as e:
+            logger.error(f"Error getting quotations for activity log: {str(e)}")
     
+    except Exception as e:
+        # Top-level error handler for activities
+        logger.error(f"Error generating activity log: {str(e)}")
+        # Return an empty activities list as fallback
+        return []
+        
     # Sort all activities by timestamp (newest first) and limit the total
-    activities.sort(key=lambda x: x['timestamp'], reverse=True)
-    return activities[:limit]
+    try:
+        activities.sort(key=lambda x: x['timestamp'], reverse=True)
+        return activities[:limit]
+    except Exception as e:
+        logger.error(f"Error sorting activities: {str(e)}")
+        # Return unsorted if there's a sorting error
+        return activities[:limit] if activities else []
 
 # Log that routes module was loaded
 logger.info("Routes module loaded")
