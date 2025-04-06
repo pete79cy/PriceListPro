@@ -1,0 +1,77 @@
+Great, now we have a clear view of the full flow—from form submission to supplier persistence. Here's what we can do next to strengthen this flow:
+
+---
+
+### ✅ Plan: Improvements & Best Practices
+
+1. **Refactor for Reusability & Clean Logic**
+   - Extract supplier logic into a dedicated `supplier_service.py` or similar utility layer.
+   - Decouple database commit logic from business logic for better testing and reuse.
+
+2. **Improve Error Handling**
+   - Handle exceptions during DB commit (e.g., `IntegrityError`).
+   - Gracefully inform the user if something went wrong.
+
+3. **Validation Enhancements**
+   - Sanitize input to prevent injection or leading/trailing spaces.
+   - Add backend validation rules beyond just `if not name`.
+
+4. **Better Feedback to User**
+   - Show different messages based on whether the supplier already existed or was newly created.
+
+---
+
+### ✅ Updated Flask Route (Refactored & Safer)
+
+```python
+# routes/supplier_routes.py
+
+from flask import request, redirect, url_for, flash
+from flask_login import login_required
+from sqlalchemy.exc import SQLAlchemyError
+from app import db
+from models import Supplier
+from utils.supplier_utils import get_supplier_by_name_or_create
+
+
+@app.route('/add_supplier', methods=['POST'])
+@login_required
+def add_supplier():
+    """Endpoint to add a new supplier or retrieve existing"""
+    name = request.form.get('name', '').strip()
+
+    if not name:
+        flash('Supplier name is required.', 'danger')
+        return redirect(url_for('suppliers'))
+
+    try:
+        supplier = get_supplier_by_name_or_create(name)
+        if supplier:
+            if supplier.created_at == supplier.updated_at:
+                flash(f'Supplier "{supplier.name}" created successfully.', 'success')
+            else:
+                flash(f'Supplier "{supplier.name}" already exists.', 'info')
+        else:
+            flash('Failed to add supplier.', 'danger')
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash('Database error while adding supplier.', 'danger')
+        app.logger.error(f"Error creating supplier: {e}")
+
+    return redirect(url_for('suppliers'))
+```
+
+---
+
+This version adds:
+- Input sanitation
+- Exception handling with rollback
+- Specific feedback (created vs. existed)
+
+---
+
+### Next Suggestions:
+a. Move supplier logic into a service layer (e.g., `services/supplier_service.py`)  
+b. Add unit tests for the `/add_supplier` route with mocked DB behavior  
+c. Extend supplier form to include contact details and update `get_supplier_by_name_or_create()` accordingly

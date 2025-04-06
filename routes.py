@@ -1892,8 +1892,10 @@ def register_routes(app):
     @app.route('/add_supplier', methods=['POST'])
     @login_required
     def add_supplier():
-        """Add a new supplier"""
-        name = request.form.get('name')
+        """Add a new supplier or get existing one"""
+        from utils.supplier_utils import get_supplier_by_name_or_create
+        
+        name = request.form.get('name', '').strip()
         contact_person = request.form.get('contact_person')
         email = request.form.get('email')
         phone = request.form.get('phone')
@@ -1906,13 +1908,7 @@ def register_routes(app):
             return redirect(url_for('suppliers'))
             
         try:
-            # Check if supplier with this name already exists
-            existing_supplier = Supplier.query.filter_by(name=name).first()
-            if existing_supplier:
-                flash(f'A supplier with name "{name}" already exists.', 'danger')
-                return redirect(url_for('suppliers'))
-                
-            supplier = Supplier(
+            supplier, created = get_supplier_by_name_or_create(
                 name=name,
                 contact_person=contact_person,
                 email=email,
@@ -1922,13 +1918,16 @@ def register_routes(app):
                 is_inhouse=is_inhouse
             )
             
-            db.session.add(supplier)
-            db.session.commit()
-            
-            flash(f'Supplier "{name}" added successfully.', 'success')
+            if supplier:
+                if created:
+                    flash(f'Supplier "{supplier.name}" created successfully.', 'success')
+                else:
+                    flash(f'Supplier "{supplier.name}" already exists.', 'info')
+            else:
+                flash('Failed to add supplier. Please try again.', 'danger')
+                
         except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error adding supplier: {str(e)}")
+            logger.error(f"Unexpected error in add_supplier route: {str(e)}")
             flash(f'Error adding supplier: {str(e)}', 'danger')
             
         return redirect(url_for('suppliers'))
@@ -1937,6 +1936,8 @@ def register_routes(app):
     @login_required
     def edit_supplier(supplier_id):
         """Edit an existing supplier"""
+        from utils.supplier_utils import update_supplier
+        
         supplier = Supplier.query.get_or_404(supplier_id)
         
         # GET request - show the form with the supplier's data
@@ -1958,26 +1959,25 @@ def register_routes(app):
             return redirect(url_for('suppliers'))
             
         try:
-            # Check if another supplier with this name already exists
-            existing_supplier = Supplier.query.filter_by(name=name).first()
-            if existing_supplier and existing_supplier.id != supplier_id:
-                flash(f'Another supplier with name "{name}" already exists.', 'danger')
-                return redirect(url_for('suppliers'))
+            # Update the supplier using our utility function
+            supplier, success, message = update_supplier(
+                supplier_id=supplier_id,
+                name=name,
+                contact_person=contact_person,
+                email=email,
+                phone=phone,
+                address=address,
+                notes=notes,
+                is_inhouse=is_inhouse
+            )
+            
+            if success:
+                flash(f'Supplier "{name}" updated successfully.', 'success')
+            else:
+                flash(message, 'danger')
                 
-            supplier.name = name
-            supplier.contact_person = contact_person
-            supplier.email = email
-            supplier.phone = phone
-            supplier.address = address
-            supplier.notes = notes
-            supplier.is_inhouse = is_inhouse
-            
-            db.session.commit()
-            
-            flash(f'Supplier "{name}" updated successfully.', 'success')
         except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error updating supplier: {str(e)}")
+            logger.error(f"Unexpected error in edit_supplier route: {str(e)}")
             flash(f'Error updating supplier: {str(e)}', 'danger')
             
         return redirect(url_for('suppliers'))
@@ -1986,15 +1986,23 @@ def register_routes(app):
     @login_required
     def delete_supplier(supplier_id):
         """Delete a supplier"""
-        supplier = Supplier.query.get_or_404(supplier_id)
+        from utils.supplier_utils import delete_supplier as delete_supplier_util
         
         try:
-            db.session.delete(supplier)
-            db.session.commit()
-            flash(f'Supplier "{supplier.name}" deleted successfully.', 'success')
+            # First, get the supplier name for the success message
+            supplier = Supplier.query.get_or_404(supplier_id)
+            supplier_name = supplier.name
+            
+            # Use our utility function to delete the supplier
+            success, message = delete_supplier_util(supplier_id)
+            
+            if success:
+                flash(message, 'success')
+            else:
+                flash(message, 'danger')
+                
         except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error deleting supplier: {str(e)}")
+            logger.error(f"Unexpected error in delete_supplier route: {str(e)}")
             flash(f'Error deleting supplier: {str(e)}', 'danger')
             
         return redirect(url_for('suppliers'))
