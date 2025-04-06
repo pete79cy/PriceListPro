@@ -291,12 +291,13 @@
             </tr>
         </thead>
         <tbody>
+            {% for supplier, items in grouped_items.items() %}
             {% for item in items %}
             <tr>
                 <td class="text-center">{{ loop.index }}</td>
                 
                 {% if 'supplier' in fields %}
-                <td>{{ item.supplier }}</td>
+                <td>{{ supplier }}</td>
                 {% endif %}
                 
                 {% if 'description' in fields %}
@@ -328,6 +329,7 @@
                 {% endif %}
             </tr>
             {% endfor %}
+            {% endfor %}
         </tbody>
     </table>
     
@@ -335,11 +337,11 @@
         <table>
             <tr>
                 <td class="label">Total Items:</td>
-                <td class="amount">{{ items|length }}</td>
+                <td class="amount">{{ grouped_items.values()|map('length')|sum }}</td>
             </tr>
             <tr>
                 <td class="label">Total Quantity:</td>
-                <td class="amount">{{ items|map(attribute='quantity')|sum|int }}</td>
+                <td class="amount">{{ supplier_totals.values()|map(attribute='qty')|sum|int }}</td>
             </tr>
             <tr class="total-row">
                 <td class="label total">Total Amount:</td>
