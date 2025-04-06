@@ -34,7 +34,7 @@
         
         <!-- Products Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card {{ card_classes.products if card_classes is defined and card_classes.products else 'bg-success' }} text-white mb-4 dashboard-card" data-href="{{ url_for('products') }}" data-bs-toggle="tooltip" title="Total number of products cataloged in the system">
+            <div class="card {{ card_classes.products if card_classes is defined and card_classes.products else 'bg-success' }} text-white mb-4 dashboard-card" data-href="{{ url_for('products') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -55,7 +55,7 @@
         
         <!-- Price Lists Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card {{ card_classes.price_lists if card_classes is defined and card_classes.price_lists else 'bg-info' }} text-white mb-4 dashboard-card" data-href="{{ url_for('price_lists') }}" data-bs-toggle="tooltip" title="Number of customer-specific price list entries">
+            <div class="card {{ card_classes.price_lists if card_classes is defined and card_classes.price_lists else 'bg-info' }} text-white mb-4 dashboard-card" data-href="{{ url_for('price_lists') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -76,7 +76,7 @@
         
         <!-- Invoices Stats Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card {{ card_classes.invoices if card_classes is defined and card_classes.invoices else 'bg-warning' }} text-white mb-4 dashboard-card" data-href="{{ url_for('invoices') }}" data-bs-toggle="tooltip" title="Total invoices processed in the system">
+            <div class="card {{ card_classes.invoices if card_classes is defined and card_classes.invoices else 'bg-warning' }} text-white mb-4 dashboard-card" data-href="{{ url_for('invoices') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -100,14 +100,14 @@
     <div class="row">
         <!-- Pending Updates Card -->
         <div class="col-xl-3 col-md-6">
-            <div class="card {% if pending_update_count > 0 %}bg-danger{% else %}bg-secondary{% endif %} text-white mb-4 dashboard-card" data-href="{{ url_for('pending_updates') }}" data-bs-toggle="tooltip" title="Updates waiting for your approval">
+            <div class="card {% if pending_update_count > 0 %}bg-danger{% else %}bg-secondary{% endif %} text-white mb-4 dashboard-card" data-href="{{ url_for('pending_updates') }}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h4 class="mb-0">
                                 {{ pending_update_count }}
                                 {% if pending_update_count > 0 %}
-                                <span class="badge bg-warning">!</span>
+                                <span class="badge badge-pill badge-warning">!</span>
                                 {% endif %}
                             </h4>
                             <div>Pending Updates</div>
@@ -133,16 +133,11 @@
         <!-- Recent Activities -->
         <div class="col-xl-9 col-md-6">
             <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="fas fa-history me-1"></i>
-                        Recent Activities
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#activityCollapse" aria-expanded="true" aria-controls="activityCollapse">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
+                <div class="card-header">
+                    <i class="fas fa-history me-1"></i>
+                    Recent Activities
                 </div>
-                <div class="card-body collapse show" id="activityCollapse">
+                <div class="card-body">
                     <div class="activity-list">
                         {% if recent_activities %}
                             {% for activity in recent_activities %}
@@ -223,12 +218,8 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <script>
-// Initialize tooltips
-const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
-
-// Function to initialize charts
-function initCharts() {
+// Initialize charts once the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
     // Product Categories Chart
     const categoryCtx = document.getElementById('categoryChart').getContext('2d');
     const categoryChart = new Chart(categoryCtx, {
@@ -302,10 +293,7 @@ function initCharts() {
             }
         }
     });
-}
-
-// Lazy-load charts for better performance
-window.addEventListener('load', function() {
+    
     // Make cards clickable
     document.querySelectorAll('.dashboard-card').forEach(card => {
         card.addEventListener('click', function() {
@@ -322,22 +310,6 @@ window.addEventListener('load', function() {
             });
         });
     }
-    
-    // Mobile-specific: make sure accordions work
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-    function handleMobileChanges(e) {
-        if (e.matches) {
-            document.querySelector('#activityCollapse').classList.remove('show');
-        } else {
-            document.querySelector('#activityCollapse').classList.add('show');
-        }
-    }
-    
-    // Run it once to set initial state
-    handleMobileChanges(mediaQuery);
-    
-    // Load charts after a slight delay for better perceived performance
-    setTimeout(initCharts, 200);
 });
 </script>
 {% endblock %}
