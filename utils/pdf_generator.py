@@ -1,4 +1,5 @@
 import os
+import io
 import uuid
 import base64
 from datetime import datetime
@@ -449,6 +450,8 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
 
         # Group items by supplier
         grouped_items = {}
+        total_items = 0
+        total_quantity = 0
         
         for item in quotation.items:
             supplier_name = item.supplier if hasattr(item, 'supplier') else (
@@ -459,6 +462,11 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                 if supplier_name not in grouped_items:
                     grouped_items[supplier_name] = []
                 grouped_items[supplier_name].append(item)
+                total_items += 1
+                total_quantity += item.quantity
+        
+        # Calculate grand total
+        grand_total = 0
         
         # Iterate through supplier groups
         for supplier_name, items in grouped_items.items():
@@ -473,9 +481,35 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             
             # Table headers
             pdf.set_font("Helvetica", 'B', 10)
-            headers = ["Item", "Qty"]
-            col_widths = [100, 20]
             
+            # Start with basic headers
+            headers = []
+            col_widths = []
+            
+            # Add custom fields based on selected_fields
+            field_mapping = {
+                'description': {'title': 'Item', 'width': 100},
+                'quantity': {'title': 'Qty', 'width': 20},
+                'supplier': {'title': 'Supplier', 'width': 40},
+                'unit': {'title': 'Unit', 'width': 20},
+                'notes': {'title': 'Notes', 'width': 60},
+                'part_number': {'title': 'Part #', 'width': 30},
+                'reference': {'title': 'Ref', 'width': 30}
+            }
+            
+            # Always include description and quantity
+            if 'description' not in selected_fields:
+                selected_fields.insert(0, 'description')
+            if 'quantity' not in selected_fields:
+                selected_fields.insert(1, 'quantity')
+                
+            # Build headers from selected fields
+            for field in selected_fields:
+                if field in field_mapping:
+                    headers.append(field_mapping[field]['title'])
+                    col_widths.append(field_mapping[field]['width'])
+            
+            # Add price columns if needed
             if include_prices:
                 headers.extend(["Unit Price", "Total"])
                 col_widths.extend([30, 30])
@@ -491,18 +525,39 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             fill = False
             
             for item in items:
-                # Get item properties
-                description = item.description if hasattr(item, 'description') else 'N/A'
-                quantity = item.quantity if hasattr(item, 'quantity') else 0
-                
                 # Set row background
                 pdf.set_fill_color(245 if fill else 255)
                 
-                # Item description cell
-                pdf.cell(col_widths[0], 8, description, border=1, fill=fill)
+                # Process each field in order
+                field_index = 0
                 
-                # Quantity cell
-                pdf.cell(col_widths[1], 8, str(quantity), border=1, fill=fill)
+                for field in selected_fields:
+                    if field not in field_mapping:
+                        continue
+                    
+                    if field == 'description':
+                        value = item.description if hasattr(item, 'description') else 'N/A'
+                    elif field == 'quantity':
+                        value = str(item.quantity) if hasattr(item, 'quantity') else '0'
+                    elif field == 'supplier':
+                        value = item.supplier if hasattr(item, 'supplier') else 'N/A'
+                    elif field == 'unit':
+                        value = item.unit if hasattr(item, 'unit') else ''
+                    elif field == 'notes':
+                        value = item.notes if hasattr(item, 'notes') else ''
+                    elif field == 'part_number':
+                        value = item.part_number if hasattr(item, 'part_number') else ''
+                    elif field == 'reference':
+                        value = item.reference if hasattr(item, 'reference') else ''
+                    else:
+                        value = 'N/A'
+                    
+                    # Print cell with value
+                    pdf.cell(col_widths[field_index], 8, str(value), border=1, fill=fill)
+                    field_index += 1
+                
+                # Get quantity value for calculations
+                quantity = item.quantity if hasattr(item, 'quantity') else 0
                 
                 # Price cells
                 if include_prices:
@@ -521,12 +576,17 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                     if currency == '€':
                         currency = 'EUR '  # Replace Euro symbol with text representation
                         
-                    pdf.cell(col_widths[2], 8, f"{currency}{unit_price:.2f}", border=1, fill=fill)
+                    # Calculate price cells position (they come after all selected fields)
+                    price_pos = len(headers) - 2  # Unit Price column
+                    total_pos = len(headers) - 1  # Total column
+                    
+                    pdf.cell(col_widths[price_pos], 8, f"{currency}{unit_price:.2f}", border=1, fill=fill)
                     
                     # Calculate line total
                     line_total = unit_price * quantity
                     total += line_total
-                    pdf.cell(col_widths[3], 8, f"{currency}{line_total:.2f}", border=1, fill=fill)
+                    grand_total += line_total
+                    pdf.cell(col_widths[total_pos], 8, f"{currency}{line_total:.2f}", border=1, fill=fill)
                 
                 pdf.ln()
                 fill = not fill  # Toggle fill for next row
@@ -534,13 +594,101 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             # Add subtotal row if prices are included
             if include_prices:
                 pdf.set_font("Helvetica", 'B', 10)
-                pdf.cell(col_widths[0] + col_widths[1], 8, "Subtotal", border=1)
+                
+                # Calculate combined width of all field columns except the price columns
+                field_width = sum(col_widths[:price_pos])
+                
+                # Create subtotal row
+                pdf.cell(field_width, 8, "Subtotal", border=1)
+                
                 currency = quotation.currency if hasattr(quotation, 'currency') else 'EUR '
                 if currency == '€':
                     currency = 'EUR '  # Replace Euro symbol with text representation
-                pdf.cell(col_widths[2] + col_widths[3], 8, f"{currency}{total:.2f}", border=1)
+                
+                # Add the price columns (unit price + total)
+                pdf.cell(col_widths[price_pos] + col_widths[total_pos], 8, f"{currency}{total:.2f}", border=1)
                 pdf.ln(15)
 
+        # Add Summary Page
+        if include_prices:
+            pdf.add_page()
+            pdf.set_font("Helvetica", 'B', 14)
+            pdf.cell(0, 10, "Supplier Report Summary", ln=True)
+            pdf.ln(5)
+            
+            # Summary data
+            pdf.set_font("Helvetica", 'B', 12)
+            pdf.cell(0, 10, f"Quotation: {quotation.quotation_number}", ln=True)
+            pdf.cell(0, 10, f"Date: {datetime.now().strftime('%Y-%m-%d')}", ln=True)
+            pdf.cell(0, 10, f"Total Suppliers: {len(grouped_items)}", ln=True)
+            pdf.cell(0, 10, f"Total Items: {total_items}", ln=True)
+            pdf.cell(0, 10, f"Total Quantity: {total_quantity}", ln=True)
+            pdf.ln(10)
+            
+            # Cost Summary Table
+            pdf.set_font("Helvetica", 'B', 12)
+            pdf.cell(0, 10, "Cost Summary", ln=True)
+            pdf.ln(5)
+            
+            pdf.set_font("Helvetica", 'B', 10)
+            headers = ["Supplier", "Items", "Total Cost"]
+            col_widths = [80, 30, 40]
+            
+            # Draw header row
+            for i, header in enumerate(headers):
+                pdf.cell(col_widths[i], 8, header, border=1)
+            pdf.ln()
+            
+            # Supplier rows
+            pdf.set_font("Helvetica", '', 10)
+            fill = False
+            
+            # Get currency symbol
+            currency = quotation.currency if hasattr(quotation, 'currency') else 'EUR '
+            if currency == '€':
+                currency = 'EUR '  # Replace Euro symbol with text representation
+            
+            for supplier_name, items in grouped_items.items():
+                supplier_cost = 0
+                for item in items:
+                    # Calculate supplier total
+                    unit_price = 0
+                    if hasattr(item, 'selling_price'):
+                        unit_price = item.selling_price
+                    elif hasattr(item, 'price'):
+                        unit_price = item.price
+                    elif hasattr(item, 'cost_price'):
+                        unit_price = item.cost_price
+                    
+                    supplier_cost += unit_price * item.quantity
+                
+                # Set row background
+                pdf.set_fill_color(245 if fill else 255)
+                
+                # Supplier name
+                pdf.cell(col_widths[0], 8, supplier_name, border=1, fill=fill)
+                
+                # Item count
+                pdf.cell(col_widths[1], 8, str(len(items)), border=1, fill=fill)
+                
+                # Supplier total
+                pdf.cell(col_widths[2], 8, f"{currency}{supplier_cost:.2f}", border=1, fill=fill)
+                
+                pdf.ln()
+                fill = not fill
+            
+            # Grand Total
+            pdf.set_font("Helvetica", 'B', 10)
+            pdf.cell(col_widths[0] + col_widths[1], 8, "Grand Total", border=1)
+            pdf.cell(col_widths[2], 8, f"{currency}{grand_total:.2f}", border=1)
+            pdf.ln(20)
+            
+            # Date and signature
+            pdf.cell(0, 10, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
+            pdf.ln(15)
+            pdf.line(20, pdf.get_y(), 80, pdf.get_y())
+            pdf.cell(0, 10, "Authorized Signature", ln=True)
+            
         # Notes section
         if notes:
             pdf.add_page()
@@ -566,15 +714,23 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             pdf.multi_cell(0, 6, terms_text)
             pdf.ln()
 
-        # Generate output
-        pdf_output = io.BytesIO()
-        pdf.output(pdf_output)
-        pdf_output.seek(0)
+        # Create filename with timestamp for uniqueness
+        filename = f"supplier_report_{quotation.quotation_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         
-        # Create filename
-        filename = f"quotation_report_{quotation.quotation_number}.pdf"
+        # Create a temporary file to save the PDF
+        temp_filepath = f"/tmp/{filename}"
         
-        return pdf_output.read(), filename
+        # Generate and save the PDF to the temporary file
+        pdf.output(temp_filepath)
+        
+        # Read the file back as bytes
+        with open(temp_filepath, 'rb') as f:
+            pdf_bytes = f.read()
+            
+        # Clean up the temporary file
+        os.remove(temp_filepath)
+        
+        return pdf_bytes, filename
 
     except Exception as e:
         logger.error(f"Error generating custom supplier report with FPDF: {str(e)}")
@@ -662,6 +818,7 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             grouped_items=grouped_items,
             supplier_totals=supplier_totals,
             selected_fields=selected_fields,
+            fields=selected_fields,  # Ensure fields is passed for compatibility
             include_prices=include_prices,
             include_company_header=include_company_header,
             include_terms=include_terms,
@@ -672,7 +829,8 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             logo_data=logo_data,
             orientation=orientation,
             notes=notes,  # Pass notes to template
-            total_cost=total_cost  # Add total_cost variable
+            total_cost=total_cost,  # Add total_cost variable
+            suppliers=selected_suppliers  # Pass suppliers list for rendering
         )
         
         # Generate a unique filename
