@@ -1,0 +1,165 @@
+Generate the full updated version of the PDF report generator function with improved layout and presentation. Below is a complete version that:
+
+    ✅ Uses clean DejaVuSans Unicode font
+
+    ✅ Draws neat, consistent tables per supplier
+
+    ✅ Adds spacing and styling for sections
+
+    ✅ Includes subtotal and grand total sections
+
+    ✅ Ensures proper alignment and formatting
+
+    ✅ Uses fpdf2 (the latest FPDF version)
+
+📦 Updated generate_custom_supplier_report() in utils/pdf_generator.py
+
+from fpdf import FPDF
+from flask import current_app
+from datetime import timedelta
+import os
+from models import CompanySettings
+import logging
+
+logger = logging.getLogger(__name__)
+
+class PDF(FPDF):
+    def header(self):
+        if getattr(self, 'company', None):
+            self.set_font("DejaVu", '', 11)
+            self.cell(0, 6, self.company.name, ln=True)
+            self.set_font("DejaVu", '', 9)
+            self.cell(0, 5, self.company.address or '', ln=True)
+            self.cell(0, 5, self.company.email or '', ln=True)
+            self.ln(3)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("DejaVu", 'I', 8)
+        self.set_text_color(120)
+        self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align='C')
+
+def draw_supplier_section(pdf, supplier_name, items, include_prices):
+    pdf.set_font("DejaVu", 'B', 11)
+    pdf.set_text_color(40)
+    pdf.cell(0, 10, f"Supplier: {supplier_name}", ln=True)
+    pdf.set_draw_color(180)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(4)
+
+    headers = ["Item", "Height", "Qty"]
+    if include_prices:
+        headers += ["Unit Price (€)", "Total (€)"]
+    col_widths = [50, 35, 15, 30, 30] if include_prices else [60, 45, 25]
+
+    # Header row
+    pdf.set_font("DejaVu", 'B', 9)
+    for i, header in enumerate(headers):
+        pdf.cell(col_widths[i], 8, header, border=1, align='C')
+    pdf.ln()
+
+    # Data rows
+    pdf.set_font("DejaVu", '', 9)
+    fill = False
+    subtotal = 0
+    for item in items:
+        line_total = (item.unit_price or 0) * (item.quantity or 0)
+        subtotal += line_total
+        row = [
+            item.product_name,
+            item.height or '',
+            str(item.quantity or 0)
+        ]
+        if include_prices:
+            row += [
+                f"€{item.unit_price:.2f}" if item.unit_price else "€0.00",
+                f"€{line_total:.2f}"
+            ]
+
+        for i, text in enumerate(row):
+            pdf.set_fill_color(245 if fill else 255)
+            pdf.cell(col_widths[i], 8, text, border=1, fill=True)
+        fill = not fill
+        pdf.ln()
+
+    if include_prices:
+        pdf.set_font("DejaVu", 'B', 9)
+        pdf.cell(sum(col_widths[:-1]), 8, "Subtotal", border=1, align='R')
+        pdf.cell(col_widths[-1], 8, f"€{subtotal:.2f}", border=1, align='R')
+        pdf.ln(12)
+
+    return subtotal
+
+def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields,
+                                    include_prices=True, include_company_header=True,
+                                    include_terms=True, group_by_supplier=True,
+                                    notes=None):
+    try:
+        pdf = PDF()
+        pdf.alias_nb_pages()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+
+        # Font registration
+        font_path = os.path.join(current_app.root_path, 'static/fonts/DejaVuSans.ttf')
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.set_font("DejaVu", '', 10)
+
+        # Load company details
+        company = CompanySettings.query.first()
+        pdf.company = company if include_company_header else None
+
+        # Header summary
+        pdf.set_font("DejaVu", 'B', 14)
+        pdf.cell(0, 10, f"Quotation Report: {quotation.quotation_number}", ln=True)
+        pdf.set_font("DejaVu", '', 10)
+        pdf.cell(0, 6, f"Date Issued: {quotation.date.strftime('%Y-%m-%d')}", ln=True)
+        valid_until = quotation.valid_until or (quotation.date + timedelta(days=30))
+        pdf.cell(0, 6, f"Valid Until: {valid_until.strftime('%Y-%m-%d')}", ln=True)
+        pdf.cell(0, 6, f"Customer: {quotation.customer.name if quotation.customer else 'N/A'}", ln=True)
+        pdf.multi_cell(0, 6, f"Suppliers Included: {', '.join(selected_suppliers)}")
+        pdf.ln(6)
+
+        grand_total = 0
+        for supplier in selected_suppliers:
+            items = [i for i in quotation.items if i.supplier_name == supplier]
+            if not items:
+                continue
+            subtotal = draw_supplier_section(pdf, supplier, items, include_prices)
+            grand_total += subtotal
+
+        # Notes
+        if notes:
+            pdf.set_font("DejaVu", 'I', 9)
+            pdf.set_text_color(90)
+            pdf.multi_cell(0, 6, f"Notes: {notes}")
+            pdf.ln(4)
+
+        # Grand total
+        if include_prices:
+            pdf.set_font("DejaVu", 'B', 11)
+            pdf.set_text_color(0)
+            pdf.cell(0, 8, f"Grand Total: €{grand_total:.2f}", ln=True)
+            pdf.ln(5)
+
+        # Terms section
+        if include_terms:
+            pdf.add_page()
+            pdf.set_font("DejaVu", 'B', 12)
+            pdf.cell(0, 10, "Terms and Conditions", ln=True)
+            pdf.set_font("DejaVu", '', 10)
+            terms = company.terms if company and company.terms else "Standard quotation terms apply."
+            pdf.multi_cell(0, 6, terms)
+
+        pdf_bytes = pdf.output(dest='S').encode('utf-8')
+        return pdf_bytes, f"quotation_report_{quotation.quotation_number}.pdf"
+
+    except Exception as e:
+        logger.error(f"Error generating custom supplier report: {str(e)}")
+        raise
+
+📁 Required Assets
+
+    ✅ Place DejaVuSans.ttf in: static/fonts/DejaVuSans.ttf
+
+    ✅ Ensure quotation.items has these attributes: product_name, height, quantity, unit_price, supplier_name

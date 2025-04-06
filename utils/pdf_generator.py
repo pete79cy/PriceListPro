@@ -364,22 +364,28 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
     """
     # Helper function to safely encode strings for Latin-1 encoding
     def safe_encode(text):
+        """
+        Safely encode text for PDF compatibility.
+        
+        Args:
+            text: The text to encode
+            
+        Returns:
+            str: The encoded text
+        """
         if not text:
             return ""
-        # Replace any non-Latin1 characters with their closest equivalents or '?'
-        return str(text).encode('latin-1', 'replace').decode('latin-1')
+            
+        # Just return the text as is, since we'll use DejaVu Sans for Unicode support
+        # Only convert to string in case it's not already a string
+        return str(text)
+        
     try:
         from fpdf import FPDF
         import io
         from datetime import timedelta
 
         class PDF(FPDF):
-            def __init__(self):
-                # Initialize with UTF-8 support for Euro symbol (€)
-                super().__init__(orientation='P')
-                # Set utf8 encoding to handle Euro symbol
-                self.set_auto_page_break(auto=True, margin=15)
-                
             def header(self):
                 if hasattr(self, 'company') and self.company:
                     self.set_font("Helvetica", 'B', 12)
@@ -716,9 +722,8 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
             pdf.set_font("Helvetica", '', 10)
             
             # Get terms from company settings if available
-            terms_text = "Standard terms apply."
-            if hasattr(company, 'terms') and company.terms:
-                terms_text = company.terms
+            # Use a standard terms message since CompanySettings doesn't have a terms field
+            terms_text = "Standard quotation terms apply. All prices are subject to change without notice."
                 
             pdf.multi_cell(0, 6, safe_encode(terms_text))
             pdf.ln()
@@ -745,9 +750,246 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
         logger.error(f"Error generating custom supplier report with FPDF: {str(e)}")
         raise
 
+def draw_supplier_section(pdf, supplier_name, items, include_prices, quotation):
+    """
+    Draw a supplier section with items in the PDF
+    
+    Args:
+        pdf: FPDF instance
+        supplier_name: Name of the supplier
+        items: List of items for this supplier
+        include_prices: Whether to include price information
+        quotation: The Quotation object for currency formatting
+        
+    Returns:
+        float: Subtotal for this supplier
+    """
+    pdf.set_font("DejaVu", 'B', 11)
+    pdf.set_text_color(40)
+    pdf.cell(0, 10, f"Supplier: {supplier_name}", ln=True)
+    pdf.set_draw_color(180)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(4)
+
+    # Define headers and column widths
+    headers = ["Item", "Height", "Qty"]
+    if include_prices:
+        headers += ["Cost Price", "Total Cost"]
+    col_widths = [80, 35, 15, 30, 30] if include_prices else [90, 45, 25]
+
+    # Header row
+    pdf.set_font("DejaVu", 'B', 9)
+    for i, header in enumerate(headers):
+        pdf.cell(col_widths[i], 8, header, border=1, align='C')
+    pdf.ln()
+
+    # Data rows
+    pdf.set_font("DejaVu", '', 9)
+    fill = False
+    subtotal = 0
+    
+    # Get currency symbol
+    currency = quotation.currency if hasattr(quotation, 'currency') else '€'
+    
+    for item in items:
+        # Get price - for supplier reports, we should prioritize cost_price
+        unit_price = 0
+        if hasattr(item, 'cost_price') and item.cost_price is not None:
+            unit_price = item.cost_price
+        elif hasattr(item, 'price'):
+            unit_price = item.price
+        elif hasattr(item, 'selling_price'):
+            unit_price = item.selling_price
+            
+        # Get item description
+        description = item.description if hasattr(item, 'description') else 'N/A'
+        height = item.height if hasattr(item, 'height') else ''
+        quantity = item.quantity if hasattr(item, 'quantity') else 0
+        
+        line_total = unit_price * quantity
+        subtotal += line_total
+        
+        # Set row background color
+        pdf.set_fill_color(245 if fill else 255)
+        
+        # Print item data
+        pdf.cell(col_widths[0], 8, description, border=1, fill=True)
+        pdf.cell(col_widths[1], 8, str(height), border=1, fill=True)
+        pdf.cell(col_widths[2], 8, str(quantity), border=1, fill=True, align='R')
+        
+        if include_prices:
+            pdf.cell(col_widths[3], 8, f"{currency}{unit_price:.2f}", border=1, fill=True, align='R')
+            pdf.cell(col_widths[4], 8, f"{currency}{line_total:.2f}", border=1, fill=True, align='R')
+        
+        pdf.ln()
+        fill = not fill
+
+    # Add subtotal row if prices are included
+    if include_prices:
+        pdf.set_font("DejaVu", 'B', 9)
+        pdf.cell(sum(col_widths[:-1]), 8, "Supplier Total Cost", border=1, align='R')
+        pdf.cell(col_widths[-1], 8, f"{currency}{subtotal:.2f}", border=1, align='R')
+        pdf.ln(12)
+
+    return subtotal
+
+def generate_custom_supplier_report_with_dejavu(quotation, selected_suppliers, selected_fields,
+                                include_prices=True, include_company_header=True,
+                                include_terms=True, group_by_supplier=True,
+                                notes=None):
+    """
+    Generate a custom PDF report for selected suppliers from a quotation using FPDF with DejaVu Sans font
+    
+    Args:
+        quotation: The Quotation object
+        selected_suppliers: List of supplier names to include in the report
+        selected_fields: List of field names to include in the report
+        include_prices: Whether to include price information
+        include_company_header: Whether to include company header
+        include_terms: Whether to include terms and conditions
+        group_by_supplier: Whether to group items by supplier
+        notes: Optional notes to include in the report
+        
+    Returns:
+        tuple: (PDF content as bytes, filename)
+    """
+    try:
+        from fpdf import FPDF
+        from datetime import timedelta
+
+        class PDF(FPDF):
+            def header(self):
+                if hasattr(self, 'company') and self.company:
+                    self.set_font("DejaVu", '', 11)
+                    self.cell(0, 6, self.company.name, ln=True)
+                    self.set_font("DejaVu", '', 9)
+                    address = ''
+                    if hasattr(self.company, 'address_line1') and self.company.address_line1:
+                        address = self.company.address_line1
+                    self.cell(0, 5, address, ln=True)
+                    self.cell(0, 5, self.company.email or '', ln=True)
+                    self.ln(3)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_font("DejaVu", 'I', 8)
+                self.set_text_color(120)
+                self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align='C')
+
+        pdf = PDF()
+        pdf.alias_nb_pages()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+
+        # Font registration
+        font_path = os.path.join(current_app.root_path, 'static/fonts/DejaVuSans.ttf')
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.add_font("DejaVu", "B", font_path, uni=True)
+        pdf.add_font("DejaVu", "I", font_path, uni=True)
+        pdf.set_font("DejaVu", '', 10)
+
+        # Load company details
+        company = None
+        if include_company_header:
+            company = CompanySettings.query.first()
+            if not company:
+                company = CompanySettings()  # Use default values if no settings exist
+        pdf.company = company if include_company_header else None
+
+        # Header summary
+        pdf.set_font("DejaVu", 'B', 14)
+        pdf.cell(0, 10, f"Quotation Report: {quotation.quotation_number}", ln=True)
+        pdf.set_font("DejaVu", '', 10)
+        
+        # Format date
+        if hasattr(quotation, 'quotation_date'):
+            quote_date = quotation.quotation_date.strftime('%Y-%m-%d') if quotation.quotation_date else 'N/A'
+        else:
+            quote_date = datetime.now().strftime('%Y-%m-%d')
+            
+        pdf.cell(0, 6, f"Date Issued: {quote_date}", ln=True)
+        
+        valid_until = None
+        if hasattr(quotation, 'valid_until') and quotation.valid_until:
+            valid_until = quotation.valid_until.strftime('%Y-%m-%d')
+        else:
+            # Default validity: 30 days from quotation date
+            if hasattr(quotation, 'quotation_date') and quotation.quotation_date:
+                valid_until = (quotation.quotation_date + timedelta(days=30)).strftime('%Y-%m-%d')
+            else:
+                valid_until = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+                
+        pdf.cell(0, 6, f"Valid Until: {valid_until}", ln=True)
+        
+        # Customer information
+        customer_name = quotation.customer.name if hasattr(quotation, 'customer') and quotation.customer else 'N/A'
+        pdf.cell(0, 6, f"Customer: {customer_name}", ln=True)
+        pdf.multi_cell(0, 6, f"Suppliers Included: {', '.join(selected_suppliers)}")
+        pdf.ln(6)
+
+        # Group items by supplier
+        grouped_items = {}
+        for item in quotation.items:
+            supplier_name = item.supplier if hasattr(item, 'supplier') else (
+                item.supplier_name if hasattr(item, 'supplier_name') else 'Unknown')
+                
+            # Only include items from selected suppliers
+            if supplier_name in selected_suppliers:
+                if supplier_name not in grouped_items:
+                    grouped_items[supplier_name] = []
+                grouped_items[supplier_name].append(item)
+
+        # Process each supplier and draw their section
+        grand_total = 0
+        for supplier_name, items in grouped_items.items():
+            if not items:
+                continue
+            subtotal = draw_supplier_section(pdf, supplier_name, items, include_prices, quotation)
+            grand_total += subtotal
+
+        # Notes section
+        if notes:
+            pdf.set_font("DejaVu", 'I', 9)
+            pdf.set_text_color(90)
+            pdf.multi_cell(0, 6, f"Notes: {notes}")
+            pdf.ln(4)
+
+        # Grand total
+        if include_prices:
+            pdf.set_font("DejaVu", 'B', 11)
+            pdf.set_text_color(0)
+            
+            # Get currency symbol
+            currency = quotation.currency if hasattr(quotation, 'currency') else '€'
+            pdf.cell(0, 8, f"Grand Total Cost: {currency}{grand_total:.2f}", ln=True)
+            pdf.ln(5)
+
+        # Terms section
+        if include_terms and company:
+            pdf.add_page()
+            pdf.set_font("DejaVu", 'B', 12)
+            pdf.cell(0, 10, "Terms and Conditions", ln=True)
+            pdf.set_font("DejaVu", '', 10)
+            
+            # Use a standard terms message since CompanySettings doesn't have a terms field
+            terms = "Standard quotation terms apply. All prices are subject to change without notice."
+                
+            pdf.multi_cell(0, 6, terms)
+
+        # Generate unique filename with timestamp
+        filename = f"supplier_report_{quotation.quotation_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        # Create PDF as bytes
+        pdf_bytes = bytearray(pdf.output(dest='S'))
+        return pdf_bytes, filename
+
+    except Exception as e:
+        logger.error(f"Error generating custom supplier report with DejaVu font: {str(e)}")
+        raise
+
 def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields, include_prices=True, 
                                    include_company_header=True, include_terms=True, group_by_supplier=True,
-                                   notes=None, use_fpdf=False):
+                                   notes=None, use_fpdf=False, use_dejavu=False):
     """
     Generate a custom PDF report for selected suppliers from a quotation
     
@@ -761,16 +1003,24 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
         group_by_supplier: Whether to group items by supplier
         notes: Optional notes to include in the report
         use_fpdf: Whether to use FPDF for PDF generation (default: False, uses WeasyPrint)
+        use_dejavu: Whether to use DejaVu Sans font with FPDF (requires use_fpdf=True)
         
     Returns:
         tuple: (PDF content as bytes, filename)
     """
     if use_fpdf:
-        return generate_custom_supplier_report_fpdf(
-            quotation, selected_suppliers, selected_fields,
-            include_prices, include_company_header, include_terms,
-            group_by_supplier, notes
-        )
+        if use_dejavu:
+            return generate_custom_supplier_report_with_dejavu(
+                quotation, selected_suppliers, selected_fields,
+                include_prices, include_company_header, include_terms,
+                group_by_supplier, notes
+            )
+        else:
+            return generate_custom_supplier_report_fpdf(
+                quotation, selected_suppliers, selected_fields,
+                include_prices, include_company_header, include_terms,
+                group_by_supplier, notes
+            )
     
     try:
         # Get company settings if header should be included

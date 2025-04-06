@@ -2194,6 +2194,7 @@ def register_routes(app):
                 include_terms = request.form.get('include_terms') == 'on'
                 group_by_supplier = request.form.get('group_by_supplier') == 'on'
                 use_fpdf = request.form.get('use_fpdf') == 'on'
+                use_dejavu = request.form.get('use_dejavu') == 'on'
                 notes = request.form.get('notes', '')
                 
                 # Generate the custom report
@@ -2207,7 +2208,8 @@ def register_routes(app):
                     include_terms=include_terms,
                     group_by_supplier=group_by_supplier,
                     notes=notes if notes else None,
-                    use_fpdf=use_fpdf
+                    use_fpdf=use_fpdf,
+                    use_dejavu=use_dejavu
                 )
                 
                 # Send the PDF as a download
