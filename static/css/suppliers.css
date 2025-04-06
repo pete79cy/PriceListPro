@@ -1,0 +1,138 @@
+/* Supplier Management - Modern UI Styles */
+
+/* Card hover effect */
+.supplier-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.supplier-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    border-left: 4px solid #0d6efd;
+}
+
+/* Badge styling */
+.badge-label {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+    border-radius: 30px;
+}
+
+/* Search box styling */
+.search-container {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.search-container i {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    color: #6c757d;
+}
+
+.search-input {
+    padding-left: 35px;
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+}
+
+/* Supplier action buttons */
+.supplier-actions .btn {
+    margin-right: 5px;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state .icon {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+/* Tab styling */
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom: 3px solid #0d6efd;
+    background-color: transparent;
+}
+
+/* Fix for modal positioning */
+.modal-fixed {
+    position: fixed;
+    margin: 0 auto !important;
+    width: 95%;
+    max-width: 500px;
+}
+
+/* Prevent modal content from shifting */
+.modal-fixed .modal-content {
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+/* Add these for filtering animation */
+.supplier-item {
+    transition: opacity 0.3s ease;
+}
+
+.supplier-item.hidden {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* Metrics section styling */
+.metrics-card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.metrics-card:hover {
+    transform: translateY(-3px);
+}
+
+.metrics-icon {
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* For the side panel when editing */
+.side-panel {
+    position: sticky;
+    top: 20px;
+}
+
+/* Breadcrumbs styling */
+.breadcrumb-item + .breadcrumb-item::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    content: "\f054";
+    font-size: 10px;
+}

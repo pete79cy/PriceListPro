@@ -1886,8 +1886,60 @@ def register_routes(app):
     @login_required
     def suppliers():
         """View and manage suppliers"""
-        suppliers_list = Supplier.query.order_by(Supplier.name).all()
-        return render_template('suppliers.html', suppliers=suppliers_list)
+        # Get search query parameter if any
+        search_query = request.args.get('q', '')
+        supplier_type = request.args.get('type', 'all')
+        sort_by = request.args.get('sort', 'name_asc')
+        
+        # Start with the base query
+        query = Supplier.query
+        
+        # Apply search filter if provided
+        if search_query:
+            query = query.filter(
+                db.or_(
+                    Supplier.name.ilike(f'%{search_query}%'),
+                    Supplier.contact_person.ilike(f'%{search_query}%'),
+                    Supplier.email.ilike(f'%{search_query}%')
+                )
+            )
+        
+        # Apply supplier type filter
+        if supplier_type == 'inhouse':
+            query = query.filter(Supplier.is_inhouse == True)
+        elif supplier_type == 'external':
+            query = query.filter(Supplier.is_inhouse == False)
+        
+        # Apply sorting
+        if sort_by == 'name_desc':
+            query = query.order_by(Supplier.name.desc())
+        elif sort_by == 'newest':
+            query = query.order_by(Supplier.created_at.desc())
+        elif sort_by == 'oldest':
+            query = query.order_by(Supplier.created_at)
+        else:  # Default: name_asc
+            query = query.order_by(Supplier.name)
+        
+        # Execute the query
+        suppliers_list = query.all()
+        
+        # Count suppliers by type for metrics
+        total_count = len(suppliers_list)
+        inhouse_count = sum(1 for s in suppliers_list if s.is_inhouse)
+        external_count = total_count - inhouse_count
+        
+        return render_template(
+            'suppliers.html', 
+            suppliers=suppliers_list,
+            search_query=search_query,
+            supplier_type=supplier_type,
+            sort_by=sort_by,
+            metrics={
+                'total': total_count,
+                'inhouse': inhouse_count,
+                'external': external_count
+            }
+        )
         
     @app.route('/api/suppliers')
     @login_required
