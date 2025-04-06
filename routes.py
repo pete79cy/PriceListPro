@@ -155,7 +155,7 @@ def register_routes(app):
             # Get invoices per month for past 6 months
             six_months_ago = datetime.utcnow() - timedelta(days=180)
             invoice_counts = db.session.query(
-                db.func.strftime('%Y-%m', Invoice.invoice_date).label('month'), 
+                db.func.to_char(Invoice.invoice_date, 'YYYY-MM').label('month'), 
                 db.func.count(Invoice.id)
             ).filter(
                 Invoice.invoice_date >= six_months_ago
@@ -245,7 +245,7 @@ def register_routes(app):
         # Get invoices per month for past 6 months
         six_months_ago = datetime.utcnow() - timedelta(days=180)
         invoice_counts = db.session.query(
-            db.func.strftime('%Y-%m', Invoice.invoice_date).label('month'), 
+            db.func.to_char(Invoice.invoice_date, 'YYYY-MM').label('month'), 
             db.func.count(Invoice.id)
         ).filter(
             Invoice.invoice_date >= six_months_ago
