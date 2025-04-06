@@ -21,4 +21,5 @@ dependencies = [
     "viberbot>=1.0.12",
     "requests>=2.32.3",
     "flask-admin>=1.6.1",
+    "fpdf>=1.7.2",
 ]
