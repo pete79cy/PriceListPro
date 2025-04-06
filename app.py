@@ -17,6 +17,23 @@ except ImportError:
     # This can happen on first load before utils directory exists
     pass
 
+def register_error_handlers(app):
+    @app.errorhandler(500)
+    def internal_error(error):
+        logger.error(f"500 Internal Server Error: {str(error)}")
+        logger.error(f"Request path: {request.path}")
+        logger.error(f"Request method: {request.method}")
+        logger.error(f"Request data: {request.get_data()}")
+        db.session.rollback()  # Roll back any failed database transactions
+        return "Internal Server Error", 500
+
+    @app.errorhandler(Exception)
+    def unhandled_exception(e):
+        logger.error(f"Unhandled Exception: {str(e)}")
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        db.session.rollback()
+        return "Internal Server Error", 500
+
 class Base(DeclarativeBase):
     pass
 
@@ -70,6 +87,13 @@ with app.app_context():
         db.session.add(admin_user)
         db.session.commit()
         print("Default admin user created")
+    
+    # Import necessary modules
+    from flask import request
+    import traceback
+    
+    # Register error handlers
+    register_error_handlers(app)
     
     # Import and register routes
     from routes import register_routes
