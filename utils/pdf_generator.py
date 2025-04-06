@@ -494,7 +494,8 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                 'unit': {'title': 'Unit', 'width': 20},
                 'notes': {'title': 'Notes', 'width': 60},
                 'part_number': {'title': 'Part #', 'width': 30},
-                'reference': {'title': 'Ref', 'width': 30}
+                'reference': {'title': 'Ref', 'width': 30},
+                'height': {'title': 'Height', 'width': 30}
             }
             
             # Always include description and quantity
@@ -549,6 +550,8 @@ def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected
                         value = item.part_number if hasattr(item, 'part_number') else ''
                     elif field == 'reference':
                         value = item.reference if hasattr(item, 'reference') else ''
+                    elif field == 'height':
+                        value = item.height if hasattr(item, 'height') else ''
                     else:
                         value = 'N/A'
                     
