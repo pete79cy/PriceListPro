@@ -1,48 +1,78 @@
-from datetime import datetime
 from models import Customer, Invoice, PriceList
+from sqlalchemy import func
+from datetime import datetime
 
 def get_customer_stats(customer_id):
     """
-    Get statistics about a customer's interactions and orders.
+    Get statistics for a specific customer.
     
     Args:
-        customer_id (int): The ID of the customer to get stats for
+        customer_id: The ID of the customer to get statistics for
         
     Returns:
-        dict: A dictionary containing various statistics about the customer
+        A dictionary containing various statistics about the customer:
+        - total_invoices: The total number of invoices for the customer
+        - last_invoice_date: The date of the customer's most recent invoice
+        - total_spent: The total amount spent by the customer across all invoices
+        - product_count: The number of unique products the customer has purchased
+        - avg_order_value: The average value of the customer's orders
     """
+    # Get customer object
     customer = Customer.query.get(customer_id)
     if not customer:
-        return {}
-
-    invoices = customer.invoices
-    price_lists = customer.price_lists
+        return None
     
-    # Calculate last order date
-    last_order_date = None
-    if invoices:
-        last_order_date = max([i.invoice_date for i in invoices])
+    # Get invoice statistics
+    invoice_stats = {}
+    invoice_stats['total_invoices'] = Invoice.query.filter_by(customer_id=customer_id).count()
     
-    # Calculate average order value
-    average_order_value = 0
-    if invoices and len(invoices) > 0:
-        total_value = sum([i.total_amount for i in invoices if i.total_amount is not None])
-        valid_invoices = sum(1 for i in invoices if i.total_amount is not None)
-        if valid_invoices > 0:
-            average_order_value = total_value / valid_invoices
+    # Get the last invoice date
+    last_invoice = Invoice.query.filter_by(customer_id=customer_id).order_by(Invoice.invoice_date.desc()).first()
+    invoice_stats['last_invoice_date'] = last_invoice.invoice_date if last_invoice else None
     
-    # Get contact history
-    contacts = customer.contacts
-    last_contact = None
-    if contacts:
-        last_contact = max([c.contact_date for c in contacts])
+    # Calculate total spent
+    invoice_stats['total_spent'] = Invoice.query.with_entities(
+        func.sum(Invoice.total_amount)
+    ).filter_by(customer_id=customer_id).scalar() or 0
     
-    return {
-        'total_invoices': len(invoices),
-        'total_price_lists': len(price_lists),
-        'last_order_date': last_order_date,
-        'average_order_value': average_order_value,
-        'last_contact_date': last_contact,
-        'contact_count': len(contacts) if contacts else 0,
-        'category': customer.category.name if customer.category else None,
+    # Get price list statistics
+    price_list_stats = {}
+    price_list_stats['product_count'] = PriceList.query.filter_by(customer_id=customer_id).count()
+    
+    # Average order value
+    if invoice_stats['total_invoices'] > 0:
+        invoice_stats['avg_order_value'] = invoice_stats['total_spent'] / invoice_stats['total_invoices']
+    else:
+        invoice_stats['avg_order_value'] = 0
+    
+    # Combine stats
+    stats = {
+        **invoice_stats,
+        **price_list_stats,
+        'contact_info': {
+            'email': customer.email,
+            'phone': customer.phone,
+            'address': customer.address
+        },
+        'updated_at': datetime.utcnow()
     }
+    
+    return stats
+
+
+def get_latest_customer_contact(customer_id):
+    """
+    Get the latest contact record for a customer.
+    
+    Args:
+        customer_id: The ID of the customer
+        
+    Returns:
+        The most recent CustomerContact object for the customer, or None if no contacts exist
+    """
+    customer = Customer.query.get(customer_id)
+    if not customer or not customer.contacts:
+        return None
+    
+    # Contacts are sorted by contact_date in descending order
+    return sorted(customer.contacts, key=lambda c: c.contact_date, reverse=True)[0]
