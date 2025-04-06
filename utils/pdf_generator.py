@@ -341,8 +341,236 @@ def generate_supplier_catalog_pdf(supplier, products):
         logger.error(f"Error generating supplier catalog PDF: {str(e)}")
         raise
         
+def generate_custom_supplier_report_fpdf(quotation, selected_suppliers, selected_fields,
+                                include_prices=True, include_company_header=True,
+                                include_terms=True, group_by_supplier=True,
+                                notes=None):
+    """
+    Generate a custom PDF report for selected suppliers from a quotation using FPDF
+    
+    Args:
+        quotation: The Quotation object
+        selected_suppliers: List of supplier names to include in the report
+        selected_fields: List of field names to include in the report
+        include_prices: Whether to include price information
+        include_company_header: Whether to include company header
+        include_terms: Whether to include terms and conditions
+        group_by_supplier: Whether to group items by supplier
+        notes: Optional notes to include in the report
+        
+    Returns:
+        tuple: (PDF content as bytes, filename)
+    """
+    try:
+        from fpdf import FPDF
+        import io
+        from datetime import timedelta
+
+        class PDF(FPDF):
+            def header(self):
+                if hasattr(self, 'company') and self.company:
+                    self.set_font("Helvetica", 'B', 12)
+                    self.cell(0, 10, self.company.name, ln=True)
+                    self.set_font("Helvetica", '', 10)
+                    address = self.company.address_line1
+                    if hasattr(self.company, 'address_line2') and self.company.address_line2:
+                        address += f", {self.company.address_line2}"
+                    self.cell(0, 5, address or '', ln=True)
+                    self.cell(0, 5, self.company.email or '', ln=True)
+                    self.ln(5)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_font("Helvetica", 'I', 8)
+                self.set_text_color(128)
+                self.cell(0, 10, f"Page {self.page_no()} / {{nb}}", align='C')
+
+            def add_watermark(self, text):
+                self.set_font("Helvetica", 'B', 40)
+                self.set_text_color(240, 240, 240)
+                self.rotate(45, x=self.w / 3, y=self.h / 2)
+                self.text(self.w / 3, self.h / 2, text)
+                self.rotate(0)
+                self.set_text_color(0)
+
+        # Initialize PDF object
+        pdf = PDF()
+        pdf.alias_nb_pages()
+        
+        # Company settings
+        company = None
+        if include_company_header:
+            company = CompanySettings.query.first()
+            if not company:
+                company = CompanySettings()  # Use default values if no settings exist
+            pdf.company = company
+        
+        # Add cover page
+        pdf.add_page()
+        
+        # Cover page content
+        pdf.set_font("Helvetica", 'B', 16)
+        pdf.cell(0, 10, f"Quotation Report: {quotation.quotation_number}", ln=True)
+        pdf.set_font("Helvetica", '', 12)
+        
+        # Format date
+        if hasattr(quotation, 'quotation_date'):
+            quote_date = quotation.quotation_date.strftime('%Y-%m-%d') if quotation.quotation_date else 'N/A'
+        else:
+            quote_date = datetime.now().strftime('%Y-%m-%d')
+            
+        valid_until = None
+        if hasattr(quotation, 'valid_until') and quotation.valid_until:
+            valid_until = quotation.valid_until.strftime('%Y-%m-%d')
+        else:
+            # Default validity: 30 days from quotation date
+            if hasattr(quotation, 'quotation_date') and quotation.quotation_date:
+                valid_until = (quotation.quotation_date + timedelta(days=30)).strftime('%Y-%m-%d')
+            else:
+                valid_until = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        pdf.cell(0, 10, f"Date Issued: {quote_date}", ln=True)
+        pdf.cell(0, 10, f"Valid Until: {valid_until}", ln=True)
+        
+        # Customer information
+        customer_name = quotation.customer.name if hasattr(quotation, 'customer') and quotation.customer else 'N/A'
+        pdf.cell(0, 10, f"Customer: {customer_name}", ln=True)
+        pdf.cell(0, 10, f"Suppliers Included: {', '.join(selected_suppliers)}", ln=True)
+        pdf.ln(10)
+
+        # Add watermark
+        pdf.add_watermark("CONFIDENTIAL")
+
+        # Group items by supplier
+        grouped_items = {}
+        
+        for item in quotation.items:
+            supplier_name = item.supplier if hasattr(item, 'supplier') else (
+                           item.supplier_name if hasattr(item, 'supplier_name') else 'Unknown')
+            
+            # Only include items from selected suppliers
+            if supplier_name in selected_suppliers:
+                if supplier_name not in grouped_items:
+                    grouped_items[supplier_name] = []
+                grouped_items[supplier_name].append(item)
+        
+        # Iterate through supplier groups
+        for supplier_name, items in grouped_items.items():
+            if not items:
+                continue
+
+            # Add supplier section header
+            pdf.add_page()
+            pdf.set_font("Helvetica", 'B', 14)
+            pdf.cell(0, 10, f"Supplier: {supplier_name}", ln=True)
+            pdf.ln(5)
+            
+            # Table headers
+            pdf.set_font("Helvetica", 'B', 10)
+            headers = ["Item", "Qty"]
+            col_widths = [100, 20]
+            
+            if include_prices:
+                headers.extend(["Unit Price", "Total"])
+                col_widths.extend([30, 30])
+            
+            # Draw header row
+            for i, header in enumerate(headers):
+                pdf.cell(col_widths[i], 8, header, border=1)
+            pdf.ln()
+
+            # Table rows
+            pdf.set_font("Helvetica", '', 10)
+            total = 0
+            fill = False
+            
+            for item in items:
+                # Get item properties
+                description = item.description if hasattr(item, 'description') else 'N/A'
+                quantity = item.quantity if hasattr(item, 'quantity') else 0
+                
+                # Set row background
+                pdf.set_fill_color(245 if fill else 255)
+                
+                # Item description cell
+                pdf.cell(col_widths[0], 8, description, border=1, fill=fill)
+                
+                # Quantity cell
+                pdf.cell(col_widths[1], 8, str(quantity), border=1, fill=fill)
+                
+                # Price cells
+                if include_prices:
+                    # Get price
+                    unit_price = 0
+                    if hasattr(item, 'selling_price'):
+                        unit_price = item.selling_price
+                    elif hasattr(item, 'price'):
+                        unit_price = item.price
+                    elif hasattr(item, 'cost_price'):
+                        unit_price = item.cost_price
+                    
+                    # Format prices
+                    currency = quotation.currency if hasattr(quotation, 'currency') else '€'
+                    pdf.cell(col_widths[2], 8, f"{currency}{unit_price:.2f}", border=1, fill=fill)
+                    
+                    # Calculate line total
+                    line_total = unit_price * quantity
+                    total += line_total
+                    pdf.cell(col_widths[3], 8, f"{currency}{line_total:.2f}", border=1, fill=fill)
+                
+                pdf.ln()
+                fill = not fill  # Toggle fill for next row
+
+            # Add subtotal row if prices are included
+            if include_prices:
+                pdf.set_font("Helvetica", 'B', 10)
+                pdf.cell(col_widths[0] + col_widths[1], 8, "Subtotal", border=1)
+                currency = quotation.currency if hasattr(quotation, 'currency') else '€'
+                pdf.cell(col_widths[2] + col_widths[3], 8, f"{currency}{total:.2f}", border=1)
+                pdf.ln(15)
+
+        # Notes section
+        if notes:
+            pdf.add_page()
+            pdf.set_font("Helvetica", 'B', 12)
+            pdf.cell(0, 10, "Notes", ln=True)
+            pdf.set_font("Helvetica", 'I', 10)
+            pdf.set_text_color(50)
+            pdf.multi_cell(0, 7, notes, border=1)
+            pdf.ln()
+
+        # Terms and Conditions
+        if include_terms and company:
+            pdf.add_page()
+            pdf.set_font("Helvetica", 'B', 12)
+            pdf.cell(0, 10, "Terms and Conditions", ln=True)
+            pdf.set_font("Helvetica", '', 10)
+            
+            # Get terms from company settings if available
+            terms_text = "Standard terms apply."
+            if hasattr(company, 'terms') and company.terms:
+                terms_text = company.terms
+                
+            pdf.multi_cell(0, 6, terms_text)
+            pdf.ln()
+
+        # Generate output
+        pdf_output = io.BytesIO()
+        pdf.output(pdf_output)
+        pdf_output.seek(0)
+        
+        # Create filename
+        filename = f"quotation_report_{quotation.quotation_number}.pdf"
+        
+        return pdf_output.read(), filename
+
+    except Exception as e:
+        logger.error(f"Error generating custom supplier report with FPDF: {str(e)}")
+        raise
+
 def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields, include_prices=True, 
-                                   include_company_header=True, include_terms=True, group_by_supplier=True):
+                                   include_company_header=True, include_terms=True, group_by_supplier=True,
+                                   notes=None, use_fpdf=False):
     """
     Generate a custom PDF report for selected suppliers from a quotation
     
@@ -354,10 +582,19 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
         include_company_header: Whether to include company header
         include_terms: Whether to include terms and conditions
         group_by_supplier: Whether to group items by supplier
+        notes: Optional notes to include in the report
+        use_fpdf: Whether to use FPDF for PDF generation (default: False, uses WeasyPrint)
         
     Returns:
         tuple: (PDF content as bytes, filename)
     """
+    if use_fpdf:
+        return generate_custom_supplier_report_fpdf(
+            quotation, selected_suppliers, selected_fields,
+            include_prices, include_company_header, include_terms,
+            group_by_supplier, notes
+        )
+    
     try:
         # Get company settings if header should be included
         company = None
@@ -418,7 +655,8 @@ def generate_custom_supplier_report(quotation, selected_suppliers, selected_fiel
             date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
             company=company,
             logo_data=logo_data,
-            orientation=orientation
+            orientation=orientation,
+            notes=notes  # Pass notes to template
         )
         
         # Generate a unique filename

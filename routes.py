@@ -2193,6 +2193,8 @@ def register_routes(app):
                 include_company_header = request.form.get('include_company_header') == 'on'
                 include_terms = request.form.get('include_terms') == 'on'
                 group_by_supplier = request.form.get('group_by_supplier') == 'on'
+                use_fpdf = request.form.get('use_fpdf') == 'on'
+                notes = request.form.get('notes', '')
                 
                 # Generate the custom report
                 from utils.pdf_generator import generate_custom_supplier_report
@@ -2203,7 +2205,9 @@ def register_routes(app):
                     include_prices=include_prices,
                     include_company_header=include_company_header,
                     include_terms=include_terms,
-                    group_by_supplier=group_by_supplier
+                    group_by_supplier=group_by_supplier,
+                    notes=notes if notes else None,
+                    use_fpdf=use_fpdf
                 )
                 
                 # Send the PDF as a download
