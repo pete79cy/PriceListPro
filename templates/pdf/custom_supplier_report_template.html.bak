@@ -347,13 +347,6 @@
             </tr>
         </table>
     </div>
-    {% if notes %}
-    <div style="margin-top: 1cm; page-break-inside: avoid; padding: 0.3cm; border: 1px solid #ddd; background-color: #f9f9f9;">
-        <h2 style="margin-top: 0;">Notes</h2>
-        <p style="white-space: pre-line;">{{ notes }}</p>
-    </div>
-    {% endif %}
-
     <div class="clear"></div>
     
     <div class="footer">
