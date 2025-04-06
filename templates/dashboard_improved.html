@@ -221,9 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryChart = new Chart(categoryCtx, {
         type: 'pie',
         data: {
-            labels: {{ category_labels_json | safe }},
+            labels: JSON.parse({{ category_labels_json | safe }}).labels,
             datasets: [{
-                data: {{ category_values_json | safe }},
+                data: JSON.parse({{ category_labels_json | safe }}).values,
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.7)',
                     'rgba(54, 162, 235, 0.7)',
@@ -267,10 +267,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const invoiceChart = new Chart(invoiceCtx, {
         type: 'bar',
         data: {
-            labels: {{ invoice_labels_json | safe }},
+            labels: JSON.parse({{ invoice_labels_json | safe }}).labels,
             datasets: [{
                 label: 'Invoices',
-                data: {{ invoice_values_json | safe }},
+                data: JSON.parse({{ invoice_labels_json | safe }}).values,
                 backgroundColor: 'rgba(54, 162, 235, 0.7)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1

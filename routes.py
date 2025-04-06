@@ -181,20 +181,39 @@ def register_routes(app):
                 invoice_labels = []
                 invoice_values = []
             
-            # Convert data to JSON strings directly
-            category_labels_json = json.dumps(category_labels)
-            category_values_json = json.dumps(category_values)
-            invoice_labels_json = json.dumps(invoice_labels)
-            invoice_values_json = json.dumps(invoice_values)
+            # Create chart data objects and convert to JSON with fallback
+            try:
+                # Create structured data objects for charts
+                category_chart_data = {
+                    "labels": category_labels,
+                    "values": category_values
+                }
+                invoice_chart_data = {
+                    "labels": invoice_labels,
+                    "values": invoice_values
+                }
+                
+                # Convert to JSON with safe handling for any type
+                category_chart_json = json.dumps(category_chart_data, default=str)
+                invoice_chart_json = json.dumps(invoice_chart_data, default=str)
+            except Exception as e:
+                # If JSON serialization fails, provide empty fallback data
+                app.logger.error(f"JSON serialization error in index: {str(e)}")
+                category_chart_json = json.dumps({"labels": [], "values": []})
+                invoice_chart_json = json.dumps({"labels": [], "values": []})
+                
+            # Variables for template compatibility
+            category_labels_json = category_chart_json
+            invoice_labels_json = invoice_chart_json
             
             return render_template('dashboard_improved.html', 
                                   stats=stats, 
                                   pending_update_count=pending_update_count,
                                   recent_activities=recent_activities,
                                   category_labels_json=category_labels_json,
-                                  category_values_json=category_values_json,
+                                  category_values_json=category_labels_json,  # Using same variable as a fallback
                                   invoice_labels_json=invoice_labels_json,
-                                  invoice_values_json=invoice_values_json)
+                                  invoice_values_json=invoice_labels_json)
         # Otherwise show the login page
         return render_template('index.html')
         
@@ -293,20 +312,39 @@ def register_routes(app):
             invoice_labels = []
             invoice_values = []
         
-        # Convert data to JSON strings directly
-        category_labels_json = json.dumps(category_labels)
-        category_values_json = json.dumps(category_values)
-        invoice_labels_json = json.dumps(invoice_labels)
-        invoice_values_json = json.dumps(invoice_values)
+        # Create chart data objects and convert to JSON with fallback
+        try:
+            # Create structured data objects for charts
+            category_chart_data = {
+                "labels": category_labels,
+                "values": category_values
+            }
+            invoice_chart_data = {
+                "labels": invoice_labels,
+                "values": invoice_values
+            }
+            
+            # Convert to JSON with safe handling for any type
+            category_chart_json = json.dumps(category_chart_data, default=str)
+            invoice_chart_json = json.dumps(invoice_chart_data, default=str)
+        except Exception as e:
+            # If JSON serialization fails, provide empty fallback data
+            app.logger.error(f"JSON serialization error: {str(e)}")
+            category_chart_json = json.dumps({"labels": [], "values": []})
+            invoice_chart_json = json.dumps({"labels": [], "values": []})
+        
+        # Variables were renamed
+        category_labels_json = category_chart_json
+        invoice_labels_json = invoice_chart_json
         
         return render_template('dashboard_improved.html', 
                               stats=stats, 
                               pending_update_count=pending_update_count,
                               recent_activities=recent_activities,
                               category_labels_json=category_labels_json,
-                              category_values_json=category_values_json,
+                              category_values_json=category_labels_json,  # Using same variable as a fallback
                               invoice_labels_json=invoice_labels_json,
-                              invoice_values_json=invoice_values_json)
+                              invoice_values_json=invoice_labels_json)
     
     @app.route('/uploads', methods=['GET'])
     @login_required
