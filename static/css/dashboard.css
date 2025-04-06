@@ -45,6 +45,21 @@
     color: #212529 !important;
 }
 
+/* Ensure text in the invoices card has better contrast */
+.text-warning {
+    color: #976600 !important; /* Darker shade of yellow for better contrast */
+}
+
+.btn-outline-warning {
+    color: #976600 !important;
+    border-color: #976600 !important;
+}
+
+.btn-outline-warning:hover {
+    color: #ffffff !important;
+    background-color: #976600 !important;
+}
+
 .card.bg-info {
     background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
 }
