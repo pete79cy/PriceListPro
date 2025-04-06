@@ -34,6 +34,15 @@
 
 .card.bg-warning {
     background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+    color: #212529 !important;
+}
+
+.card.bg-warning .small {
+    color: #212529 !important;
+}
+
+.card.bg-warning .text-white {
+    color: #212529 !important;
 }
 
 .card.bg-info {
