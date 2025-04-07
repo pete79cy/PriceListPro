@@ -245,6 +245,7 @@ class QuotationItem(db.Model):
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)  # Link to supplier
     cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
     total = db.Column(db.Float, nullable=True)  # Total price (selling_price * quantity)
+    position = db.Column(db.Integer, default=0)  # Position for ordering items in the quotation
     
     # Relationships
     product = db.relationship('Product', backref='quotation_items', lazy=True)

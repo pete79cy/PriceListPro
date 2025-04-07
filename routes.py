@@ -2568,6 +2568,110 @@ def register_routes(app):
             flash(f"Error deleting item: {str(e)}", 'danger')
             
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
+    @app.route('/quotation/<int:quotation_id>/item/quick_add', methods=['POST'])
+    @login_required
+    def quick_add_quotation_item(quotation_id):
+        """Add a new quotation item via AJAX with minimal information"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            description = request.form.get('description', '')
+            if not description:
+                return jsonify({'error': 'Description is required'}), 400
+                
+            # Create a new item with the next position
+            position = QuotationItem.query.filter_by(quotation_id=quotation_id).count()
+            
+            # Create the new item
+            item = QuotationItem(
+                quotation_id=quotation_id,
+                description=description,
+                quantity=1,
+                selling_price=0,
+                vat_rate=19.0,
+                position=position
+            )
+            
+            db.session.add(item)
+            db.session.commit()
+            
+            # Return the new item details for the UI
+            return jsonify({
+                'id': item.id, 
+                'description': item.description,
+                'position': item.position
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error adding quotation item: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
+    @app.route('/quotation/<int:quotation_id>/items/reorder', methods=['POST'])
+    @login_required
+    def reorder_quotation_items(quotation_id):
+        """Reorder quotation items based on client-side drag and drop"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Get the new order of item IDs from the request
+            data = request.get_json()
+            if not data or 'order' not in data:
+                return jsonify({'error': 'No order data provided'}), 400
+                
+            new_order = data['order']
+            
+            # Update each item's position
+            for position, item_id in enumerate(new_order):
+                item = QuotationItem.query.get(item_id)
+                if item and item.quotation_id == quotation_id:
+                    item.position = position
+                
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Items reordered successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error reordering quotation items: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
+    @app.route('/supplier/quick_add', methods=['POST'])
+    @login_required
+    def quick_add_supplier():
+        """Add a new supplier via AJAX for quotation editor"""
+        try:
+            name = request.form.get('name', '')
+            if not name:
+                return jsonify({'error': 'Supplier name is required'}), 400
+                
+            # Check if supplier with this name already exists
+            existing = Supplier.query.filter(Supplier.name == name).first()
+            if existing:
+                # Return the existing supplier instead of error
+                return jsonify({
+                    'id': existing.id,
+                    'name': existing.name
+                })
+                
+            # Create new supplier
+            supplier = Supplier(
+                name=name,
+                notes="Created from quotation editor"
+            )
+            
+            db.session.add(supplier)
+            db.session.commit()
+            
+            return jsonify({
+                'id': supplier.id,
+                'name': supplier.name
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error adding supplier: {str(e)}")
+            return jsonify({'error': str(e)}), 500
         
     # Supplier Management Routes
     @app.route('/suppliers')
