@@ -130,6 +130,32 @@ def update_supplier_product_last_detected(product_id):
         return False
 
 @with_db_reconnect(max_retries=3)
+def update_suppliers_from_quotation(quotation_items):
+    """
+    Update or create supplier product records for multiple quotation items.
+    
+    Args:
+        quotation_items (list): List of QuotationItem objects
+        
+    Returns:
+        dict: Results with counts of successful and failed updates
+    """
+    if not quotation_items:
+        return {"success": 0, "failed": 0}
+    
+    results = {"success": 0, "failed": 0}
+    
+    for item in quotation_items:
+        success = update_supplier_from_quotation_item(item)
+        if success:
+            results["success"] += 1
+        else:
+            results["failed"] += 1
+    
+    logger.info(f"Supplier update from quotation complete: {results['success']} succeeded, {results['failed']} failed")
+    return results
+
+@with_db_reconnect(max_retries=3)
 def update_supplier_from_quotation_item(quotation_item):
     """
     Update or create a supplier product record based on a quotation item.

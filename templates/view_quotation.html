@@ -670,7 +670,7 @@ function setupEditButtonHandlers() {
         const costPrice = btn.data('cost-price');
         
         // Set the form action URL
-        $('#editItemForm').attr('action', "{{ url_for('edit_quotation_item', quotation_id=quotation.id) }}/" + itemId);
+        $('#editItemForm').attr('action', "{{ url_for('edit_quotation_item', quotation_id=quotation.id, item_id=0) }}".replace('/0', '/' + itemId));
         
         // Fill the form fields
         $('#edit_description').val(description);
