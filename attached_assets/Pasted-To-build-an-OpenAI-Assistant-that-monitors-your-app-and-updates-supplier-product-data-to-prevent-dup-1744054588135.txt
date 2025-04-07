@@ -1,0 +1,87 @@
+To build an OpenAI Assistant that monitors your app and updates supplier product data to prevent duplicates, here’s a detailed step-by-step plan with full implementation.
+
+✅ Goal
+
+Create an AI-powered assistant that:
+
+Watches your suppliers' products (via DB or API).
+
+Detects duplicate products (based on name, SKU, etc.).
+
+Suggests or makes changes (e.g., merges or flags duplicates).
+
+Can be queried or used on demand.
+
+🔧 Implementation
+
+1. Data Access Layer
+
+# supplier_service.py
+from models import SupplierProduct
+from app import db
+
+def get_all_supplier_products():
+    return db.session.query(SupplierProduct).all()
+
+2. Duplicate Detection Logic
+
+from difflib import SequenceMatcher
+
+def is_duplicate(a, b, threshold=0.9):
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio() >= threshold
+
+def find_duplicate_products(products):
+    duplicates = []
+    seen = set()
+    for i, prod1 in enumerate(products):
+        for j, prod2 in enumerate(products[i+1:], i+1):
+            if (prod1.id, prod2.id) not in seen and is_duplicate(prod1.name, prod2.name):
+                duplicates.append((prod1, prod2))
+                seen.add((prod1.id, prod2.id))
+    return duplicates
+
+3. Assistant Engine
+
+import openai
+
+def ask_openai_to_resolve(duplicates):
+    results = []
+    for p1, p2 in duplicates:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a data validation assistant."},
+                {"role": "user", "content": f"Are these two products duplicates?\n\n1: {p1.name}\n2: {p2.name}\n\nSuggest action."}
+            ]
+        )
+        results.append({"pair": (p1.id, p2.id), "suggestion": response['choices'][0]['message']['content']})
+    return results
+
+4. Merge or Flag
+
+def auto_flag_duplicates(duplicates):
+    for p1, p2 in duplicates:
+        p1.flagged_duplicate = True
+        p2.flagged_duplicate = True
+    db.session.commit()
+
+5. Scheduled Task or On-Demand Trigger
+
+# app.py or routes.py
+from flask import Flask, jsonify
+from supplier_service import get_all_supplier_products
+
+@app.route('/admin/detect-duplicates', methods=['POST'])
+def detect_duplicates():
+    products = get_all_supplier_products()
+    duplicates = find_duplicate_products(products)
+    auto_flag_duplicates(duplicates)
+    return jsonify({"status": "done", "duplicates": len(duplicates)})
+
+🧠 Optional OpenAI Integration Use Cases
+
+Ask GPT to suggest canonical product names.
+
+Summarize a group of duplicate products.
+
+Classify or cluster suppliers’ product catalogs.
