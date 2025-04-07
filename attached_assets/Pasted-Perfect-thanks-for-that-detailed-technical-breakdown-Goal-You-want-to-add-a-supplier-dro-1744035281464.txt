@@ -1,0 +1,80 @@
+Perfect, thanks for that detailed technical breakdown.
+
+### ✅ Goal:
+You want to **add a supplier dropdown** to the quotation item editing process – both backend (Flask) and frontend (HTML template) – so that users can select a supplier from existing ones.
+
+---
+
+### 🧠 Plan to Implement:
+
+#### 1. **Backend: Add Supplier to Edit Flow**
+- Modify `edit_quotation_item` to update the `supplier_id` from form data.
+- Modify `edit_quotation` to pass supplier list to the form.
+
+#### 2. **Frontend: Update `edit_quotation.html`**
+- Add a `<select>` dropdown inside the form for each product's supplier.
+- Preselect the current supplier if one exists.
+
+---
+
+### 🛠 Backend Updates
+
+#### ✅ In `edit_quotation_item` route:
+Add this inside the try block:
+
+```python
+item.supplier_id = request.form.get('supplier_id')
+```
+
+Make sure `supplier_id` exists in the form (we’ll do that next).
+
+---
+
+#### ✅ In `edit_quotation` route:
+You're already passing:
+
+```python
+suppliers_list = Supplier.query.order_by(Supplier.name).all()
+```
+
+So you're good here.
+
+---
+
+### 🖼 Frontend Template (`edit_quotation.html`)
+
+Inside the form for each quotation item, add this where appropriate:
+
+```html
+<label for="supplier_id_{{ item.id }}">Supplier</label>
+<select name="supplier_id" id="supplier_id_{{ item.id }}" class="form-control">
+    {% for supplier in suppliers %}
+        <option value="{{ supplier.id }}"
+            {% if supplier.id == item.supplier_id %} selected {% endif %}>
+            {{ supplier.name }}
+        </option>
+    {% endfor %}
+</select>
+```
+
+Make sure the form’s `POST` submission contains the `supplier_id`.
+
+---
+
+### 🧪 Optional: Validate Supplier ID
+
+If needed, add validation logic:
+
+```python
+supplier_id = request.form.get('supplier_id')
+if supplier_id and not Supplier.query.get(supplier_id):
+    raise ValueError("Invalid supplier selected.")
+item.supplier_id = supplier_id
+```
+
+---
+
+Would you like me to:
+a. Refactor the form HTML for a dynamic loop over all editable items?  
+b. Add the ability to **add a new supplier on the fly** from this form?  
+c. Add backend unit tests to verify supplier update works correctly?

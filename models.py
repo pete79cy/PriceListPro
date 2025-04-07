@@ -242,11 +242,13 @@ class QuotationItem(db.Model):
     selling_price = db.Column(db.Float, nullable=False)
     vat_rate = db.Column(db.Float, nullable=False, default=19.0)  # Default VAT rate of 19%
     supplier = db.Column(db.String(255), nullable=True)  # Supplier name 
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)  # Link to supplier
     cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
     total = db.Column(db.Float, nullable=True)  # Total price (selling_price * quantity)
     
     # Relationships
     product = db.relationship('Product', backref='quotation_items', lazy=True)
+    supplier_ref = db.relationship('Supplier', backref='quotation_items', lazy=True)
     
     def __repr__(self):
         return f'<QuotationItem {self.description}>'

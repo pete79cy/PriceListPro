@@ -2080,19 +2080,23 @@ def register_routes(app):
         vat_summary = [{'rate': rate, 'amount': amount} for rate, amount in vat_dict.items()]
         
         # Create a dictionary of suppliers and item counts
-        suppliers = {}
+        suppliers_dict = {}
         for item in quotation.items:
             if item.supplier:
-                if item.supplier in suppliers:
-                    suppliers[item.supplier] += 1
+                if item.supplier in suppliers_dict:
+                    suppliers_dict[item.supplier] += 1
                 else:
-                    suppliers[item.supplier] = 1
+                    suppliers_dict[item.supplier] = 1
+        
+        # Get all suppliers for the dropdown in edit form
+        all_suppliers = Supplier.query.order_by(Supplier.name).all()
         
         return render_template('view_quotation.html', 
                               quotation=quotation,
                               subtotal=subtotal,
                               vat_summary=vat_summary,
-                              suppliers=suppliers)
+                              suppliers=suppliers_dict,
+                              all_suppliers=all_suppliers)
     
     @app.route('/quotation/<int:quotation_id>/export')
     @login_required
@@ -2350,7 +2354,19 @@ def register_routes(app):
                 vat_rate = 19  # Default VAT rate
                 logger.warning("Invalid VAT rate format in add quotation item, using default of 19%")
                 
+            # Get supplier information
             supplier = request.form.get('supplier')
+            supplier_id = request.form.get('supplier_id')
+            if supplier_id:
+                try:
+                    supplier_id = int(supplier_id)
+                    # If we have a supplier_id, get the supplier name
+                    supplier_obj = Supplier.query.get(supplier_id)
+                    if supplier_obj:
+                        supplier = supplier_obj.name
+                except (ValueError, TypeError):
+                    supplier_id = None
+                    logger.warning("Invalid supplier_id in add quotation item, ignoring")
             
             # Parse cost price with better error handling
             try:
@@ -2392,6 +2408,7 @@ def register_routes(app):
                 selling_price=selling_price,
                 vat_rate=vat_rate,
                 supplier=supplier,
+                supplier_id=supplier_id if supplier_id else None,
                 cost_price=cost_price,
                 total=total
             )
@@ -2462,7 +2479,20 @@ def register_routes(app):
                 item.vat_rate = 19  # Default VAT rate
                 logger.warning(f"Invalid VAT rate format in edit quotation item {item_id}, using default of 19%")
                 
+            # Update supplier text field
             item.supplier = request.form.get('supplier')
+            
+            # Update supplier_id if provided
+            supplier_id = request.form.get('supplier_id')
+            if supplier_id:
+                try:
+                    item.supplier_id = int(supplier_id)
+                    # If we have a valid supplier_id, get the supplier name
+                    supplier_obj = Supplier.query.get(item.supplier_id)
+                    if supplier_obj:
+                        item.supplier = supplier_obj.name
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid supplier_id in edit quotation item {item_id}, ignoring")
             
             # Parse cost price with better error handling
             try:
