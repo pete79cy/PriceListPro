@@ -294,15 +294,3 @@
         <h2>Terms & Conditions</h2>
         <ol>
             <li>This quotation is valid for 30 days from the date of issue.</li>
-            <li>Prices are subject to change without prior notice after the validity period.</li>
-            <li>Delivery timeframe will be confirmed upon order placement.</li>
-            <li>Payment terms: 50% advance, balance prior to delivery.</li>
-            <li>All prices are inclusive of any applicable taxes as indicated.</li>
-        </ol>
-    </div>
-
-    <div class="footer">
-        <p>{{ company.name }} | Quotation {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
-    </div>
-</body>
-</html>
