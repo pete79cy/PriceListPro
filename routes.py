@@ -3367,13 +3367,46 @@ def register_routes(app):
             flash(f'Error finding duplicates: {str(e)}', 'danger')
             return redirect(url_for('supplier_duplicates'))
     
+    def test_openai_api():
+        """Test if OpenAI API key is valid and working"""
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return False, "OpenAI API key not configured"
+            
+        try:
+            # Initialize client with basic settings
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key, timeout=10.0)
+            
+            # Simple test to list available models
+            models = client.models.list()
+            return True, f"API connection successful. Found {len(models.data)} models."
+        except Exception as e:
+            logger.error(f"OpenAI API test failed: {str(e)}")
+            return False, f"API connection failed: {str(e)}"
+    
     @app.route('/analyze_supplier_duplicates/<int:supplier_id>', methods=['POST'])
     @login_required
     def analyze_supplier_duplicates(supplier_id):
         """Analyze potential duplicates using OpenAI"""
-        # Check if OpenAI API is configured
-        if not os.getenv("OPENAI_API_KEY"):
+        # Check if OpenAI API is configured and working
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
             flash('OpenAI API key not configured. Please set it in AI settings.', 'warning')
+            return redirect(url_for('ai_settings'))
+            
+        # Test if the API key is valid before attempting analysis
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key, timeout=10.0)
+            
+            # Simple test to list available models
+            client.models.list()
+            logger.info("OpenAI API key validated successfully for duplicate analysis")
+        except Exception as e:
+            error_message = str(e)
+            logger.error(f"OpenAI API validation failed: {error_message}")
+            flash(f'OpenAI API key validation failed: {error_message}. Please update your API key in AI settings.', 'danger')
             return redirect(url_for('ai_settings'))
         
         try:
@@ -3598,6 +3631,41 @@ def register_routes(app):
             "api_key_set": api_key_set
         }
         return jsonify(status)
+    
+    @app.route('/test-openai-api', methods=['GET'])
+    @login_required
+    def test_openai_api():
+        """Test if OpenAI API key is valid and working"""
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return jsonify({
+                "success": False,
+                "message": "OpenAI API key not configured. Please provide an API key."
+            })
+            
+        try:
+            # Initialize client with basic settings
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key, timeout=10.0)
+            
+            # Simple test to list available models
+            models = client.models.list()
+            model_count = len(models.data)
+            
+            logger.info(f"OpenAI API test successful. Found {model_count} models.")
+            
+            return jsonify({
+                "success": True,
+                "message": f"Connection successful! Your API key is valid and working. Found {model_count} available models."
+            })
+        except Exception as e:
+            error_message = str(e)
+            logger.error(f"OpenAI API test failed: {error_message}")
+            
+            return jsonify({
+                "success": False,
+                "message": f"Connection failed: {error_message}. Please check your API key."
+            })
     
     @app.route('/ai-insights/analyze', methods=['POST'])
     @login_required
