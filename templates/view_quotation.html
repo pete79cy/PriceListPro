@@ -429,11 +429,8 @@
 <!-- Include SortableJS for drag and drop functionality -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
-<!-- Include SortableJS for drag and drop functionality -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-
 <!-- Include our custom quotation.js -->
-<script src="{{ url_for("static", filename="js/quotation.js") }}"></script>
+<script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
 
 <!-- Initialize AI Insights for this quotation -->
 <script>
@@ -537,6 +534,3 @@ function updateRowNumbers() {
 </script>
 {% endblock %}
 
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
-{% endblock %}
