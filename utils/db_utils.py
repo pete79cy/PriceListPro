@@ -4,17 +4,19 @@ Database utility functions for handling connection issues and other database ope
 
 import functools
 import logging
+import time
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from flask import flash
 from app import db
 from utils.logger import logger
 
-def with_db_reconnect(max_retries=3):
+def with_db_reconnect(max_retries=3, backoff_factor=0.5):
     """
     Decorator to handle database connection issues by attempting to reconnect.
     
     Args:
         max_retries (int): Maximum number of reconnection attempts
+        backoff_factor (float): Factor to increase wait time between retries
         
     Returns:
         decorator: Function wrapper that handles database reconnection
@@ -23,6 +25,7 @@ def with_db_reconnect(max_retries=3):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             retries = 0
+            
             while retries <= max_retries:
                 try:
                     return func(*args, **kwargs)
@@ -31,14 +34,26 @@ def with_db_reconnect(max_retries=3):
                     error_msg = str(e)
                     logger.warning(f"Database connection error: {error_msg}")
                     
-                    # Check if it's a connection issue
-                    if any(msg in error_msg.lower() for msg in ["connection", "closed", "terminated", "timed out", "ssl"]):
+                    # Check if it's a connection issue (expanded list of error messages)
+                    connection_errors = [
+                        "connection", "closed", "terminated", "timed out", "ssl", 
+                        "broken pipe", "reset by peer", "unexpectedly", "server closed"
+                    ]
+                    
+                    if any(msg in error_msg.lower() for msg in connection_errors):
                         if retries <= max_retries:
-                            logger.info(f"Attempting database reconnection (attempt {retries}/{max_retries})")
+                            # Calculate delay with exponential backoff
+                            delay = backoff_factor * (2 ** (retries - 1))
+                            logger.info(f"Attempting database reconnection (attempt {retries}/{max_retries}) after {delay:.2f}s delay")
+                            
                             try:
                                 # Close all connections in the pool
                                 db.engine.dispose()
                                 db.session.rollback()
+                                
+                                # Wait with exponential backoff before retry
+                                if delay > 0:
+                                    time.sleep(delay)
                                 
                                 # If this is the last retry, alert the user
                                 if retries == max_retries:
@@ -66,7 +81,7 @@ def with_db_reconnect(max_retries=3):
                     raise
             
             # If we get here, we've exhausted retries
-            raise OperationalError("Maximum database reconnection attempts reached", None, None)
+            raise OperationalError(f"Maximum database reconnection attempts ({max_retries}) reached", None, None)
         
         return wrapper
     

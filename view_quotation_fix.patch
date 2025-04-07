@@ -1,0 +1,14 @@
+--- templates/view_quotation.html
++++ templates/view_quotation.html
+@@ -335,11 +335,6 @@
+                             <input type="text" class="form-control" id="edit_scientific_name" name="scientific_name">
+                         </div>
+                     </div>
+-                            <input type="text" class="form-control" id="edit_description" name="description" required>
+-                        </div>
+-                        <div class="col-md-6">
+-                            <label for="edit_scientific_name" class="form-label">Scientific Name</label>
+-                            <input type="text" class="form-control" id="edit_scientific_name" name="scientific_name">
+-                        </div>
+-                    </div>
+                     <div class="row mb-3">

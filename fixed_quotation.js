@@ -91,47 +91,25 @@ function setupAjaxFormSubmission() {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.json().catch(err => {
-                    console.error('Error parsing JSON:', err);
-                    throw new Error('Error parsing server response. Please try again.');
-                });
+                return response.json();
             })
             .then(data => {
-                if (!data || !data.success) {
-                    throw new Error(data?.error || 'Unknown server error');
-                }
-                
                 // Close the modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
                 modal.hide();
                 
                 // Show success message
-                showToast(data.message || 'Item updated successfully!', 'success');
+                showToast('Item updated successfully!', 'success');
                 
                 // Update the item in the table without reloading the page
-                if (data.item) {
-                    updateItemInTable(itemId, data.item);
-                    
-                    // Highlight the updated row
-                    highlightRow(itemId);
-                } else {
-                    console.warn('Server response missing item data');
-                    // Fallback to page reload if item data is missing
-                    window.location.reload();
-                }
+                updateItemInTable(itemId, data.item);
+                
+                // Highlight the updated row
+                highlightRow(itemId);
             })
             .catch(error => {
                 console.error('Error:', error);
-                
-                // Create a more user-friendly message for database errors
-                let errorMessage = error.message;
-                if (errorMessage.includes('SSL connection') || 
-                    errorMessage.includes('database') || 
-                    errorMessage.includes('connection')) {
-                    errorMessage = 'Database connection error. Your changes will be saved when connection is restored.';
-                }
-                
-                showToast('Error updating item: ' + errorMessage, 'danger');
+                showToast('Error updating item: ' + error.message, 'danger');
                 
                 // Reset button
                 submitBtn.innerHTML = originalBtnText;
