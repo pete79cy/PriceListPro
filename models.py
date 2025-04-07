@@ -174,7 +174,8 @@ class Quotation(db.Model):
     
     # Relationships
     customer = db.relationship('Customer', backref='quotations', lazy=True)
-    items = db.relationship('QuotationItem', backref='quotation', lazy=True, cascade="all, delete-orphan")
+    items = db.relationship('QuotationItem', backref='quotation', lazy=True, cascade="all, delete-orphan", 
+                           order_by="QuotationItem.position")
     
     def __repr__(self):
         return f'<Quotation {self.quotation_number}>'

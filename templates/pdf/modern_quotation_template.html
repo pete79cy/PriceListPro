@@ -343,7 +343,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in items %}
+            {% for item in items|sort(attribute="position") %}
             <tr>
                 <td class="text-center">{{ loop.index }}</td>
                 <td>{{ item.description }}</td>
