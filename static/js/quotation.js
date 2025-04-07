@@ -4,7 +4,8 @@
 
 // Initialize edit buttons on document load
 document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners to all edit buttons
+    // Setup the supplier dropdown event handlers
+    setupSupplierDropdowns();
     var editButtons = document.querySelectorAll('.edit-item-btn');
     editButtons.forEach(function(button) {
         button.addEventListener('click', function() {
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var vatRate = this.getAttribute('data-vat-rate');
             var supplier = this.getAttribute('data-supplier');
             var costPrice = this.getAttribute('data-cost-price');
+            var supplierId = this.getAttribute('data-supplier-id');
             
             // Set form action URL
             var quotationId = document.getElementById('quotation-id').value;
@@ -33,6 +35,21 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_vat_rate').value = vatRate;
             document.getElementById('edit_supplier').value = supplier;
             document.getElementById('edit_cost_price').value = costPrice;
+            
+            // Handle supplier selection
+            var supplierIdSelect = document.getElementById('edit_supplier_id');
+            if (supplierIdSelect) {
+                if (supplierId) {
+                    supplierIdSelect.value = supplierId;
+                } else {
+                    supplierIdSelect.value = "";
+                }
+                
+                // If supplier exists but not in dropdown, select "custom" option
+                if (supplier && !supplierId) {
+                    document.getElementById('edit_manual_supplier_container').classList.remove('d-none');
+                }
+            }
             
             // Show the modal
             var editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
@@ -143,4 +160,49 @@ function showPriceAssistantMessage(message, type) {
     // Show the toast
     const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
     bsToast.show();
+}
+
+// Setup supplier dropdown functionality
+function setupSupplierDropdowns() {
+    // Add event handlers for supplier dropdowns
+    const supplierIdSelect = document.getElementById('supplier_id');
+    const editSupplierIdSelect = document.getElementById('edit_supplier_id');
+    
+    if (supplierIdSelect) {
+        supplierIdSelect.addEventListener('change', function() {
+            const manualContainer = document.getElementById('manual_supplier_container');
+            const supplierInput = document.getElementById('supplier');
+            
+            if (this.value) {
+                // If a supplier is selected, hide manual input and set supplier name
+                manualContainer.classList.add('d-none');
+                // Get the selected option's text
+                const selectedOption = this.options[this.selectedIndex];
+                supplierInput.value = selectedOption.text;
+            } else {
+                // If "custom" option is selected, show manual input
+                manualContainer.classList.remove('d-none');
+                supplierInput.value = '';
+            }
+        });
+    }
+    
+    if (editSupplierIdSelect) {
+        editSupplierIdSelect.addEventListener('change', function() {
+            const manualContainer = document.getElementById('edit_manual_supplier_container');
+            const supplierInput = document.getElementById('edit_supplier');
+            
+            if (this.value) {
+                // If a supplier is selected, hide manual input and set supplier name
+                manualContainer.classList.add('d-none');
+                // Get the selected option's text
+                const selectedOption = this.options[this.selectedIndex];
+                supplierInput.value = selectedOption.text;
+            } else {
+                // If "custom" option is selected, show manual input
+                manualContainer.classList.remove('d-none');
+                supplierInput.value = '';
+            }
+        });
+    }
 }
