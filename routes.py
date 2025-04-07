@@ -2455,18 +2455,22 @@ def register_routes(app):
             item.pot_size = request.form.get('pot_size')
             item.height = request.form.get('height')
             
-            # Parse quantity with better error handling - using integers
-            # First check if it's an empty string and retain the original value if so
-            qty_raw = request.form.get('quantity', '')
-            if qty_raw.strip() == '':
-                # Keep the existing value
-                logger.info(f"Empty quantity submitted for item {item_id}, keeping original value: {item.quantity}")
-            else:
-                try:
-                    item.quantity = int(qty_raw)
-                except (ValueError, TypeError):
-                    # Keep the original quantity instead of defaulting to 1
-                    logger.warning(f"Invalid quantity format in edit quotation item {item_id}, keeping original value: {item.quantity}")
+            # Parse quantity with bullet-proof error handling
+            original_quantity = item.quantity  # Save original value for logging and fallback
+            qty_raw = request.form.get('quantity')
+            
+            try:
+                # Only update if we have a non-empty value
+                if qty_raw and qty_raw.strip():
+                    new_quantity = int(qty_raw)
+                    if new_quantity <= 0:
+                        raise ValueError("Quantity must be positive")
+                    item.quantity = new_quantity
+                    logger.info(f"Updated quantity for item {item_id} from {original_quantity} to {item.quantity}")
+                else:
+                    logger.info(f"Empty quantity submitted for item {item_id}, keeping original value: {original_quantity}")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid quantity format '{qty_raw}' in edit quotation item {item_id}, keeping original value: {original_quantity}. Error: {str(e)}")
             
             # Parse selling price with better error handling
             try:
