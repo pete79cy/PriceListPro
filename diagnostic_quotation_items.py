@@ -154,3 +154,57 @@ if __name__ == "__main__":
     
     inspect_quotation_by_number(quotation_number)
     suggest_fix()
+"""Script to diagnose quotation item positions"""
+from app import db
+from models import Quotation, QuotationItem
+
+def inspect_quotation_by_number(quotation_number):
+    """Inspect quotation items and their positions"""
+    print(f"\nInspecting Quotation {quotation_number}")
+    
+    quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
+    if not quotation:
+        print(f"Quotation {quotation_number} not found")
+        return
+        
+    # Get all items and sort by position
+    items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
+    
+    print(f"\nFound {len(items)} items:")
+    print("-" * 80)
+    print(f"{'Position':^8} | {'Index':^5} | {'Description':<50}")
+    print("-" * 80)
+    
+    for i, item in enumerate(items, 1):
+        print(f"{item.position:^8} | {i:^5} | {item.description:<50}")
+        
+    # Check for gaps or duplicates in position values
+    positions = [item.position for item in items]
+    expected = list(range(len(items)))
+    
+    if positions != expected:
+        print("\n⚠️ Position sequence is not consecutive!")
+        print(f"Expected: {expected}")
+        print(f"Actual:   {positions}")
+        
+def fix_positions(quotation_number):
+    """Fix item positions to be consecutive starting from 0"""
+    quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
+    if not quotation:
+        return False
+        
+    items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
+    
+    # Reset positions to be consecutive
+    for i, item in enumerate(items):
+        item.position = i
+        
+    db.session.commit()
+    return True
+
+if __name__ == "__main__":
+    quotation_number = "PAK-2025-007"
+    inspect_quotation_by_number(quotation_number)
+    fix_positions(quotation_number)
+    print("\nAfter fixing:")
+    inspect_quotation_by_number(quotation_number)
