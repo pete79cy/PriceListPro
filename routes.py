@@ -2097,12 +2097,12 @@ def register_routes(app):
     @app.route('/quotation/<int:quotation_id>/export')
     @login_required
     def export_quotation(quotation_id):
-        """Export a quotation as PDF"""
+        """Export a quotation as PDF using the standard template"""
         quotation = Quotation.query.get_or_404(quotation_id)
         
         try:
-            # Generate the PDF
-            pdf_path = generate_quotation_pdf(quotation, app.config['UPLOAD_FOLDER'])
+            # Generate the PDF using standard template
+            pdf_path = generate_quotation_pdf(quotation, app.config['UPLOAD_FOLDER'], use_modern_template=False)
             
             # Update the quotation with the PDF path
             quotation.file_path = os.path.basename(pdf_path)
@@ -2120,6 +2120,34 @@ def register_routes(app):
             logger.error(f"Error exporting quotation: {str(e)}")
             logger.error(traceback.format_exc())
             flash(f"Error generating PDF: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            
+    @app.route('/quotation/<int:quotation_id>/export/modern')
+    @login_required
+    def export_quotation_modern(quotation_id):
+        """Export a quotation as PDF using the modern template"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Generate the PDF using modern template
+            pdf_path = generate_quotation_pdf(quotation, app.config['UPLOAD_FOLDER'], use_modern_template=True)
+            
+            # Update the quotation with the PDF path (we're not updating to avoid overwriting standard PDF path)
+            # quotation.file_path = os.path.basename(pdf_path)
+            # db.session.commit()
+            
+            # Send the file to the client
+            return send_from_directory(
+                directory=app.config['UPLOAD_FOLDER'],
+                path=os.path.basename(pdf_path),
+                as_attachment=True,
+                download_name=f"Modern_Quotation_{quotation.quotation_number}.pdf"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error exporting quotation with modern template: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating modern PDF: {str(e)}", 'danger')
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/supplier/<path:supplier>')
