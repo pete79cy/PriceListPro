@@ -94,32 +94,18 @@ function setupAjaxFormSubmission() {
                 return response.json();
             })
             .then(data => {
-                try {
-                    // Reset button regardless of success
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                    
-                    // Check if there's an error in the response
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-                    
-                    // Close the modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                    modal.hide();
-                    
-                    // Show success message
-                    showToast('Item updated successfully!', 'success');
-                    
-                    // Update the item in the table without reloading the page
-                    updateItemInTable(itemId, data.item);
-                    
-                    // Highlight the updated row
-                    highlightRow(itemId);
-                } catch (err) {
-                    console.error('Error in handling response:', err);
-                    showToast('Error updating item: ' + err.message, 'danger');
-                }
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+                modal.hide();
+                
+                // Show success message
+                showToast('Item updated successfully!', 'success');
+                
+                // Update the item in the table without reloading the page
+                updateItemInTable(itemId, data.item);
+                
+                // Highlight the updated row
+                highlightRow(itemId);
             })
             .catch(error => {
                 console.error('Error:', error);
