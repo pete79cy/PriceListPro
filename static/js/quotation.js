@@ -76,49 +76,99 @@ function setupAjaxFormSubmission() {
             
             // Show processing indicator
             const submitBtn = document.querySelector('#editItemModal .btn-primary');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            submitBtn.disabled = true;
-            
-            console.log("Submitting form to:", this.action);
-            // Convert formData to object for logging
-            const formDataObj = {};
-            for (let [key, value] of formData.entries()) {
-                formDataObj[key] = value;
+        // Set button to loading state
+        const submitBtn = document.querySelector("#editItemModal .btn-primary");
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
+        submitBtn.disabled = true;
+        
+        console.log("Form data being sent:", new FormData(form));
+        
+        // Send the form data to the server
+        fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
             }
-            console.log("Form data:", formDataObj);
+        })
+        .then(response => {
+            console.log("Raw response received:", response);
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
             
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
+            // Check content type to handle response appropriately
+            const contentType = response.headers.get("content-type");
+            console.log("Content-Type:", contentType);
+            
+            if (contentType && contentType.includes("application/json")) {
+                return response.json();
+            } else {
+                // Log the text response for debugging
+                return response.text().then(text => {
+                    console.error("Received non-JSON response:", text);
+                    throw new Error("Server returned invalid format. Expected JSON.");
+                });
+            }
+        })
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+            .then(data => {
+                if (!data || !data.success) {
+                    throw new Error(data?.error || "Unknown server error");
+                }
+                
+                console.log("Success! Data received:", data);
+                
+                // Reset the button state before closing the modal
+                const submitBtn = document.querySelector("#editItemModal .btn-primary");
+                submitBtn.innerHTML = "Save";
+                submitBtn.disabled = false;
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById("editItemModal"));
+                if (modal) {
+                    modal.hide();
+                } else {
+                    console.warn("Could not find modal instance");
+                    // Fallback - hide modal manually
+                    const modalElement = document.getElementById("editItemModal");
+                    if (modalElement) {
+                        modalElement.classList.remove("show");
+                        modalElement.style.display = "none";
+                        document.body.classList.remove("modal-open");
+                        
+                        // Remove modal backdrop
+                        const backdrop = document.querySelector(".modal-backdrop");
+                        if (backdrop) {
+                            backdrop.remove();
+            .catch(error => {
+                console.error("Error updating item:", error);
+                
+                // Reset the button state
+                const submitBtn = document.querySelector("#editItemModal .btn-primary");
+                submitBtn.innerHTML = "Save";
+                submitBtn.disabled = false;
+                
+                // Show error message
+                showToast(`Error: ${error.message || "Unknown error"}`, "danger");
+                
+                // Log detailed error information for debugging
+                console.debug("Full error object:", error);
+            });
+                showToast(data.message || "Item updated successfully!", "success");
+                
+                // Update the item in the table without reloading the page
+                if (data.item) {
+                    updateItemInTable(itemId, data.item);
+                    
+                    // Highlight the updated row
+                    highlightRow(itemId);
+                } else {
+                    console.warn("Server response missing item data");
+                    // Fallback to page reload if item data is missing
+                    window.location.reload();
                 }
             })
-            .then(response => {
-                console.log("Response status:", response.status);
-                const responseHeaders = {};
-                for (let [key, value] of response.headers.entries()) {
-                    responseHeaders[key] = value;
-                }
-                console.log("Response headers:", responseHeaders);
-                
-                if (!response.ok) {
-                    throw new Error("Network response was not ok: " + response.status);
-                }
-                
-                return response.text().then(text => {
-                    try {
-                        // Debug the actual response
-                        console.log("Server response text:", text);
-                        console.log("Response text length:", text.length);
-                        if (text.length > 0) {
-                            const firstChar = text.charAt(0);
-                            const lastChar = text.charAt(text.length - 1);
-                            console.log("First character:", firstChar, "Last character:", lastChar);
-                        }
-                        
-                        const jsonResponse = JSON.parse(text);
                         console.log("Parsed JSON response:", jsonResponse);
                         return jsonResponse;
                     } catch (err) {
@@ -132,9 +182,33 @@ function setupAjaxFormSubmission() {
                     throw new Error(data?.error || 'Unknown server error');
                 }
                 
+                console.log("Success! Data received:", data);
+                
+                // Reset the button state before closing the modal
+                const submitBtn = document.querySelector('#editItemModal .btn-primary');
+                submitBtn.innerHTML = 'Save';
+                submitBtn.disabled = false;
+                
                 // Close the modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                modal.hide();
+                if (modal) {
+                    modal.hide();
+                } else {
+                    console.warn("Could not find modal instance");
+                    // Fallback - hide modal manually
+                    const modalElement = document.getElementById('editItemModal');
+                    if (modalElement) {
+                        modalElement.classList.remove('show');
+                        modalElement.style.display = 'none';
+                        document.body.classList.remove('modal-open');
+                        
+                        // Remove modal backdrop
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    }
+                }
                 
                 // Show success message
                 showToast(data.message || 'Item updated successfully!', 'success');
