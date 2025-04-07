@@ -2456,11 +2456,17 @@ def register_routes(app):
             item.height = request.form.get('height')
             
             # Parse quantity with better error handling - using integers
-            try:
-                item.quantity = int(request.form.get('quantity', 1))
-            except (ValueError, TypeError):
-                item.quantity = 1
-                logger.warning(f"Invalid quantity format in edit quotation item {item_id}, using default of 1")
+            # First check if it's an empty string and retain the original value if so
+            qty_raw = request.form.get('quantity', '')
+            if qty_raw.strip() == '':
+                # Keep the existing value
+                logger.info(f"Empty quantity submitted for item {item_id}, keeping original value: {item.quantity}")
+            else:
+                try:
+                    item.quantity = int(qty_raw)
+                except (ValueError, TypeError):
+                    # Keep the original quantity instead of defaulting to 1
+                    logger.warning(f"Invalid quantity format in edit quotation item {item_id}, keeping original value: {item.quantity}")
             
             # Parse selling price with better error handling
             try:
