@@ -248,18 +248,10 @@ def generate_custom_supplier_report_with_ubuntu(quotation, selected_suppliers, s
         try:
             logger.info("Generating PDF output with Ubuntu font...")
             
-            # Use a temporary file to save and then read the PDF as bytes
-            temp_file = f"/tmp/temp_ubuntu_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            pdf.output(temp_file)
-            
-            # Read the temp file back as bytes
-            with open(temp_file, 'rb') as f:
-                pdf_bytes = f.read()
-                
-            # Remove the temp file
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-                
+            # Generate PDF to a bytes buffer
+            buffer = io.BytesIO()
+            pdf.output(buffer)
+            pdf_bytes = buffer.getvalue()
             logger.info(f"Successfully generated PDF of size {len(pdf_bytes)} bytes")
             
         except Exception as e:
@@ -275,10 +267,8 @@ def generate_custom_supplier_report_with_ubuntu(quotation, selected_suppliers, s
             supplier_list += "_and_more"
         filename = f"supplier_report_{quotation.quotation_number}_{timestamp}.pdf"
         
-        # Also save directly to a file for easy access
-        with open(filename, "wb") as f:
-            f.write(pdf_bytes)
-        logger.info(f"PDF saved to {filename} with size {os.path.getsize(filename)} bytes")
+        # No longer saving directly to disk, just log filename
+        logger.info(f"Generated PDF with filename {filename} and size {len(pdf_bytes)} bytes")
         
         return pdf_bytes, filename
 
