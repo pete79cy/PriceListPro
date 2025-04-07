@@ -3,7 +3,7 @@ Supplier management module with functions for searching and organizing supplier 
 """
 from datetime import datetime
 from app import db
-from models import SupplierProduct, Supplier
+from models import SupplierProduct, Supplier, QuotationItem
 from sqlalchemy import or_
 from utils.logger import logger
 
@@ -125,4 +125,85 @@ def update_supplier_product_last_detected(product_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating last_detected for supplier product ID {product_id}: {str(e)}")
+        return False
+
+def update_supplier_from_quotation_item(quotation_item):
+    """
+    Update or create a supplier product record based on a quotation item.
+    This helps to maintain an up-to-date product catalog from our quotes.
+    
+    Args:
+        quotation_item (QuotationItem): The quotation item object
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Skip if no supplier information
+        if not quotation_item.supplier:
+            logger.info(f"No supplier information for quotation item {quotation_item.id}, skipping supplier update")
+            return False
+            
+        # Find or create the supplier
+        supplier = Supplier.query.filter(Supplier.name == quotation_item.supplier).first()
+        if not supplier:
+            supplier = Supplier(
+                name=quotation_item.supplier,
+                is_inhouse=False,  # Default to external supplier
+                notes="Automatically created from quotation"
+            )
+            db.session.add(supplier)
+            db.session.flush()  # Get ID without committing
+            logger.info(f"Created new supplier '{quotation_item.supplier}' from quotation item {quotation_item.id}")
+            
+        # Look for an existing product with the same name/scientific name/pot from this supplier
+        existing_product = None
+        if quotation_item.scientific_name and quotation_item.pot_size:
+            existing_product = SupplierProduct.query.filter(
+                SupplierProduct.supplier_id == supplier.id,
+                db.func.lower(SupplierProduct.scientific_name) == quotation_item.scientific_name.lower(),
+                db.func.lower(SupplierProduct.pot_size) == quotation_item.pot_size.lower()
+            ).first()
+            
+        # If not found by scientific name and pot, try with product name
+        if not existing_product and quotation_item.description:
+            existing_product = SupplierProduct.query.filter(
+                SupplierProduct.supplier_id == supplier.id,
+                db.func.lower(SupplierProduct.product_name) == quotation_item.description.lower()
+            ).first()
+            
+        # Create or update the supplier product
+        if existing_product:
+            # Update existing product
+            existing_product.price = quotation_item.selling_price
+            existing_product.cost_price = quotation_item.cost_price if quotation_item.cost_price else existing_product.cost_price
+            existing_product.last_detected = datetime.utcnow()
+            
+            # Update height if available
+            if quotation_item.height:
+                existing_product.height = quotation_item.height
+                
+            logger.info(f"Updated existing supplier product '{existing_product.product_name}' from quotation item {quotation_item.id}")
+        else:
+            # Create new supplier product
+            new_product = SupplierProduct(
+                supplier_id=supplier.id,
+                product_name=quotation_item.description,
+                scientific_name=quotation_item.scientific_name,
+                pot_size=quotation_item.pot_size,
+                height=quotation_item.height,
+                price=quotation_item.selling_price,
+                cost_price=quotation_item.cost_price,
+                last_detected=datetime.utcnow(),
+                notes="Created from quotation"
+            )
+            db.session.add(new_product)
+            logger.info(f"Created new supplier product '{quotation_item.description}' from quotation item {quotation_item.id}")
+            
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating supplier from quotation item {quotation_item.id}: {str(e)}")
         return False
