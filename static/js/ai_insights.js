@@ -111,7 +111,17 @@ class AIInsightsHandler {
     // Check if the OpenAI API is configured
     checkAPIStatus() {
         fetch('/ai-insights/status')
-            .then(response => response.json())
+            .then(response => {
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (err) {
+                        console.error('Error parsing JSON:', err);
+                        console.log('Raw response:', text);
+                        throw new Error('Error parsing server response');
+                    }
+                });
+            })
             .then(data => {
                 if (!data.enabled) {
                     this.showApiMissingMessage();
@@ -164,7 +174,17 @@ class AIInsightsHandler {
             },
             body: JSON.stringify(requestData)
         })
-        .then(response => response.json())
+        .then(response => {
+    return response.text().then(text => {
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            console.error("Error parsing JSON:", err);
+            console.log("Raw response:", text);
+            throw new Error("Error parsing server response. Please try again.");
+        }
+    });
+})
         .then(data => {
             if (data.error) {
                 if (data.error.includes('API key')) {
