@@ -17,6 +17,7 @@ from utils.excel_template import ensure_template_exists
 from utils.invoice_excel_parser import parse_invoice_excel, update_price_list_from_invoice
 from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
+from utils.db_utils import with_db_reconnect, test_db_connection
 from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
 from utils.feedback_collector import get_feedback_collector
 
@@ -2433,6 +2434,7 @@ def register_routes(app):
         
     @app.route('/quotation/<int:quotation_id>/item/<int:item_id>', methods=['POST'])
     @login_required
+    @with_db_reconnect(max_retries=3)
     def edit_quotation_item(quotation_id, item_id):
         """Edit an existing quotation item"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2541,6 +2543,7 @@ def register_routes(app):
     
     @app.route('/quotation/<int:quotation_id>/reorder-items', methods=['POST'])
     @login_required
+    @with_db_reconnect(max_retries=3)
     def reorder_drag_quotation_items(quotation_id):
         """Update the order of items in a quotation via AJAX"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2582,6 +2585,7 @@ def register_routes(app):
         
     @app.route('/quotation/item/<int:item_id>/delete')
     @login_required
+    @with_db_reconnect(max_retries=3)
     def delete_quotation_item(item_id):
         """Delete a quotation item"""
         item = QuotationItem.query.get_or_404(item_id)
@@ -2612,6 +2616,7 @@ def register_routes(app):
     
     @app.route('/quotation/<int:quotation_id>/item/quick_add', methods=['POST'])
     @login_required
+    @with_db_reconnect(max_retries=3)
     def quick_add_quotation_item(quotation_id):
         """Add a new quotation item via AJAX with minimal information"""
         quotation = Quotation.query.get_or_404(quotation_id)
