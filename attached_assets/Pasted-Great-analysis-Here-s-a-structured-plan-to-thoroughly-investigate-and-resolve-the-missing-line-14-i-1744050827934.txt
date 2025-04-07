@@ -1,0 +1,67 @@
+Great analysis. Here's a structured plan to thoroughly investigate and resolve the missing line 14 in the `quotation_template.html`:
+
+---
+
+### ✅ **Investigation Plan**
+
+1. **Database Validation**  
+   Run a query to list all items for the quotation ID (e.g., `PAK-2025-007`):
+   ```sql
+   SELECT id, description, position, quantity, selling_price
+   FROM quotation_items
+   WHERE quotation_id = 'PAK-2025-007'
+   ORDER BY position;
+   ```
+   ✅ Verify: Are all 14 items returned? Are they in correct order?
+
+2. **Model Ordering Check**  
+   Ensure `Quotation.items` relationship has proper ordering:
+   ```python
+   class Quotation(db.Model):
+       ...
+       items = db.relationship('QuotationItem', backref='quotation', order_by='QuotationItem.position')
+   ```
+
+3. **Template Rendering Loop**  
+   The loop looks fine: it uses `loop.index` for line numbers, which starts at 1 and increments per iteration.  
+   ✅ Verify the number of `items` passed to the template:
+   ```python
+   print(f"Items count: {len(quotation.items)}")
+   ```
+
+4. **Filter Conditions**  
+   Double-check if any filtering is applied before rendering:
+   ```python
+   items = [item for item in quotation.items if not item.deleted]  # ← is there a soft delete?
+   ```
+   ✅ Confirm no filters are accidentally removing the 14th item.
+
+5. **Debug Output**  
+   Log the `position`, `description`, and `id` of each item before rendering:
+   ```python
+   for item in quotation.items:
+       print(f"Item Pos: {item.position}, Desc: {item.description}, ID: {item.id}")
+   ```
+
+---
+
+### ✅ **Suggested Fixes (if issue found)**
+
+- If **item is missing in DB**: Reinsert it or debug why it was deleted.
+- If **position is incorrect or not unique**: Update using:
+   ```sql
+   UPDATE quotation_items
+   SET position = row_number() OVER (ORDER BY created_at)
+   WHERE quotation_id = 'PAK-2025-007';
+   ```
+- If **filtered out in code**: Adjust filtering logic to include all valid items.
+
+---
+
+### ✅ Next Steps
+
+a. Want help writing a script to auto-correct positions for `QuotationItems`?
+
+b. Need to add a unit test to confirm 14 items are rendered for a full quotation?
+
+c. Want help enhancing the quotation template to highlight missing/duplicate positions?
