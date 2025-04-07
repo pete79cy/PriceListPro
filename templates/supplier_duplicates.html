@@ -1,0 +1,164 @@
+{% extends 'layout.html' %}
+
+{% block title %}Supplier Product Duplicate Detection{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Supplier Product Duplicate Detection</h1>
+            <p class="text-muted">
+                This tool helps you find potential duplicate products from your suppliers using intelligent name matching.
+                Select a supplier below to start analyzing their product catalog.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Select Supplier</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{{ url_for('supplier_duplicates') }}">
+                        <div class="mb-3">
+                            <label for="supplier_id" class="form-label">Supplier</label>
+                            <select class="form-select" name="supplier_id" id="supplier_id" required>
+                                <option value="">-- Select a supplier --</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}" {% if current_supplier and current_supplier.id == supplier.id %}selected{% endif %}>
+                                    {{ supplier.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="threshold" class="form-label">Similarity Threshold (0.1 - 1.0)</label>
+                            <div class="input-group">
+                                <input type="range" class="form-range" min="0.1" max="1.0" step="0.05" id="threshold_slider" value="{{ threshold }}" oninput="updateThresholdValue(this.value)">
+                                <input type="number" class="form-control" name="threshold" id="threshold" min="0.1" max="1.0" step="0.05" value="{{ threshold }}" style="width: 80px;">
+                            </div>
+                            <div class="form-text">
+                                Lower values (closer to 0.1) will match more products but might include false positives.
+                                Higher values (closer to 1.0) require closer matches.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Find Duplicates</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% if current_supplier %}
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Supplier Information</h5>
+                </div>
+                <div class="card-body">
+                    <h5>{{ current_supplier.name }}</h5>
+                    <p>
+                        <strong>Contact:</strong> {{ current_supplier.contact_person or 'N/A' }}<br>
+                        <strong>Email:</strong> {{ current_supplier.email or 'N/A' }}<br>
+                        <strong>Phone:</strong> {{ current_supplier.phone or 'N/A' }}<br>
+                    </p>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Product Count:</span>
+                        <span class="badge bg-info">{{ current_supplier.products|length }} products</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if duplicates is not none %}
+        {% if duplicates|length > 0 %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Potential Duplicates ({{ duplicates|length }} pairs)</h5>
+                            {% if openai_available %}
+                            <form method="post" action="{{ url_for('analyze_supplier_duplicates', supplier_id=current_supplier.id) }}">
+                                <input type="hidden" name="threshold" value="{{ threshold }}">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-brain me-1"></i> Analyze with AI
+                                </button>
+                            </form>
+                            {% else %}
+                            <a href="{{ url_for('ai_settings') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-cog me-1"></i> Configure OpenAI API
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Product 1</th>
+                                            <th>Product 2</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pair in duplicates %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ pair[0].product_name }}</strong><br>
+                                                <small class="text-muted">
+                                                    {% if pair[0].scientific_name %}Scientific: {{ pair[0].scientific_name }}<br>{% endif %}
+                                                    {% if pair[0].pot_size %}Pot: {{ pair[0].pot_size }}{% endif %}
+                                                    {% if pair[0].height %}, Height: {{ pair[0].height }}{% endif %}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <strong>{{ pair[1].product_name }}</strong><br>
+                                                <small class="text-muted">
+                                                    {% if pair[1].scientific_name %}Scientific: {{ pair[1].scientific_name }}<br>{% endif %}
+                                                    {% if pair[1].pot_size %}Pot: {{ pair[1].pot_size }}{% endif %}
+                                                    {% if pair[1].height %}, Height: {{ pair[1].height }}{% endif %}
+                                                </small>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ url_for('edit_supplier_product', id=pair[0].id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_supplier_product', id=pair[1].id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No potential duplicates found for this supplier with the current threshold ({{ threshold }}).
+                <br>
+                Try lowering the threshold to find more potential matches.
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateThresholdValue(val) {
+        document.getElementById('threshold').value = val;
+    }
+    
+    document.getElementById('threshold').addEventListener('change', function() {
+        document.getElementById('threshold_slider').value = this.value;
+    });
+</script>
+{% endblock %}

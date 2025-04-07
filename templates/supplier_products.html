@@ -14,8 +14,15 @@
                 <i class="fas fa-building me-1"></i> Manage Suppliers
             </a>
             {% if current_supplier %}
+            <a href="{{ url_for('supplier_duplicates', supplier_id=current_supplier.id) }}" class="btn btn-warning ms-2">
+                <i class="fas fa-search me-1"></i> Find Duplicates
+            </a>
             <a href="{{ url_for('export_supplier_catalog', supplier_id=current_supplier.id) }}" class="btn btn-success ms-2">
                 <i class="fas fa-file-pdf me-1"></i> Export Catalog
+            </a>
+            {% else %}
+            <a href="{{ url_for('supplier_duplicates') }}" class="btn btn-warning ms-2">
+                <i class="fas fa-search me-1"></i> Find Duplicates
             </a>
             {% endif %}
         </div>
@@ -42,6 +49,13 @@
                             {{ supplier.name }}
                         </option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="show_duplicates" class="form-label">Flagged Status</label>
+                    <select class="form-select" id="show_duplicates" name="show_duplicates">
+                        <option value="">All Products</option>
+                        <option value="1" {% if request.args.get('show_duplicates') == '1' %}selected{% endif %}>Flagged Duplicates Only</option>
                     </select>
                 </div>
                 <div class="col-md-12 mt-3">
@@ -116,13 +130,13 @@
                     </thead>
                     <tbody>
                         {% for product in supplier_products %}
-                        <tr>
+                        <tr{% if product.flagged_duplicate %} class="table-warning"{% endif %}>
                             <td class="text-center">
                                 <div class="form-check">
                                     <input class="form-check-input product-checkbox" type="checkbox" value="{{ product.id }}" name="product_ids">
                                 </div>
                             </td>
-                            <td>{{ product.product_name }}</td>
+                            <td>{% if product.flagged_duplicate %}<span class="badge bg-warning me-1" title="Potential duplicate"><i class="fas fa-clone"></i></span>{% endif %}{{ product.product_name }}</td>
                             <td>{{ product.scientific_name or '-' }}</td>
                             <td>{{ product.height or '-' }}</td>
                             <td>{{ product.pot_size or '-' }}</td>

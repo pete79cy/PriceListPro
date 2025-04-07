@@ -20,6 +20,7 @@ from utils.quotation_parser import parse_quotation_file
 from utils.db_utils import with_db_reconnect, test_db_connection
 from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
 from utils.feedback_collector import get_feedback_collector
+from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_openai_for_resolution, flag_duplicate_products
 
 # Helper function to get recent activities 
 def get_recent_activities(limit=5):
@@ -2993,6 +2994,7 @@ def register_routes(app):
         
         query = request.args.get('q', '')
         supplier_id = request.args.get('supplier_id')
+        show_duplicates = request.args.get('show_duplicates') == '1'
         
         # Get all suppliers for the filter dropdown
         suppliers_list = Supplier.query.order_by(Supplier.name).all()
@@ -3007,7 +3009,7 @@ def register_routes(app):
                 pass
         
         # Search for products
-        products = search_supplier_products(query, supplier_id, limit=100)
+        products = search_supplier_products(query, supplier_id, show_duplicates=show_duplicates, limit=100)
         
         return render_template(
             'supplier_products.html',
@@ -3313,7 +3315,171 @@ def register_routes(app):
             logger.error(f"Error generating supplier catalog: {str(e)}")
             flash(f'Error generating catalog: {str(e)}', 'danger')
             return redirect(url_for('supplier_products', supplier_id=supplier_id))
+            
+    @app.route('/supplier_duplicates')
+    @login_required
+    def supplier_duplicates():
+        """View potential duplicate supplier products"""
+        # Get all suppliers for the dropdown
+        suppliers_list = Supplier.query.order_by(Supplier.name).all()
         
+        # Get supplier_id from request
+        supplier_id = request.args.get('supplier_id')
+        threshold = float(request.args.get('threshold', 0.9))
+        
+        # Show the duplicate detection page with suppliers dropdown
+        if not supplier_id:
+            return render_template(
+                'supplier_duplicates.html',
+                suppliers=suppliers_list,
+                duplicates=None,
+                current_supplier=None,
+                threshold=threshold
+            )
+        
+        try:
+            # Convert supplier_id to int
+            supplier_id = int(supplier_id)
+            
+            # Get the current supplier
+            current_supplier = Supplier.query.get(supplier_id)
+            if not current_supplier:
+                flash('Supplier not found', 'danger')
+                return redirect(url_for('supplier_duplicates'))
+            
+            # Find potential duplicates
+            duplicate_pairs = find_supplier_duplicates(supplier_id, threshold)
+            
+            # Check if OpenAI API is configured
+            openai_available = bool(os.getenv("OPENAI_API_KEY"))
+            
+            return render_template(
+                'supplier_duplicates.html',
+                suppliers=suppliers_list,
+                duplicates=duplicate_pairs,
+                current_supplier=current_supplier,
+                threshold=threshold,
+                openai_available=openai_available
+            )
+            
+        except Exception as e:
+            logger.error(f"Error finding supplier duplicates: {str(e)}")
+            flash(f'Error finding duplicates: {str(e)}', 'danger')
+            return redirect(url_for('supplier_duplicates'))
+    
+    @app.route('/analyze_supplier_duplicates/<int:supplier_id>', methods=['POST'])
+    @login_required
+    def analyze_supplier_duplicates(supplier_id):
+        """Analyze potential duplicates using OpenAI"""
+        # Check if OpenAI API is configured
+        if not os.getenv("OPENAI_API_KEY"):
+            flash('OpenAI API key not configured. Please set it in AI settings.', 'warning')
+            return redirect(url_for('ai_settings'))
+        
+        try:
+            # Get threshold from form
+            threshold = float(request.form.get('threshold', 0.9))
+            
+            # Find potential duplicates
+            duplicate_pairs = find_supplier_duplicates(supplier_id, threshold)
+            
+            if not duplicate_pairs:
+                flash('No potential duplicates found to analyze', 'info')
+                return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
+            
+            # Analyze duplicates with OpenAI
+            analysis_results = ask_openai_for_resolution(duplicate_pairs)
+            
+            # Store analysis in session for the results page
+            session['duplicate_analysis'] = [
+                {
+                    'pair': result['pair'],
+                    'product1': {
+                        'id': result['product1'].id,
+                        'name': result['product1'].product_name,
+                        'scientific_name': result['product1'].scientific_name
+                    },
+                    'product2': {
+                        'id': result['product2'].id,
+                        'name': result['product2'].product_name,
+                        'scientific_name': result['product2'].scientific_name
+                    },
+                    'suggestion': result['suggestion'],
+                    'is_duplicate': result['is_duplicate']
+                }
+                for result in analysis_results
+            ]
+            
+            return redirect(url_for('supplier_duplicate_results', supplier_id=supplier_id))
+            
+        except Exception as e:
+            logger.error(f"Error analyzing supplier duplicates: {str(e)}")
+            flash(f'Error analyzing duplicates: {str(e)}', 'danger')
+            return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
+    
+    @app.route('/supplier_duplicate_results/<int:supplier_id>')
+    @login_required
+    def supplier_duplicate_results(supplier_id):
+        """Show analysis results for potential duplicate products"""
+        # Get the current supplier
+        supplier = Supplier.query.get(supplier_id)
+        if not supplier:
+            flash('Supplier not found', 'danger')
+            return redirect(url_for('supplier_duplicates'))
+        
+        # Get analysis results from session
+        analysis_results = session.get('duplicate_analysis', [])
+        
+        if not analysis_results:
+            flash('No analysis results found. Please run the analysis again.', 'warning')
+            return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
+        
+        return render_template(
+            'supplier_duplicate_results.html',
+            supplier=supplier,
+            results=analysis_results
+        )
+    
+    @app.route('/flag_supplier_duplicates/<int:supplier_id>', methods=['POST'])
+    @login_required
+    def flag_supplier_duplicates(supplier_id):
+        """Flag selected products as duplicates"""
+        try:
+            # Get selected duplicate pairs from form
+            selected_pairs = request.form.getlist('duplicate_pair')
+            
+            if not selected_pairs:
+                flash('No duplicates selected', 'warning')
+                return redirect(url_for('supplier_duplicate_results', supplier_id=supplier_id))
+            
+            # Get analysis results from session
+            all_results = session.get('duplicate_analysis', [])
+            
+            # Filter only selected results
+            selected_results = [
+                result for result in all_results
+                if f"{result['pair'][0]}_{result['pair'][1]}" in selected_pairs
+            ]
+            
+            # Flag the selected duplicates
+            result = flag_duplicate_products(selected_results)
+            
+            # Show results
+            if result['success_count'] > 0:
+                flash(f"Successfully flagged {result['success_count']} products as duplicates", 'success')
+            if result['error_count'] > 0:
+                flash(f"Failed to flag {result['error_count']} products", 'warning')
+            
+            # Clear session data
+            session.pop('duplicate_analysis', None)
+            
+            return redirect(url_for('supplier_products', supplier_id=supplier_id))
+            
+        except Exception as e:
+            logger.error(f"Error flagging supplier duplicates: {str(e)}")
+            flash(f'Error flagging duplicates: {str(e)}', 'danger')
+            return redirect(url_for('supplier_duplicate_results', supplier_id=supplier_id))
+    
     @app.route('/company_settings')
     @login_required
     def company_settings():

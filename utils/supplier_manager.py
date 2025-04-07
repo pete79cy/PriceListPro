@@ -8,13 +8,14 @@ from sqlalchemy import or_
 from utils.logger import logger
 from utils.db_utils import with_db_reconnect
 
-def search_supplier_products(query='', supplier_id=None, limit=100):
+def search_supplier_products(query='', supplier_id=None, show_duplicates=False, limit=100):
     """
     Search for supplier products with filters.
     
     Args:
         query (str): Search query for product name, scientific name, etc.
         supplier_id (int, optional): Filter by supplier ID
+        show_duplicates (bool, optional): If True, only show flagged duplicates
         limit (int, optional): Maximum number of results to return
         
     Returns:
@@ -30,6 +31,10 @@ def search_supplier_products(query='', supplier_id=None, limit=100):
             products_query = products_query.filter(SupplierProduct.supplier_id == supplier_id)
         except (ValueError, TypeError):
             logger.warning(f"Invalid supplier_id in search_supplier_products: {supplier_id}")
+    
+    # Filter by flagged_duplicate status if requested
+    if show_duplicates:
+        products_query = products_query.filter(SupplierProduct.flagged_duplicate == True)
     
     # Add search filter if a query was provided
     if query and query.strip():
