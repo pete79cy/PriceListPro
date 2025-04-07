@@ -91,39 +91,47 @@ function setupAjaxFormSubmission() {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.json();
+                return response.json().catch(err => {
+                    console.error('Error parsing JSON:', err);
+                    throw new Error('Error parsing server response. Please try again.');
+                });
             })
             .then(data => {
-                try {
-                    // Reset button regardless of success
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                    
-                    // Check if there's an error in the response
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-                    
-                    // Close the modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                    modal.hide();
-                    
-                    // Show success message
-                    showToast('Item updated successfully!', 'success');
-                    
-                    // Update the item in the table without reloading the page
+                if (!data || !data.success) {
+                    throw new Error(data?.error || 'Unknown server error');
+                }
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+                modal.hide();
+                
+                // Show success message
+                showToast(data.message || 'Item updated successfully!', 'success');
+                
+                // Update the item in the table without reloading the page
+                if (data.item) {
                     updateItemInTable(itemId, data.item);
                     
                     // Highlight the updated row
                     highlightRow(itemId);
-                } catch (err) {
-                    console.error('Error in handling response:', err);
-                    showToast('Error updating item: ' + err.message, 'danger');
+                } else {
+                    console.warn('Server response missing item data');
+                    // Fallback to page reload if item data is missing
+                    window.location.reload();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('Error updating item: ' + error.message, 'danger');
+                
+                // Create a more user-friendly message for database errors
+                let errorMessage = error.message;
+                if (errorMessage.includes('SSL connection') || 
+                    errorMessage.includes('database') || 
+                    errorMessage.includes('connection')) {
+                    errorMessage = 'Database connection error. Your changes will be saved when connection is restored.';
+                }
+                
+                showToast('Error updating item: ' + errorMessage, 'danger');
                 
                 // Reset button
                 submitBtn.innerHTML = originalBtnText;

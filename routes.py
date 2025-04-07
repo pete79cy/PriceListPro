@@ -2543,22 +2543,12 @@ def register_routes(app):
             db.session.commit()
             
             # Update supplier products based on the updated item
-            try:
-                from utils.supplier_manager import update_supplier_from_quotation_item
-                update_result = update_supplier_from_quotation_item(item)
-                if not update_result:
-                    logger.warning(f"Failed to update supplier from quotation item {item.id}")
-            except Exception as e:
-                logger.error(f"Exception in update_supplier_from_quotation_item: {str(e)}")
-                # Continue without failing the response
+            from utils.supplier_manager import update_supplier_from_quotation_item
+            update_supplier_from_quotation_item(item)
             
             # If this is an AJAX request, return JSON response
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                # Debug information about the request
-                logger.info(f"AJAX request headers: {dict(request.headers)}")
-                logger.info(f"Item ID: {item.id}, Quotation ID: {quotation.id}")
-                
-                response_data = {
+                return jsonify({
                     'success': True,
                     'message': 'Item updated successfully!',
                     'item': {
@@ -2575,15 +2565,7 @@ def register_routes(app):
                         'position': item.position
                     },
                     'quotation_total': quotation.total_amount
-                }
-                
-                # Log the response data for debugging
-                logger.info(f"Response data being sent: {response_data}")
-                
-                # Ensure proper content type and headers
-                response = jsonify(response_data)
-                response.headers['Content-Type'] = 'application/json'
-                return response
+                })
             else:
                 # Standard form submission (fallback)
                 flash('Item updated successfully!', 'success')
@@ -2595,10 +2577,7 @@ def register_routes(app):
             
             # If this is an AJAX request, return JSON error
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                logger.error(f"AJAX error response being sent for error: {str(e)}")
-                response = jsonify({'success': False, 'error': str(e)})
-                response.headers['Content-Type'] = 'application/json'
-                return response
+                return jsonify({'success': False, 'error': str(e)})
             else:
                 # Standard form submission (fallback)
                 flash(f"Error updating item: {str(e)}", 'danger')
