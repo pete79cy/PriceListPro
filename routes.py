@@ -2543,12 +2543,18 @@ def register_routes(app):
             db.session.commit()
             
             # Update supplier products based on the updated item
-            from utils.supplier_manager import update_supplier_from_quotation_item
-            update_supplier_from_quotation_item(item)
+            try:
+                from utils.supplier_manager import update_supplier_from_quotation_item
+                update_result = update_supplier_from_quotation_item(item)
+                if not update_result:
+                    logger.warning(f"Failed to update supplier from quotation item {item.id}")
+            except Exception as e:
+                logger.error(f"Exception in update_supplier_from_quotation_item: {str(e)}")
+                # Continue without failing the response
             
             # If this is an AJAX request, return JSON response
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({
+                response_data = {
                     'success': True,
                     'message': 'Item updated successfully!',
                     'item': {
@@ -2565,7 +2571,8 @@ def register_routes(app):
                         'position': item.position
                     },
                     'quotation_total': quotation.total_amount
-                })
+                }
+                return jsonify(response_data)
             else:
                 # Standard form submission (fallback)
                 flash('Item updated successfully!', 'success')

@@ -87,13 +87,32 @@ function setupAjaxFormSubmission() {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
+            fetch(this.action, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error("Network response was not ok");
                 }
-                return response.json().catch(err => {
-                    console.error('Error parsing JSON:', err);
-                    throw new Error('Error parsing server response. Please try again.');
+                return response.text().then(text => {
+                    try {
+                        // Debug the actual response
+                        console.log("Server response:", text);
+                        return JSON.parse(text);
+                    } catch (err) {
+                        console.error("Error parsing JSON:", err, "Raw response:", text);
+                        throw new Error("Error parsing server response. Please try again.");
+                    }
+                });
+            })
+                    } catch (err) {
+                        console.error('Error parsing JSON:', err, 'Raw response:', text);
+                        throw new Error('Error parsing server response. Please try again.');
+                    }
                 });
             })
             .then(data => {
