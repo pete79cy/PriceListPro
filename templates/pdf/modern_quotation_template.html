@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quotation {{ quotation.quotation_number }}</title>
+    <style>
+        @page {
+            size: A4 {{ orientation }};
+            margin: 1.5cm;
+            @top-center {
+                content: "{{ company.name }} | Quotation {{ quotation.quotation_number }}";
+                font-size: 9pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+        }
+        /* Modern Header with cleaner design */
+        .header {
+            width: 100%;
+            margin-bottom: 2cm;
+            padding-bottom: 0.5cm;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            justify-content: space-between;
+        }
+        .company-info {
+            width: 60%;
+        }
+        .quotation-info {
+            width: 40%;
+            text-align: right;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .customer-info {
+            width: 100%;
+            margin-bottom: 1.5cm;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .clear {
+            clear: both;
+        }
+        
+        /* Modern Typography */
+        h1 {
+            font-size: 22pt;
+            color: #2c3e50;
+            margin-bottom: 0.2cm;
+            font-weight: 600;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #3498db;
+            margin-top: 0.8cm;
+            margin-bottom: 0.5cm;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3cm;
+        }
+        
+        /* Modern Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.6cm 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        /* Ensure headers repeat on new pages */
+        thead {
+            display: table-header-group;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 0.3cm;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10pt;
+            border: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        td {
+            padding: 0.25cm 0.3cm;
+            border-bottom: 1px solid #e1e1e1;
+            font-size: 10pt;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+        }
+        
+        /* Modern zebra striping */
+        tbody tr:nth-child(odd) {
+            background-color: #f8f9fa;
+        }
+        
+        tbody tr:hover {
+            background-color: #eaf2f8;
+        }
+        
+        /* Right-align all numeric data */
+        .numeric {
+            text-align: right;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 500;
+        }
+        
+        /* Text alignment helpers */
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        
+        /* Modern Summary Block */
+        .summary-block {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            width: 40%;
+            float: right;
+            margin-top: 1cm;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .summary-block table {
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: none;
+        }
+        .summary-block td {
+            padding: 8px;
+            text-align: right;
+            border: none;
+            border-bottom: 1px solid #e1e1e1;
+            font-weight: 500;
+            font-size: 11pt;
+        }
+        .summary-block .label {
+            font-weight: 600;
+            text-align: left;
+            color: #2c3e50;
+        }
+        .summary-block .amount {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 600;
+            text-align: right;
+            color: #2c3e50;
+        }
+        .summary-block .total-row {
+            border-top: 2px solid #3498db;
+            background-color: #eaf2f8;
+        }
+        .summary-block .total {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        /* Modern Notes section */
+        .notes {
+            margin-top: 1.5cm;
+            border-top: 1px solid #e1e1e1;
+            padding-top: 0.5cm;
+            page-break-inside: avoid;
+        }
+        
+        /* Modern Terms and Conditions */
+        .terms {
+            font-size: 9pt;
+            color: #555;
+            margin-top: 1.5cm;
+            page-break-inside: avoid;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e1e1e1;
+        }
+        .terms h2 {
+            margin-top: 0;
+            font-size: 12pt;
+            color: #2c3e50;
+        }
+        .terms ol {
+            margin: 0.3cm 0;
+            padding-left: 1.5cm;
+        }
+        .terms li {
+            margin-bottom: 0.2cm;
+        }
+        
+        /* Modern Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            font-size: 8pt;
+            text-align: center;
+            color: #7f8c8d;
+            border-top: 1px solid #e1e1e1;
+            padding-top: 0.3cm;
+            background-color: #f8f9fa;
+        }
+        
+        /* Print layout */
+        @media print {
+            .summary-block {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            body {
+                font-size: 10pt;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
+            }
+        }
+        
+        /* Company logo styling */
+        .company-logo {
+            max-height: 50px;
+            margin-bottom: 10px;
+        }
+        
+        /* Modern badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 5px;
+        }
+        .badge-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        /* Modern price information */
+        .price-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        .vat-breakdown {
+            margin-top: 10px;
+            font-size: 9pt;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            {% if company.logo_path %}
+            <img src="{{ logo_data }}" alt="{{ company.name }} Logo" class="company-logo">
+            {% endif %}
+            <h1>{{ company.name }}</h1>
+            <p>
+                {{ company.address_line1 }}
+                {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
+                {% if company.phone %} | Tel: {{ company.phone }}{% endif %}
+                {% if company.email %} | {{ company.email }}{% endif %}
+            </p>
+        </div>
+        <div class="quotation-info">
+            <h2>QUOTATION</h2>
+            <table>
+                <tr>
+                    <td class="label">Number:</td>
+                    <td class="amount">{{ quotation.quotation_number }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Issue Date:</td>
+                    <td class="amount">{{ quotation.quotation_date.strftime('%d %b %Y') }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Valid Until:</td>
+                    <td class="amount">{{ (quotation.quotation_date.replace(month=quotation.quotation_date.month+1) if quotation.quotation_date.month < 12 else quotation.quotation_date.replace(year=quotation.quotation_date.year+1, month=1)).strftime('%d %b %Y') }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="customer-info">
+        <h2>Prepared For</h2>
+        <p style="font-size: 14pt; font-weight: 600; color: #2c3e50;">{{ customer.name }}</p>
+        <p>
+            {% if customer.address %}{{ customer.address }}<br>{% endif %}
+            {% if customer.email %}<strong>Email:</strong> {{ customer.email }}{% endif %}
+            {% if customer.phone %} | <strong>Phone:</strong> {{ customer.phone }}{% endif %}
+        </p>
+    </div>
+    
+    <h2>Quotation Details</h2>
+    <table>
+        <thead>
+            <tr>
+                <th width="3%">#</th>
+                <th width="25%">Description</th>
+                <th width="22%">Scientific Name</th>
+                <th width="8%">Size</th>
+                <th width="8%">Height</th>
+                <th width="7%" class="text-center">Qty</th>
+                <th width="12%" class="text-right">Unit Price</th>
+                <th width="15%" class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ item.description }}</td>
+                <td><em>{{ item.scientific_name or "" }}</em></td>
+                <td>{{ item.pot_size or "" }}</td>
+                <td>{{ item.height or "" }}</td>
+                <td class="numeric text-center">{{ "%d"|format(item.quantity|int) }}</td>
+                <td class="numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                <td class="numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="summary-block">
+        <h2 style="margin-top: 0; border-bottom: none;">Summary</h2>
+        <table>
+            <tr>
+                <td class="label">Subtotal:</td>
+                <td class="amount">{{ currency }} {{ "%.2f"|format(subtotal) }}</td>
+            </tr>
+            {% for vat in vat_list %}
+            <tr>
+                <td class="label">{{ vat.label }}:</td>
+                <td class="amount">{{ currency }} {{ "%.2f"|format(vat.amount) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td class="label total">Total Amount:</td>
+                <td class="amount total">{{ currency }} {{ "%.2f"|format(grand_total) }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="clear"></div>
+    
+    {% if quotation.notes %}
+    <div class="notes">
+        <h2>Additional Notes</h2>
+        <p>{{ quotation.notes }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="terms">
+        <h2>Terms & Conditions</h2>
+        <ol>
+            <li>This quotation is valid for 30 days from the date of issue.</li>
+            <li>Prices are subject to change without prior notice after the validity period.</li>
+            <li>Delivery timeframe will be confirmed upon order placement.</li>
+            <li>Payment terms: 50% advance, balance prior to delivery.</li>
+            <li>All prices are inclusive of any applicable taxes as indicated.</li>
+        </ol>
+    </div>
+    
+    <div class="footer">
+        <p>{{ company.name }} | Quotation {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
+    </div>
+</body>
+</html>

@@ -49,13 +49,14 @@ def get_logo_data(company):
     
     return logo_data
 
-def generate_quotation_pdf(quotation, upload_folder):
+def generate_quotation_pdf(quotation, upload_folder, use_modern_template=False):
     """
     Generate a PDF quotation from a Quotation object
     
     Args:
         quotation: The Quotation object
         upload_folder: The directory where to save the PDF
+        use_modern_template: Whether to use the modern template design (default False)
         
     Returns:
         str: Path to the generated PDF file
@@ -79,7 +80,7 @@ def generate_quotation_pdf(quotation, upload_folder):
                 vat_dict[vat_rate] = vat_amount
         
         # Convert to list for template
-        vat_list = [{'rate': rate, 'amount': amount} for rate, amount in vat_dict.items()]
+        vat_list = [{'rate': rate, 'label': f'VAT {rate}%', 'amount': amount} for rate, amount in vat_dict.items()]
         
         # Calculate grand total
         grand_total = subtotal + sum(item['amount'] for item in vat_list)
@@ -95,9 +96,12 @@ def generate_quotation_pdf(quotation, upload_folder):
         # Set the orientation based on company settings
         orientation = company.pdf_orientation  # 'portrait' or 'landscape'
         
-        # Generate HTML content from the template
+        # Choose template based on flag
+        template_name = 'pdf/modern_quotation_template.html' if use_modern_template else 'pdf/quotation_template.html'
+        
+        # Generate HTML content from the selected template
         html_content = render_template(
-            'pdf/quotation_template.html',
+            template_name,
             quotation=quotation,
             customer=quotation.customer,
             items=quotation.items,
@@ -112,7 +116,8 @@ def generate_quotation_pdf(quotation, upload_folder):
         )
         
         # Generate a unique filename
-        filename = f"quotation_{quotation.quotation_number}_{uuid.uuid4().hex[:8]}.pdf"
+        template_type = "modern_" if use_modern_template else ""
+        filename = f"{template_type}quotation_{quotation.quotation_number}_{uuid.uuid4().hex[:8]}.pdf"
         output_path = os.path.join(upload_folder, filename)
         
         # Generate PDF from HTML
