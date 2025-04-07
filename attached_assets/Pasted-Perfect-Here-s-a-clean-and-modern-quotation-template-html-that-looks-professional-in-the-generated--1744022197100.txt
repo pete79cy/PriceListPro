@@ -1,0 +1,179 @@
+Perfect. Here’s a clean and modern quotation_template.html that looks professional in the generated PDF using WeasyPrint. This uses inline CSS for compatibility.
+
+⸻
+
+templates/pdf/quotation_template.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quotation {{ quotation.quotation_number }}</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            margin: 40px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #555;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            height: 60px;
+        }
+
+        .company-info {
+            text-align: right;
+        }
+
+        .quotation-meta {
+            margin-bottom: 20px;
+        }
+
+        .quotation-meta div {
+            margin: 4px 0;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        .totals {
+            margin-top: 20px;
+            width: 50%;
+            float: right;
+        }
+
+        .totals td {
+            text-align: right;
+        }
+
+        footer {
+            margin-top: 60px;
+            font-size: 12px;
+            text-align: center;
+            color: #777;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            {% if logo_data %}
+                <img src="data:image/png;base64,{{ logo_data }}">
+            {% endif %}
+        </div>
+        <div class="company-info">
+            <strong>{{ company.name }}</strong><br>
+            {{ company.address }}<br>
+            {{ company.email }} | {{ company.phone }}
+        </div>
+    </header>
+
+    <h2>Quotation #{{ quotation.quotation_number }}</h2>
+
+    <div class="quotation-meta">
+        <div><strong>Date:</strong> {{ date_generated }}</div>
+        <div><strong>Customer:</strong> {{ customer.name }}</div>
+        <div><strong>Email:</strong> {{ customer.email }}</div>
+    </div>
+
+    <div class="section-title">Items</div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.unit_price }} {{ currency }}</td>
+                <td>{{ item.total_price }} {{ currency }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td>Subtotal:</td>
+            <td>{{ subtotal }} {{ currency }}</td>
+        </tr>
+        {% for vat in vat_list %}
+        <tr>
+            <td>{{ vat.label }}:</td>
+            <td>{{ vat.amount }} {{ currency }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td><strong>Grand Total:</strong></td>
+            <td><strong>{{ grand_total }} {{ currency }}</strong></td>
+        </tr>
+    </table>
+
+    <footer>
+        Thank you for your business!<br>
+        This quotation is valid for 30 days.
+    </footer>
+</body>
+</html>
+
+
+
+⸻
+
+What’s Included:
+	•	Modern layout with a clean, print-ready style.
+	•	Inline base64 image support for logos.
+	•	Professional header and footer.
+	•	Clearly laid-out item and total sections.
+
+⸻
+
+Suggestions for Next Step:
+
+a. Add a QR code or signature field to the PDF
+b. Allow users to preview/download the PDF directly from a Flask route
+c. Need help implementing get_logo_data(company) to embed logo image in base64?
