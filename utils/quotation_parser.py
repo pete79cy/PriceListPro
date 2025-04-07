@@ -57,24 +57,32 @@ def parse_quantity_from_unit(unit_value):
     Returns:
         float: The extracted quantity or 1.0 if none found
     """
+    logger.info(f"Parsing quantity from unit value: {unit_value} of type {type(unit_value)}")
+    
     # Handle direct numeric types
     if isinstance(unit_value, (int, float)):
+        logger.info(f"Direct numeric value detected: {unit_value}")
         return float(unit_value)
     
     # If it's None or empty, return default
     if not unit_value:
+        logger.info(f"Empty or None value detected, returning default 1.0")
         return 1.0
     
     # Convert to string for processing    
     unit_str = str(unit_value).strip()
+    logger.info(f"Processing string value: '{unit_str}'")
     
     # If the string is a simple number, parse it directly
     try:
         # Replace comma with dot for European number format
         cleaned_value = unit_str.replace(',', '.')
-        return float(cleaned_value)
+        parsed_value = float(cleaned_value)
+        logger.info(f"Successfully parsed as simple number: {parsed_value}")
+        return parsed_value
     except ValueError:
         # Not a simple number, continue with regex
+        logger.info(f"Not a simple number, trying regex extraction")
         pass
         
     # Look for the first number pattern in the string
@@ -84,12 +92,15 @@ def parse_quantity_from_unit(unit_value):
         try:
             # Replace comma with dot for European number format
             value = match.group(1).replace(',', '.')
-            return float(value)
+            parsed_value = float(value)
+            logger.info(f"Successfully extracted number with regex: {parsed_value}")
+            return parsed_value
         except (ValueError, TypeError):
             # Log the failure for debugging
             logger.warning(f"Failed to parse quantity from: {unit_value}")
             pass
             
+    logger.warning(f"No valid number found in '{unit_value}', returning default 1.0")
     return 1.0
 
 def parse_quotation_file(file_path, customer_id, file_type):
@@ -425,13 +436,20 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 create_if_missing=False  # Don't create new products here
             )
             
-            # Parse quantity with better error handling
+            # Parse quantity with enhanced error handling and detailed logging
             try:
+                # Log the raw unit value for debugging
+                logger.info(f"About to parse quantity from raw unit value: {unit} of type {type(unit)}")
+                
+                # Convert unit to number if possible
                 quantity = parse_quantity_from_unit(unit)
-                logger.info(f"Extracted quantity: {quantity} from unit value: {unit}")
+                
+                # Log the final extracted quantity
+                logger.info(f"Successfully extracted quantity: {quantity} from unit value: {unit}")
             except Exception as e:
                 logger.warning(f"Failed to parse quantity from unit value: {unit}, error: {str(e)}")
                 quantity = 1  # Default to 1 if parsing fails
+                logger.info(f"Using default quantity: {quantity}")
             
             # Initialize product entry using our new format
             product_entry = {

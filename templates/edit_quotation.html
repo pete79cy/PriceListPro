@@ -111,7 +111,7 @@
                                             <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30-40, 120/150cm">
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
+                                            <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
                                         </td>
                                         <td>
                                             <div class="input-group">

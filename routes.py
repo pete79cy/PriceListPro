@@ -1957,12 +1957,19 @@ def register_routes(app):
                 product_id_raw = request.form.get(f'product_id_{i}')
                 product_id = None if product_id_raw == 'None' else product_id_raw
                 
-                # Parse quantity with better error handling - using integers
+                # Parse quantity with better error handling - using floats for more flexibility
                 try:
-                    quantity = int(request.form.get(f'quantity_{i}', 1))
-                except (ValueError, TypeError):
+                    quantity_raw = request.form.get(f'quantity_{i}', '1')
+                    # First clean the quantity string (handle comma as decimal separator)
+                    if isinstance(quantity_raw, str):
+                        quantity_raw = quantity_raw.replace(',', '.').strip()
+                    
+                    quantity = float(quantity_raw)
+                    # Log the quantity parsing for debugging
+                    logger.info(f"Parsed quantity {quantity} from input '{request.form.get(f'quantity_{i}')}' for item {i}")
+                except (ValueError, TypeError) as e:
                     quantity = 1
-                    logger.warning(f"Invalid quantity format in quotation form item {i}, using default of 1")
+                    logger.warning(f"Invalid quantity format '{request.form.get(f'quantity_{i}')}' in quotation form item {i}, using default of 1. Error: {str(e)}")
                 
                 # Parse selling price with better error handling
                 try:
