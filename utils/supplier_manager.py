@@ -210,3 +210,41 @@ def update_supplier_from_quotation_item(quotation_item):
         db.session.rollback()
         logger.error(f"Error updating supplier from quotation item {quotation_item.id}: {str(e)}")
         return False
+        
+def update_suppliers_from_quotation(quotation):
+    """
+    Update or create supplier product records for all items in a quotation.
+    
+    Args:
+        quotation: The Quotation object containing items to process
+        
+    Returns:
+        dict: Results with success and error counts
+    """
+    results = {
+        'success_count': 0,
+        'error_count': 0,
+        'updated_suppliers': []
+    }
+    
+    if not quotation or not quotation.items:
+        logger.warning("No items found in quotation")
+        return results
+        
+    logger.info(f"Processing {len(quotation.items)} items from quotation {quotation.id}")
+    
+    # Process each item in the quotation
+    for item in quotation.items:
+        try:
+            if update_supplier_from_quotation_item(item):
+                results['success_count'] += 1
+                if item.supplier and item.supplier not in results['updated_suppliers']:
+                    results['updated_suppliers'].append(item.supplier)
+            else:
+                results['error_count'] += 1
+        except Exception as e:
+            results['error_count'] += 1
+            logger.error(f"Error processing quotation item {item.id}: {str(e)}")
+    
+    logger.info(f"Finished processing quotation {quotation.id}: {results['success_count']} successes, {results['error_count']} errors")
+    return results
