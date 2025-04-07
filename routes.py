@@ -3644,27 +3644,60 @@ def register_routes(app):
             })
             
         try:
-            # Initialize client with basic settings
+            # Initialize client with robust settings
             from openai import OpenAI
-            client = OpenAI(api_key=api_key, timeout=10.0)
+            client = OpenAI(api_key=api_key, timeout=30.0)
             
-            # Simple test to list available models
-            models = client.models.list()
-            model_count = len(models.data)
-            
-            logger.info(f"OpenAI API test successful. Found {model_count} models.")
-            
-            return jsonify({
-                "success": True,
-                "message": f"Connection successful! Your API key is valid and working. Found {model_count} available models."
-            })
+            try:
+                # Test a simple model query first to validate API key
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": "Test connection"}
+                    ],
+                    max_tokens=10,
+                    temperature=0.3,
+                )
+                
+                # If we got here, the API key is working for completions
+                logger.info("OpenAI API test successful: chat completions working")
+                
+                # Now try listing models as a secondary test
+                models = client.models.list()
+                model_count = len(models.data)
+                
+                logger.info(f"OpenAI API models test successful. Found {model_count} models.")
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"Connection successful! Your API key is valid and working. Found {model_count} available models."
+                })
+                
+            except Exception as model_error:
+                # Even if model listing fails, if we got a completion that's good enough
+                logger.warning(f"Model listing failed but completions work: {str(model_error)}")
+                return jsonify({
+                    "success": True, 
+                    "message": "Connection successful! Your API key is valid for generating completions."
+                })
+                
         except Exception as e:
             error_message = str(e)
             logger.error(f"OpenAI API test failed: {error_message}")
             
+            # Provide a more user-friendly error message
+            user_message = "Connection failed. Please check your API key."
+            if "authentication" in error_message.lower():
+                user_message = "Authentication failed. Please check if your API key is correct."
+            elif "timeout" in error_message.lower():
+                user_message = "Connection timed out. The OpenAI service might be experiencing issues."
+            elif "rate limit" in error_message.lower():
+                user_message = "Rate limit exceeded. Please try again later."
+            
             return jsonify({
                 "success": False,
-                "message": f"Connection failed: {error_message}. Please check your API key."
+                "message": f"{user_message} Technical details: {error_message}"
             })
     
     @app.route('/ai-insights/analyze', methods=['POST'])

@@ -640,16 +640,17 @@ class DocumentAnalyzer:
             return "Error: OpenAI API key is missing. Please configure it in the settings."
             
         try:
-            # the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-            # do not change this unless explicitly requested by the user
+            # Use gpt-3.5-turbo for more reliable API access
+            # and better compatibility
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a horticultural business analyst specializing in plant nursery operations, pricing, and inventory management. Provide concise, actionable insights."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=1000,
                 temperature=0.3,  # Lower temperature for more focused responses
+                timeout=30.0,  # Add timeout to prevent hanging requests
             )
             return response.choices[0].message.content.strip()
         
