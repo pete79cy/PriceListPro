@@ -244,26 +244,29 @@ def generate_custom_supplier_report_with_ubuntu(quotation, selected_suppliers, s
             pdf.multi_cell(0, 6, safe_encode(terms_text))
 
         # Generate PDF
-        # Get output as bytes directly - try with different encodings if needed
+        # Get output as bytes directly from a temporary file
         try:
             logger.info("Generating PDF output with Ubuntu font...")
-            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            
+            # Use a temporary file to save and then read the PDF as bytes
+            temp_file = f"/tmp/temp_ubuntu_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            pdf.output(temp_file)
+            
+            # Read the temp file back as bytes
+            with open(temp_file, 'rb') as f:
+                pdf_bytes = f.read()
+                
+            # Remove the temp file
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+                
             logger.info(f"Successfully generated PDF of size {len(pdf_bytes)} bytes")
+            
         except Exception as e:
-            logger.warning(f"Error with Latin-1 encoding: {str(e)}")
-            # Try without encoding - fpdf2 may handle it differently
-            try:
-                pdf_bytes = pdf.output(dest='S')
-                if isinstance(pdf_bytes, bytes):
-                    logger.info(f"Alternative method generated PDF of size {len(pdf_bytes)} bytes")
-                else:
-                    logger.info(f"Output is not bytes but {type(pdf_bytes)}")
-                    # Convert string to bytes if needed
-                    if isinstance(pdf_bytes, str):
-                        pdf_bytes = pdf_bytes.encode('utf-8')
-            except Exception as inner_e:
-                logger.error(f"Error with alternative method: {str(inner_e)}")
-                raise
+            logger.error(f"Error generating PDF: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
         
         # Create a timestamped filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

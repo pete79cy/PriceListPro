@@ -32,28 +32,12 @@
                                         Select All Suppliers
                                     </label>
                                 </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters and improved fonts</small>
-                                    </label>
-                                </div>
                                 <hr>
                                 {% for supplier in suppliers %}
                                 <div class="form-check mb-2">
                                     <input class="form-check-input supplier-checkbox" type="checkbox" name="suppliers" value="{{ supplier }}" id="supplier{{ loop.index }}">
                                     <label class="form-check-label" for="supplier{{ loop.index }}">
                                         {{ supplier }}
-                                    </label>
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters and improved fonts</small>
                                     </label>
                                 </div>
                                 {% endfor %}
@@ -132,22 +116,8 @@
                                         <span class="badge bg-info ms-1">Alternative</span>
                                     </label>
                                 </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters</small>
-                                    </label>
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters and improved fonts</small>
-                                    </label>
-                                </div>
+                                
+                                
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check mb-3">
@@ -156,28 +126,14 @@
                                         Group Items by Supplier
                                     </label>
                                 </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters and improved fonts</small>
-                                    </label>
-                                </div>
+                                
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" name="include_terms" id="includeTerms" checked>
                                     <label class="form-check-label" for="includeTerms">
                                         Include Terms & Conditions
                                     </label>
                                 </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters and improved fonts</small>
-                                    </label>
-                                </div>
+                                
                             </div>
                         </div>
                         <div class="row mt-3">
@@ -188,14 +144,7 @@
                                     placeholder="Add any notes for this supplier report..."></textarea>
                                     <small class="text-muted">These notes will be included in a dedicated section of the report.</small>
                                 </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="use_dejavu" id="useDejavu">
-                                    <label class="form-check-label" for="useDejavu">
-                                        Use DejaVu Unicode Font
-                                        <span class="badge bg-info ms-1">New</span>
-                                        <small class="d-block text-muted">Supports special characters and improved fonts</small>
-                                    </label>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
