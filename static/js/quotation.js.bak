@@ -80,8 +80,8 @@ function setupAjaxFormSubmission() {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             submitBtn.disabled = true;
             
-            // Create a function to reset button state that we can call in multiple places
-            const resetButton = function() {
+            // Function to reset button state
+            const resetButton = () => {
                 submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;
             };
@@ -98,15 +98,20 @@ function setupAjaxFormSubmission() {
                     throw new Error('Network response was not ok');
                 }
                 
-                // First get the response as text
+                // First try to get the response as text
                 return response.text().then(text => {
+                    // If the response is empty, return an empty object
+                    if (!text) {
+                        return { success: false, error: 'Empty response from server' };
+                    }
+                    
                     try {
                         // Try to parse the text as JSON
                         return JSON.parse(text);
-                    } catch (err) {
-                        console.error('Error parsing JSON:', err);
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
                         console.log('Raw response:', text);
-                        throw new Error('Error parsing server response. Please try again.');
+                        throw new Error('Invalid JSON response from server');
                     }
                 });
             })
@@ -134,7 +139,7 @@ function setupAjaxFormSubmission() {
                     window.location.reload();
                 }
                 
-                // Reset button state on success too
+                // Reset button state
                 resetButton();
             })
             .catch(error => {
@@ -146,6 +151,8 @@ function setupAjaxFormSubmission() {
                     errorMessage.includes('database') || 
                     errorMessage.includes('connection')) {
                     errorMessage = 'Database connection error. Your changes will be saved when connection is restored.';
+                } else if (errorMessage.includes('JSON')) {
+                    errorMessage = 'Server returned an invalid response. Please try again.';
                 }
                 
                 showToast('Error updating item: ' + errorMessage, 'danger');
@@ -154,15 +161,11 @@ function setupAjaxFormSubmission() {
                 resetButton();
                 
                 // Close the modal on severe errors to allow retry
-                if (errorMessage.includes('parsing server response')) {
+                if (errorMessage.includes('Invalid JSON') || errorMessage.includes('Empty response')) {
                     setTimeout(() => {
-                        try {
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                            if (modal) modal.hide();
-                        } catch (e) {
-                            console.error('Error closing modal:', e);
-                        }
-                    }, 1500);
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+                        if (modal) modal.hide();
+                    }, 2000);
                 }
             });
         });
@@ -171,7 +174,7 @@ function setupAjaxFormSubmission() {
 
 // Update item values in the table without page reload
 function updateItemInTable(itemId, item) {
-    const row = document.querySelector('.item-row[data-id="'+itemId+'"]');
+    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
     if (!row) return;
     
     // Get data from item object or formData depending on what's passed
@@ -188,18 +191,18 @@ function updateItemInTable(itemId, item) {
     // Update the row cells
     const cells = row.querySelectorAll('td');
     cells[2].textContent = description;
-    cells[3].innerHTML = '<em>' + scientificName + '</em>';
+    cells[3].innerHTML = `<em>${scientificName}</em>`;
     cells[4].textContent = potSize;
     cells[5].textContent = height;
     cells[6].textContent = parseInt(quantity).toString();
     
     // Format the selling price with currency
     const currency = document.querySelector('#quotation-currency')?.value || '€';
-    cells[7].textContent = currency + ' ' + parseFloat(sellingPrice).toFixed(2);
+    cells[7].textContent = `${currency} ${parseFloat(sellingPrice).toFixed(2)}`;
     
-    cells[8].textContent = parseFloat(vatRate).toFixed(1) + '%';
+    cells[8].textContent = `${parseFloat(vatRate).toFixed(1)}%`;
     cells[9].textContent = supplier;
-    cells[10].textContent = currency + ' ' + parseFloat(total).toFixed(2);
+    cells[10].textContent = `${currency} ${parseFloat(total).toFixed(2)}`;
     
     // Update data attributes for future edits
     const editBtn = row.querySelector('.edit-item-btn');
@@ -220,7 +223,7 @@ function updateItemInTable(itemId, item) {
 
 // Highlight a row to show it was updated
 function highlightRow(itemId) {
-    const row = document.querySelector('.item-row[data-id="'+itemId+'"]');
+    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
     if (!row) return;
     
     // Add highlight class
@@ -249,7 +252,7 @@ function updateQuotationTotal() {
     const totalRow = document.querySelector('tfoot .text-end');
     if (totalRow) {
         const currency = document.querySelector('#quotation-currency')?.value || '€';
-        totalRow.textContent = currency + ' ' + total.toFixed(2);
+        totalRow.textContent = `${currency} ${total.toFixed(2)}`;
     }
 }
 
@@ -267,16 +270,20 @@ function showToast(message, type) {
     // Create toast element
     const toastId = 'toast-' + Date.now();
     const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0';
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
     toast.id = toastId;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
     
-    toast.innerHTML = '<div class="d-flex">' +
-                       '<div class="toast-body">' + message + '</div>' +
-                       '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
-                       '</div>';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
     
     toastContainer.appendChild(toast);
     
@@ -315,13 +322,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('highlight-style')) {
         const style = document.createElement('style');
         style.id = 'highlight-style';
-        style.textContent = '.highlight-row {' +
-                           'animation: highlight-fade 2s;' +
-                           '}' +
-                           '@keyframes highlight-fade {' +
-                           '0% { background-color: rgba(255, 255, 0, 0.5); }' +
-                           '100% { background-color: transparent; }' +
-                           '}';
+        style.textContent = `
+            .highlight-row {
+                animation: highlight-fade 2s;
+            }
+            @keyframes highlight-fade {
+                0% { background-color: rgba(255, 255, 0, 0.5); }
+                100% { background-color: transparent; }
+            }
+        `;
         document.head.appendChild(style);
     }
     
@@ -351,7 +360,7 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
     showToast("Looking for historical prices...", "info");
     
     // Call the price assistant API
-    fetch('/api/price-assistant?scientific_name=' + encodeURIComponent(scientificName) + '&pot_size=' + encodeURIComponent(potSize) + '&customer_id=' + customerId)
+    fetch(`/api/price-assistant?scientific_name=${encodeURIComponent(scientificName)}&pot_size=${encodeURIComponent(potSize)}&customer_id=${customerId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -367,7 +376,7 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
             if (data.suggested_price) {
                 // Update the price field
                 document.getElementById(sellingPriceId).value = data.suggested_price;
-                showToast('Price suggestion: ' + data.suggested_price.toFixed(2) + ' € (based on ' + data.source + ')', "success");
+                showToast(`Price suggestion: ${data.suggested_price.toFixed(2)} € (based on ${data.source})`, "success");
             } else {
                 showToast("No historical price data found for this product", "warning");
             }
