@@ -2554,6 +2554,10 @@ def register_routes(app):
             
             # If this is an AJAX request, return JSON response
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Debug information about the request
+                logger.info(f"AJAX request headers: {dict(request.headers)}")
+                logger.info(f"Item ID: {item.id}, Quotation ID: {quotation.id}")
+                
                 response_data = {
                     'success': True,
                     'message': 'Item updated successfully!',
@@ -2572,7 +2576,14 @@ def register_routes(app):
                     },
                     'quotation_total': quotation.total_amount
                 }
-                return jsonify(response_data)
+                
+                # Log the response data for debugging
+                logger.info(f"Response data being sent: {response_data}")
+                
+                # Ensure proper content type and headers
+                response = jsonify(response_data)
+                response.headers['Content-Type'] = 'application/json'
+                return response
             else:
                 # Standard form submission (fallback)
                 flash('Item updated successfully!', 'success')
@@ -2584,7 +2595,10 @@ def register_routes(app):
             
             # If this is an AJAX request, return JSON error
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'error': str(e)})
+                logger.error(f"AJAX error response being sent for error: {str(e)}")
+                response = jsonify({'success': False, 'error': str(e)})
+                response.headers['Content-Type'] = 'application/json'
+                return response
             else:
                 # Standard form submission (fallback)
                 flash(f"Error updating item: {str(e)}", 'danger')
