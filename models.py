@@ -225,6 +225,7 @@ class SupplierProduct(db.Model):
     cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
     last_detected = db.Column(db.DateTime, default=datetime.utcnow)
     notes = db.Column(db.Text, nullable=True)
+    flagged_duplicate = db.Column(db.Boolean, default=False)  # Flag for potential duplicates
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

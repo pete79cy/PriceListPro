@@ -1,0 +1,126 @@
+{% extends 'layout.html' %}
+
+{% block title %}Duplicate Analysis Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3">Duplicate Analysis Results</h1>
+                <div>
+                    <a href="{{ url_for('supplier_duplicates', supplier_id=supplier.id) }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Duplicates
+                    </a>
+                    <a href="{{ url_for('supplier_products', supplier_id=supplier.id) }}" class="btn btn-primary">
+                        <i class="fas fa-leaf me-1"></i> View All Products
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted">
+                AI analysis of potential duplicate products for <strong>{{ supplier.name }}</strong>.
+                Review the suggestions below and flag products that should be merged or updated.
+            </p>
+        </div>
+    </div>
+
+    {% if results|length > 0 %}
+    <form method="post" action="{{ url_for('flag_supplier_duplicates', supplier_id=supplier.id) }}">
+        <div class="row mb-3">
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-flag me-1"></i> Flag Selected Duplicates
+                </button>
+            </div>
+        </div>
+        
+        {% for result in results %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header {% if result.is_duplicate %}bg-warning{% elif result.is_duplicate == False %}bg-success text-white{% else %}bg-info text-white{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                {% if result.is_duplicate %}
+                                <i class="fas fa-exclamation-triangle me-1"></i> Likely Duplicate
+                                {% elif result.is_duplicate == False %}
+                                <i class="fas fa-check-circle me-1"></i> Not a Duplicate
+                                {% else %}
+                                <i class="fas fa-question-circle me-1"></i> Needs Review
+                                {% endif %}
+                            </h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="duplicate_pair" 
+                                       id="pair_{{ result.pair[0] }}_{{ result.pair[1] }}" 
+                                       value="{{ result.pair[0] }}_{{ result.pair[1] }}"
+                                       {% if result.is_duplicate %}checked{% endif %}>
+                                <label class="form-check-label" for="pair_{{ result.pair[0] }}_{{ result.pair[1] }}">
+                                    Flag as duplicate
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Product 1</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5>{{ result.product1.name }}</h5>
+                                        <p>
+                                            <strong>Scientific Name:</strong> {{ result.product1.scientific_name or 'Not specified' }}<br>
+                                            <strong>ID:</strong> {{ result.product1.id }}
+                                        </p>
+                                        <a href="{{ url_for('edit_supplier_product', id=result.product1.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit me-1"></i> Edit
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Product 2</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5>{{ result.product2.name }}</h5>
+                                        <p>
+                                            <strong>Scientific Name:</strong> {{ result.product2.scientific_name or 'Not specified' }}<br>
+                                            <strong>ID:</strong> {{ result.product2.id }}
+                                        </p>
+                                        <a href="{{ url_for('edit_supplier_product', id=result.product2.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit me-1"></i> Edit
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>AI Analysis:</h6>
+                            <div class="p-3 bg-light rounded">
+                                {{ result.suggestion|safe|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="row">
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-flag me-1"></i> Flag Selected Duplicates
+                </button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-info">
+        No analysis results found. Please return to the <a href="{{ url_for('supplier_duplicates') }}">duplicate detection page</a> and run the analysis.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
