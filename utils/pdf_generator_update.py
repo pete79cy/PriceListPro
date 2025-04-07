@@ -49,12 +49,55 @@ def draw_supplier_section(pdf, supplier_name, items, include_prices, base_font="
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(4)
 
-    # Define headers and column widths
-    headers = ["Item", "Height", "Qty"]
-    if include_prices:
-        headers += [f"Cost Price ({currency})", f"Total ({currency})"]
-    col_widths = [50, 35, 15, 30, 30] if include_prices else [60, 45, 25]
-
+    # If no selected fields provided, use default set
+    if not selected_fields:
+        selected_fields = ['description', 'height', 'quantity', 'cost_price', 'total']
+    
+    # Define headers based on selected fields
+    headers = []
+    col_widths = []
+    
+    # Map field keys to headers and add them if they're in selected_fields
+    field_headers = {
+        'description': 'Item',
+        'scientific_name': 'Scientific Name',
+        'pot_size': 'Pot Size',
+        'height': 'Height',
+        'quantity': 'Qty',
+        'selling_price': f'Selling Price ({currency})',
+        'cost_price': f'Cost Price ({currency})',
+        'total': f'Total ({currency})',
+        'vat_rate': 'VAT Rate (%)'
+    }
+    
+    # Default column widths
+    field_widths = {
+        'description': 50,
+        'scientific_name': 40,
+        'pot_size': 25,
+        'height': 25,
+        'quantity': 15,
+        'selling_price': 30,
+        'cost_price': 30,
+        'total': 30,
+        'vat_rate': 20
+    }
+    
+    # Add headers and widths for fields that are selected
+    for field in selected_fields:
+        if field in field_headers:
+            # Only include price-related fields if include_prices is True
+            if field in ['selling_price', 'cost_price', 'total', 'vat_rate'] and not include_prices:
+                continue
+            headers.append(field_headers[field])
+            col_widths.append(field_widths[field])
+    
+    # If no headers were added (because all were price-related and include_prices is False),
+    # add at least description, height, and quantity
+    if not headers:
+        headers = ["Item", "Height", "Qty"]
+        col_widths = [60, 45, 25]
+    
     # Header row
     pdf.set_font(base_font, 'B', 9)
     for i, header in enumerate(headers):
@@ -71,18 +114,37 @@ def draw_supplier_section(pdf, supplier_name, items, include_prices, base_font="
         line_total = (item.cost_price or 0) * (item.quantity or 0)
         subtotal += line_total
         
-        # Prepare row data
-        row = [
-            item.description or item.product_name or '',
-            item.height or '',
-            str(item.quantity or 0)
-        ]
+        # Prepare row data based on selected fields
+        row = []
         
-        # Add prices if included
-        if include_prices:
-            row += [
-                f"{currency}{item.cost_price:.2f}" if item.cost_price else f"{currency}0.00",
-                f"{currency}{line_total:.2f}"
+        # Map field keys to item attributes
+        field_mappings = {
+            'description': lambda i: i.description or i.product_name or '',
+            'scientific_name': lambda i: i.scientific_name or '',
+            'pot_size': lambda i: i.pot_size or '',
+            'height': lambda i: i.height or '',
+            'quantity': lambda i: str(i.quantity or 0),
+            'selling_price': lambda i: f"{currency}{i.selling_price:.2f}" if hasattr(i, 'selling_price') and i.selling_price else f"{currency}0.00",
+            'cost_price': lambda i: f"{currency}{i.cost_price:.2f}" if i.cost_price else f"{currency}0.00",
+            'total': lambda i: f"{currency}{line_total:.2f}",
+            'vat_rate': lambda i: f"{i.vat_rate:.2f}%" if hasattr(i, 'vat_rate') and i.vat_rate else "0.00%"
+        }
+        
+        # Add cells based on selected fields
+        for field in selected_fields:
+            if field in field_mappings:
+                # Only include price-related fields if include_prices is True
+                if field in ['selling_price', 'cost_price', 'total', 'vat_rate'] and not include_prices:
+                    continue
+                row.append(field_mappings[field](item))
+        
+        # If row is empty (because all were price-related and include_prices is False),
+        # add at least description, height, and quantity
+        if not row:
+            row = [
+                item.description or item.product_name or '',
+                item.height or '',
+                str(item.quantity or 0)
             ]
         
         # Draw cells with alternating fill
