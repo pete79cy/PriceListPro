@@ -1,0 +1,107 @@
+<!-- Include SortableJS for drag and drop functionality -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<!-- Include our custom quotation.js -->
+<script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
+
+<!-- Initialize AI Insights for this quotation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up the quotation context for AI insights
+    if (window.aiInsights) {
+        window.aiInsights.setDocumentContext(
+            'quotation', 
+            {{ quotation.id }}, 
+            'Quotation #{{ quotation.quotation_number }}'
+        );
+    }
+    
+    // Add click handler for the AI insights button
+    document.getElementById('showAiInsightsButton').addEventListener('click', function() {
+        if (window.aiInsights) {
+            window.aiInsights.showSidebar();
+        }
+    });
+
+    // Initialize drag and drop functionality
+    initDragAndDrop();
+});
+
+// Initialize drag and drop sorting for quotation items
+function initDragAndDrop() {
+    const quotationId = document.getElementById('quotation-id').value;
+    const tbody = document.getElementById('quotation-items-tbody');
+    
+    if (!tbody) return;
+    
+    // Initialize Sortable
+    new Sortable(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'bg-light',
+        onEnd: function(evt) {
+            // Get all rows
+            const rows = Array.from(tbody.querySelectorAll('tr.item-row'));
+            
+            // Map rows to IDs and positions
+            const itemOrder = rows.map((row, index) => {
+                return {
+                    id: row.getAttribute('data-id'),
+                    position: index + 1
+                };
+            });
+            
+            // Update the positions in the backend via AJAX
+            updateItemPositions(quotationId, itemOrder);
+            
+            // Update visible row numbers
+            updateRowNumbers();
+        }
+    });
+}
+
+// Update item positions in the backend
+function updateItemPositions(quotationId, itemOrder) {
+    // Show a loading indicator
+    showPriceAssistantMessage('Updating item positions...', 'info');
+    
+    fetch(`/quotation/${quotationId}/reorder-items`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: itemOrder })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to update item order');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showPriceAssistantMessage('Item order updated successfully', 'success');
+        } else {
+            showPriceAssistantMessage(data.error || 'Error updating item order', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating item positions:', error);
+        showPriceAssistantMessage('Error updating item order: ' + error.message, 'danger');
+    });
+}
+
+// Update row numbers after reordering
+function updateRowNumbers() {
+    const tbody = document.getElementById('quotation-items-tbody');
+    const rows = tbody.querySelectorAll('tr.item-row');
+    
+    rows.forEach((row, index) => {
+        const rowNumberCell = row.querySelector('td:nth-child(2)');
+        if (rowNumberCell) {
+            rowNumberCell.textContent = index + 1;
+        }
+    });
+}
+</script>
+{% endblock %}

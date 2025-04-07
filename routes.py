@@ -2538,6 +2538,47 @@ def register_routes(app):
             flash(f"Error updating item: {str(e)}", 'danger')
             
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
+    @app.route('/quotation/<int:quotation_id>/reorder-items', methods=['POST'])
+    @login_required
+    def reorder_drag_quotation_items(quotation_id):
+        """Update the order of items in a quotation via AJAX"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Get the JSON data sent from the client
+            data = request.get_json()
+            
+            if not data or 'items' not in data:
+                return jsonify({'success': False, 'error': 'Invalid data format'}), 400
+                
+            items_data = data['items']
+            
+            # Start a transaction
+            with db.session.begin_nested():
+                for item_data in items_data:
+                    item_id = item_data.get('id')
+                    new_position = item_data.get('position')
+                    
+                    if not item_id or not new_position:
+                        continue
+                        
+                    # Get the item and update its position
+                    item = QuotationItem.query.filter_by(id=item_id, quotation_id=quotation_id).first()
+                    if item:
+                        item.position = new_position
+            
+            # Commit the changes to the database
+            db.session.commit()
+            
+            # Log the successful reordering
+            logger.info(f"Reordered items for quotation #{quotation.quotation_number} (ID: {quotation_id})")
+            
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error reordering quotation items: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
         
     @app.route('/quotation/item/<int:item_id>/delete')
     @login_required
@@ -2608,33 +2649,7 @@ def register_routes(app):
             logger.error(f"Error adding quotation item: {str(e)}")
             return jsonify({'error': str(e)}), 500
     
-    @app.route('/quotation/<int:quotation_id>/items/reorder', methods=['POST'])
-    @login_required
-    def reorder_quotation_items(quotation_id):
-        """Reorder quotation items based on client-side drag and drop"""
-        quotation = Quotation.query.get_or_404(quotation_id)
-        
-        try:
-            # Get the new order of item IDs from the request
-            data = request.get_json()
-            if not data or 'order' not in data:
-                return jsonify({'error': 'No order data provided'}), 400
-                
-            new_order = data['order']
-            
-            # Update each item's position
-            for position, item_id in enumerate(new_order):
-                item = QuotationItem.query.get(item_id)
-                if item and item.quotation_id == quotation_id:
-                    item.position = position
-                
-            db.session.commit()
-            return jsonify({'success': True, 'message': 'Items reordered successfully'})
-            
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error reordering quotation items: {str(e)}")
-            return jsonify({'error': str(e)}), 500
+
     
     @app.route('/supplier/quick_add', methods=['POST'])
     @login_required
