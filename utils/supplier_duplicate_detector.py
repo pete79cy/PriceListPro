@@ -173,7 +173,20 @@ def ask_openai_for_resolution(duplicate_pairs: List[Tuple[SupplierProduct, Suppl
                  "is_duplicate": None} 
                 for p1, p2 in duplicate_pairs]
     
-    client = OpenAI(api_key=api_key)
+    try:
+        # Initialize the OpenAI client with some error handling
+        client = OpenAI(api_key=api_key, timeout=60.0)
+        
+        # Test the API connection
+        model_list = client.models.list()
+        logger.info(f"Successfully connected to OpenAI API. Available models: {len(model_list.data)} models")
+    except Exception as client_error:
+        logger.error(f"Error initializing OpenAI client: {str(client_error)}")
+        return [{"pair": (p1.id, p2.id), 
+                 "suggestion": f"OpenAI API connection error: {str(client_error)}",
+                 "is_duplicate": None} 
+                for p1, p2 in duplicate_pairs]
+    
     results = []
     
     for p1, p2 in duplicate_pairs:
@@ -209,16 +222,28 @@ def ask_openai_for_resolution(duplicate_pairs: List[Tuple[SupplierProduct, Suppl
             4. If merging, which values to keep for each field (choose the more complete/accurate data)?
             """
             
-            # Query OpenAI
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a plant nursery inventory specialist helping to detect duplicate products."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,  # Lower temperature for more consistent responses
-                max_tokens=500
-            )
+            # Query OpenAI with fallback models
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",  # Using a more widely available model
+                    messages=[
+                        {"role": "system", "content": "You are a plant nursery inventory specialist helping to detect duplicate products."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3,  # Lower temperature for more consistent responses
+                    max_tokens=500
+                )
+            except Exception as model_error:
+                logger.error(f"Error with primary OpenAI model: {str(model_error)}")
+                # Try with a simpler model as fallback
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3,
+                    max_tokens=400
+                )
             
             # Process response
             analysis = response.choices[0].message.content.strip()
