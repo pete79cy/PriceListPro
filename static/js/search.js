@@ -25,7 +25,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Make AJAX request to search API
     fetch(`/api/search?q=${encodeURIComponent(query)}&customer_id=${customerId}`)
-      .then(response => response.json())
+      .then(response => {
+    return response.text().then(text => {
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            console.error("Error parsing JSON:", err);
+            console.log("Raw response:", text);
+            throw new Error("Error parsing server response. Please try again.");
+        }
+    });
+})
       .then(data => {
         // Hide spinner
         searchSpinner.classList.add('d-none');
