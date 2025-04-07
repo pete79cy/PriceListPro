@@ -6,6 +6,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Setup the supplier dropdown event handlers
     setupSupplierDropdowns();
+    
+    // Setup AJAX form submission for edit item form
+    setupAjaxFormSubmission();
+    
     var editButtons = document.querySelectorAll('.edit-item-btn');
     editButtons.forEach(function(button) {
         button.addEventListener('click', function() {
@@ -20,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
             var supplier = this.getAttribute('data-supplier');
             var costPrice = this.getAttribute('data-cost-price');
             var supplierId = this.getAttribute('data-supplier-id');
+            
+            // Store the item ID for later use (highlighting)
+            document.getElementById('editItemForm').setAttribute('data-item-id', id);
             
             // Set form action URL
             var quotationId = document.getElementById('quotation-id').value;
@@ -58,6 +65,184 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Setup AJAX form submission
+function setupAjaxFormSubmission() {
+    const editItemForm = document.getElementById('editItemForm');
+    if (editItemForm) {
+        editItemForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const itemId = this.getAttribute('data-item-id');
+            const formData = new FormData(this);
+            
+            // Show processing indicator
+            const submitBtn = document.querySelector('#editItemModal .btn-primary');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(data => {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+                modal.hide();
+                
+                // Show success message
+                showToast('Item updated successfully!', 'success');
+                
+                // Update the item in the table without reloading the page
+                updateItemInTable(itemId, formData);
+                
+                // Highlight the updated row
+                highlightRow(itemId);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error updating item: ' + error.message, 'danger');
+                
+                // Reset button
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+}
+
+// Update item values in the table without page reload
+function updateItemInTable(itemId, formData) {
+    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
+    if (!row) return;
+    
+    // Update row values
+    const description = formData.get('description');
+    const scientificName = formData.get('scientific_name') || '';
+    const potSize = formData.get('pot_size') || '';
+    const height = formData.get('height') || '';
+    const quantity = formData.get('quantity') || '1';
+    const sellingPrice = formData.get('selling_price') || '0';
+    const vatRate = formData.get('vat_rate') || '19';
+    const supplier = formData.get('supplier') || 'Not specified';
+    
+    // Calculate total
+    const total = parseFloat(quantity) * parseFloat(sellingPrice);
+    
+    // Update the row cells
+    const cells = row.querySelectorAll('td');
+    cells[2].textContent = description;
+    cells[3].innerHTML = `<em>${scientificName}</em>`;
+    cells[4].textContent = potSize;
+    cells[5].textContent = height;
+    cells[6].textContent = parseInt(quantity).toString();
+    
+    // Format the selling price with currency
+    const currency = document.querySelector('#quotation-currency')?.value || '€';
+    cells[7].textContent = `${currency} ${parseFloat(sellingPrice).toFixed(2)}`;
+    
+    cells[8].textContent = `${parseFloat(vatRate).toFixed(1)}%`;
+    cells[9].textContent = supplier;
+    cells[10].textContent = `${currency} ${total.toFixed(2)}`;
+    
+    // Update data attributes for future edits
+    const editBtn = row.querySelector('.edit-item-btn');
+    if (editBtn) {
+        editBtn.setAttribute('data-description', description);
+        editBtn.setAttribute('data-scientific-name', scientificName);
+        editBtn.setAttribute('data-pot-size', potSize);
+        editBtn.setAttribute('data-height', height);
+        editBtn.setAttribute('data-quantity', quantity);
+        editBtn.setAttribute('data-selling-price', sellingPrice);
+        editBtn.setAttribute('data-vat-rate', vatRate);
+        editBtn.setAttribute('data-supplier', supplier);
+    }
+    
+    // Update total at the bottom of the table
+    updateQuotationTotal();
+}
+
+// Highlight a row to show it was updated
+function highlightRow(itemId) {
+    const row = document.querySelector(`.item-row[data-id="${itemId}"]`);
+    if (!row) return;
+    
+    // Add highlight class
+    row.classList.add('highlight-row');
+    
+    // Scroll to the row
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Remove highlight after 2 seconds
+    setTimeout(() => {
+        row.classList.remove('highlight-row');
+    }, 2000);
+}
+
+// Update the quotation total based on item totals
+function updateQuotationTotal() {
+    let total = 0;
+    const items = document.querySelectorAll('.item-row');
+    
+    items.forEach(item => {
+        const itemTotal = parseFloat(item.querySelector('td:nth-last-child(2)').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+        total += itemTotal;
+    });
+    
+    // Update the total in the footer
+    const totalRow = document.querySelector('tfoot .text-end');
+    if (totalRow) {
+        const currency = document.querySelector('#quotation-currency')?.value || '€';
+        totalRow.textContent = `${currency} ${total.toFixed(2)}`;
+    }
+}
+
+// Show toast notification
+function showToast(message, type) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.id = toastId;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Show the toast
+    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+    bsToast.show();
+    
+    // Remove it after it's hidden
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+
 // Confirmation for deleting items
 function confirmDelete(deleteUrl) {
     document.getElementById('confirmDeleteBtn').href = deleteUrl;
@@ -78,6 +263,32 @@ document.addEventListener('DOMContentLoaded', function() {
             getPriceSuggestion('edit_scientific_name', 'edit_pot_size', 'edit_selling_price');
         });
     }
+    
+    // Add highlight-row style if not already in stylesheet
+    if (!document.getElementById('highlight-style')) {
+        const style = document.createElement('style');
+        style.id = 'highlight-style';
+        style.textContent = `
+            .highlight-row {
+                animation: highlight-fade 2s;
+            }
+            @keyframes highlight-fade {
+                0% { background-color: rgba(255, 255, 0, 0.5); }
+                100% { background-color: transparent; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Add hidden input for currency
+    const currencyText = document.querySelector('.fw-bold .text-end')?.textContent || '';
+    const currencySymbol = currencyText.trim().split(' ')[0] || '€';
+    
+    const currencyInput = document.createElement('input');
+    currencyInput.type = 'hidden';
+    currencyInput.id = 'quotation-currency';
+    currencyInput.value = currencySymbol;
+    document.body.appendChild(currencyInput);
 });
 
 // Function to get price suggestions
@@ -87,12 +298,12 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
     const customerId = document.getElementById('customer-id').value;
     
     if (!scientificName) {
-        showPriceAssistantMessage("Please enter a scientific name first", "warning");
+        showToast("Please enter a scientific name first", "warning");
         return;
     }
     
     // Show loading indicator
-    showPriceAssistantMessage("Looking for historical prices...", "info");
+    showToast("Looking for historical prices...", "info");
     
     // Call the price assistant API
     fetch(`/api/price-assistant?scientific_name=${encodeURIComponent(scientificName)}&pot_size=${encodeURIComponent(potSize)}&customer_id=${customerId}`)
@@ -104,62 +315,22 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
         })
         .then(data => {
             if (data.error) {
-                showPriceAssistantMessage(data.error, "danger");
+                showToast(data.error, "danger");
                 return;
             }
             
             if (data.suggested_price) {
                 // Update the price field
                 document.getElementById(sellingPriceId).value = data.suggested_price;
-                showPriceAssistantMessage(`Price suggestion: ${data.suggested_price.toFixed(2)} € (based on ${data.source})`, "success");
+                showToast(`Price suggestion: ${data.suggested_price.toFixed(2)} € (based on ${data.source})`, "success");
             } else {
-                showPriceAssistantMessage("No historical price data found for this product", "warning");
+                showToast("No historical price data found for this product", "warning");
             }
         })
         .catch(error => {
             console.error('Error fetching price suggestions:', error);
-            showPriceAssistantMessage("Error retrieving price data: " + error.message, "danger");
+            showToast("Error retrieving price data: " + error.message, "danger");
         });
-}
-
-// Show a message to the user
-function showPriceAssistantMessage(message, type) {
-    // Create a Bootstrap toast notification
-    const toastId = 'priceAssistantToast';
-    let toast = document.getElementById(toastId);
-    
-    if (!toast) {
-        // Create toast container if it doesn't exist
-        toast = document.createElement('div');
-        toast.className = 'toast align-items-center text-white bg-' + type;
-        toast.id = toastId;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
-        toast.style.right = '20px';
-        toast.style.zIndex = '9999';
-        
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-    } else {
-        // Update existing toast
-        toast.className = 'toast align-items-center text-white bg-' + type;
-        toast.querySelector('.toast-body').textContent = message;
-    }
-    
-    // Show the toast
-    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
-    bsToast.show();
 }
 
 // Setup supplier dropdown functionality

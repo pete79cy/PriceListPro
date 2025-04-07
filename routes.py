@@ -2436,14 +2436,17 @@ def register_routes(app):
     @login_required
     @with_db_reconnect(max_retries=3)
     def edit_quotation_item(quotation_id, item_id):
-        """Edit an existing quotation item"""
+        """Edit an existing quotation item with AJAX support"""
         quotation = Quotation.query.get_or_404(quotation_id)
         item = QuotationItem.query.get_or_404(item_id)
         
         # Verify that the item belongs to this quotation
         if item.quotation_id != quotation.id:
-            flash('Item does not belong to this quotation!', 'danger')
-            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'Item does not belong to this quotation!'})
+            else:
+                flash('Item does not belong to this quotation!', 'danger')
+                return redirect(url_for('view_quotation', quotation_id=quotation_id))
             
         try:
             # Calculate old total to update quotation total
@@ -2543,13 +2546,42 @@ def register_routes(app):
             from utils.supplier_manager import update_supplier_from_quotation_item
             update_supplier_from_quotation_item(item)
             
-            flash('Item updated successfully!', 'success')
+            # If this is an AJAX request, return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'message': 'Item updated successfully!',
+                    'item': {
+                        'id': item.id,
+                        'description': item.description,
+                        'scientific_name': item.scientific_name or '',
+                        'pot_size': item.pot_size or '',
+                        'height': item.height or '',
+                        'quantity': item.quantity,
+                        'selling_price': item.selling_price,
+                        'vat_rate': item.vat_rate,
+                        'supplier': item.supplier or 'Not specified',
+                        'total': item.total,
+                        'position': item.position
+                    },
+                    'quotation_total': quotation.total_amount
+                })
+            else:
+                # Standard form submission (fallback)
+                flash('Item updated successfully!', 'success')
+                return redirect(url_for('view_quotation', quotation_id=quotation_id))
+                
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error updating quotation item: {str(e)}")
-            flash(f"Error updating item: {str(e)}", 'danger')
             
-        return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            # If this is an AJAX request, return JSON error
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': str(e)})
+            else:
+                # Standard form submission (fallback)
+                flash(f"Error updating item: {str(e)}", 'danger')
+                return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/reorder-items', methods=['POST'])
     @login_required
