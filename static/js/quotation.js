@@ -80,6 +80,14 @@ function setupAjaxFormSubmission() {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             submitBtn.disabled = true;
             
+            console.log("Submitting form to:", this.action);
+            // Convert formData to object for logging
+            const formDataObj = {};
+            for (let [key, value] of formData.entries()) {
+                formDataObj[key] = value;
+            }
+            console.log("Form data:", formDataObj);
+            
             fetch(this.action, {
                 method: 'POST',
                 body: formData,
@@ -87,31 +95,35 @@ function setupAjaxFormSubmission() {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            fetch(this.action, {
-                method: "POST",
-                body: formData,
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
+                console.log("Response status:", response.status);
+                const responseHeaders = {};
+                for (let [key, value] of response.headers.entries()) {
+                    responseHeaders[key] = value;
                 }
+                console.log("Response headers:", responseHeaders);
+                
+                if (!response.ok) {
+                    throw new Error("Network response was not ok: " + response.status);
+                }
+                
                 return response.text().then(text => {
                     try {
                         // Debug the actual response
-                        console.log("Server response:", text);
-                        return JSON.parse(text);
+                        console.log("Server response text:", text);
+                        console.log("Response text length:", text.length);
+                        if (text.length > 0) {
+                            const firstChar = text.charAt(0);
+                            const lastChar = text.charAt(text.length - 1);
+                            console.log("First character:", firstChar, "Last character:", lastChar);
+                        }
+                        
+                        const jsonResponse = JSON.parse(text);
+                        console.log("Parsed JSON response:", jsonResponse);
+                        return jsonResponse;
                     } catch (err) {
                         console.error("Error parsing JSON:", err, "Raw response:", text);
                         throw new Error("Error parsing server response. Please try again.");
-                    }
-                });
-            })
-                    } catch (err) {
-                        console.error('Error parsing JSON:', err, 'Raw response:', text);
-                        throw new Error('Error parsing server response. Please try again.');
                     }
                 });
             })
