@@ -6,6 +6,7 @@ from app import db
 from models import SupplierProduct, Supplier, QuotationItem
 from sqlalchemy import or_
 from utils.logger import logger
+from utils.db_utils import with_db_reconnect
 
 def search_supplier_products(query='', supplier_id=None, limit=100):
     """
@@ -102,6 +103,7 @@ def group_products_by_supplier(products):
     
     return result
 
+@with_db_reconnect(max_retries=3)
 def update_supplier_product_last_detected(product_id):
     """
     Update the last_detected timestamp for a supplier product.
@@ -127,6 +129,7 @@ def update_supplier_product_last_detected(product_id):
         logger.error(f"Error updating last_detected for supplier product ID {product_id}: {str(e)}")
         return False
 
+@with_db_reconnect(max_retries=3)
 def update_supplier_from_quotation_item(quotation_item):
     """
     Update or create a supplier product record based on a quotation item.

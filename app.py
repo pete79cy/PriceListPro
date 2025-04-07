@@ -46,11 +46,19 @@ app.secret_key = os.environ.get("SESSION_SECRET")
 # Configure the database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
+    "pool_recycle": 300,  # Recycle connections after 5 minutes
+    "pool_pre_ping": True,  # Verify connection before use to prevent stale connections
+    "pool_size": 10,  # Maximum number of persistent connections
+    "max_overflow": 20,  # Maximum number of connections above pool_size
+    "pool_timeout": 30,  # Seconds to wait for a connection from the pool
     "connect_args": {
         "client_encoding": "utf8",
-        "options": "-c client_encoding=utf8 -c standard_conforming_strings=on"
+        "options": "-c client_encoding=utf8 -c standard_conforming_strings=on",
+        "connect_timeout": 10,  # Connection timeout in seconds
+        "keepalives": 1,  # Enable keepalives
+        "keepalives_idle": 60,  # Seconds between keepalives
+        "keepalives_interval": 10,  # Seconds between keepalive probes
+        "keepalives_count": 3  # Number of keepalive probes before considering connection dead
     },
 }
 

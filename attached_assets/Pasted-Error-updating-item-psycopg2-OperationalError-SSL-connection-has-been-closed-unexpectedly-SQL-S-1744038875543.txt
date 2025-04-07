@@ -1,0 +1,66 @@
+Error updating item: (psycopg2.OperationalError) SSL connection has been closed unexpectedly [SQL: SELECT product.id AS product_id, product.name AS product_name, product.category AS product_category, product.scientific_name AS product_scientific_name, product.pot AS product_pot, product.sku AS product_sku, product.description AS product_description, product.created_at AS product_created_at, product.updated_at AS product_updated_at FROM product WHERE lower(product.scientific_name) = %(lower_1)s AND lower(product.pot) = %(lower_2)s LIMIT %(param_1)s] [parameters: {'lower_1': 'archontophoenix alexandrae', 'lower_2': '120cm', 'param_1': 1}] (Background on this error at: https://sqlalche.me/e/20/e3q8) 
+ChatGPT said:
+
+You're hitting a PostgreSQL SSL connection closed unexpectedly error:
+
+(psycopg2.OperationalError) SSL connection has been closed unexpectedly
+
+This is not a SQL syntax error, but a database connectivity issue.
+✅ Likely Causes
+
+    Database connection dropped unexpectedly
+
+        Server restart
+
+        Network blip
+
+        Long-lived connection killed by DB server
+
+    Connection pool exhausted (too many sessions)
+
+    SSL misconfig (less likely if it usually works)
+
+✅ Immediate Fix (Code Side)
+
+Make sure SQLAlchemy connections are:
+
+    pooled properly
+
+    disposed on failure
+
+Add a reconnect wrapper using engine.dispose() on failure.
+
+Example:
+
+from sqlalchemy.exc import OperationalError
+
+try:
+    result = db.session.execute(...)
+except OperationalError as e:
+    db.engine.dispose()
+    flash("Database connection reset. Please try again.", "danger")
+
+✅ Recommended: Configure SQLAlchemy Engine
+
+When creating engine/session:
+
+from sqlalchemy import create_engine
+from sqlalchemy.pool import QueuePool
+
+engine = create_engine(
+    'your-db-url',
+    poolclass=QueuePool,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_recycle=1800  # close idle connections
+)
+
+Also apply in app.config['SQLALCHEMY_ENGINE_OPTIONS'].
+✅ Final Checks
+
+    Check your PostgreSQL logs (timeouts, crashes, or SSL disconnects).
+
+    Monitor connections: SELECT * FROM pg_stat_activity;
+
+    Ensure PostgreSQL max_connections is not exceeded.
