@@ -103,6 +103,16 @@ with app.app_context():
     # Register error handlers
     register_error_handlers(app)
     
+    # Check OpenAI API health
+    try:
+        from services.openai_utils import openai_health_check
+        if not openai_health_check():
+            logger.warning("⚠️ OpenAI API is not healthy.")
+        else:
+            logger.info("✅ OpenAI API check successful.")
+    except ImportError as e:
+        logger.warning(f"OpenAI health check could not be performed: {str(e)}")
+    
     # Import and register routes
     from routes import register_routes
     register_routes(app)
