@@ -2136,6 +2136,32 @@ def register_routes(app):
             flash(f"Error generating PDF: {str(e)}", 'danger')
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
             
+    @app.route('/quotation/<int:quotation_id>/export/excel')
+    @login_required
+    def export_quotation_excel(quotation_id):
+        """Export a quotation as Excel (.xlsx) file"""
+        from utils.excel_generator import generate_quotation_excel
+        
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Generate the Excel file
+            file_path = generate_quotation_excel(quotation, app.config['UPLOAD_FOLDER'])
+            
+            # Send the file to the client
+            return send_from_directory(
+                directory=app.config['UPLOAD_FOLDER'],
+                path=os.path.basename(file_path),
+                as_attachment=True,
+                download_name=f"{quotation.quotation_number}_quotation.xlsx"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error exporting Excel: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating Excel file: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            
     @app.route('/quotation/<int:quotation_id>/export/modern')
     @login_required
     def export_quotation_modern(quotation_id):
