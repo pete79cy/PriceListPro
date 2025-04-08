@@ -1,0 +1,111 @@
+Detailed Prompt for Replit AI Agent:
+
+    You're working on a Flask-based backend for detecting and analyzing duplicate supplier products using OpenAI. The goal is to harden the analyze_supplier_duplicates API route, add startup diagnostics for OpenAI integration, and provide a /healthcheck endpoint.
+
+    Please apply the following detailed modifications and additions to the project:
+    ✅ Step 1: Update /analyze_supplier_duplicates/<supplier_id> Route in routes.py
+
+    Replace the current route logic with:
+
+        OpenAI Key Validation:
+
+            At the start of the route, check if OPENAI_API_KEY exists in environment variables.
+
+            If not set, log a warning and return HTTP 400 with JSON: { "error": "OpenAI API key not configured" }.
+
+        Parse Query Parameters Safely:
+
+            Accept threshold as an optional float query parameter (default = 0.9).
+
+            Validate and safely cast to float. On failure, return HTTP 400 with JSON: { "error": "Invalid similarity threshold" }.
+
+        Try-Catch Logic:
+
+            Wrap the entire route in a try block.
+
+            Catch and log:
+
+                Threshold parsing errors (ValueError)
+
+                Unexpected exceptions (use logger.exception(...))
+
+            For generic errors, return HTTP 500 with { "error": "Internal server error" }.
+
+        Duplicate Detection and AI Analysis:
+
+            Use find_supplier_duplicates(supplier_id, threshold)
+
+            If no duplicates found, return HTTP 200 with { "message": "No duplicates found", "duplicates": [] }.
+
+            Otherwise, run ask_openai_for_resolution(duplicates)
+
+            Return results as:
+
+        {
+          "supplier_id": <int>,
+          "threshold": <float>,
+          "results": [<ai_analysis_results>]
+        }
+
+✅ Step 2: Add Health Check Logic in services/openai_utils.py
+
+Create a new file services/openai_utils.py with this function:
+
+import os
+from openai import OpenAI
+from utils.logger import logger
+
+def openai_health_check() -> bool:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logger.warning("OpenAI API key is missing.")
+        return False
+
+    try:
+        client = OpenAI(api_key=api_key, timeout=10.0)
+        models = client.models.list()
+        logger.info(f"✅ OpenAI health check passed. {len(models.data)} models available.")
+        return True
+    except Exception as e:
+        logger.error(f"❌ OpenAI health check failed: {str(e)}")
+        return False
+
+✅ Step 3: Integrate Health Check in app/__init__.py
+
+In your app initialization logic (create_app() or similar), import and call the health check:
+
+from services.openai_utils import openai_health_check
+
+def create_app():
+    app = Flask(__name__)
+    # other setup...
+
+    if not openai_health_check():
+        logger.warning("⚠️ OpenAI API is not healthy.")
+    else:
+        logger.info("✅ OpenAI API check successful.")
+
+    return app
+
+✅ Step 4: Add a New /healthcheck Route in routes.py
+
+In the same Blueprint, add a new route:
+
+@bp.route('/healthcheck', methods=['GET'])
+def healthcheck():
+    from services.openai_utils import openai_health_check
+    return jsonify({ "openai_healthy": openai_health_check() }), 200
+
+🧪 Notes:
+
+    All new code should reuse the logger already in use.
+
+    Ensure all changes use Flask-compatible imports.
+
+    Maintain consistent naming and code style (snake_case, 2-space indents if existing).
+
+    All HTTP responses must use proper status codes and return application/json.
+
+    Your changes must not break existing imports or route registration.
+
+Do not remove or alter existing logic unless explicitly stated above.
