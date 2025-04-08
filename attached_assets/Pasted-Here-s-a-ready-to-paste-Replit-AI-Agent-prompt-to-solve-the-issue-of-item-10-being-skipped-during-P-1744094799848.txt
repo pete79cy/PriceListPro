@@ -1,0 +1,102 @@
+Here’s a ready-to-paste Replit AI Agent prompt to solve the issue of item #10 being skipped during PDF generation, complete with the enhanced debug-friendly generate_quotation_pdf() function and required Jinja2 adjustments:
+
+⸻
+
+Replit AI Agent Prompt
+
+I'm using Flask + Jinja2 + WeasyPrint to generate quotation PDFs. One specific item (item #10) consistently fails to render correctly across a page break, even though it's present in the data and total calculations.
+
+**Context:**
+- PDF generator function: `generate_quotation_pdf()`
+- Template: `templates/pdf/modern_quotation_template.html`
+- Renderer: WeasyPrint
+- Table rows are rendered in a `{% for item in quotation.items %}` loop.
+
+I want you to debug this and provide bulletproof rendering of all items — including those at page breaks — and visually mark item #10 when debug mode is active.
+
+---
+
+**Here is the improved `generate_quotation_pdf()` function with debug mode:**
+
+```python
+import os
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
+
+def generate_quotation_pdf(quotation, upload_folder, use_modern_template=False, debug=False):
+    env = Environment(loader=FileSystemLoader('templates/pdf'))
+    template_name = 'modern_quotation_template.html' if use_modern_template else 'quotation_template.html'
+    template = env.get_template(template_name)
+
+    print(f"\nGenerating PDF for Quotation #{quotation.quotation_number}")
+    for i, item in enumerate(quotation.items, 1):
+        print(f"Item {i}: {item.description} | Qty: {item.quantity}")
+
+    debug_styles = """
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        page-break-inside: auto;
+      }
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      th, td {
+        border: 1px solid black;
+        padding: 6px;
+        text-align: left;
+        vertical-align: top;
+      }
+      tr.debug-row-10 {
+        background-color: yellow;
+        border: 2px solid red;
+      }
+    </style>
+    """ if debug else ""
+
+    rendered_html = template.render(
+        quotation=quotation,
+        debug_styles=debug_styles,
+    )
+
+    output_filename = f"{quotation.quotation_number}_quotation.pdf"
+    pdf_file = os.path.join(upload_folder, output_filename)
+
+    HTML(string=rendered_html).write_pdf(pdf_file)
+    print(f"PDF saved to: {pdf_file}")
+    return pdf_file
+
+
+
+⸻
+
+Changes needed in the template (modern_quotation_template.html):
+
+In the <head> of the HTML file, insert:
+
+{{ debug_styles | safe }}
+
+In the item loop:
+
+<tr class="{% if loop.index == 10 %}debug-row-10{% endif %}">
+  <td>{{ loop.index }}</td>
+  <td>{{ item.description }}</td>
+  ...
+</tr>
+
+
+
+⸻
+
+What I want from you:
+	1.	Verify this implementation is WeasyPrint-safe and will never skip any table rows at page breaks.
+	2.	Improve the CSS or Jinja2 logic if needed to handle pagination across multiple pages cleanly.
+	3.	Optional: provide a better way to tag or highlight any row by item ID or loop index when debugging PDF output.
+
+Please fix and finalize this so no more items are skipped visually in the PDF output.
+
+---
+
+Let me know if you want a version tailored for Copilot, Claude, or ChatGPT.
