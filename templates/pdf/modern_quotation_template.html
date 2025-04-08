@@ -81,6 +81,9 @@
         thead {
             display: table-header-group;
         }
+        tbody tr {
+            page-break-inside: avoid; /* Prevent row breaks across pages */
+        }
         th {
             background-color: #3498db;
             color: white;
@@ -94,6 +97,8 @@
             padding: 0.25cm 0.3cm;
             border-bottom: 1px solid #e1e1e1;
             font-size: 10pt;
+            word-break: break-word; /* Allow long words to break */
+            overflow-wrap: break-word;
         }
         tbody tr:nth-child(odd) {
             background-color: #f8f9fa;
@@ -247,7 +252,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in items|sort(attribute="position") %}
+            {% for item in quotation.items %}
             <tr>
                 <td class="text-center">{{ loop.index }}</td>
                 <td>{{ item.description }}</td>
