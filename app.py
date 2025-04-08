@@ -1,7 +1,9 @@
 import os
 import logging
+import traceback
 
-from flask import Flask
+from flask import Flask, request
+from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
@@ -71,6 +73,17 @@ os.makedirs(app.config['TEMPLATES_FOLDER'], exist_ok=True)
 
 # Initialize the app with the extension
 db.init_app(app)
+
+# Add custom Jinja2 filters
+def nl2br(value):
+    """Convert newlines to <br> tags for display in HTML"""
+    if not value:
+        return ""
+    # Convert newlines to <br> and mark as safe HTML
+    result = value.replace('\n', '<br>\n')
+    return Markup(result)
+
+app.jinja_env.filters['nl2br'] = nl2br
 
 # Setup Flask-Login
 login_manager = LoginManager()

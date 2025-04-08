@@ -3492,64 +3492,77 @@ def register_routes(app):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             logger.warning("OpenAI API key not configured for duplicate analysis")
-            return jsonify({"error": "OpenAI API key not configured"}), 400
+            flash('OpenAI API key is not configured. Please configure it in AI Settings.', 'warning')
+            return redirect(url_for('ai_settings'))
         
         try:
-            # Parse query parameters safely
-            try:
-                threshold = float(request.args.get('threshold', 0.9))
-                if not (0 < threshold <= 1):
-                    raise ValueError("Threshold must be between 0 and 1")
-            except ValueError as e:
-                logger.error(f"Invalid similarity threshold: {str(e)}")
-                return jsonify({"error": "Invalid similarity threshold"}), 400
+            # Get threshold from form or use default if not provided
+            threshold = float(request.form.get('threshold', 0.9))
+            if not (0 < threshold <= 1):
+                flash('Threshold must be between 0 and 1', 'warning')
+                return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
             
             # Convert supplier_id to integer if needed
             try:
                 supplier_id = int(supplier_id)
             except ValueError:
                 logger.error(f"Invalid supplier ID: {supplier_id}")
-                return jsonify({"error": "Invalid supplier ID"}), 400
+                flash('Invalid supplier ID', 'danger')
+                return redirect(url_for('supplier_duplicates'))
             
             # Find potential duplicates
             duplicate_pairs = find_supplier_duplicates(supplier_id, threshold)
             
             if not duplicate_pairs:
-                return jsonify({
-                    "message": "No duplicates found",
-                    "duplicates": []
-                }), 200
+                flash('No potential duplicates found for this supplier with the current threshold.', 'info')
+                return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
             
             # Analyze duplicates with OpenAI
             analysis_results = ask_openai_for_resolution(duplicate_pairs)
             
-            # Format and return results
-            return jsonify({
-                "supplier_id": supplier_id,
-                "threshold": threshold,
-                "results": [
-                    {
-                        'pair': result['pair'],
-                        'product1': {
-                            'id': result['product1'].id,
-                            'name': result['product1'].product_name,
-                            'scientific_name': result['product1'].scientific_name
-                        },
-                        'product2': {
-                            'id': result['product2'].id,
-                            'name': result['product2'].product_name,
-                            'scientific_name': result['product2'].scientific_name
-                        },
-                        'suggestion': result['suggestion'],
-                        'is_duplicate': result['is_duplicate']
-                    }
-                    for result in analysis_results
-                ]
-            }), 200
+            if not analysis_results:
+                flash('Failed to analyze duplicates. Please try again.', 'warning')
+                return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
+            
+            # Convert analysis results to a serializable format
+            serializable_results = []
+            for result in analysis_results:
+                # Create a serializable version of each result
+                serializable_result = {
+                    'pair': result['pair'],
+                    'product1': {
+                        'id': result['product1'].id,
+                        'name': result['product1'].product_name,
+                        'scientific_name': result['product1'].scientific_name,
+                        'pot_size': result['product1'].pot_size,
+                        'height': result['product1'].height,
+                        'price': result['product1'].price,
+                        'cost_price': result['product1'].cost_price
+                    },
+                    'product2': {
+                        'id': result['product2'].id,
+                        'name': result['product2'].product_name,
+                        'scientific_name': result['product2'].scientific_name,
+                        'pot_size': result['product2'].pot_size,
+                        'height': result['product2'].height,
+                        'price': result['product2'].price,
+                        'cost_price': result['product2'].cost_price
+                    },
+                    'suggestion': result['suggestion'],
+                    'is_duplicate': result['is_duplicate']
+                }
+                serializable_results.append(serializable_result)
+            
+            # Store serializable results in session for the results page
+            session['duplicate_analysis'] = serializable_results
+            
+            # Redirect to results page
+            return redirect(url_for('supplier_duplicate_results', supplier_id=supplier_id))
             
         except Exception as e:
             logger.exception(f"Error analyzing supplier duplicates: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500
+            flash(f'Error analyzing duplicates: {str(e)}', 'danger')
+            return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
     
     @app.route('/supplier_duplicate_results/<int:supplier_id>')
     @login_required

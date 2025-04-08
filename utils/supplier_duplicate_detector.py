@@ -283,7 +283,7 @@ def flag_duplicate_products(duplicates_data: List[Dict[str, Any]]) -> Dict[str, 
     Flag products as duplicates in the database.
     
     Args:
-        duplicates_data: List of dictionaries with duplicate pair information
+        duplicates_data: List of dictionaries with duplicate pair information from session storage.
         
     Returns:
         dict: Result summary with success and error counts
@@ -304,8 +304,14 @@ def flag_duplicate_products(duplicates_data: List[Dict[str, Any]]) -> Dict[str, 
     # Flag each duplicate pair
     for duplicate_data in duplicates_data:
         try:
-            # Extract product IDs
-            product1_id, product2_id = duplicate_data["pair"]
+            # For serialized data from session storage, we need to extract from the product dictionaries
+            if 'product1' in duplicate_data and 'product2' in duplicate_data and isinstance(duplicate_data['product1'], dict):
+                # We're dealing with serialized product data from session
+                product1_id = duplicate_data['product1']['id']
+                product2_id = duplicate_data['product2']['id']
+            else:
+                # Extract product IDs from the pair tuple
+                product1_id, product2_id = duplicate_data["pair"]
             
             # Get the products
             product1 = SupplierProduct.query.get(product1_id)
@@ -316,9 +322,21 @@ def flag_duplicate_products(duplicates_data: List[Dict[str, Any]]) -> Dict[str, 
                 logger.warning(f"Could not find products with IDs {product1_id} and/or {product2_id}")
                 continue
             
-            # Flag both products
+            # Flag both products as being duplicates
             product1.flagged_duplicate = True
             product2.flagged_duplicate = True
+            
+            # If the analysis indicates this is a duplicate, mark it as such
+            if duplicate_data.get('is_duplicate') == True:
+                # Mark second product as duplicate of first
+                # We're choosing product1 as the "canonical" version
+                product2.is_duplicate = True 
+                product2.duplicate_of_id = product1.id
+                product2.duplicate_notes = f"Flagged as duplicate of {product1.product_name} by AI analysis"
+                
+                # Add the AI suggestion as a note
+                if duplicate_data.get('suggestion'):
+                    product2.notes = (product2.notes or '') + f"\n\nAI Duplicate Analysis:\n{duplicate_data['suggestion']}"
             
             # Add to results
             results["success_count"] += 2
@@ -326,7 +344,7 @@ def flag_duplicate_products(duplicates_data: List[Dict[str, Any]]) -> Dict[str, 
             
         except Exception as e:
             results["error_count"] += 1
-            logger.error(f"Error flagging duplicate products {duplicate_data['pair']}: {str(e)}")
+            logger.error(f"Error flagging duplicate products: {str(e)}")
     
     # Commit changes
     try:
