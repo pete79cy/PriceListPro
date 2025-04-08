@@ -324,17 +324,17 @@ def generate_quotation_excel(quotation, output_folder):
     
     row += 2
     
-    # Terms and conditions (optional)
-    if quotation.terms_conditions:
+    # Notes section (optional) - using the correct field from the Quotation model
+    if hasattr(quotation, 'notes') and quotation.notes:
         ws.merge_cells(f'A{row}:J{row}')
-        ws[f'A{row}'] = "TERMS AND CONDITIONS"
+        ws[f'A{row}'] = "NOTES"
         ws[f'A{row}'].font = header_font
         ws[f'A{row}'].fill = header_fill
         
         row += 1
         
         ws.merge_cells(f'A{row}:J{row+3}')
-        ws[f'A{row}'] = quotation.terms_conditions
+        ws[f'A{row}'] = quotation.notes
         ws[f'A{row}'].font = regular_font
         ws[f'A{row}'].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
     
