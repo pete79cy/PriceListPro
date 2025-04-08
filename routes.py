@@ -2139,14 +2139,38 @@ def register_routes(app):
     @app.route('/quotation/<int:quotation_id>/export/excel')
     @login_required
     def export_quotation_excel(quotation_id):
-        """Export a quotation as Excel (.xlsx) file"""
+        """Export a quotation as Excel (.xlsx) file with optional column selection"""
         from utils.excel_generator import generate_quotation_excel
         
         quotation = Quotation.query.get_or_404(quotation_id)
         
+        # Map of supported fields
+        all_fields = {
+            "index": "#",
+            "description": "Description",
+            "scientific_name": "Scientific Name",
+            "pot_size": "Actual Size",
+            "height": "Asked Size",
+            "quantity": "Quantity",
+            "unit_price": "Unit Price",
+            "vat_rate": "VAT Rate",
+            "supplier": "Supplier",
+            "total_price": "Total"
+        }
+        
+        # Get selected fields from GET parameters
+        selected_keys = request.args.getlist("columns") or list(all_fields.keys())
+        
+        # Prepare field config
+        selected_fields = [{"key": k, "label": all_fields[k]} for k in selected_keys if k in all_fields]
+        
         try:
-            # Generate the Excel file
-            file_path = generate_quotation_excel(quotation, app.config['UPLOAD_FOLDER'])
+            # Generate the Excel file with selected columns
+            file_path = generate_quotation_excel(
+                quotation, 
+                app.config['UPLOAD_FOLDER'],
+                columns=selected_fields
+            )
             
             # Send the file to the client
             return send_from_directory(
