@@ -186,7 +186,13 @@ def generate_enhanced_pdf(quotation, upload_folder, use_modern_template=False, d
             stylesheets=[CSS(string=css_string)]
         )
         
-        logger.info(f"Enhanced PDF generated successfully: {output_path}")
+        # Validation: Log that all items were included
+        expected_item_count = len(quotation.items)
+        logger.info(f"PDF validation: Expected {expected_item_count} items, processed {len(enhanced_items)} items")
+        if expected_item_count != len(enhanced_items):
+            logger.warning(f"Item count mismatch! Expected {expected_item_count} but processed {len(enhanced_items)}")
+        
+        logger.info(f"Enhanced PDF generated successfully: {output_path} for quotation {quotation.quotation_number}")
         return output_path
         
     except Exception as e:
