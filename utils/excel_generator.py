@@ -9,6 +9,7 @@ import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+from models import CompanySettings
 
 def generate_quotation_excel(quotation, output_folder):
     """
@@ -21,6 +22,10 @@ def generate_quotation_excel(quotation, output_folder):
     Returns:
         str: The path to the generated Excel file
     """
+    # Get company information from CompanySettings
+    company = CompanySettings.query.first()
+    if not company:
+        company = CompanySettings()  # Use default values if no settings exist
     # Create a new workbook and select the active worksheet
     wb = Workbook()
     ws = wb.active
@@ -80,11 +85,11 @@ def generate_quotation_excel(quotation, output_folder):
     
     # Company details
     company_data = [
-        ("Company:", "Your Company Name"),
-        ("Address:", "Company Address"),
-        ("Phone:", "Company Phone"),
-        ("Email:", "Company Email"),
-        ("Website:", "Company Website")
+        ("Company:", company.name or "Your Company Name"),
+        ("Address Line 1:", company.address_line1 or "Company Address"),
+        ("Address Line 2:", company.address_line2 or ""),
+        ("Phone:", company.phone or "Company Phone"),
+        ("Email:", company.email or "Company Email")
     ]
     
     # Customer details
