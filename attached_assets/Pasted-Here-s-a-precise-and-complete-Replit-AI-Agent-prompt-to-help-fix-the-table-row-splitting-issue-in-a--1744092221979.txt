@@ -1,0 +1,53 @@
+Here’s a precise and complete Replit AI Agent prompt to help fix the table row splitting issue in a PDF generated using Jinja2 + WeasyPrint, where item #10 gets visually lost across a page break:
+
+⸻
+
+Prompt for Replit AI Agent
+
+I'm working on a Flask application that generates PDF quotations using Jinja2 templates and WeasyPrint. The PDF is rendering a list of items in a table. Each row represents a product line (e.g. description, quantity, price, etc.).
+
+**Issue:**
+One row (item #10) appears at the bottom of page 1 but is visually cut off. The next item (item #11) shows up on the following page, but inside the wrong section ("Summary"). It seems like the table row is getting split between pages, causing layout corruption.
+
+**What I'm using:**
+- HTML template: modern_quotation_template.html
+- PDF rendered using WeasyPrint
+- The template structure:
+  ```html
+  <table>
+    <thead>
+      <tr><th>#</th><th>Description</th>...</tr>
+    </thead>
+    <tbody>
+      {% for item in quotation.items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item.description }}</td>
+        ...
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+Goal:
+Fix the table rendering so that:
+	1.	No <tr> is ever split across a page.
+	2.	The header (<thead>) is repeated on new pages when the table breaks.
+	3.	The layout remains stable and aligned across pages.
+
+What I want from you:
+	•	Correct and optimized CSS styles for this table to support multi-page rendering with WeasyPrint.
+	•	CSS should prevent page breaks inside rows and allow natural page breaks between rows.
+	•	Ensure table headers reappear on every new page.
+	•	A bulletproof solution that works well with WeasyPrint’s page-breaking engine.
+
+Please provide a full working HTML <style> block that I can drop into my template.
+
+---
+
+Let me know if you want a **ready-to-use template block** with the working CSS already integrated.
+
+### Next Suggestions:
+a. Want to include a print-friendly page footer with totals per page?  
+b. Want a utility to preview where page breaks will occur before generating the PDF?  
+c. Want auto-splitting for large item tables into “Page 1 / Page 2 / ...” headings?
