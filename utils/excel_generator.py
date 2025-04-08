@@ -11,13 +11,15 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from models import CompanySettings
 
-def generate_quotation_excel(quotation, output_folder):
+def generate_quotation_excel(quotation, output_folder, columns=None):
     """
     Generate an Excel file from a quotation.
     
     Args:
         quotation: The Quotation object to export
         output_folder: The folder where the Excel file will be saved
+        columns: Optional list of column configurations to include. Each item
+                 should be a dict with 'key' and 'label' keys.
         
     Returns:
         str: The path to the generated Excel file
@@ -26,6 +28,21 @@ def generate_quotation_excel(quotation, output_folder):
     company = CompanySettings.query.first()
     if not company:
         company = CompanySettings()  # Use default values if no settings exist
+        
+    # Define default column configuration if not provided
+    if columns is None:
+        columns = [
+            {"key": "index", "label": "#"},
+            {"key": "description", "label": "Description"},
+            {"key": "scientific_name", "label": "Scientific Name"},
+            {"key": "pot_size", "label": "Actual Size"},
+            {"key": "height", "label": "Asked Size"},
+            {"key": "quantity", "label": "Quantity"},
+            {"key": "unit_price", "label": "Unit Price"},
+            {"key": "vat_rate", "label": "VAT Rate"},
+            {"key": "supplier", "label": "Supplier"},
+            {"key": "total_price", "label": "Total"}
+        ]
     # Create a new workbook and select the active worksheet
     wb = Workbook()
     ws = wb.active
@@ -158,12 +175,60 @@ def generate_quotation_excel(quotation, output_folder):
     row += 2
     
     # ITEMS TABLE
-    # Table headers
-    headers = [
-        "#", "Description", "Scientific Name", "Pot Size", "Height",
-        "Quantity", f"Unit Price ({quotation.currency})", "VAT Rate (%)", "Supplier", f"Total ({quotation.currency})"
-    ]
+    # Table headers based on selected columns
+    headers = []
+    column_keys = []
     
+    # Map column keys to their data extraction methods
+    column_data_map = {
+        "index": lambda item, i: i,
+        "description": lambda item, i: item.description,
+        "scientific_name": lambda item, i: item.scientific_name,
+        "pot_size": lambda item, i: item.pot_size,
+        "height": lambda item, i: item.height,
+        "quantity": lambda item, i: item.quantity,
+        "unit_price": lambda item, i: item.selling_price,
+        "vat_rate": lambda item, i: item.vat_rate,
+        "supplier": lambda item, i: item.supplier,
+        "total_price": lambda item, i: item.quantity * item.selling_price
+    }
+    
+    # Format map for special number formatting
+    format_map = {
+        "unit_price": "#,##0.00",
+        "vat_rate": "0.0",
+        "total_price": "#,##0.00"
+    }
+    
+    # Alignment map for columns
+    alignment_map = {
+        "index": center_align,
+        "description": left_align,
+        "scientific_name": left_align,
+        "pot_size": center_align,
+        "height": center_align,
+        "quantity": center_align,
+        "unit_price": right_align,
+        "vat_rate": center_align,
+        "supplier": left_align,
+        "total_price": right_align
+    }
+    
+    # Build the column headers and keys
+    for col_config in columns:
+        key = col_config["key"]
+        label = col_config["label"]
+        
+        # Add currency symbol to price columns
+        if key == "unit_price":
+            label = f"{label} ({quotation.currency})"
+        elif key == "total_price":
+            label = f"{label} ({quotation.currency})"
+            
+        headers.append(label)
+        column_keys.append(key)
+    
+    # Write headers to the worksheet
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=row, column=col)
         cell.value = header
@@ -179,114 +244,74 @@ def generate_quotation_excel(quotation, output_folder):
     subtotal = 0
     
     # Table rows - sorted by position
-    for i, item in enumerate(sorted(quotation.items, key=lambda x: x.position or 0), 1):
-        col = 1
-        
-        # Item number
-        cell = ws.cell(row=row, column=col)
-        cell.value = i
-        cell.font = regular_font
-        cell.alignment = center_align
-        cell.border = thin_border
-        col += 1
-        
-        # Description
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.description
-        cell.font = regular_font
-        cell.alignment = left_align
-        cell.border = thin_border
-        col += 1
-        
-        # Scientific name
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.scientific_name
-        cell.font = regular_font
-        cell.alignment = left_align
-        cell.border = thin_border
-        col += 1
-        
-        # Pot size
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.pot_size
-        cell.font = regular_font
-        cell.alignment = center_align
-        cell.border = thin_border
-        col += 1
-        
-        # Height
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.height
-        cell.font = regular_font
-        cell.alignment = center_align
-        cell.border = thin_border
-        col += 1
-        
-        # Quantity
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.quantity
-        cell.font = regular_font
-        cell.alignment = center_align
-        cell.border = thin_border
-        col += 1
-        
-        # Unit price
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.selling_price
-        cell.font = regular_font
-        cell.alignment = right_align
-        cell.border = thin_border
-        cell.number_format = '#,##0.00'
-        col += 1
-        
-        # VAT rate
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.vat_rate
-        cell.font = regular_font
-        cell.alignment = center_align
-        cell.border = thin_border
-        cell.number_format = '0.0'
-        col += 1
-        
-        # Supplier
-        cell = ws.cell(row=row, column=col)
-        cell.value = item.supplier
-        cell.font = regular_font
-        cell.alignment = left_align
-        cell.border = thin_border
-        col += 1
-        
-        # Total
+    items = sorted(quotation.items, key=lambda x: x.position or 0)
+    for i, item in enumerate(items, 1):
+        # Calculate item total (needed for VAT calculations)
         item_total = item.quantity * item.selling_price
         subtotal += item_total
         
+        # Record VAT information
         vat_rate = item.vat_rate
         if vat_rate not in vat_totals:
             vat_totals[vat_rate] = 0
         vat_totals[vat_rate] += item_total
         
-        cell = ws.cell(row=row, column=col)
-        cell.value = item_total
-        cell.font = regular_font
-        cell.alignment = right_align
-        cell.border = thin_border
-        cell.number_format = '#,##0.00'
+        # Write selected columns to the row
+        for col_idx, key in enumerate(column_keys, 1):
+            if key in column_data_map:
+                # Get the cell value using the mapping function
+                cell_value = column_data_map[key](item, i)
+                
+                # Write to the cell
+                cell = ws.cell(row=row, column=col_idx)
+                cell.value = cell_value
+                cell.font = regular_font
+                
+                # Apply specific alignment
+                if key in alignment_map:
+                    cell.alignment = alignment_map[key]
+                else:
+                    cell.alignment = left_align
+                
+                # Apply border
+                cell.border = thin_border
+                
+                # Apply number format if needed
+                if key in format_map:
+                    cell.number_format = format_map[key]
         
         row += 1
     
     # SUMMARY SECTION
+    # Get the number of columns and their letters
+    column_count = len(column_keys)
+    if column_count == 0:
+        column_count = 1  # Ensure at least one column
+    
+    last_column_letter = get_column_letter(column_count)
+    total_column_letter = last_column_letter
+    
+    # If there's room for a summary column, add it
+    if column_count > 1:
+        # Use the last column for totals
+        label_column_end = get_column_letter(column_count - 1)
+    else:
+        # If only one column, split it for label and value
+        label_column_end = last_column_letter
+        total_column_letter = last_column_letter
+    
     # Subtotal
-    ws.merge_cells(f'A{row}:I{row}')
+    ws.merge_cells(f'A{row}:{label_column_end}{row}')
     ws[f'A{row}'] = "Subtotal:"
     ws[f'A{row}'].font = header_font
     ws[f'A{row}'].alignment = right_align
     ws[f'A{row}'].border = thin_border
     
-    ws[f'J{row}'] = subtotal
-    ws[f'J{row}'].font = header_font
-    ws[f'J{row}'].alignment = right_align
-    ws[f'J{row}'].border = thin_border
-    ws[f'J{row}'].number_format = '#,##0.00'
+    ws[f'{total_column_letter}{row}'] = subtotal
+    ws[f'{total_column_letter}{row}'].font = header_font
+    ws[f'{total_column_letter}{row}'].alignment = right_align
+    ws[f'{total_column_letter}{row}'].border = thin_border
+    ws[f'{total_column_letter}{row}'].number_format = '#,##0.00'
     
     row += 1
     
@@ -296,49 +321,52 @@ def generate_quotation_excel(quotation, output_folder):
         vat_value = vat_amount * (vat_rate / 100)
         grand_total += vat_value
         
-        ws.merge_cells(f'A{row}:I{row}')
+        ws.merge_cells(f'A{row}:{label_column_end}{row}')
         ws[f'A{row}'] = f"VAT {vat_rate}%:"
         ws[f'A{row}'].font = header_font
         ws[f'A{row}'].alignment = right_align
         ws[f'A{row}'].border = thin_border
         
-        ws[f'J{row}'] = vat_value
-        ws[f'J{row}'].font = header_font
-        ws[f'J{row}'].alignment = right_align
-        ws[f'J{row}'].border = thin_border
-        ws[f'J{row}'].number_format = '#,##0.00'
+        ws[f'{total_column_letter}{row}'] = vat_value
+        ws[f'{total_column_letter}{row}'].font = header_font
+        ws[f'{total_column_letter}{row}'].alignment = right_align
+        ws[f'{total_column_letter}{row}'].border = thin_border
+        ws[f'{total_column_letter}{row}'].number_format = '#,##0.00'
         
         row += 1
     
     # Grand total
     total_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
     
-    ws.merge_cells(f'A{row}:I{row}')
+    ws.merge_cells(f'A{row}:{label_column_end}{row}')
     ws[f'A{row}'] = f"TOTAL ({quotation.currency}):"
     ws[f'A{row}'].font = title_font
     ws[f'A{row}'].alignment = right_align
     ws[f'A{row}'].border = thin_border
     ws[f'A{row}'].fill = total_fill
     
-    ws[f'J{row}'] = grand_total
-    ws[f'J{row}'].font = title_font
-    ws[f'J{row}'].alignment = right_align
-    ws[f'J{row}'].border = thin_border
-    ws[f'J{row}'].fill = total_fill
-    ws[f'J{row}'].number_format = '#,##0.00'
+    ws[f'{total_column_letter}{row}'] = grand_total
+    ws[f'{total_column_letter}{row}'].font = title_font
+    ws[f'{total_column_letter}{row}'].alignment = right_align
+    ws[f'{total_column_letter}{row}'].border = thin_border
+    ws[f'{total_column_letter}{row}'].fill = total_fill
+    ws[f'{total_column_letter}{row}'].number_format = '#,##0.00'
     
     row += 2
     
     # Notes section (optional) - using the correct field from the Quotation model
     if hasattr(quotation, 'notes') and quotation.notes:
-        ws.merge_cells(f'A{row}:J{row}')
+        # Use all available columns for notes
+        last_col = get_column_letter(max(column_count, 1))
+        
+        ws.merge_cells(f'A{row}:{last_col}{row}')
         ws[f'A{row}'] = "NOTES"
         ws[f'A{row}'].font = header_font
         ws[f'A{row}'].fill = header_fill
         
         row += 1
         
-        ws.merge_cells(f'A{row}:J{row+3}')
+        ws.merge_cells(f'A{row}:{last_col}{row+3}')
         ws[f'A{row}'] = quotation.notes
         ws[f'A{row}'].font = regular_font
         ws[f'A{row}'].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)

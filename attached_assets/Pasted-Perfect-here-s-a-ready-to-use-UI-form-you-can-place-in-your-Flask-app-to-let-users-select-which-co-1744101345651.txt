@@ -1,0 +1,73 @@
+Perfect — here’s a ready-to-use UI form you can place in your Flask app to let users select which columns to include in the Excel export.
+
+⸻
+
+1. HTML Form: Column Selector
+
+Add this to your quotation view page:
+
+<form method="GET" action="{{ url_for('export_quotation_excel', id=quotation.id) }}">
+  <fieldset>
+    <legend>Select Columns to Export</legend>
+    <label><input type="checkbox" name="columns" value="index" checked> #</label>
+    <label><input type="checkbox" name="columns" value="description" checked> Description</label>
+    <label><input type="checkbox" name="columns" value="scientific_name" checked> Scientific Name</label>
+    <label><input type="checkbox" name="columns" value="size" checked> Size</label>
+    <label><input type="checkbox" name="columns" value="quantity" checked> Quantity</label>
+    <label><input type="checkbox" name="columns" value="unit_price" checked> Unit Price</label>
+    <label><input type="checkbox" name="columns" value="total_price" checked> Total</label>
+  </fieldset>
+  <button type="submit">Export Excel</button>
+</form>
+
+
+
+⸻
+
+2. Update Flask Route to Read Selected Columns
+
+@app.route('/quotation/<int:id>/export/excel')
+@login_required
+def export_quotation_excel(id):
+    quotation = Quotation.query.get_or_404(id)
+
+    # Map of supported fields
+    all_fields = {
+        "index": "#",
+        "description": "Description",
+        "scientific_name": "Scientific Name",
+        "size": "Size",
+        "quantity": "Quantity",
+        "unit_price": "Unit Price",
+        "total_price": "Total"
+    }
+
+    # Get selected fields from GET parameters
+    selected_keys = request.args.getlist("columns") or list(all_fields.keys())
+
+    # Prepare field config
+    selected_fields = [{"label": all_fields[k], "attr": k} for k in selected_keys if k in all_fields]
+
+    file_path = generate_quotation_excel(quotation, app.config['UPLOAD_FOLDER'], fields=selected_fields)
+    return send_from_directory(
+        app.config['UPLOAD_FOLDER'],
+        os.path.basename(file_path),
+        as_attachment=True,
+        download_name=f"{quotation.quotation_number}_quotation.xlsx"
+    )
+
+
+
+⸻
+
+3. Excel Generator Remains Dynamic
+
+(We already built this in previous steps — just make sure fields is passed.)
+
+⸻
+
+Next Suggestions:
+
+a. Want to cache last used column selection per user session?
+b. Want to add “Select All / Deselect All” toggle in UI?
+c. Want to sync PDF and Excel exports to always include same columns?
