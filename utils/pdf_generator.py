@@ -167,10 +167,13 @@ def generate_supplier_pdf_report(quotation, supplier, upload_folder):
         html_content = render_template(
             'pdf/supplier_report_template.html',
             supplier=supplier,
+            supplier_name=supplier,  # Add supplier_name for the template
             quotation=quotation,
             customer=quotation.customer,
             items=items,
+            supplier_items=items,  # Add supplier_items for the template
             total_cost=total_cost,
+            supplier_total=total_cost,  # Add supplier_total for the template
             currency=quotation.currency,
             date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
             order_date=quotation.quotation_date,  # Use quotation date as order date
