@@ -7,10 +7,12 @@ import sys
 import logging
 from app import app, db
 from models import Quotation, QuotationItem
+from sqlalchemy import text
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("missing_item_debug")
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("debug_missing_item")
 
 def inspect_quotation_by_number(quotation_number):
     """
@@ -19,98 +21,150 @@ def inspect_quotation_by_number(quotation_number):
     with app.app_context():
         # Find the quotation
         quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
-        
         if not quotation:
-            logger.error(f"Quotation {quotation_number} not found")
-            return
+            logger.error(f"Quotation with number {quotation_number} not found")
+            return False
         
-        logger.info(f"Examining quotation {quotation_number} (ID: {quotation.id})")
+        logger.info(f"Inspecting quotation {quotation_number} (ID: {quotation.id})")
         
-        # Get items through query and relationship to compare
-        query_items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
-        relationship_items = quotation.items
+        # Get items by ID
+        items_by_id = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
         
-        logger.info(f"Total items (via query): {len(query_items)}")
-        logger.info(f"Total items (via relationship): {len(relationship_items)}")
+        # Get items by position
+        items_by_position = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
         
-        # Check for content issues in all items
-        logger.info("\nItem Details (checking for unusual content):")
-        logger.info(f"{'Index':^5} | {'ID':^5} | {'Position':^8} | {'Description Length':^17} | {'Description':^30}")
-        logger.info("-" * 75)
+        # Display item count
+        logger.info(f"Total items: {len(items_by_id)}")
         
-        for idx, item in enumerate(query_items, 1):
-            desc_len = len(item.description) if item.description else 0
-            desc_preview = (item.description[:27] + "...") if desc_len > 30 else item.description
-            logger.info(f"{idx:^5} | {item.id:^5} | {item.position:^8} | {desc_len:^17} | {desc_preview}")
+        # Analyze positions
+        positions = [item.position for item in items_by_id]
+        has_consecutive_positions = all(p2 - p1 == 1 for p1, p2 in zip(positions, positions[1:]))
+        
+        logger.info(f"All positions are consecutive: {has_consecutive_positions}")
+        
+        if not has_consecutive_positions:
+            logger.info("List of non-consecutive positions:")
+            for i in range(len(positions) - 1):
+                if positions[i+1] - positions[i] != 1:
+                    logger.info(f"  Gap between position {positions[i]} and {positions[i+1]}")
+        
+        # Find items with duplicate positions
+        duplicate_positions = {}
+        for item in items_by_id:
+            pos = item.position
+            if pos in duplicate_positions:
+                duplicate_positions[pos].append(item.id)
+            else:
+                duplicate_positions[pos] = [item.id]
+        
+        # Log duplicates
+        for pos, item_ids in duplicate_positions.items():
+            if len(item_ids) > 1:
+                logger.warning(f"Position {pos} is used by multiple items: {item_ids}")
+        
+        # Display detailed item information
+        logger.info("\nDETAILED ITEM ANALYSIS:")
+        logger.info(f"{'ID':<6} {'Pos':<6} {'Description (truncated)':<50} {'Special Notes':<25}")
+        logger.info("-" * 90)
+        
+        # Track specific positions for the problematic area (around #14)
+        problem_range = list(range(12, 16))  # Items with positions 12, 13, 14, 15
+        items_in_problem_range = []
+        
+        for i, item in enumerate(items_by_id, 1):
+            special_notes = []
             
             # Check for potential rendering issues
-            if desc_len > 100:
-                logger.warning(f"Item #{idx} (ID: {item.id}) has a very long description ({desc_len} chars)")
+            if item.position in problem_range:
+                items_in_problem_range.append(item)
+                special_notes.append("In problem range")
             
-            if idx == 14 or idx == 13 or idx == 15:  # Examine items around the problematic index
-                logger.info(f"Details for item #{idx} (ID: {item.id}):")
-                logger.info(f"  Description: {item.description}")
-                logger.info(f"  Scientific Name: {item.scientific_name}")
-                logger.info(f"  Pot Size: {item.pot_size}")
-                logger.info(f"  Height: {item.height}")
-                logger.info(f"  Quantity: {item.quantity}")
-                logger.info(f"  Selling Price: {item.selling_price}")
-                
-                # Check for unusual character content
-                unusual_chars = [ch for ch in (item.description or '') if ord(ch) > 127]
-                if unusual_chars:
-                    logger.warning(f"  Item #{idx} contains unusual characters: {unusual_chars}")
+            if item.position == 0 and i != 1:
+                special_notes.append("Default position")
+            
+            if len(item.description) > 100:
+                special_notes.append("Long description")
+            
+            # Log item details
+            logger.info(f"{item.id:<6} {item.position:<6} {item.description[:47] + '...' if len(item.description) > 50 else item.description:<50} {', '.join(special_notes):<25}")
         
-        # Check if positions are consecutive
-        positions = [item.position for item in query_items]
-        if positions != list(range(1, len(positions) + 1)):
-            logger.warning(f"Positions are not consecutive: {positions}")
+        # Detailed analysis of items in the problem range
+        if items_in_problem_range:
+            logger.info("\nDETAILED ANALYSIS OF PROBLEM RANGE (positions 12-15):")
+            logger.info(f"{'ID':<6} {'Pos':<6} {'Expected Position':<18} {'Description Length':<18}")
+            logger.info("-" * 60)
             
-            # Identify gaps
-            expected_positions = set(range(1, len(positions) + 1))
-            actual_positions = set(positions)
-            missing = expected_positions - actual_positions
-            duplicates = [p for p in positions if positions.count(p) > 1]
+            for i, item in enumerate(items_in_problem_range):
+                expected_pos = problem_range[i] if i < len(problem_range) else "Out of range"
+                logger.info(f"{item.id:<6} {item.position:<6} {expected_pos:<18} {len(item.description):<18}")
+        
+        # Look for content issues
+        logger.info("\nCONTENT ANALYSIS (looking for special characters, length issues):")
+        for i, item in enumerate(items_by_id, 1):
+            # Check if description contains potential problem characters
+            problem_chars = ['&', '<', '>', '"', "'", '%', '\\', '/', '\n', '\r', '\t']
+            found_chars = [c for c in problem_chars if c in item.description]
             
-            if missing:
-                logger.warning(f"Missing positions: {missing}")
-            if duplicates:
-                logger.warning(f"Duplicate positions: {duplicates}")
+            if found_chars or len(item.description) > 100:
+                logger.info(f"Item #{i} (ID: {item.id}, Pos: {item.position}):")
+                if found_chars:
+                    logger.info(f"  Contains special characters: {found_chars}")
+                if len(item.description) > 100:
+                    logger.info(f"  Long description ({len(item.description)} chars)")
+        
+        return True
 
 def apply_quick_fix(quotation_number):
     """
     Apply a quick fix to the positions for a problematic quotation.
     """
     with app.app_context():
+        # Find the quotation
         quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
         if not quotation:
-            logger.error(f"Quotation {quotation_number} not found")
+            logger.error(f"Quotation with number {quotation_number} not found")
             return False
-            
-        # Get items sorted by ID
+        
+        logger.info(f"Applying quick fix to quotation {quotation_number} (ID: {quotation.id})")
+        
+        # Get items by ID
         items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
         
-        # Reset positions to be consecutive starting from 1
-        for idx, item in enumerate(items, 1):
-            if item.position != idx:
-                logger.info(f"Fixing position for item ID {item.id}: {item.position} -> {idx}")
-                item.position = idx
+        # Update positions to be sequential starting from 0
+        for i, item in enumerate(items):
+            # Log the position change
+            if item.position != i:
+                logger.info(f"Item ID {item.id}: Changing position from {item.position} to {i}")
+                item.position = i
         
+        # Save changes
         db.session.commit()
-        logger.info("Fixed positions for all items")
+        logger.info(f"Fixed positions for {len(items)} items in quotation {quotation_number}")
+        
         return True
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        quotation_number = sys.argv[1]
+    if len(sys.argv) < 2:
+        print("Usage: python debug_missing_item.py <quotation_number> [--fix]")
+        sys.exit(1)
+    
+    quotation_number = sys.argv[1]
+    fix_mode = len(sys.argv) > 2 and sys.argv[2] == "--fix"
+    
+    if fix_mode:
+        success = apply_quick_fix(quotation_number)
+        if success:
+            print(f"\n✅ Successfully applied quick fix to quotation {quotation_number}")
+            print("\nNext steps:")
+            print("1. Generate a PDF to test if the fix worked:")
+            print(f"   python fix_missing_item14.py {quotation_number}")
+        else:
+            print(f"\n❌ Failed to apply quick fix to quotation {quotation_number}")
     else:
-        quotation_number = input("Enter the quotation number to debug: ")
-    
-    # Inspect the quotation first
-    inspect_quotation_by_number(quotation_number)
-    
-    # Ask if fix should be applied
-    if input("\nApply position fix? (y/n): ").lower().strip() == 'y':
-        apply_quick_fix(quotation_number)
-        logger.info("\nAfter fix:")
-        inspect_quotation_by_number(quotation_number)
+        success = inspect_quotation_by_number(quotation_number)
+        if success:
+            print(f"\n✅ Inspection complete for quotation {quotation_number}")
+            print("\nTo fix position issues, run:")
+            print(f"python debug_missing_item.py {quotation_number} --fix")
+        else:
+            print(f"\n❌ Failed to inspect quotation {quotation_number}")

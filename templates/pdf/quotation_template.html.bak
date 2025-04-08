@@ -76,7 +76,6 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* More predictable layout */
             margin: 0.4cm 0; /* Reduced margin */
             table-layout: fixed;
         }
@@ -94,7 +93,7 @@
             font-size: 9pt; /* Smaller header font */
             border: 1px solid #b0c4de;
             white-space: nowrap;
-            overflow: visible; /* Changed from hidden to prevent clipping */
+            overflow: hidden;
             text-overflow: ellipsis;
             color: #224870;
         }
@@ -151,7 +150,6 @@
         .summary-block table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* More predictable layout */
         }
         .summary-block td {
             padding: 5px;

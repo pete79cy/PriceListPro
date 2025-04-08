@@ -1,0 +1,67 @@
+Here’s a comprehensive, detailed Replit AI Agent prompt that explicitly outlines the issue, includes code structure, symptoms, and exactly what kind of correction is expected:
+
+⸻
+
+Replit AI Agent Prompt: PDF Row Missing (Item #14 Skipped)
+
+I'm working on a Flask web application that generates PDF quotations using Jinja2 templates and WeasyPrint. The PDF renders a list of items in a table format using a for-loop in a Jinja2 template, but one item — specifically item #14 — is not appearing in the generated PDF, even though it's included in the data and total calculations.
+
+**What I’m using:**
+- Template path: templates/pdf/modern_quotation_template.html
+- PDF generation function: generate_quotation_pdf(quotation, upload_folder, use_modern_template=True)
+- Renderer: WeasyPrint
+- Backend: Flask
+- The `quotation.items` is a list of items like description, scientific_name, size, quantity, etc.
+
+**Rendering code in the template:**
+
+```html
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Description</th>
+      <th>Scientific Name</th>
+      <th>Size</th>
+      <th>Qty</th>
+      <th>Unit Price</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in quotation.items %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ item.description }}</td>
+      <td>{{ item.scientific_name }}</td>
+      <td>{{ item.size }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>{{ item.unit_price }}</td>
+      <td>{{ item.total_price }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+Symptoms:
+	•	Item 14 is missing visually in the PDF.
+	•	Item 13 and item 15 both appear.
+	•	The total includes item 14 (so it’s in the data).
+	•	There are no errors in logs or crashes.
+	•	Suspect CSS, page break, or loop rendering issue.
+
+What I need from you:
+	1.	Inspect the template rendering and CSS to determine what might cause one row (item 14) to not appear in the PDF.
+	2.	Update the HTML + CSS (or logic) to ensure all items in the loop are reliably rendered, even when spanning multiple pages.
+	3.	Provide a fixed template snippet or PDF-safe styles that guarantee all rows show up properly, especially across page breaks.
+	4.	Optional: Add a debug mode that adds borders or highlights to rows for easier visibility of hidden or skipped rows.
+
+Please respond with updated working code that resolves this rendering bug.
+
+---
+
+### Next Suggestions:
+
+a. Want a test case generator to simulate large item lists and catch more edge cases?  
+b. Want a `debug=True` flag in your PDF function to auto-enable debug borders?  
+c. Want the entire template refactored with WeasyPrint best practices?

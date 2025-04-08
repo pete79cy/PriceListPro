@@ -9,7 +9,8 @@ from app import app, db
 from models import Quotation, QuotationItem
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("quotation_fix")
 
 def fix_quotation_positions(quotation_number):
@@ -20,64 +21,69 @@ def fix_quotation_positions(quotation_number):
         quotation_number: The quotation number to fix
     """
     with app.app_context():
-        try:
-            # Find the quotation
-            logger.info(f"Looking for quotation with number: {quotation_number}")
-            quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
+        # Find the quotation
+        quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
+        if not quotation:
+            logger.error(f"No quotation found with number {quotation_number}")
+            return False
+        
+        logger.info(f"Fixing quotation: {quotation.quotation_number} (ID: {quotation.id})")
+        
+        # Get items ordered by ID (assumes this is the intended order)
+        items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
+        
+        # Display original items
+        logger.info(f"Found {len(items)} items to fix")
+        logger.info("\nORIGINAL ITEM POSITIONS:")
+        logger.info(f"{'ID':<6} {'Pos':<6} {'Description':<50}")
+        logger.info("-" * 65)
+        
+        for item in items:
+            logger.info(f"{item.id:<6} {item.position:<6} {item.description[:47] + '...' if len(item.description) > 50 else item.description:<50}")
+        
+        # Update positions to be sequential starting from 0
+        updated_count = 0
+        for idx, item in enumerate(items):
+            # Only update if position is incorrect
+            if item.position != idx:
+                logger.info(f"Updating item ID {item.id}: position {item.position} → {idx}")
+                item.position = idx
+                updated_count += 1
+        
+        # Save changes if any updates were made
+        if updated_count > 0:
+            db.session.commit()
+            logger.info(f"Updated {updated_count} items with sequential positions")
             
-            if not quotation:
-                logger.error(f"Quotation {quotation_number} not found")
-                return False
+            # Display updated items
+            logger.info("\nUPDATED ITEM POSITIONS:")
+            logger.info(f"{'ID':<6} {'Pos':<6} {'Description':<50}")
+            logger.info("-" * 65)
             
-            logger.info(f"Found quotation: ID={quotation.id}, Number={quotation.quotation_number}")
-            
-            # Get items sorted by ID (assuming this is the intended order)
-            items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
-            
-            logger.info(f"Found {len(items)} items for this quotation")
-            
-            # Print current positions
-            logger.info("Current positions:")
-            for idx, item in enumerate(items):
-                logger.info(f"Item {idx+1}: ID={item.id}, Position={item.position}, Description={item.description[:30]}")
-            
-            # Update positions (starting from 1 to match display numbering)
-            updated_count = 0
-            for idx, item in enumerate(items):
-                new_position = idx + 1
-                if item.position != new_position:
-                    logger.info(f"Updating item ID={item.id}: Position {item.position} -> {new_position}")
-                    item.position = new_position
-                    updated_count += 1
-            
-            # Commit changes if any were made
-            if updated_count > 0:
-                db.session.commit()
-                logger.info(f"Updated {updated_count} item positions")
-            else:
-                logger.info("No position updates required")
-            
-            # Verify the fix
-            fixed_items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
-            logger.info("Positions after fix:")
-            for idx, item in enumerate(fixed_items):
-                logger.info(f"Item {idx+1}: ID={item.id}, Position={item.position}, Description={item.description[:30]}")
+            items_after = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
+            for item in items_after:
+                logger.info(f"{item.id:<6} {item.position:<6} {item.description[:47] + '...' if len(item.description) > 50 else item.description:<50}")
             
             return True
-                
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error fixing quotation positions: {str(e)}")
-            return False
+        else:
+            logger.info("No position updates needed - all items already have sequential positions")
+            return True
 
 if __name__ == "__main__":
+    # Get quotation number from command line
     if len(sys.argv) > 1:
         quotation_number = sys.argv[1]
     else:
-        quotation_number = input("Enter the quotation number to fix: ")
+        print("Please provide a quotation number to fix, e.g.: python fix_specific_quotation.py PAK-2025-007")
+        sys.exit(1)
     
-    success = fix_quotation_positions(quotation_number)
-    if success:
-        logger.info(f"Successfully fixed positions for quotation {quotation_number}")
+    # Run the fix
+    if fix_quotation_positions(quotation_number):
+        print(f"\nSuccessfully fixed positions for quotation {quotation_number}")
+        print("Next steps:")
+        print("1. Try generating a PDF with the enhanced generator:")
+        print(f"   python fix_missing_item14.py {quotation_number}")
+        print("2. If all items appear correctly, apply the permanent fix to the template:")
+        print("   python permanent_template_fix.py")
     else:
-        logger.error(f"Failed to fix positions for quotation {quotation_number}")
+        print(f"\nFailed to fix positions for quotation {quotation_number}")

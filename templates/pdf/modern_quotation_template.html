@@ -73,16 +73,24 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed; /* More predictable layout */
             margin: 0.6cm 0;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border-radius: 4px;
-            overflow: hidden;
+            overflow: visible; /* Changed from hidden to prevent clipping */
+            table-layout: fixed; /* More predictable layout */
         }
         thead {
-            display: table-header-group;
+            display: table-header-group; /* Ensure header repeats on each page */
         }
-        tbody tr {
-            page-break-inside: avoid; /* Prevent row breaks across pages */
+        tbody {
+            display: table-row-group; /* Ensure proper table body display */
+        }
+        tr {
+            page-break-inside: avoid !important; /* Critical: prevent row from breaking across pages */
+            break-inside: avoid !important; /* Modern browsers support */
+            display: table-row; /* Ensure row is rendered as a table row */
+            visibility: visible !important; /* Force visibility */
         }
         th {
             background-color: #3498db;
@@ -97,8 +105,14 @@
             padding: 0.25cm 0.3cm;
             border-bottom: 1px solid #e1e1e1;
             font-size: 10pt;
-            word-break: break-word; /* Allow long words to break */
+            word-break: break-word;
             overflow-wrap: break-word;
+            max-width: 20cm; /* Prevent overly wide cells */
+            overflow: visible; /* Allow long words to break */
+            overflow-wrap: break-word;
+            max-width: 20cm; /* Ensure cells don't get too wide */
+            height: auto !important; /* Prevent height constraints */
+            overflow: visible; /* Show all content */
         }
         tbody tr:nth-child(odd) {
             background-color: #f8f9fa;
@@ -122,6 +136,7 @@
         .summary-block table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed; /* More predictable layout */
             box-shadow: none;
         }
         .summary-block td {
@@ -252,10 +267,11 @@
             </tr>
         </thead>
         <tbody>
+            {# Create a numbered list to ensure all items are rendered #}
             {% for item in quotation.items %}
-            <tr>
+            <tr class="item-row item-{{ loop.index }}" id="item-{{ loop.index }}">
                 <td class="text-center">{{ loop.index }}</td>
-                <td>{{ item.description }}</td>
+                <td>{{ item.description|default('') }}</td>
                 <td><em>{{ item.scientific_name or "" }}</em></td>
                 <td>{{ item.pot_size or "" }}</td>
                 <td>{{ item.height or "" }}</td>
