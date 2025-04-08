@@ -19,6 +19,7 @@ from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
 from utils.db_utils import with_db_reconnect, test_db_connection
 from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
+from utils.enhanced_pdf_generator import generate_enhanced_pdf
 from utils.feedback_collector import get_feedback_collector
 from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_openai_for_resolution, flag_duplicate_products
 
@@ -2161,6 +2162,55 @@ def register_routes(app):
             logger.error(f"Error exporting quotation with modern template: {str(e)}")
             logger.error(traceback.format_exc())
             flash(f"Error generating modern PDF: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
+    @app.route('/quotation/<int:quotation_id>/export/fixed')
+    @login_required
+    def export_quotation_fixed(quotation_id):
+        """Export a quotation as PDF using the enhanced generator to fix missing items"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Generate the PDF using enhanced generator
+            pdf_path = generate_enhanced_pdf(quotation, app.config['UPLOAD_FOLDER'], use_modern_template=True)
+            
+            # Send the file to the client
+            return send_from_directory(
+                directory=app.config['UPLOAD_FOLDER'],
+                path=os.path.basename(pdf_path),
+                as_attachment=True,
+                download_name=f"Fixed_Quotation_{quotation.quotation_number}.pdf"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error exporting quotation with enhanced generator: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating fixed PDF: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+
+    @app.route('/quotation/<int:quotation_id>/export/debug')
+    @login_required
+    def export_quotation_debug(quotation_id):
+        """Export a quotation with debug visuals to identify missing items"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Generate the PDF using enhanced generator with debug mode
+            pdf_path = generate_enhanced_pdf(quotation, app.config['UPLOAD_FOLDER'], 
+                                           use_modern_template=True, debug=True)
+            
+            # Send the file to the client
+            return send_from_directory(
+                directory=app.config['UPLOAD_FOLDER'],
+                path=os.path.basename(pdf_path),
+                as_attachment=True,
+                download_name=f"Debug_Quotation_{quotation.quotation_number}.pdf"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error exporting debug quotation: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating debug PDF: {str(e)}", 'danger')
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/supplier/<path:supplier>')

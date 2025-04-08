@@ -6,205 +6,107 @@ This script will:
 3. Verify if any items are missing or have position issues
 """
 
-import os
 import sys
+import argparse
 import logging
-from datetime import datetime
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("quotation_diagnostic")
-
-# Add the current directory to the path so we can import our app
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Import our application
 from app import app, db
 from models import Quotation, QuotationItem
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("diagnostics")
 
 def inspect_quotation_by_number(quotation_number):
     """
     Examine a specific quotation and its items by quotation number
     """
-    logger.info(f"Looking for quotation with number: {quotation_number}")
-    
     with app.app_context():
         # Find the quotation
         quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
-        
         if not quotation:
-            logger.error(f"Quotation {quotation_number} not found")
-            # Try to find alternative quotations to examine
-            recent_quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(5).all()
-            if recent_quotations:
-                logger.info("Recent quotations that could be examined instead:")
-                for q in recent_quotations:
-                    logger.info(f"  - ID: {q.id}, Number: {q.quotation_number}, Date: {q.quotation_date}")
-            return
+            logger.error(f"No quotation found with number {quotation_number}")
+            return False
         
-        logger.info(f"Found quotation: ID={quotation.id}, Number={quotation.quotation_number}, Date={quotation.quotation_date}")
+        logger.info(f"QUOTATION: {quotation.quotation_number} (ID: {quotation.id})")
+        logger.info(f"Date: {quotation.date}")
+        logger.info(f"Customer: {quotation.customer.name if quotation.customer else 'N/A'}")
         
-        # Get all items for this quotation
-        items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
+        # Get items by ID order (presumably the order they were added)
+        items_by_id = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
         
-        logger.info(f"Found {len(items)} items for this quotation")
+        # Get items by position order (how they should appear in the PDF)
+        items_by_position = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
         
-        # Log the query without actually executing it
-        logger.info("SQL query equivalent:")
-        logger.info("""
-            SELECT id, description, position, quantity, selling_price
-            FROM quotation_item
-            WHERE quotation_id = %s
-            ORDER BY position;
-        """, quotation.id)
+        # Display item counts
+        logger.info(f"Total items: {len(items_by_id)}")
+        logger.info(f"Items by ID count: {len(items_by_id)}")
+        logger.info(f"Items by position count: {len(items_by_position)}")
         
-        # Analyze items and their positions
-        positions = []
-        for idx, item in enumerate(items):
-            positions.append(item.position)
-            logger.info(f"Item {idx+1}: ID={item.id}, Position={item.position}, Description={item.description[:30]}{'...' if len(item.description) > 30 else ''}")
+        # Check for any position issues
+        position_counts = {}
+        for item in items_by_position:
+            pos = item.position
+            if pos in position_counts:
+                position_counts[pos] += 1
+            else:
+                position_counts[pos] = 1
         
-        # Check if positions are sequential
-        missing_positions = []
-        if positions:
-            min_pos = min(positions)
-            max_pos = max(positions)
-            expected_positions = list(range(min_pos, max_pos + 1))
-            
-            missing_positions = [p for p in expected_positions if p not in positions]
-            duplicate_positions = [p for p in set(positions) if positions.count(p) > 1]
-            
+        # Log duplicate positions
+        duplicate_positions = [pos for pos, count in position_counts.items() if count > 1]
+        if duplicate_positions:
+            logger.warning(f"Found duplicate positions: {duplicate_positions}")
+        
+        # Display items detail table
+        logger.info("\nITEM DETAILS:")
+        logger.info(f"{'ID':<6} {'Pos':<6} {'Description':<50} {'Qty':<5} {'Price':<10}")
+        logger.info("-" * 80)
+        
+        # Track positions to identify gaps
+        all_positions = set()
+        
+        for item in items_by_id:
+            logger.info(f"{item.id:<6} {item.position:<6} {item.description[:47] + '...' if len(item.description) > 50 else item.description:<50} {item.quantity:<5} {item.selling_price:<10}")
+            all_positions.add(item.position)
+        
+        # Check for gaps in positions
+        if all_positions:
+            expected_positions = set(range(min(all_positions), max(all_positions) + 1))
+            missing_positions = expected_positions - all_positions
             if missing_positions:
-                logger.warning(f"Missing positions detected: {missing_positions}")
+                logger.warning(f"Missing positions in sequence: {sorted(missing_positions)}")
             else:
-                logger.info("All positions are sequential with no gaps")
-                
-            if duplicate_positions:
-                logger.warning(f"Duplicate positions detected: {duplicate_positions}")
-            else:
-                logger.info("No duplicate positions detected")
+                logger.info("No gaps in position sequence.")
         
-        # Check relationship definition in model
-        logger.info("Checking relationship definition in Quotation model...")
-        relationship_def = getattr(Quotation, 'items')
-        logger.info(f"Relationship definition: {relationship_def}")
+        # Detect items that might be using default position=0
+        default_position_count = sum(1 for item in items_by_id if item.position == 0)
+        if default_position_count > 1:
+            logger.warning(f"Multiple items ({default_position_count}) have the default position=0")
         
-        # Also check items using the relationship
-        related_items = quotation.items
-        logger.info(f"Items retrieved via relationship: {len(related_items)}")
-        
-        # Check if any sorting is applied in the relationship or query
-        logger.info("Items accessed via relationship will be sorted: %s", "Yes" if hasattr(relationship_def, "order_by") else "No")
-        
-        # Compare items count from both methods
-        if len(items) != len(related_items):
-            logger.warning(f"Discrepancy in items count: Query returned {len(items)}, Relationship returned {len(related_items)}")
-        
-        # Print items retrieved via relationship and their order
-        logger.info("Items order when accessed via relationship:")
-        for idx, item in enumerate(related_items):
-            logger.info(f"Relationship Item {idx+1}: ID={item.id}, Position={item.position}, Description={item.description[:30]}{'...' if len(item.description) > 30 else ''}")
+        return True
 
 def suggest_fix():
     """
     Suggest fixes for the issue
     """
-    logger.info("\nPossible fixes:")
-    logger.info("1. Update the Quotation model to explicitly order items by position:")
-    logger.info("""
-        class Quotation(db.Model):
-            # ... existing code ...
-            items = db.relationship('QuotationItem', backref='quotation', 
-                                    lazy=True, cascade="all, delete-orphan",
-                                    order_by="QuotationItem.position")
-    """)
-    
-    logger.info("\n2. Fix potentially incorrect positions with SQL:")
-    logger.info("""
-        UPDATE quotation_item
-        SET position = row_number() OVER (PARTITION BY quotation_id ORDER BY id)
-        WHERE quotation_id = (SELECT id FROM quotation WHERE quotation_number = 'PAK-2025-007');
-    """)
-    
-    logger.info("\n3. Or in Python:")
-    logger.info("""
-        with app.app_context():
-            quotation = Quotation.query.filter_by(quotation_number='PAK-2025-007').first()
-            if quotation:
-                items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.id).all()
-                for idx, item in enumerate(items):
-                    item.position = idx + 1
-                db.session.commit()
-    """)
-    
-    logger.info("\n4. In the template, ensure items are sorted by position:")
-    logger.info("""
-        {% for item in quotation.items|sort(attribute='position') %}
-            <!-- Item rendering -->
-        {% endfor %}
-    """)
+    logger.info("\nPOTENTIAL FIXES:")
+    logger.info("1. Ensure all items have unique, sequential positions starting from 0 or 1")
+    logger.info("2. Fix the template CSS to prevent page breaks within table rows")
+    logger.info("3. Adjust the template to handle overflow content properly")
+    logger.info("4. Use the fix_missing_item14.py script to generate a fixed PDF")
+    logger.info("5. Apply the permanent_template_fix.py to update templates with CSS fixes")
 
 if __name__ == "__main__":
-    # Check the command-line arguments
-    if len(sys.argv) > 1:
-        quotation_number = sys.argv[1]
+    # Set up argument parsing
+    parser = argparse.ArgumentParser(description='Diagnose quotation items and positions')
+    parser.add_argument('quotation_number', nargs='?', default='PAK-2025-007',
+                        help='The quotation number to inspect (default: PAK-2025-007)')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    # Run the inspection
+    if inspect_quotation_by_number(args.quotation_number):
+        suggest_fix()
     else:
-        # Default to the quotation number mentioned in the investigation plan
-        quotation_number = "PAK-2025-007"
-    
-    inspect_quotation_by_number(quotation_number)
-    suggest_fix()
-"""Script to diagnose quotation item positions"""
-from app import db
-from models import Quotation, QuotationItem
-
-def inspect_quotation_by_number(quotation_number):
-    """Inspect quotation items and their positions"""
-    print(f"\nInspecting Quotation {quotation_number}")
-    
-    quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
-    if not quotation:
-        print(f"Quotation {quotation_number} not found")
-        return
-        
-    # Get all items and sort by position
-    items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
-    
-    print(f"\nFound {len(items)} items:")
-    print("-" * 80)
-    print(f"{'Position':^8} | {'Index':^5} | {'Description':<50}")
-    print("-" * 80)
-    
-    for i, item in enumerate(items, 1):
-        print(f"{item.position:^8} | {i:^5} | {item.description:<50}")
-        
-    # Check for gaps or duplicates in position values
-    positions = [item.position for item in items]
-    expected = list(range(len(items)))
-    
-    if positions != expected:
-        print("\n⚠️ Position sequence is not consecutive!")
-        print(f"Expected: {expected}")
-        print(f"Actual:   {positions}")
-        
-def fix_positions(quotation_number):
-    """Fix item positions to be consecutive starting from 0"""
-    quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
-    if not quotation:
-        return False
-        
-    items = QuotationItem.query.filter_by(quotation_id=quotation.id).order_by(QuotationItem.position).all()
-    
-    # Reset positions to be consecutive
-    for i, item in enumerate(items):
-        item.position = i
-        
-    db.session.commit()
-    return True
-
-if __name__ == "__main__":
-    quotation_number = "PAK-2025-007"
-    inspect_quotation_by_number(quotation_number)
-    fix_positions(quotation_number)
-    print("\nAfter fixing:")
-    inspect_quotation_by_number(quotation_number)
+        print(f"Failed to inspect quotation {args.quotation_number}. Specify a valid quotation number.")

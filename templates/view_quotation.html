@@ -21,6 +21,12 @@
                     <a href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}" class="btn btn-primary">
                         <i class="fas fa-file-alt me-2"></i> Modern PDF
                     </a>
+                    <a href="{{ url_for('export_quotation_fixed', quotation_id=quotation.id) }}" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i> Fixed PDF
+                    </a>
+                    <a href="{{ url_for('export_quotation_debug', quotation_id=quotation.id) }}" class="btn btn-warning">
+                        <i class="fas fa-bug me-2"></i> Debug PDF
+                    </a>
                 </div>
                 <a href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}" class="btn btn-primary">
                     <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
