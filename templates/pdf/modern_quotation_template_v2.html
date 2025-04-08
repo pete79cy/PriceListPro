@@ -82,6 +82,7 @@
             border-radius: 4px;
             overflow: visible; /* Changed from hidden to prevent clipping */
             table-layout: fixed; /* More predictable layout */
+            page-break-inside: auto;
         }
         thead {
             display: table-header-group; /* Ensure header repeats on each page */
@@ -92,7 +93,7 @@
         tr {
             page-break-inside: avoid !important; /* Critical: prevent row from breaking across pages */
             break-inside: avoid !important; /* Modern browsers support */
-            display: table-row; /* Ensure row is rendered as a table row */
+            display: table-row !important; /* Ensure row is rendered as a table row */
             visibility: visible !important; /* Force visibility */
         }
         th {
@@ -115,7 +116,7 @@
             overflow-wrap: break-word;
             max-width: 20cm; /* Ensure cells don't get too wide */
             height: auto !important; /* Prevent height constraints */
-            overflow: visible; /* Show all content */
+            overflow: visible !important; /* Show all content */
         }
         tbody tr:nth-child(odd) {
             background-color: #f8f9fa;
@@ -210,6 +211,11 @@
             max-height: 50px;
             margin-bottom: 10px;
         }
+        /* Special debug styling for item #10 */
+        tr.debug-row-10 {
+            background-color: yellow !important;
+            border: 2px solid red !important;
+        }
     </style>
 </head>
 <body>
@@ -271,8 +277,8 @@
         </thead>
         <tbody>
             {# Create a numbered list to ensure all items are rendered #}
-            {% for item in quotation.items %}
-            <tr class="item-row item-{{ loop.index }}" id="item-{{ loop.index }}">
+            {% for item in items %}
+            <tr class="item-row item-{{ loop.index }} {% if loop.index == 10 %}debug-row-10{% endif %}" id="item-{{ loop.index }}">
                 <td class="text-center">{{ loop.index }}</td>
                 <td>{{ item.description|default('') }}</td>
                 <td><em>{{ item.scientific_name or "" }}</em></td>
@@ -328,5 +334,14 @@
     <div class="footer">
         <p>{{ company.name }} | Quotation {{ quotation.quotation_number }} | Generated on {{ date_generated }}</p>
     </div>
+    
+    {% if debug %}
+    <div style="background-color: #ffeeee; border: 2px solid red; padding: 10px; margin-top: 20px;">
+        <h3 style="color: red;">Debug Information</h3>
+        <p>Total Items: {{ items|length }}</p>
+        <p>Generated: {{ date_generated }}</p>
+        <p>Special attention to item #10 - highlighted in yellow with red border</p>
+    </div>
+    {% endif %}
 </body>
 </html>
