@@ -246,4 +246,61 @@ def register_routes(app):
                               pending_update_count=pending_update_count,
                               recent_activities=recent_activities)
     
+    @app.route('/uploads', methods=['GET'])
+    @login_required
+    def uploads():
+        customers = Customer.query.all()
+        recent_uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(10).all()
+        return render_template('uploads.html', customers=customers, recent_uploads=recent_uploads)
+    
+    # Add stub routes for navigation to work
+    @app.route('/customers')
+    @login_required
+    def customers():
+        customers = Customer.query.all()
+        return render_template('customers.html', customers=customers)
+    
+    @app.route('/products')
+    @login_required
+    def products():
+        products = Product.query.all()
+        return render_template('products.html', products=products)
+    
+    @app.route('/price-lists')
+    @login_required
+    def price_lists():
+        price_lists = PriceList.query.all()
+        return render_template('price_lists.html', price_lists=price_lists)
+    
+    @app.route('/invoices')
+    @login_required
+    def invoices():
+        invoices = Invoice.query.all()
+        return render_template('invoices.html', invoices=invoices)
+    
+    @app.route('/quotations')
+    @login_required
+    def quotations():
+        quotations = Quotation.query.all()
+        return render_template('quotations.html', quotations=quotations)
+    
+    # Stub for viewing individual items
+    @app.route('/quotation/<int:quotation_id>')
+    @login_required
+    def view_quotation(quotation_id):
+        quotation = Quotation.query.get_or_404(quotation_id)
+        return render_template('view_quotation.html', quotation=quotation)
+    
+    @app.route('/price-list/<int:price_list_id>')
+    @login_required
+    def view_price_list(price_list_id):
+        price_list = PriceList.query.get_or_404(price_list_id)
+        return render_template('view_price_list.html', price_list=price_list)
+    
+    @app.route('/invoice/<int:invoice_id>')
+    @login_required
+    def view_invoice(invoice_id):
+        invoice = Invoice.query.get_or_404(invoice_id)
+        return render_template('view_invoice.html', invoice=invoice)
+    
     return app
