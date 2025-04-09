@@ -1,0 +1,52 @@
+You're encountering an error message:
+
+```
+Error adding supplier: get_supplier_by_name_or_create() got an unexpected keyword argument 'notes'
+```
+
+This error tells you that the function `get_supplier_by_name_or_create()` is being called with an argument named `notes`, but that function doesn't expect or accept an argument with that name.
+
+Here's a breakdown of how to approach this and what Replit AI needs to do:
+
+**1.  Analyze the Code:**
+
+* Replit AI needs to find the function call to `get_supplier_by_name_or_create()`. It should search within the `generate_custom_supplier_report` function (and any functions it calls) for this specific function call.
+* Once found, it needs to examine the arguments being passed to the function.
+
+**2.  Identify the Discrepancy:**
+
+* Replit AI must compare the arguments being passed to `get_supplier_by_name_or_create()` with the function's definition.
+* It needs to determine why the `notes` argument is being included in the call. There are a few possibilities:
+    * The function was indeed defined to accept `notes` in an earlier version, and the definition has since changed.
+    * There's a mistake in the code where `notes` is being passed when it shouldn't be.
+    * The `notes` variable is being inadvertently included in a `**kwargs` argument (if the function call uses keyword arguments to unpack a dictionary).
+
+**3.  Provide a Solution:**
+
+Replit AI can offer one or more of the following solutions:
+
+* **Correct the Function Call:** If the `notes` argument is being passed incorrectly, Replit AI should modify the function call to remove it.
+* **Update the Function Definition:** If the function definition *should* accept `notes`, Replit AI could modify the function's definition to include it as a parameter.  However, this should be done cautiously, as it might affect other parts of the codebase.
+* **Investigate `**kwargs`:** If the issue involves `**kwargs`, Replit AI should trace where the `notes` variable is coming from and ensure it's being handled correctly.
+
+**Prompt for Replit AI (Detailed):**
+
+"You are a coding expert. You are provided with Python code that generates supplier reports. An error occurs during supplier creation: `get_supplier_by_name_or_create() got an unexpected keyword argument 'notes'`.
+
+1.  **Locate the Error:** Find the exact line of code where the `get_supplier_by_name_or_create()` function is called within the provided codebase. Pay close attention to the `generate_custom_supplier_report` function and any functions it calls.
+2.  **Analyze the Function Call:** Identify all arguments being passed to `get_supplier_by_name_or_create()` at the point of the error.
+3.  **Examine Function Definition (If Possible):** If you have access to the definition of `get_supplier_by_name_or_create()`, examine its parameters to see if it accepts a `notes` argument.
+4.  **Determine the Cause:** Explain why the `notes` argument is causing an error. Is it an outdated function definition, a coding mistake, or an issue with `**kwargs`?
+5.  **Provide Correct Code:** Provide the corrected code. Choose the most appropriate solution:
+    * If the function call is wrong, modify the call to remove the `notes` argument.
+    * If the function definition is wrong (and it's appropriate to change it), modify the function definition to accept the `notes` argument.  (Do this cautiously and explain why it's safe).
+    * If `**kwargs` is the problem, show how to handle the `notes` variable correctly.
+6.  **Explain the Solution:** Clearly explain the changes you made and why they resolve the error.
+
+**Important Considerations for Replit AI:**
+
+* **Context is Key:** Replit AI needs the surrounding code to understand the best solution.
+* **Safety:** Modifying function definitions should be done with caution. Replit AI should analyze potential side effects.
+* **Assumptions:** If Replit AI has to make any assumptions (e.g., about the `get_supplier_by_name_or_create()` function definition), it should explicitly state those assumptions.
+
+By providing this detailed prompt, you guide Replit AI to perform a thorough analysis and provide a safe and effective solution to the error.
