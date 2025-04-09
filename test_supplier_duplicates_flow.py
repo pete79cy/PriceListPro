@@ -1,127 +1,181 @@
 """
-Test script for supplier duplicates detection flow.
-This script tests the complete flow from database to session handling.
+Test script to verify the supplier duplicates flow functionality.
+This script:
+1. Tests the /healthcheck endpoint to verify the OpenAI API is available
+2. Tests the analyze_supplier_duplicates endpoint with a POST request
+3. Verifies the redirect to supplier_duplicate_results works properly
+4. Creates a test supplier and products if needed for testing
 """
-
 import os
 import sys
-import logging
 import json
+import random
+import requests
+import time
 from datetime import datetime
-from app import app, db
-from models import Supplier, Product
 
-# Configure logging
-logging.basicConfig(level=logging.INFO,
-                   format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Base URL for local testing
+BASE_URL = "http://localhost:5000"
 
-# Dummy Flask session for testing
-class DummySession(dict):
-    """Simulate Flask session for testing"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-    def modified(self):
-        """Simulate session modification flag"""
-        logger.info("Session was modified")
-
-# Function to convert SQLAlchemy objects to dictionaries
-def serialize_supplier(supplier):
-    """Convert a Supplier SQLAlchemy object to a dictionary"""
-    return {
-        'id': supplier.id,
-        'name': supplier.name,
-        'email': supplier.email,
-        'phone': supplier.phone,
-        'products_count': len(supplier.products)
-    }
-
-def serialize_product(product):
-    """Convert a Product SQLAlchemy object to a dictionary"""
-    return {
-        'id': product.id,
-        'name': product.name,
-        'description': product.description or '',
-        'price': float(product.price) if product.price else 0.0,
-        'category': product.category,
-        'supplier_id': product.supplier_id
-    }
-
-def test_supplier_duplicate_flow(supplier_id=None):
-    """Test the complete supplier duplicate detection flow"""
-    logger.info("Testing supplier duplicate detection flow")
-    
-    with app.app_context():
-        # Find a supplier with products if not specified
-        if not supplier_id:
-            supplier = Supplier.query.filter(Supplier.products.any()).first()
-            if not supplier:
-                logger.error("No suppliers with products found in database")
-                return False
-            supplier_id = supplier.id
+def create_test_supplier_if_needed():
+    """Create a test supplier and products if they don't exist"""
+    try:
+        # Check if supplier with ID 1 exists
+        response = requests.get(f"{BASE_URL}/api_suppliers")
+        if response.status_code == 200:
+            suppliers = response.json()
             
-        # Get the supplier and their products
-        supplier = Supplier.query.get(supplier_id)
-        if not supplier:
-            logger.error(f"Supplier with ID {supplier_id} not found")
+            # If no suppliers exist, create one
+            if not suppliers:
+                print("Creating test supplier...")
+                response = requests.post(f"{BASE_URL}/add_supplier", data={
+                    'name': f'Test Supplier {datetime.now().strftime("%Y%m%d%H%M%S")}',
+                    'email': 'test@example.com',
+                    'phone': '1234567890'
+                })
+                if response.status_code != 200 and response.status_code != 302:
+                    print(f"Error creating supplier: {response.status_code}")
+                    return None
+                
+                # Get the newly created supplier
+                response = requests.get(f"{BASE_URL}/api_suppliers")
+                if response.status_code != 200:
+                    print(f"Error getting suppliers: {response.status_code}")
+                    return None
+                
+                suppliers = response.json()
+                
+            if not suppliers:
+                print("Still no suppliers available")
+                return None
+                
+            # Get the first supplier
+            supplier_id = suppliers[0]['id']
+            
+            # Now check if this supplier has products
+            response = requests.get(f"{BASE_URL}/supplier_products?supplier_id={supplier_id}")
+            if response.status_code != 200:
+                print(f"Error checking supplier products: {response.status_code}")
+            
+            # Create a few test products with similar names to test duplicate detection
+            print(f"Creating test products for supplier {supplier_id}...")
+            
+            # Product pairs with similar names for duplicate detection
+            product_pairs = [
+                ("Monstera Deliciosa", "Monstera deliciosa"),
+                ("Pennisetum Alopecuroides", "Pennisetum alopecuroides 'Little bunny'"),
+                ("Philodendron Birkin", "Philodendron 'Birkin'")
+            ]
+            
+            for pair in product_pairs:
+                for i, name in enumerate(pair):
+                    # Add variation to pricing
+                    base_price = 5.0 + random.random() * 5.0
+                    
+                    response = requests.post(f"{BASE_URL}/add_supplier_product", data={
+                        'supplier_id': supplier_id,
+                        'product_name': name,
+                        'scientific_name': name.lower(),
+                        'pot_size': f"{10 + i*5}cm",
+                        'height': f"{30 + i*10}cm",
+                        'price': base_price,
+                        'cost_price': base_price * 0.8
+                    })
+                    if response.status_code != 200 and response.status_code != 302:
+                        print(f"Error adding product: {response.status_code}")
+            
+            print(f"Test data created successfully for supplier {supplier_id}")
+            return supplier_id
+            
+    except Exception as e:
+        print(f"Error in create_test_supplier: {str(e)}")
+        return None
+
+
+def test_healthcheck():
+    """Test the /healthcheck endpoint"""
+    print("\n=== Testing /healthcheck endpoint ===")
+    try:
+        response = requests.get(f"{BASE_URL}/healthcheck")
+        if response.status_code == 200:
+            result = response.json()
+            print(f"Healthcheck response: {result}")
+            print(f"OpenAI API healthy: {result.get('openai_healthy', False)}")
+            return result.get('openai_healthy', False)
+        else:
+            print(f"Error in healthcheck: {response.status_code}")
             return False
-            
-        logger.info(f"Testing with supplier: {supplier.name} (ID: {supplier_id})")
-        logger.info(f"Supplier has {len(supplier.products)} products")
+    except Exception as e:
+        print(f"Exception in healthcheck: {str(e)}")
+        return False
+
+
+def test_analyze_supplier_duplicates(supplier_id):
+    """Test the analyze_supplier_duplicates endpoint"""
+    print(f"\n=== Testing /analyze_supplier_duplicates/{supplier_id} endpoint ===")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/analyze_supplier_duplicates/{supplier_id}", 
+            data={'threshold': 0.8}, 
+            allow_redirects=False  # Don't follow redirects to check status code
+        )
         
-        # Convert supplier's products to serializable format
-        products = [serialize_product(p) for p in supplier.products]
+        print(f"Status code: {response.status_code}")
         
-        # Convert supplier to serializable format
-        supplier_dict = serialize_supplier(supplier)
+        if response.status_code == 302:
+            redirect_url = response.headers.get('Location')
+            print(f"Successfully redirected to: {redirect_url}")
+            
+            # Now follow the redirect manually to check the results page
+            if redirect_url:
+                print(f"\n=== Following redirect to {redirect_url} ===")
+                results_response = requests.get(f"{BASE_URL}{redirect_url}")
+                print(f"Results page status code: {results_response.status_code}")
+                
+                if results_response.status_code == 200:
+                    # Check if we got an HTML response with results
+                    if "Duplicate Analysis Results" in results_response.text:
+                        print("Results page rendered successfully!")
+                        return True
+                    else:
+                        print("Results page doesn't contain expected content")
+        else:
+            print(f"Unexpected status code: {response.status_code}")
+            print(f"Response: {response.text}")
         
-        # Create a mock session
-        session = DummySession()
-        session['analysis_supplier'] = supplier_dict
-        session['analysis_products'] = products
-        
-        # Verify the session contains proper JSON-serializable data
-        try:
-            # Try to JSON serialize the data (this would fail with SQLAlchemy objects)
-            supplier_json = json.dumps(session['analysis_supplier'])
-            products_json = json.dumps(session['analysis_products'])
-            
-            logger.info(f"✅ Successfully serialized supplier data: {len(supplier_json)} bytes")
-            logger.info(f"✅ Successfully serialized products data: {len(products_json)} bytes")
-            
-            # Verify we can reconstruct the objects
-            supplier_from_json = json.loads(supplier_json)
-            products_from_json = json.loads(products_json)
-            
-            logger.info(f"✅ Successfully reconstructed data from JSON")
-            logger.info(f"Supplier name: {supplier_from_json['name']}")
-            logger.info(f"First product name: {products_from_json[0]['name'] if products_from_json else 'No products'}")
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Serialization error: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            return False
+        return False
+    except Exception as e:
+        print(f"Exception in analyze_supplier_duplicates: {str(e)}")
+        return False
+
 
 def main():
-    """Main test function"""
-    logger.info("Starting supplier duplicates flow test")
+    """Run all tests"""
+    # 1. Test healthcheck
+    openai_healthy = test_healthcheck()
+    if not openai_healthy:
+        print("ERROR: OpenAI API is not healthy. Please check your API key.")
+        print("Set your OpenAI API key in the OPENAI_API_KEY environment variable.")
+        return False
     
-    # Get supplier ID from command line if provided
-    supplier_id = int(sys.argv[1]) if len(sys.argv) > 1 else None
+    # 2. Create test data if needed
+    supplier_id = create_test_supplier_if_needed()
+    if not supplier_id:
+        print("ERROR: Could not create test data.")
+        return False
     
-    # Run the test
-    success = test_supplier_duplicate_flow(supplier_id)
+    # 3. Test analyze_supplier_duplicates
+    duplicates_flow_working = test_analyze_supplier_duplicates(supplier_id)
+    if not duplicates_flow_working:
+        print("ERROR: Supplier duplicates analysis flow is not working properly.")
+        return False
     
-    if success:
-        logger.info("✅ Supplier duplicates flow test passed successfully!")
-        return 0
-    else:
-        logger.error("❌ Supplier duplicates flow test failed")
-        return 1
+    # All tests passed
+    print("\n=== All tests passed! ===")
+    print("The supplier duplicates detection system is working properly.")
+    return True
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = main()
+    sys.exit(0 if success else 1)
