@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Quotation {{ quotation.quotation_number }}</title>
+    <style>
+        @page {
+            margin: 1cm;
+            @top-center {
+                content: "Quotation {{ quotation.quotation_number }}";
+                font-size: 10pt;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10pt;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #333;
+        }
+        .container {
+            max-width: 100%;
+        }
+        .header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .company-info {
+            float: left;
+            width: 50%;
+        }
+        .quotation-info {
+            float: right;
+            width: 45%;
+            text-align: right;
+        }
+        .company-name {
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        .customer-info {
+            margin-bottom: 20px;
+        }
+        .customer-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #f2f4f8;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+            font-weight: bold;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+        .total-row td {
+            border-top: 2px solid #ddd;
+            font-weight: bold;
+        }
+        .grand-total-row td {
+            border-top: 2px solid #333;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            font-size: 9pt;
+            border-top: 1px solid #ddd;
+        }
+        /* Column widths */
+        .w-5 { width: 5%; }
+        .w-10 { width: 10%; }
+        .w-15 { width: 15%; }
+        .w-20 { width: 20%; }
+        .w-25 { width: 25%; }
+        .w-30 { width: 30%; }
+        .w-35 { width: 35%; }
+        .w-40 { width: 40%; }
+        .w-45 { width: 45%; }
+        .w-50 { width: 50%; }
+        .notes-section {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .notes-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header clearfix">
+            <!-- Company Info (left side) -->
+            {% if fields.company_name or fields.company_address or fields.company_phone or fields.company_email %}
+            <div class="company-info">
+                {% if fields.company_name %}
+                <div class="company-name">{{ company.name }}</div>
+                {% endif %}
+                {% if fields.company_address %}
+                <div>{{ company.address_line1 }}</div>
+                <div>{{ company.address_line2 }}</div>
+                {% endif %}
+                {% if fields.company_phone %}
+                <div>Phone: {{ company.phone }}</div>
+                {% endif %}
+                {% if fields.company_email %}
+                <div>Email: {{ company.email }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Quotation Info (right side) -->
+            <div class="quotation-info">
+                <h2>QUOTATION</h2>
+                {% if fields.quotation_number %}
+                <div><strong>Number:</strong> {{ quotation.quotation_number }}</div>
+                {% endif %}
+                {% if fields.quotation_date %}
+                <div><strong>Date:</strong> {{ quotation.quotation_date.strftime('%d/%m/%Y') }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Customer Information Section -->
+        {% if fields.customer_name or fields.customer_email or fields.customer_phone or fields.customer_address %}
+        <div class="customer-info">
+            <div class="customer-title">Customer:</div>
+            {% if fields.customer_name %}
+            <div><strong>{{ customer.name }}</strong></div>
+            {% endif %}
+            {% if fields.customer_address %}
+            <div>{{ customer.address }}</div>
+            {% endif %}
+            {% if fields.customer_email %}
+            <div>Email: {{ customer.email }}</div>
+            {% endif %}
+            {% if fields.customer_phone %}
+            <div>Phone: {{ customer.phone }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Items Table -->
+        <table>
+            <thead>
+                <tr>
+                    <!-- Dynamic columns based on item_fields -->
+                    {% if item_fields.product_name %}
+                    <th class="{% if visible_column_count <= 3 %}w-40{% elif visible_column_count == 4 %}w-35{% else %}w-30{% endif %}">Description</th>
+                    {% endif %}
+                    
+                    {% if item_fields.product_scientific_name %}
+                    <th class="{% if visible_column_count <= 3 %}w-20{% elif visible_column_count == 4 %}w-15{% else %}w-10{% endif %}">Scientific Name</th>
+                    {% endif %}
+                    
+                    {% if item_fields.product_pot_size %}
+                    <th class="w-10">Pot Size</th>
+                    {% endif %}
+                    
+                    {% if item_fields.product_height %}
+                    <th class="w-10">Height</th>
+                    {% endif %}
+                    
+                    {% if item_fields.product_quantity %}
+                    <th class="w-10">Quantity</th>
+                    {% endif %}
+                    
+                    {% if item_fields.product_price %}
+                    <th class="w-15 text-right">Unit Price</th>
+                    {% endif %}
+                    
+                    {% if item_fields.product_total %}
+                    <th class="w-15 text-right">Total</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in quotation.items %}
+                <tr>
+                    {% if item_fields.product_name %}
+                    <td>{{ item.description }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_scientific_name %}
+                    <td>{{ item.scientific_name }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_pot_size %}
+                    <td>{{ item.pot_size }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_height %}
+                    <td>{{ item.height }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_quantity %}
+                    <td>{{ item.quantity }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_price %}
+                    <td class="text-right">{{ '%.2f'|format(item.selling_price) }} {{ quotation.currency }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_total %}
+                    <td class="text-right">{{ '%.2f'|format(item.selling_price * item.quantity) }} {{ quotation.currency }}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+                
+                <!-- Totals Section -->
+                {% if fields.subtotal %}
+                <tr class="total-row">
+                    <td colspan="{{ visible_column_count - 1 }}" class="text-right"><strong>Subtotal:</strong></td>
+                    <td class="text-right">{{ '%.2f'|format(quotation.total_amount or 0) }} {{ quotation.currency }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if fields.vat %}
+                <!-- VAT information - assuming we calculate this -->
+                {% set vat_total = (quotation.total_amount or 0) * 0.19 %}
+                <tr>
+                    <td colspan="{{ visible_column_count - 1 }}" class="text-right"><strong>VAT (19%):</strong></td>
+                    <td class="text-right">{{ '%.2f'|format(vat_total) }} {{ quotation.currency }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if fields.total %}
+                <!-- Grand Total -->
+                {% set grand_total = (quotation.total_amount or 0) * 1.19 %}
+                <tr class="grand-total-row">
+                    <td colspan="{{ visible_column_count - 1 }}" class="text-right"><strong>TOTAL:</strong></td>
+                    <td class="text-right">{{ '%.2f'|format(grand_total) }} {{ quotation.currency }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <!-- Notes Section -->
+        {% if fields.notes and quotation.notes %}
+        <div class="notes-section">
+            <div class="notes-title">Notes:</div>
+            <div>{{ quotation.notes|nl2br }}</div>
+        </div>
+        {% endif %}
+        
+        <!-- Footer with signature line -->
+        <div class="footer">
+            <p>This quotation is valid for 30 days from the date of issue.</p>
+            <p>Thank you for your business!</p>
+        </div>
+    </div>
+</body>
+</html>

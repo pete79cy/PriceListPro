@@ -138,3 +138,15 @@ with app.app_context():
     except (ImportError, Exception) as e:
         logger.warning(f"Viber integration could not be registered: {str(e)}")
         pass
+        
+    # Register blueprints
+    try:
+        from blueprints.customer import customer_bp
+        from blueprints.quotation import quotation_bp
+        
+        app.register_blueprint(customer_bp)
+        app.register_blueprint(quotation_bp)
+        logger.info("Customer and Quotation blueprints registered successfully")
+    except (ImportError, Exception) as e:
+        logger.warning(f"Blueprints could not be registered: {str(e)}")
+        pass

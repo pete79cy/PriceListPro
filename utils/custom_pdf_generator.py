@@ -1,0 +1,92 @@
+import os
+from datetime import datetime
+import weasyprint
+from flask import render_template, url_for
+from app import app
+from models import Quotation, CompanySettings
+from utils.logger import logger
+
+def generate_custom_pdf(quotation, fields=None):
+    """
+    Generate a PDF for a quotation with customized fields.
+    
+    Args:
+        quotation: The Quotation object to generate PDF for
+        fields: List of field names to include in the PDF (if None, all fields are included)
+        
+    Returns:
+        str: Path to the generated PDF file, or None if failed
+    """
+    try:
+        # Default fields if none provided
+        if not fields:
+            fields = [
+                'customer_name', 'quotation_number', 'quotation_date',
+                'product_name', 'product_quantity', 'product_price', 'product_total',
+                'subtotal', 'vat', 'total',
+                'company_name', 'company_address', 'company_phone', 'company_email'
+            ]
+        
+        # Get company settings
+        company_settings = CompanySettings.query.first()
+        if not company_settings:
+            company_settings = CompanySettings()  # Use defaults
+        
+        # Create a dictionary to hold field visibility
+        field_visibility = {}
+        for field in fields:
+            field_visibility[field] = field in fields
+        
+        # Define which item fields to show
+        item_fields = {
+            'product_name': 'product_name' in fields,
+            'product_scientific_name': 'product_scientific_name' in fields, 
+            'product_pot_size': 'product_pot_size' in fields,
+            'product_height': 'product_height' in fields,
+            'product_quantity': 'product_quantity' in fields,
+            'product_price': 'product_price' in fields,
+            'product_total': 'product_total' in fields
+        }
+        
+        # Count the number of visible item columns for layout purposes
+        visible_column_count = sum(1 for value in item_fields.values() if value)
+        
+        # Generate HTML from template
+        with app.app_context():
+            html = render_template(
+                'pdf/custom_quotation_template.html',
+                quotation=quotation,
+                customer=quotation.customer,
+                company=company_settings,
+                fields=field_visibility,
+                item_fields=item_fields,
+                visible_column_count=visible_column_count,
+                timestamp=datetime.now().strftime('%Y%m%d_%H%M%S')
+            )
+        
+        # Create output directory if it doesn't exist
+        output_dir = os.path.join(os.getcwd(), 'static', 'pdf')
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Generate PDF filename
+        filename = f"quotation_{quotation.quotation_number.replace('/', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        output_path = os.path.join(output_dir, filename)
+        
+        # Convert HTML to PDF
+        pdf = weasyprint.HTML(string=html).write_pdf()
+        
+        # Save PDF to file
+        with open(output_path, 'wb') as f:
+            f.write(pdf)
+        
+        # Update quotation with file path
+        quotation.file_path = os.path.join('pdf', filename)
+        
+        # Log success
+        logger.info(f"Custom PDF generated for quotation {quotation.quotation_number}")
+        
+        return output_path
+    
+    except Exception as e:
+        logger.error(f"Error generating custom PDF for quotation {quotation.quotation_number}: {str(e)}")
+        return None
