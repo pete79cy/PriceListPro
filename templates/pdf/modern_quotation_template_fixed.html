@@ -10,7 +10,7 @@
         @page {
             size: A4 {{ orientation }};
             margin: 1.5cm;
-            /* Remove the custom header to prevent HTML entity issues */
+            /* Bottom center only to avoid HTML entity issues in header */
             @bottom-center {
                 content: "Page " counter(page) " of " counter(pages);
                 font-size: 9pt;
@@ -77,7 +77,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border-radius: 4px;
             overflow: visible; /* Changed from hidden to prevent clipping */
-            table-layout: fixed; /* More predictable layout */
         }
         thead {
             display: table-header-group; /* Ensure header repeats on each page */
@@ -107,9 +106,6 @@
             word-break: break-word;
             overflow-wrap: break-word;
             max-width: 20cm; /* Prevent overly wide cells */
-            overflow: visible; /* Allow long words to break */
-            overflow-wrap: break-word;
-            max-width: 20cm; /* Ensure cells don't get too wide */
             height: auto !important; /* Prevent height constraints */
             overflow: visible; /* Show all content */
         }
@@ -135,7 +131,6 @@
         .summary-block table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* More predictable layout */
             box-shadow: none;
         }
         .summary-block td {
@@ -191,9 +186,7 @@
             margin-bottom: 0.2cm;
         }
         .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+            margin-top: 1.5cm;
             width: 100%;
             font-size: 8pt;
             text-align: center;
@@ -201,6 +194,7 @@
             border-top: 1px solid #e1e1e1;
             padding-top: 0.3cm;
             background-color: #f8f9fa;
+            page-break-inside: avoid;
         }
         .company-logo {
             max-height: 50px;
@@ -218,8 +212,7 @@
             <p>
                 {{ company.address_line1 }}
                 {% if company.address_line2 %} | {{ company.address_line2 }}{% endif %}
-                {% if company.phone %} | Tel: {{ company.phone }}{% endif %}
-                {% if company.email %} | {{ company.email }}{% endif %}
+                {% if company.phone %} | Phone: {{ company.phone }}{% endif %}
             </p>
         </div>
         <div class="quotation-info">
@@ -230,24 +223,23 @@
                     <td class="amount">{{ quotation.quotation_number }}</td>
                 </tr>
                 <tr>
-                    <td class="label">Issue Date:</td>
-                    <td class="amount">{{ quotation.quotation_date.strftime('%d %b %Y') }}</td>
+                    <td class="label">Date:</td>
+                    <td class="amount">{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
                 </tr>
                 <tr>
                     <td class="label">Valid Until:</td>
-                    <td class="amount">{{ (quotation.quotation_date.replace(month=quotation.quotation_date.month+1) if quotation.quotation_date.month < 12 else quotation.quotation_date.replace(year=quotation.quotation_date.year+1, month=1)).strftime('%d %b %Y') }}</td>
+                    <td class="amount">{{ (quotation.quotation_date.replace(month=quotation.quotation_date.month+1) if quotation.quotation_date.month < 12 else quotation.quotation_date.replace(year=quotation.quotation_date.year+1, month=1)).strftime('%Y-%m-%d') }}</td>
                 </tr>
             </table>
         </div>
     </div>
 
     <div class="customer-info">
-        <h2>Prepared For</h2>
+        <h2>Customer Information</h2>
         <p style="font-size: 14pt; font-weight: 600; color: #2c3e50;">{{ customer.name }}</p>
         <p>
-            {% if customer.address %}{{ customer.address }}<br>{% endif %}
-            {% if customer.email %}<strong>Email:</strong> {{ customer.email }}{% endif %}
-            {% if customer.phone %} | <strong>Phone:</strong> {{ customer.phone }}{% endif %}
+            {% if customer.address %}{{ customer.address }}{% endif %}
+            {% if customer.phone %} | Phone: {{ customer.phone }}{% endif %}
         </p>
     </div>
 
@@ -267,7 +259,7 @@
         </thead>
         <tbody>
             {# Create a numbered list to ensure all items are rendered #}
-            {% for item in quotation.items %}
+            {% for item in items %}
             <tr class="item-row item-{{ loop.index }}" id="item-{{ loop.index }}">
                 <td class="text-center">{{ loop.index }}</td>
                 <td>{{ item.description|default('') }}</td>
@@ -296,7 +288,7 @@
             </tr>
             {% endfor %}
             <tr class="total-row">
-                <td class="label total">Total Amount:</td>
+                <td class="label total">Total:</td>
                 <td class="amount total">{{ currency }} {{ "%.2f"|format(grand_total) }}</td>
             </tr>
         </table>
@@ -317,7 +309,6 @@
             <li>Prices are subject to change without prior notice after the validity period.</li>
             <li>Delivery timeframe will be confirmed upon order placement.</li>
             <li>Payment terms: 50% advance, balance prior to delivery.</li>
-            <li>All prices are inclusive of any applicable taxes as indicated.</li>
         </ol>
     </div>
 

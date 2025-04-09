@@ -1,0 +1,49 @@
+To effectively correct the output PDF generation and address these pagination errors, I need the following information and capabilities:
+
+1.  Detailed Report Template Structure:
+
+    Data: I need a precise definition of the template used to generate these reports. This includes:
+        Page dimensions (width, height).
+        Margins (top, bottom, left, right).
+        Header and footer structure (content, height).
+        Table structure (column widths, cell padding, font sizes, whether headers repeat on new pages).
+        Rules for content flow (e.g., how the table should break across pages).
+        Positioning of other elements (text, images, etc.).
+    Format: This template definition could be in various forms:
+        A separate template file (e.g., HTML, CSS, or a specific reporting format).
+        Code snippets that generate the report layout.
+        A data structure that describes the report's structure.
+
+2.  Dynamic Content Handling Rules:
+
+    Data: I need the logic that governs how data is inserted into the report. This is crucial for pagination.
+        Table row splitting logic: Rules for how rows are split when they exceed the page height.
+        Page break conditions: Explicit rules or algorithms that determine when a new page is started.
+        Content scaling or resizing: Instructions on whether content should be scaled or resized to fit within page boundaries.
+        Handling of long text fields: Rules for wrapping or truncating text within cells.
+    Format: This logic could be expressed as:
+        Code (e.g., functions or algorithms).
+        Configuration settings.
+        Rules defined in a templating language.
+
+3.  PDF Generation Library/Tool Details:
+
+    Data: Information about the library or tool used to generate the PDFs. Different tools have different capabilities and limitations that affect how pagination is handled.
+        Name and version of the library/tool.
+        Its pagination features and settings.
+        Any known bugs or limitations related to table rendering.
+    Importance: This helps in identifying if the issue is due to the library itself or how it's being used.
+
+4.  Debugging and Testing Capabilities:
+
+    Functionality: I need ways to debug and test the PDF generation process effectively.
+        Detailed logging: To trace the layout process and identify where page breaks are occurring.
+        Intermediate output: The ability to inspect the report layout before it's converted to PDF.
+        Testing with various data sets: To ensure the pagination works correctly with different quantities of data.
+
+5.  Control over PDF Generation Parameters:
+
+    Access: I need the ability to control specific parameters of the PDF generation process.
+        Page size and orientation.
+        Font embedding.
+        Compression settings.

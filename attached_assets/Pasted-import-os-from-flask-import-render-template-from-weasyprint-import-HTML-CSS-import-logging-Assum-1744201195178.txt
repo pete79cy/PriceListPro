@@ -1,0 +1,69 @@
+import os
+from flask import render_template
+from weasyprint import HTML, CSS
+import logging
+
+# Assume other necessary imports are present
+
+def generate_quotation_pdf(quotation, upload_folder, use_modern_template=False):
+    """
+    Generate a PDF quotation from a Quotation object
+    """
+    try:
+        # ... (Data preparation code - VAT calculation, etc.) ...
+
+        # Choose template
+        template_name = 'pdf/modern_quotation_template.html' if use_modern_template else 'pdf/quotation_template.html'
+
+        # Generate HTML
+        html_content = render_template(
+            template_name,
+            quotation=quotation,
+            # ... other data ...
+        )
+
+        filename = f"quotation_{quotation.quotation_number}.pdf"
+        output_path = os.path.join(upload_folder, filename)
+
+        # Generate PDF
+        HTML(string=html_content).write_pdf(output_path)
+
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error generating quotation PDF: {str(e)}")
+        raise
+
+def generate_custom_supplier_report(quotation, selected_suppliers, selected_fields, 
+                                    include_prices=True, include_company_header=True, 
+                                    include_terms=True, group_by_supplier=True,
+                                    notes=None, use_fpdf=False, use_dejavu=False):
+    """
+    Generate a custom PDF report for selected suppliers from a quotation
+    """
+    if use_fpdf:
+        # ... (FPDF implementations) ...
+        pass # Replace with the FPDF code if relevant
+
+    try:
+        # ... (Data grouping and preparation) ...
+
+        # Generate HTML
+        html_content = render_template(
+            'pdf/custom_supplier_report_template.html',
+            quotation=quotation,
+            grouped_items=grouped_items,
+            # ... other data ...
+        )
+
+        filename = f"supplier_report_{quotation.quotation_number}.pdf"
+        output_path = os.path.join(upload_folder, filename)
+
+        # Generate PDF
+        HTML(string=html_content).write_pdf(output_path)
+
+        return pdf_content, filename
+
+    except Exception as e:
+        logger.error(f"Error generating custom supplier report PDF: {str(e)}")
+        raise
