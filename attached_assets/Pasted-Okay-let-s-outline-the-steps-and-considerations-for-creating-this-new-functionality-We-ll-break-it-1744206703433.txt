@@ -1,0 +1,220 @@
+Okay, let's outline the steps and considerations for creating this new functionality. We'll break it down into logical parts:
+1. Backend Functionality (Likely in your Flask application):
+a. Database Model for Customers:
+ * If you don't already have one, you'll need a database model to store customer information. This might look something like this (in models.py if you're using SQLAlchemy):
+   from app import db
+
+class Customer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120))
+    phone = db.Column(db.String(20))
+    address = db.Column(db.Text)
+    # Add other relevant customer fields
+
+    def __repr__(self):
+        return f"<Customer {self.name}>"
+
+b. Flask Route and View Function for Creating Customers:
+ * You'll need a route to handle the form for creating new customers and a corresponding view function. This could be in a new blueprint or an existing one.
+   from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required
+from .models import Customer  # Adjust import path
+from app import db
+
+customer_bp = Blueprint('customer', __name__, url_prefix='/customer')
+
+@customer_bp.route('/create', methods=['GET', 'POST'])
+@login_required
+def create_customer():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        # Validate the form data here
+
+        new_customer = Customer(name=name, email=email, phone=phone, address=address)
+        db.session.add(new_customer)
+        try:
+            db.session.commit()
+            flash('Customer created successfully!', 'success')
+            return redirect(url_for('some_page_to_view_customers'))  # Redirect to a customer list page
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating customer: {e}', 'danger')
+
+    return render_template('customer/create_customer.html')
+
+c. Flask Route and View Function for Customizing Quotation Fields:
+ * You'll need a page where users can select which fields to include in the quotation PDF. This will likely involve a form with checkboxes for different data points.
+   from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from flask_login import login_required
+# ... other imports
+
+quotation_bp = Blueprint('quotation', __name__, url_prefix='/quotation')
+
+@quotation_bp.route('/customize_fields', methods=['GET', 'POST'])
+@login_required
+def customize_fields():
+    quotation_fields = [
+        {'name': 'customer_name', 'label': 'Customer Name', 'default': True},
+        {'name': 'customer_email', 'label': 'Customer Email', 'default': False},
+        {'name': 'customer_phone', 'label': 'Customer Phone', 'default': False},
+        {'name': 'customer_address', 'label': 'Customer Address', 'default': False},
+        {'name': 'quotation_number', 'label': 'Quotation Number', 'default': True},
+        {'name': 'quotation_date', 'label': 'Quotation Date', 'default': True},
+        {'name': 'product_name', 'label': 'Product Name', 'default': True},
+        {'name': 'product_quantity', 'label': 'Quantity', 'default': True},
+        {'name': 'product_price', 'label': 'Price', 'default': True},
+        {'name': 'product_total', 'label': 'Total', 'default': True},
+        {'name': 'subtotal', 'label': 'Subtotal', 'default': True},
+        {'name': 'tax', 'label': 'Tax', 'default': True},
+        {'name': 'total', 'label': 'Grand Total', 'default': True},
+        {'name': 'notes', 'label': 'Notes', 'default': False},
+        # Add more fields as needed
+    ]
+
+    if request.method == 'POST':
+        selected_fields = request.form.getlist('fields')
+        session['quotation_fields'] = selected_fields  # Store selected fields in the session
+        flash('Quotation fields customized!', 'success')
+        return redirect(url_for('quotation.generate_quotation')) # Redirect to the quotation generation page
+
+    return render_template('quotation/customize_fields.html', fields=quotation_fields)
+
+@quotation_bp.route('/generate', methods=['GET'])
+@login_required
+def generate_quotation():
+    selected_fields = session.get('quotation_fields')
+    if not selected_fields:
+        flash('Please customize quotation fields first.', 'warning')
+        return redirect(url_for('quotation.customize_fields'))
+
+    # You'll need logic here to:
+    # 1. Fetch the necessary data for the quotation (customer details, products, etc.)
+    # 2. Filter the data based on the 'selected_fields'
+    # 3. Use a PDF generation library (e.g., ReportLab, FPDF) to create the PDF
+    # 4. Return the PDF as a response
+
+    # Placeholder for PDF generation logic
+    quotation_data = {
+        'customer_name': 'John Doe',
+        'customer_email': 'john.doe@example.com',
+        'quotation_number': 'Q-2025-001',
+        'quotation_date': '2025-04-09',
+        'items': [
+            {'product_name': 'Plant A', 'product_quantity': 2, 'product_price': 10.00, 'product_total': 20.00},
+            {'product_name': 'Pot B', 'product_quantity': 1, 'product_price': 5.00, 'product_total': 5.00},
+        ],
+        'subtotal': 25.00,
+        'tax': 2.50,
+        'total': 27.50,
+        'notes': 'Thank you for your business!'
+    }
+
+    filtered_data = {}
+    for field in selected_fields:
+        if field == 'items':
+            filtered_data['items'] = []
+            for item in quotation_data['items']:
+                filtered_item = {}
+                for item_key in item:
+                    if f'product_{item_key}' in selected_fields:
+                        filtered_item[item_key] = item[item_key]
+                filtered_data['items'].append(filtered_item)
+        elif field.startswith('customer_'):
+            filtered_data[field] = quotation_data.get(field)
+        elif field.startswith('quotation_'):
+            filtered_data[field] = quotation_data.get(field)
+        elif field in ['subtotal', 'tax', 'total', 'notes']:
+            filtered_data[field] = quotation_data.get(field)
+        elif field.startswith('product_'): # Handle individual product fields
+            pass # Handled within the 'items' block
+
+    # Generate PDF using filtered_data and selected_fields
+    # ... PDF generation logic here ...
+
+    return "Generating PDF with selected fields: " + ", ".join(selected_fields) # Placeholder
+
+2. Frontend Templates (HTML files):
+a. create_customer.html (in templates/customer/):
+{% extends 'layout.html' %}
+
+{% block title %}Create Customer{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <h1 class="h3 mb-4">Create New Customer</h1>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email">
+                </div>
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone</label>
+                    <input type="tel" class="form-control" id="phone" name="phone">
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Customer</button>
+                <a href="{{ url_for('some_page_to_view_customers') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+b. customize_fields.html (in templates/quotation/):
+{% extends 'layout.html' %}
+
+{% block title %}Customize Quotation Fields{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <h1 class="h3 mb-4">Customize Quotation Fields</h1>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="POST">
+                {% for field in fields %}
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="fields" value="{{ field.name }}" id="{{ field.name }}" {% if field.default %}checked{% endif %}>
+                    <label class="form-check-label" for="{{ field.name }}">
+                        {{ field.label }}
+                    </label>
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Save Customization</button>
+                <a href="{{ url_for('some_page_to_generate_quotation_selection') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+3. PDF Generation Library:
+ * You'll need to choose and integrate a Python library for generating PDFs. Popular choices include:
+   * ReportLab: Powerful and flexible, but can have a steeper learning curve.
+   * FPDF: Simpler to use for basic PDFs.
+   * xhtml2pdf (pisa): Allows you to generate PDFs from HTML and CSS.
+ * You'll need to install the chosen library (e.g., pip install reportlab).
+ * The PDF generation logic will go within the generate_quotation view function, using the selected_fields to determine which data to include in the PDF document.
+4. Linking the Functionality:
+ * Make sure you have appropriate links in your application's navigation or other pages to access the "Create Customer" and "Customize Quotation Fields" pages.
+Key Considerations and Next Steps:
+ * Error Handling and Validation: Implement proper form validation for customer creation. Handle potential errors during database operations and PDF generation.
+ * Quotation Data Source: Determine where the data for the quotation (products, prices, etc.) will come from. You'll need to fetch this data in the generate_quotation function.
+ * Customer Selection for Quotation: You'll likely need a way to select an existing customer when generating a quotation. This could involve another form or page.
+ * Quotation Items: You'll need to handle adding line items (products, quantities, prices) to the quotation.
+ * Advanced PDF Customization: You might want to allow more advanced customization of the PDF layout, styling, and branding.
+ * Security: Ensure proper security measures are in place, especially when handling user input and generating sensitive documents like quotations.
+ * Testing: Write thorough tests for all the new functionality.
+This detailed outline should provide a solid foundation for creating the customer creation and customizable quotation PDF report features in your application. Remember to adapt the code and templates to your specific project structure and requirements.

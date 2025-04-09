@@ -1,0 +1,74 @@
+{% extends 'layout.html' %}
+
+{% block title %}Customize Quotation Fields{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="h3">Customize Quotation Fields</h1>
+            <p class="text-muted">Select which fields to include in your quotation PDF</p>
+        </div>
+        <div class="col-lg-4 text-end">
+            {% if quotation_id %}
+            <a href="{{ url_for('view_quotation', quotation_id=quotation_id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Quotation
+            </a>
+            {% else %}
+            <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Quotations
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Select Fields to Include</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    {% set categories = fields|groupby('category') %}
+                    
+                    {% for category in categories %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">{{ category.grouper }}</h6>
+                            </div>
+                            <div class="card-body">
+                                {% for field in category.list %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="fields" 
+                                           value="{{ field.name }}" id="{{ field.name }}" 
+                                           {% if field.default %}checked{% endif %}>
+                                    <label class="form-check-label" for="{{ field.name }}">
+                                        {{ field.label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    These settings will be saved for all future quotations until you change them again.
+                </div>
+                
+                <div class="d-flex justify-content-between mt-3">
+                    {% if quotation_id %}
+                    <a href="{{ url_for('view_quotation', quotation_id=quotation_id) }}" class="btn btn-outline-secondary">Cancel</a>
+                    {% else %}
+                    <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">Cancel</a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">Save Customization</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
