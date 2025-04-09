@@ -110,16 +110,9 @@ class Invoice(db.Model):
     
     # Relationships
     items = db.relationship('InvoiceItem', backref='invoice', lazy=True, cascade="all, delete-orphan")
-    payments = db.relationship('Payment', backref='invoice', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f'<Invoice {self.invoice_number}>'
-        
-    def get_total_paid(self):
-        """Calculate the total amount paid for this invoice"""
-        if not self.payments:
-            return 0.0
-        return sum(payment.amount for payment in self.payments)
 
 class InvoiceItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -262,21 +255,6 @@ class QuotationItem(db.Model):
     
     def __repr__(self):
         return f'<QuotationItem {self.description}>'
-
-class Payment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    invoice_id = db.Column(db.Integer, db.ForeignKey('invoice.id'), nullable=False)
-    payment_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
-    amount = db.Column(db.Float, nullable=False)
-    payment_method = db.Column(db.String(50), nullable=False)  # e.g., 'cash', 'bank_transfer', 'credit_card', etc.
-    reference_number = db.Column(db.String(100), nullable=True)  # Transaction or receipt number
-    notes = db.Column(db.Text, nullable=True)
-    attachment_path = db.Column(db.String(255), nullable=True)  # Path to attached payment proof file
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<Payment {self.amount} on {self.payment_date} for Invoice #{self.invoice.invoice_number if self.invoice else "Unknown"}>'
 
 class CompanySettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
