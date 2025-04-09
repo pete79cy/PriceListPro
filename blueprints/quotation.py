@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_login import login_required
 from app import db
 from models import Quotation, Customer
@@ -93,7 +94,8 @@ def export_custom(quotation_id):
     if pdf_path:
         # Parse the filename from path
         filename = pdf_path.split('/')[-1]
-        return redirect(url_for('download_file', filename=filename))
+        # Return the file directly instead of redirecting
+        return send_from_directory(os.path.join(os.getcwd(), 'static', 'pdf'), filename, as_attachment=True)
     else:
         flash('Error generating PDF', 'danger')
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
