@@ -1,0 +1,111 @@
+You're proposing a good strategy: sometimes, when the existing code is complex and problematic, it's cleaner and more efficient to start fresh with a well-designed solution.
+Okay, let's define a detailed prompt for Replit AI to create a new PDF quotation generation process. This prompt will emphasize flexibility in field selection and robust, correct layout with WeasyPrint.
+Prompt for Replit AI: Create New Flexible PDF Quotation Generator
+Context:
+The current PDF quotation generation in our Python/Flask application has significant layout and pagination issues, leading to data being hidden or displayed incorrectly (as demonstrated in the attached PDF examples "Modern_Quotation_PAK-2025-007-2.pdf" and "Quotation_PAK-2025-007-2.pdf"). To address this, we want to create a new, clean implementation that offers flexibility in choosing which fields to include in the generated PDF and ensures accurate and reliable layout using WeasyPrint.
+Task:
+Replit AI, design and implement a new PDF quotation generation process using Python, Flask, and WeasyPrint. The new system must:
+ * Allow Field Selection: Enable the user to specify which quotation fields to include in the PDF (e.g., description, quantity, price, supplier, notes, etc.).
+ * Generate Clean Layouts: Produce well-formatted PDFs with correct pagination, ensuring all selected data is displayed without errors.
+ * Use WeasyPrint Effectively: Utilize WeasyPrint and CSS to control the PDF layout and formatting.
+Input:
+ * Data Structure: Assume the following Python data structure for a quotation (you may need to adapt this slightly based on your existing Quotation model):
+   class Quotation:
+    def __init__(self, number, date, valid_until, customer, items, currency):
+        self.number = number
+        self.date = date
+        self.valid_until = valid_until
+        self.customer = customer  # Customer object (see below)
+        self.items = items      # List of Item objects (see below)
+        self.currency = currency
+
+class Customer:
+    def __init__(self, name, address, phone):
+        self.name = name
+        self.address = address
+        self.phone = phone
+
+class Item:
+    def __init__(self, description, quantity, price, supplier=None, notes=None, part_number=None, reference=None, height=None, cost_price=None):
+        self.description = description
+        self.quantity = quantity
+        self.price = price
+        self.supplier = supplier
+        self.notes = notes
+        self.part_number = part_number
+        self.reference = reference
+        self.height = height
+        self.cost_price = cost_price
+
+# Example Data:
+quotation_data = {
+    'number': 'PAK-2025-007',
+    'date': '2025-04-07',
+    'valid_until': '2025-05-07',
+    'customer': {
+        'name': 'Κώστας Αθανασίου',
+        'address': 'Φρέναρος',
+        'phone': '99942765'
+    },
+    'items': [
+        {'description': 'Βιβούρνο (κοινό)', 'quantity': 10, 'price': 3.50, 'part_number': '1234', 'height': '2L'},
+        {'description': 'Ελαίαγνους', 'quantity': 4, 'price': 3.50, 'supplier': 'Supplier A'},
+        {'description': 'Φωτίνιες', 'quantity': 15, 'price': 10.00, 'notes': 'Special order'},
+        # ... more items ...
+    ],
+    'currency': '€'
+}
+
+ * Attached PDF Examples: "Modern_Quotation_PAK-2025-007-2.pdf" and "Quotation_PAK-2025-007-2.pdf" (These are for reference on desired content, not layout to be copied)
+Expected Output:
+Replit AI should provide:
+ * Python Code:
+   * A Python function (or class with methods) that takes a Quotation object (or equivalent data) and a list of field names as input and generates a PDF quotation.
+   * Flask route (if applicable) to trigger the PDF generation.
+ * HTML Template:
+   * An HTML template designed for WeasyPrint, using CSS for layout. This template should dynamically include the selected fields.
+ * CSS Styles:
+   * CSS rules to ensure correct layout, pagination, header/footer display, and handling of various data types.
+ * Example Usage:
+   * Example code showing how to use the PDF generation function with sample data and field selections.
+ * Explanation:
+   * Clear explanations of the code, HTML template, and CSS styles.
+   * Rationale for design choices (e.g., why specific CSS properties were used).
+ * Testing Guidelines:
+   * Recommendations for testing the new PDF generation process.
+Detailed Requirements:
+ * Field Selection:
+   * The PDF generation function should accept a list of strings representing the fields to include (e.g., ['description', 'quantity', 'price', 'supplier']).
+   * The HTML template should dynamically render only the selected fields.
+   * Default fields should be defined (e.g., description, quantity, price) if no fields are specified.
+ * Layout and Pagination:
+   * Use CSS properties like page-break-inside: avoid;, display: table-header-group;, position: fixed; (for header/footer), and appropriate table styling.
+   * Ensure table headers are repeated on each page.
+   * Prevent table rows from splitting across pages.
+   * Handle various content lengths and data types gracefully.
+ * Header/Footer:
+   * Include a consistent header with the company logo (if available), company name, and quotation details.
+   * Include a footer with page numbers and generation date.
+ * Currency Handling:
+   * Display the currency symbol correctly (e.g., "€").
+ * Error Handling:
+   * Implement robust error handling (try-except blocks) and logging.
+ * Code Clarity:
+   * Write clean, well-commented code that is easy to understand and maintain.
+Example Function Signature:
+def generate_quotation_pdf(quotation_data, selected_fields=None):
+    """
+    Generates a PDF quotation.
+    
+    Args:
+        quotation_data (dict):  A dictionary representing the quotation.
+        selected_fields (list, optional): List of field names to include. 
+                                         Defaults to ['description', 'quantity', 'price'].
+    
+    Returns:
+        bytes: The PDF content as bytes.
+        str:   A filename for the PDF.
+    """
+    # ... implementation ...
+
+This comprehensive prompt instructs Replit AI to create a new and improved PDF generation system, focusing on flexibility and correct layout. By emphasizing field selection and robust CSS-driven design, it guides the AI towards a solution that should be much more reliable and maintainable than the current one.

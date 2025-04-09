@@ -1,0 +1,180 @@
+{% extends 'layout.html' %}
+
+{% block title %}Create Flexible Quotation PDF{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-file-pdf"></i> Generate Customized Quotation PDF
+            </h5>
+        </div>
+        <div class="card-body">
+            <h6 class="border-bottom pb-2 mb-3">Quotation: {{ quotation.quotation_number }}</h6>
+            
+            <form action="{{ url_for('export_flexible_quotation', quotation_id=quotation.id) }}" method="post">
+                <div class="row">
+                    <div class="col-md-7">
+                        <h6 class="mb-3">Select Fields to Include</h6>
+                        
+                        <!-- Default Fields -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Standard Fields</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in default_fields %}
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="fields" 
+                                                id="field_{{ field.name }}" value="{{ field.name }}" 
+                                                {% if not field.name == 'scientific_name' and not field.name == 'pot_size' %}checked{% endif %}>
+                                            <label class="form-check-label" for="field_{{ field.name }}">
+                                                {{ field.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Fields -->
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Additional Fields</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in available_fields %}
+                                    {% if not field.admin_only or is_admin %}
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="fields" 
+                                                id="field_{{ field.name }}" value="{{ field.name }}">
+                                            <label class="form-check-label" for="field_{{ field.name }}">
+                                                {{ field.label }}
+                                                {% if field.admin_only %}<span class="badge bg-warning text-dark">Admin</span>{% endif %}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Layout Options</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Page Orientation -->
+                                <div class="mb-3">
+                                    <label class="form-label">Page Orientation</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="orientation" 
+                                            id="orientation_portrait" value="portrait" checked>
+                                        <label class="form-check-label" for="orientation_portrait">
+                                            Portrait
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="orientation" 
+                                            id="orientation_landscape" value="landscape">
+                                        <label class="form-check-label" for="orientation_landscape">
+                                            Landscape
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Style -->
+                                <div class="mb-3">
+                                    <label class="form-label">Design Style</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="style" 
+                                            id="style_modern" value="modern" checked>
+                                        <label class="form-check-label" for="style_modern">
+                                            Modern Style
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="style" 
+                                            id="style_classic" value="classic">
+                                        <label class="form-check-label" for="style_classic">
+                                            Classic Style
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Admin Options -->
+                                {% if is_admin %}
+                                <div class="mb-3">
+                                    <label class="form-label">Admin Options</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="include_admin" 
+                                            id="include_admin" value="yes">
+                                        <label class="form-check-label" for="include_admin">
+                                            Include Admin Fields
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <h6 class="alert-heading">About Custom Quotations</h6>
+                            <p class="mb-0">
+                                This feature allows you to create a tailored quotation PDF with only the fields you need.
+                                Select at least the basic fields (description, quantity, price) to ensure the quotation
+                                contains all essential information.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4 border-top pt-3">
+                    <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Quotation
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-file-pdf"></i> Generate PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure at least one field is always selected
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        const checkedFields = document.querySelectorAll('input[name="fields"]:checked');
+        if (checkedFields.length === 0) {
+            event.preventDefault();
+            alert('Please select at least one field to include in the quotation.');
+        }
+    });
+    
+    // Admin fields toggle
+    const includeAdminCheckbox = document.getElementById('include_admin');
+    if (includeAdminCheckbox) {
+        includeAdminCheckbox.addEventListener('change', function() {
+            const adminFields = document.querySelectorAll('.admin-field');
+            adminFields.forEach(field => {
+                field.style.display = this.checked ? 'block' : 'none';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
