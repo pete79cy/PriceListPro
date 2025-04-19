@@ -157,6 +157,11 @@ def get_recent_activities(limit=5):
         # Return unsorted if there's a sorting error
         return activities[:limit] if activities else []
 
+# Simple redirect for backup testing
+@app.route('/database-backup')
+def database_backup_redirect():
+    return redirect(url_for('backup.index'))
+
 # Log that routes module was loaded
 logger.info("Routes module loaded")
 
