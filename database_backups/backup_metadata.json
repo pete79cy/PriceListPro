@@ -1,6 +1,24 @@
 {
-  "backups": [],
-  "last_backup": null,
-  "backup_count": 0,
+  "backups": [
+    {
+      "filename": "backup_20250419_184510.sql",
+      "path": "/home/runner/workspace/database_backups/backup_20250419_184510.sql",
+      "timestamp": "20250419_184510",
+      "datetime": "2025-04-19T18:45:19.675188",
+      "description": "Initial test backup",
+      "size": 247283,
+      "size_formatted": "241.49 KB"
+    }
+  ],
+  "last_backup": {
+    "filename": "backup_20250419_184510.sql",
+    "path": "/home/runner/workspace/database_backups/backup_20250419_184510.sql",
+    "timestamp": "20250419_184510",
+    "datetime": "2025-04-19T18:45:19.675188",
+    "description": "Initial test backup",
+    "size": 247283,
+    "size_formatted": "241.49 KB"
+  },
+  "backup_count": 1,
   "restore_history": []
 }
