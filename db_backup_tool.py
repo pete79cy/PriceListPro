@@ -48,19 +48,27 @@ class DatabaseBackupTool:
         # Parse database URL components
         # Expected format: postgresql://username:password@host:port/database
         try:
-            # Remove postgresql:// prefix
-            db_info = self.db_url.replace('postgresql://', '')
-            # Split credentials and host info
-            creds, host_info = db_info.split('@', 1)
-            self.username, self.password = creds.split(':', 1)
-            # Split host and database name
-            host_port, self.dbname = host_info.split('/', 1)
-            # Handle potential port in host
-            if ':' in host_port:
-                self.host, self.port = host_port.split(':', 1)
+            from urllib.parse import urlparse
+
+            # Parse the URL
+            parsed_url = urlparse(self.db_url)
+            
+            # Extract components
+            self.username = parsed_url.username
+            self.password = parsed_url.password
+            self.host = parsed_url.hostname
+            self.port = str(parsed_url.port) if parsed_url.port else '5432'
+            
+            # The path component contains the database name with a leading slash
+            path = parsed_url.path
+            if path.startswith('/'):
+                path = path[1:]  # Remove leading slash
+                
+            # Handle query parameters if any
+            if '?' in path:
+                self.dbname = path.split('?')[0]
             else:
-                self.host = host_port
-                self.port = '5432'  # Default PostgreSQL port
+                self.dbname = path
         except Exception as e:
             logger.error(f"Failed to parse DATABASE_URL: {e}")
             sys.exit(1)
@@ -83,17 +91,25 @@ class DatabaseBackupTool:
         metadata = {
             'backups': [],
             'last_backup': None,
-            'backup_count': 0
+            'backup_count': 0,
+            'restore_history': []
         }
         with open(self.metadata_file, 'w') as f:
             json.dump(metadata, f, indent=2)
         logger.info("Initialized backup metadata file")
+        return metadata
         
     def _get_metadata(self):
         """Read the backup metadata."""
         try:
             with open(self.metadata_file, 'r') as f:
-                return json.load(f)
+                metadata = json.load(f)
+                # Ensure all required keys exist
+                if 'backups' not in metadata:
+                    metadata['backups'] = []
+                if 'restore_history' not in metadata:
+                    metadata['restore_history'] = []
+                return metadata
         except Exception as e:
             logger.error(f"Failed to read metadata: {e}")
             return self._init_metadata()

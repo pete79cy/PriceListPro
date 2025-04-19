@@ -147,6 +147,14 @@ with app.app_context():
         app.register_blueprint(customer_bp)
         app.register_blueprint(quotation_bp)
         logger.info("Customer and Quotation blueprints registered successfully")
+        
+        # Register backup blueprint
+        try:
+            from blueprints.backup import backup_bp
+            app.register_blueprint(backup_bp)
+            logger.info("Database backup blueprint registered successfully")
+        except (ImportError, Exception) as e:
+            logger.warning(f"Backup blueprint could not be registered: {str(e)}")
     except (ImportError, Exception) as e:
         logger.warning(f"Blueprints could not be registered: {str(e)}")
         pass

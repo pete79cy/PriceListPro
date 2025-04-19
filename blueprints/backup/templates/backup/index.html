@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Database Backup Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Database Backup & Restore</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Backup Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total backups:</strong> {{ stats.count }}</p>
+                    <p><strong>Total size:</strong> {{ stats.total_size_formatted }}</p>
+                    <p><strong>Oldest backup:</strong> {{ stats.oldest|default('None') }}</p>
+                    <p><strong>Newest backup:</strong> {{ stats.newest|default('None') }}</p>
+                    <p><strong>Current time:</strong> {{ timestamp }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Create New Backup</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('backup.create_backup') }}" method="post">
+                        <div class="form-group mb-3">
+                            <label for="description">Backup Description</label>
+                            <input type="text" class="form-control" id="description" name="description" 
+                                   placeholder="Optional description for this backup">
+                        </div>
+                        <button type="submit" class="btn btn-success">Create Backup</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">Clean Old Backups</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('backup.clean_backups') }}" method="post">
+                        <div class="form-group mb-3">
+                            <label for="keep">Number of backups to keep</label>
+                            <input type="number" class="form-control" id="keep" name="keep" value="10" min="1">
+                        </div>
+                        <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to delete old backups?')">
+                            Clean Old Backups
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">Available Backups</h5>
+        </div>
+        <div class="card-body">
+            {% if backups %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Date/Time</th>
+                                <th>Size</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                                <tr>
+                                    <td>{{ backup.filename }}</td>
+                                    <td>{{ backup.datetime }}</td>
+                                    <td>{{ backup.size_formatted }}</td>
+                                    <td>{{ backup.description }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('backup.download_backup', filename=backup.filename) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fa fa-download"></i> Download
+                                            </a>
+                                            
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#restoreModal{{ loop.index }}">
+                                                <i class="fa fa-undo"></i> Restore
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Restore Confirmation Modal -->
+                                        <div class="modal fade" id="restoreModal{{ loop.index }}" tabindex="-1" 
+                                             aria-labelledby="restoreModalLabel{{ loop.index }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title" id="restoreModalLabel{{ loop.index }}">
+                                                            Confirm Database Restore
+                                                        </h5>
+                                                        <button type="button" class="btn-close" 
+                                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="alert alert-warning">
+                                                            <strong>Warning!</strong> Restoring a backup will overwrite the current database.
+                                                            This operation cannot be undone. All data changes since this backup was created will be lost.
+                                                        </div>
+                                                        
+                                                        <p>
+                                                            You are about to restore from: <br>
+                                                            <strong>{{ backup.filename }}</strong> ({{ backup.datetime }})
+                                                        </p>
+                                                        
+                                                        <form action="{{ url_for('backup.restore_backup', filename=backup.filename) }}" method="post">
+                                                            <div class="form-group mb-3">
+                                                                <label for="confirmation{{ loop.index }}">
+                                                                    Type <strong>CONFIRM</strong> to proceed
+                                                                </label>
+                                                                <input type="text" class="form-control" 
+                                                                       id="confirmation{{ loop.index }}" name="confirmation" 
+                                                                       placeholder="CONFIRM" required>
+                                                            </div>
+                                                            
+                                                            <div class="d-grid gap-2">
+                                                                <button type="submit" class="btn btn-danger">
+                                                                    Restore Database
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No backups available. Use the "Create Backup" button to create your first database backup.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
