@@ -1,129 +1,147 @@
-# Database Backup and Restore Guide
+# Database Backup & Restore Guide
 
-This guide explains how to use the database backup and restore tools that are part of the Plant Pricing System.
+This document provides instructions for using the database backup and restore functionality in the Plant Pricing System.
 
 ## Overview
 
-The backup system provides:
-- Web interface for manual backups and restores
-- Command-line tools for advanced usage
-- Scheduled backup capabilities
+The database backup system provides the following features:
+- Create manual or scheduled backups of the PostgreSQL database
+- Restore the database from previous backups
+- Manage backup files (download, delete)
+- View backup statistics and history
+
+## Accessing the Backup System
+
+There are two ways to access the backup system:
+
+1. **Web Interface**: Navigate to the Database Backup page in the admin section of the application.
+   - Available at: `/backup` or `/database-backup`
+   - Requires administrator privileges
+
+2. **Command Line**: Use the `db_backup_tool.py` script directly.
+   - Example: `python db_backup_tool.py create`
 
 ## Web Interface
 
-The backup web interface is accessible to administrators at `/backup` in the application.
+The web interface provides a user-friendly way to manage database backups:
 
-### Features
-- Create manual backups with descriptions
-- View all available backups 
-- Download backup files
-- Restore from any available backup
-- Clean up old backups to save space
+### Backup Dashboard
 
-### Usage
-1. Navigate to `/backup` in your application
-2. Use the "Create New Backup" form to create a new backup
-3. View existing backups in the table below
-4. Use the "Download" button to save backups locally
-5. Use the "Restore" button and confirm to restore from a backup
-6. Use "Clean Old Backups" to keep only a specific number of recent backups
+The main backup page shows:
+- Backup statistics (total count, latest backup date, total size)
+- List of available backups with details
+- Forms for creating new backups and cleaning old ones
 
-## Command-Line Tools
+### Creating a Backup
 
-The system includes several command-line tools for backing up and restoring the database.
+To create a new backup:
+1. Navigate to the Database Backup page
+2. In the "Create New Backup" section, enter an optional description
+3. Click "Create Backup"
+4. The system will create a new backup file and add it to the list
 
-### db_backup_tool.py
+### Restoring from a Backup
 
-This is the core tool that handles backup and restore operations.
+To restore the database from a backup:
+1. Find the backup you want to restore in the list
+2. Click the "Restore" button next to it
+3. A confirmation dialog will appear
+4. Type "CONFIRM" in the text field
+5. Click "Restore Database"
 
+**Warning**: Restoring a database will overwrite the current database with the backup version. All changes made since the backup was created will be lost.
+
+### Managing Backups
+
+- **Download**: Click the "Download" button next to a backup to download the SQL file
+- **Clean Old Backups**: Use the "Clean Old Backups" form to remove older backups, keeping only the specified number of recent ones
+
+## Command Line Tool
+
+The `db_backup_tool.py` script provides command-line access to backup functionality:
+
+```bash
+# Create a backup
+python db_backup_tool.py create --description "Monthly backup"
+
+# List available backups
+python db_backup_tool.py list
+
+# Restore from a backup
+python db_backup_tool.py restore --file backup_20250101_120000.sql
+
+# Clean old backups (keep only 5 most recent)
+python db_backup_tool.py clean --keep 5
 ```
-Usage:
-python db_backup_tool.py backup [--description "Optional description"]
-python db_backup_tool.py restore --file backup_20250419_123045.sql
-python db_backup_tool.py restore --latest
-python db_backup_tool.py list [--count 5]
-python db_backup_tool.py clean [--keep 10]
-python db_backup_tool.py stats
-```
 
-### scheduled_backup.py
+## Scheduled Backups
 
-Run this script to create a one-time backup, typically scheduled via cron.
+The system supports scheduling automatic backups at regular intervals:
 
-```
-Usage:
-python scheduled_backup.py [--keep 10] [--description "Scheduled backup"]
-```
+### Using the Scheduler Tool
 
-### backup_scheduler.py
+The `backup_scheduler.py` tool helps set up cron jobs for scheduled backups:
 
-Use this tool to configure automated backups on Linux systems with cron.
-
-```
-Usage:
-# Schedule daily backup at 2:00 AM, keeping the last 7 backups
+```bash
+# Schedule daily backups at 2:00 AM, keeping the 7 most recent
 python backup_scheduler.py --daily 2:00 --keep 7
 
-# Schedule weekly backup on Sunday at 3:00 AM
-python backup_scheduler.py --weekly "Sunday 3:00" --keep 4
+# Schedule weekly backups on Sunday at 3:00 AM, keeping the 4 most recent
+python backup_scheduler.py --weekly Sunday 3:00 --keep 4
 
-# Schedule monthly backup on the 1st at 4:00 AM
-python backup_scheduler.py --monthly "1 4:00" --keep 12
+# Schedule monthly backups on the 1st day at 4:00 AM, keeping the 12 most recent
+python backup_scheduler.py --monthly 1 4:00 --keep 12
 
-# List currently scheduled backups
+# List scheduled backup jobs
 python backup_scheduler.py --list
 
-# Remove all scheduled backups
+# Remove all scheduled backup jobs
 python backup_scheduler.py --remove
 ```
 
-## Backup Storage
-
-All backups are stored in the `database_backups` directory as plain SQL files. These files contain:
-- Database schema (tables, indexes, constraints)
-- All data in SQL format
-- DROP statements to clean the database before restoration
-
-## Best Practices
-
-1. **Regular Backups**: Schedule regular backups (daily or weekly) depending on how frequently your data changes
-2. **Multiple Retention Periods**: Keep daily backups for a week, weekly backups for a month, and monthly backups for a year
-3. **Test Restorations**: Periodically test the restore process to ensure backups are valid
-4. **Off-site Storage**: Download important backups and store them in a different location
-5. **Pre-update Backups**: Always create a backup before updating the application or making major changes
-
-## Troubleshooting
-
-### Backup Fails
-- Check the logs in `db_backup.log`
-- Ensure the DATABASE_URL environment variable is correctly set
-- Verify the PostgreSQL server is running and accessible
-- Check if there's enough disk space
-
-### Restore Fails
-- Check the logs in `db_backup.log`
-- Verify the backup file exists and is not corrupted
-- Ensure the DATABASE_URL points to a valid database 
-- Check if the user has sufficient permissions in PostgreSQL
-
-### Scheduled Backups Not Running
-- Check `scheduled_backup.log` for errors
-- Verify cron is running (`systemctl status cron`)
-- Check crontab is properly configured (`crontab -l`)
-- Ensure the script has execution permissions
-
 ## Backup File Format
 
-Backup files follow this naming pattern:
+Backup files are stored in the `database_backups` directory with the following naming convention:
 ```
 backup_YYYYMMDD_HHMMSS.sql
 ```
 
-For example: `backup_20250419_123045.sql` was created on April 19, 2025 at 12:30:45.
+For example: `backup_20250419_120000.sql`
 
-## Security Considerations
+Each backup file contains:
+- A SQL dump of the entire database schema and data
+- Metadata about the backup (in comments)
 
-- Backup files contain all your data, so keep them secure
-- The web interface restricts access to administrators only
-- Consider encrypting sensitive backups before storing them long-term
-- Database credentials are never stored in backup files
+## Best Practices
+
+1. **Regular Backups**: Set up scheduled backups to run automatically
+2. **Multiple Backups**: Keep several recent backups in case you need to roll back to an earlier state
+3. **Test Restores**: Periodically test the restore process to ensure backups are working correctly
+4. **Offsite Storage**: Download important backups and store them in a separate location
+5. **Before Major Changes**: Create a backup before making significant changes to the database
+
+## Troubleshooting
+
+If you encounter issues with the backup system:
+
+1. **Backup Creation Fails**:
+   - Check that PostgreSQL is running and accessible
+   - Verify the DATABASE_URL environment variable is set correctly
+   - Ensure the backup directory is writable
+
+2. **Restore Fails**:
+   - Check that the backup file exists and is not corrupted
+   - Verify that the PostgreSQL user has sufficient privileges
+   - Check for disk space issues
+
+3. **Scheduled Backups Not Running**:
+   - Verify that cron is running
+   - Check the cron log for errors
+   - Ensure the absolute paths in the cron job are correct
+
+## Additional Information
+
+For more detailed information, see:
+- The source code in `db_backup_tool.py`
+- The scheduled backup script in `scheduled_backup.py`
+- The scheduler tool in `backup_scheduler.py`
