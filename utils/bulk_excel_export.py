@@ -9,13 +9,15 @@ import zipfile
 import tempfile
 from datetime import datetime
 import uuid
+import shutil
 
 from models import Quotation
 from utils.excel_generator import generate_quotation_excel
+from utils.template_excel_generator import generate_template_excel
 
 logger = logging.getLogger(__name__)
 
-def generate_bulk_quotation_excel(quotations, output_folder, columns=None, zip_filename=None):
+def generate_bulk_quotation_excel(quotations, output_folder, columns=None, zip_filename=None, use_template=True, template_path=None):
     """
     Generate Excel files for multiple quotations and package them into a zip file.
     
@@ -24,6 +26,8 @@ def generate_bulk_quotation_excel(quotations, output_folder, columns=None, zip_f
         output_folder: The folder where the zip file will be saved
         columns: Optional list of column configurations to include in each Excel file
         zip_filename: Optional custom filename for the zip file
+        use_template: Whether to use the template format (default: True)
+        template_path: Optional path to a template Excel file
         
     Returns:
         str: The path to the generated zip file
@@ -36,14 +40,34 @@ def generate_bulk_quotation_excel(quotations, output_folder, columns=None, zip_f
     with tempfile.TemporaryDirectory() as temp_dir:
         excel_files = []
         
+        # Copy template to temp directory if provided
+        temp_template_path = None
+        if template_path and os.path.exists(template_path):
+            temp_template_path = os.path.join(temp_dir, 'template.xlsx')
+            try:
+                shutil.copy2(template_path, temp_template_path)
+                logger.info(f"Copied template from {template_path} to temporary directory")
+            except Exception as e:
+                logger.error(f"Error copying template: {str(e)}")
+                temp_template_path = None
+        
         # Generate Excel file for each quotation
         for quotation in quotations:
             try:
-                excel_path = generate_quotation_excel(
-                    quotation,
-                    temp_dir,
-                    columns=columns
-                )
+                if use_template:
+                    # Use the template-based generator
+                    excel_path = generate_template_excel(
+                        quotation,
+                        temp_dir,
+                        template_path=temp_template_path
+                    )
+                else:
+                    # Use the original generator
+                    excel_path = generate_quotation_excel(
+                        quotation,
+                        temp_dir,
+                        columns=columns
+                    )
                 
                 if excel_path:
                     excel_files.append({

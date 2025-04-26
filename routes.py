@@ -1888,29 +1888,23 @@ def register_routes(app):
             return redirect(url_for('quotations'))
         
         try:
-            # Define the columns to include in the Excel export
-            columns = [
-                {"key": "index", "label": "#"},
-                {"key": "description", "label": "Description"},
-                {"key": "scientific_name", "label": "Scientific Name"},
-                {"key": "pot_size", "label": "Actual Size"},
-                {"key": "height", "label": "Asked Size"},
-                {"key": "quantity", "label": "Quantity"},
-                {"key": "unit_price", "label": "Unit Price"},
-                {"key": "vat_rate", "label": "VAT Rate"},
-                {"key": "supplier", "label": "Supplier"},
-                {"key": "total_price", "label": "Total"}
-            ]
-            
-            # Generate the zip file with all quotation Excel files
+            # Define timestamp for filenames
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             zip_filename = f"quotations_export_{timestamp}.zip"
             
+            # Get template path if available
+            template_path = os.path.join('attached_assets', 'quotation_template(13).xlsx')
+            if not os.path.exists(template_path):
+                template_path = None
+                logger.warning("Template file not found, will generate based on template structure")
+            
+            # Generate the zip file with all quotation Excel files using the template format
             zip_path = generate_bulk_quotation_excel(
                 quotations=quotations,
                 output_folder=app.config['UPLOAD_FOLDER'],
-                columns=columns,
-                zip_filename=zip_filename
+                zip_filename=zip_filename,
+                use_template=True,
+                template_path=template_path
             )
             
             if not zip_path:
