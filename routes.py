@@ -22,6 +22,7 @@ from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_re
 from utils.enhanced_pdf_generator import generate_enhanced_pdf
 from utils.feedback_collector import get_feedback_collector
 from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_openai_for_resolution, flag_duplicate_products
+from utils.bulk_excel_export import generate_bulk_quotation_excel
 
 # Helper function to get recent activities 
 def get_recent_activities(limit=5):
