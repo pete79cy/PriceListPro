@@ -13,6 +13,9 @@
             <a href="{{ url_for('quotation.customize_fields') }}" class="btn btn-outline-primary me-2">
                 <i class="fas fa-sliders-h me-2"></i> Customize PDF Fields
             </a>
+            <a href="{{ url_for('bulk_export_quotations_excel', customer_id=selected_customer_id, date_from=date_from, date_to=date_to) }}" class="btn btn-outline-success me-2" id="bulkExportBtn">
+                <i class="fas fa-file-excel me-2"></i> Bulk Export Excel
+            </a>
             <a href="{{ url_for('upload_quotation') }}" class="btn btn-primary">
                 <i class="fas fa-plus-circle me-2"></i> Create New Quotation
             </a>
