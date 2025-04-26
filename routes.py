@@ -22,7 +22,6 @@ from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_re
 from utils.enhanced_pdf_generator import generate_enhanced_pdf
 from utils.feedback_collector import get_feedback_collector
 from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_openai_for_resolution, flag_duplicate_products
-from utils.bulk_excel_export import generate_bulk_quotation_excel
 
 # Helper function to get recent activities 
 def get_recent_activities(limit=5):
@@ -1849,81 +1848,6 @@ def register_routes(app):
                               selected_customer_id=customer_id,
                               date_from=date_from,
                               date_to=date_to)
-                              
-    @app.route('/quotations/bulk-export-excel')
-    @login_required
-    def bulk_export_quotations_excel():
-        """Export all quotations as separate Excel files in a zip archive"""
-        # Get filter parameters (same as the quotations list view)
-        customer_id = request.args.get('customer_id', type=int)
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
-        
-        # Build the query
-        query = Quotation.query
-        
-        # Apply filters if provided
-        if customer_id:
-            query = query.filter(Quotation.customer_id == customer_id)
-            
-        if date_from:
-            try:
-                from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-                query = query.filter(Quotation.quotation_date >= from_date)
-            except ValueError:
-                flash("Invalid 'from' date format. Please use YYYY-MM-DD.", 'warning')
-                
-        if date_to:
-            try:
-                to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-                query = query.filter(Quotation.quotation_date <= to_date)
-            except ValueError:
-                flash("Invalid 'to' date format. Please use YYYY-MM-DD.", 'warning')
-        
-        # Execute the query
-        quotations = query.order_by(Quotation.created_at.desc()).all()
-        
-        if not quotations:
-            flash('No quotations found to export', 'warning')
-            return redirect(url_for('quotations'))
-        
-        try:
-            # Define timestamp for filenames
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            zip_filename = f"quotations_export_{timestamp}.zip"
-            
-            # Get template path if available
-            template_path = os.path.join('attached_assets', 'quotation_template(13).xlsx')
-            if not os.path.exists(template_path):
-                template_path = None
-                logger.warning("Template file not found, will generate based on template structure")
-            
-            # Generate the zip file with all quotation Excel files using the template format
-            zip_path = generate_bulk_quotation_excel(
-                quotations=quotations,
-                output_folder=app.config['UPLOAD_FOLDER'],
-                zip_filename=zip_filename,
-                use_template=True,
-                template_path=template_path
-            )
-            
-            if not zip_path:
-                flash('Error generating export files', 'danger')
-                return redirect(url_for('quotations'))
-            
-            # Send the zip file to the client
-            return send_from_directory(
-                directory=app.config['UPLOAD_FOLDER'],
-                path=os.path.basename(zip_path),
-                as_attachment=True,
-                download_name=f"quotation_excel_export_{timestamp}.zip"
-            )
-        
-        except Exception as e:
-            logger.error(f"Error in bulk Excel export: {str(e)}")
-            logger.error(traceback.format_exc())
-            flash(f"Error generating bulk export: {str(e)}", 'danger')
-            return redirect(url_for('quotations'))
     
     @app.route('/upload-quotation')
     @login_required
