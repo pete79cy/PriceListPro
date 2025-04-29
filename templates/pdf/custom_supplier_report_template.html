@@ -317,7 +317,7 @@
                 {% endif %}
                 
                 {% if 'quantity' in fields %}
-                <td class="numeric">{{ "%d"|format(item.quantity|int) }}</td>
+                <td class="numeric"><strong>{{ "%d"|format(item.quantity|int) }}</strong></td>
                 {% endif %}
                 
                 {% if 'cost_price' in fields %}
@@ -341,7 +341,7 @@
             </tr>
             <tr>
                 <td class="label">Total Quantity:</td>
-                <td class="amount">{{ supplier_totals.values()|map(attribute='qty')|sum|int }}</td>
+                <td class="amount"><strong>{{ supplier_totals.values()|map(attribute='qty')|sum|int }}</strong></td>
             </tr>
             <tr class="total-row">
                 <td class="label total">Total Amount:</td>
