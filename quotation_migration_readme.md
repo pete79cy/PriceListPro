@@ -1,111 +1,223 @@
-# Quotation Migration Tools
+# Quotation Migration Guide
 
-This set of tools allows you to export quotations from the current system and import them into a new version of the application.
+This guide explains how to export quotations from the current system and import them into a new system. The migration process uses a JSON-based export format that preserves all relationships between quotations, items, customers, products, and suppliers.
 
-## 1. Export Quotations
+## Overview
 
-The `export_quotations.py` script exports quotations and their related data from the database to JSON files.
+The migration process consists of three main steps:
 
-### Usage:
+1. **Export** - Extract quotation data from the source system into JSON files
+2. **Transfer** - Move the JSON files to the target system
+3. **Import** - Load the quotation data into the target system
+
+## Prerequisites
+
+- Access to both source and target systems
+- Python 3.8 or higher on both systems
+- Required Python packages:
+  - `psycopg2-binary`
+  - `flask`
+  - `flask-sqlalchemy`
+
+## Step 1: Export Quotations
+
+The export process is handled by the `export_quotations_direct.py` script, which connects directly to the database to extract quotations and related data.
+
+### Export Options
+
+The script provides several export options:
+
+- Export all quotations
+- Export quotations for a specific customer
+- List quotations (without exporting)
+
+### Usage
 
 ```bash
-# Export all quotations
-python export_quotations.py
+# List quotations without exporting
+python export_quotations_direct.py --list
 
-# Export all quotations to a specific directory
-python export_quotations.py --output-dir /path/to/export/directory
+# Export all quotations
+python export_quotations_direct.py --all
 
 # Export quotations for a specific customer
-python export_quotations.py --customer-id 123
+python export_quotations_direct.py --customer-id <customer_id>
 
-# Export a specific quotation
-python export_quotations.py --quotation-id 456
+# Specify custom output directory
+python export_quotations_direct.py --all --output-dir /path/to/output
 ```
 
-The script creates a JSON file in the specified output directory (defaults to an 'exports' folder in the current directory). The exported file includes:
+### Export File Format
 
-- Quotation data (number, date, amounts, etc.)
-- Customer information
-- All quotation items with their details
-- Product and supplier references
+The exported data is saved as a JSON file with the following structure:
 
-## 2. Import Quotations
+```json
+{
+  "metadata": {
+    "export_date": "2025-04-30T20:02:46.861065",
+    "quotation_count": 16,
+    "version": "1.0",
+    "description": "Quotation data export for migration"
+  },
+  "quotations": [
+    {
+      "id": 11,
+      "customer_id": 9,
+      "quotation_number": "PAK-2025-001",
+      "quotation_date": "2025-04-05",
+      "total_amount": 1510.20,
+      "currency": "€",
+      "notes": "",
+      "status": "COMPLETED",
+      "customer": {
+        "id": 9,
+        "name": "Customer Name",
+        "email": "customer@example.com",
+        "phone": "+1234567890"
+      },
+      "items": [
+        {
+          "id": 630,
+          "quotation_id": 11,
+          "description": "Item description",
+          "quantity": 10,
+          "unit_price": 15.50,
+          "unit": "pcs",
+          "position": 0,
+          "product_data": {
+            "id": 123,
+            "name": "Product Name",
+            "scientific_name": "Scientific Name"
+          },
+          "supplier_data": {
+            "id": 45,
+            "name": "Supplier Name",
+            "email": "supplier@example.com"
+          }
+        }
+        // More items...
+      ]
+    }
+    // More quotations...
+  ]
+}
+```
 
-The `import_quotations.py` script imports quotations from JSON files created by the export tool.
+## Step 2: Transfer Files
 
-### Usage:
+Transfer the exported JSON files from the source system to the target system using one of these methods:
+
+- Download the files via the web interface
+- Use SCP or SFTP to transfer files directly between servers
+- Use a cloud storage service (Google Drive, Dropbox, etc.)
+
+## Step 3: Import Quotations
+
+The import process is handled by the `import_quotations.py` script, which loads the JSON data into the target system.
+
+### Import Options
+
+The script provides options for handling existing quotations:
+
+- Skip existing quotations (default)
+- Update existing quotations (use `--force` flag)
+
+### Usage
 
 ```bash
-# Test import without making changes (dry run)
-python import_quotations.py --file exports/quotations_export_20250430_123456.json --dry-run
+# Import quotations, skipping existing ones
+python import_quotations.py path/to/export/file.json
 
-# Import quotations for real
-python import_quotations.py --file exports/quotations_export_20250430_123456.json
-
-# Import and save a detailed report
-python import_quotations.py --file exports/quotations_export_20250430_123456.json --report import_report.txt
+# Import and update existing quotations
+python import_quotations.py path/to/export/file.json --force
 ```
 
-The import process:
+### Import Process
 
-1. Loads quotations from the JSON file
-2. Checks if each quotation already exists in the target system (by quotation number)
-3. Finds or maps customers, products, and suppliers in the target system
-4. Creates new quotations and items
-5. Provides a detailed report of what was imported
+The import process follows these steps:
 
-### Dry Run Mode
+1. Parse the export file
+2. For each quotation:
+   - Find or create the customer
+   - Find or create the quotation
+   - For each item:
+     - Find or create the product
+     - Find or create the supplier
+     - Create the quotation item
+3. Commit all changes to the database
 
-Use the `--dry-run` flag to test the import without actually saving changes to the database. This is useful for verifying that the import will work correctly before making any changes.
+### Entity Resolution
 
-## 3. Important Notes
+During import, the script attempts to match existing entities using these strategies:
 
-1. **Customer Matching**: The import tool tries to match customers by name and ID. If a customer isn't found, the quotation will be skipped.
+1. **Customers**:
+   - First, try to match by ID
+   - If not found, try to match by name
+   - If still not found, create a new customer
 
-2. **Product and Supplier Matching**: The tool attempts to match products and suppliers by ID first, then by name. If they're not found, the quotation item will still be imported without those references.
+2. **Products**:
+   - First, try to match by ID
+   - If not found, try to match by name
+   - If still not found, create a new product
 
-3. **Database Backup**: Always create a backup of your database before performing an import:
+3. **Suppliers**:
+   - First, try to match by ID
+   - If not found, try to match by name
+   - If still not found, create a new supplier
+
+4. **Quotations**:
+   - Try to match by quotation number
+   - If found and `--force` is not used, skip the quotation
+   - If found and `--force` is used, update the existing quotation
+   - If not found, create a new quotation
+
+## Troubleshooting
+
+### Export Issues
+
+- **Database Connection Errors**: Ensure the `DATABASE_URL` environment variable is correctly set
+- **Permission Errors**: Ensure the user has the necessary permissions to read from the database
+- **Missing Data**: Verify that the quotations exist in the source system
+
+### Import Issues
+
+- **Parsing Errors**: Verify that the JSON file is valid
+- **Missing Dependencies**: Ensure all required packages are installed
+- **Duplicate Entities**: Use the `--force` flag to update existing entities
+- **Database Schema Mismatches**: Ensure the target system's schema is compatible with the import script
+
+## Data Validation
+
+After migration, validate the imported data:
+
+1. Compare the count of quotations in both systems
+2. Check that all customers, products, and suppliers were migrated
+3. Verify a sample of quotations to ensure all data was properly migrated
+4. Check that all relationships (quotation to items, items to products/suppliers) are preserved
+
+## Advanced Topics
+
+### Partial Migrations
+
+To migrate only a subset of quotations, use one of these approaches:
+
+1. Export quotations for specific customers:
    ```bash
-   python db_backup_tool.py backup --description "Pre-quotation import backup"
+   python export_quotations_direct.py --customer-id <customer_id>
    ```
 
-4. **Logs**: Both tools maintain detailed logs in `quotation_export.log` and `quotation_import.log` files.
-
-5. **Error Handling**: If errors occur during import, they are logged, and the process continues with the next quotation.
-
-## 4. Example Migration Workflow
-
-Here's a recommended workflow for migrating quotations:
-
-1. Create a database backup:
-   ```bash
-   python db_backup_tool.py backup --description "Pre-migration backup"
+2. Filter quotations on the target system after import:
+   ```python
+   # Example: Filter by date
+   from datetime import datetime
+   start_date = datetime(2024, 1, 1)
+   filtered_quotations = Quotation.query.filter(Quotation.quotation_date >= start_date).all()
    ```
 
-2. Export all quotations from the source system:
-   ```bash
-   python export_quotations.py --output-dir migration_data
-   ```
+### Handling Large Datasets
 
-3. Set up the new system and ensure all customers, products, and suppliers are migrated first.
+For very large datasets, consider these approaches:
 
-4. Test import on the new system:
-   ```bash
-   python import_quotations.py --file migration_data/quotations_export_*.json --dry-run
-   ```
-
-5. Review the output and fix any issues.
-
-6. Perform the actual import:
-   ```bash
-   python import_quotations.py --file migration_data/quotations_export_*.json --report migration_report.txt
-   ```
-
-7. Verify the imported quotations in the new system.
-
-## 5. Troubleshooting
-
-- **Missing Dependencies**: Ensure both systems have the same package dependencies installed.
-- **Model Differences**: If the data models differ significantly between the old and new systems, you may need to modify the import script.
-- **ID Conflicts**: The import creates new IDs for all imported data to avoid conflicts.
-- **Large Datasets**: For very large datasets, consider importing in smaller batches by customer or date range.
+1. **Batch Processing**: Split exports into multiple files by customer or date range
+2. **Incremental Migration**: Migrate newer quotations first, then older ones
+3. **Parallel Processing**: Use multiple processes to handle different parts of the dataset
