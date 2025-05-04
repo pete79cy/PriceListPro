@@ -1,0 +1,158 @@
+**Clarifying snippet code request**
+
+The user previously asked for a process and rollback plan, and now they're requesting snippet code. Based on that, they likely want code to implement a feature flag, database migration, or service updates. They've already received code for the service and front-end, so now they might be asking for snippets around feature flagging the UI, a migration script, etc. Essentially, I'll provide code snippets for toggling the feature flag, implementing routing permissions, and the database migration. I'll stay focused on each step from the process!
+
+
+Thought for a few seconds
+
+
+Here are the key code snippets to safely roll out the new “Quotation Import” feature behind a feature‐flag, apply your DB migrations non­destructively, and gate the UI to the proper roles:
+
+---
+
+### 1. Non‐Destructive Migration (SQL)
+
+Create a file `migrations/20250505_add_import_logs.sql`:
+
+```sql
+-- migrations/20250505_add_import_logs.sql
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS import_logs (
+  id SERIAL PRIMARY KEY,
+  filename TEXT NOT NULL,
+  import_type TEXT NOT NULL,          -- e.g. 'quotation_excel' or 'quotation_pdf'
+  success_count INTEGER NOT NULL DEFAULT 0,
+  failure_count INTEGER NOT NULL DEFAULT 0,
+  imported_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMIT;
+```
+
+Run it in CI/CD (non-interactive):
+
+```bash
+psql $DATABASE_URL -f migrations/20250505_add_import_logs.sql
+```
+
+---
+
+### 2. Feature Flag Setup
+
+#### 2.1. Add to `.env` (both front- and back-end)
+
+```bash
+# .env
+FEATURE_QUOTE_IMPORT=true
+```
+
+#### 2.2. Expose in code
+
+**backend/src/config.ts**
+
+```ts
+export const FEATURE_QUOTE_IMPORT = process.env.FEATURE_QUOTE_IMPORT === 'true';
+```
+
+**frontend/src/lib/featureFlags.ts**
+
+```ts
+export const featureFlags = {
+  quoteImport: process.env.REACT_APP_FEATURE_QUOTE_IMPORT === 'true',
+};
+```
+
+---
+
+### 3. Registering the New Routes (Backend)
+
+In your main `server/routes.ts`:
+
+```ts
+import quoteImportRoutes from './routes/quoteImportRoutes';
+import { FEATURE_QUOTE_IMPORT } from './config';
+
+// ...
+
+if (FEATURE_QUOTE_IMPORT) {
+  app.use('/api/quotations/import', quoteImportRoutes);
+}
+```
+
+Your `quoteImportRoutes.ts` already uses `requireAuth` + `requireRoles('sales_rep','sales_manager')`.
+
+---
+
+### 4. Gating the UI (Frontend)
+
+#### 4.1. Add to your App router
+
+```tsx
+// frontend/src/App.tsx
+import { featureFlags } from '@/lib/featureFlags';
+import QuotationImportPage from '@/pages/quotations/import';
+
+function App() {
+  return (
+    <Routes>
+      {/* existing routes… */}
+      {featureFlags.quoteImport && (
+        <Route path="/quotations/import" element={<QuotationImportPage />} />
+      )}
+      {/* fallback 404… */}
+    </Routes>
+  );
+}
+```
+
+#### 4.2. Add Link in Sidebar
+
+```tsx
+// frontend/src/components/layout/Sidebar.tsx
+import { featureFlags } from '@/lib/featureFlags';
+import { UploadCloud } from 'lucide-react';
+
+export default function Sidebar() {
+  return (
+    <nav>
+      {/* other nav items… */}
+      {featureFlags.quoteImport && (
+        <NavItem to="/quotations/import" icon={<UploadCloud />}>
+          Upload for Quotation
+        </NavItem>
+      )}
+    </nav>
+  );
+}
+```
+
+---
+
+### 5. CI/CD Script Snippet
+
+In your GitHub Action (or similar) after checking out:
+
+```yaml
+- name: Apply DB Migrations
+  run: |
+    psql $DATABASE_URL -f migrations/20250505_add_import_logs.sql
+
+- name: Build & Deploy Backend
+  run: npm run build && npm run start
+
+- name: Build & Deploy Frontend
+  run: npm run build --prefix frontend && npm run serve --prefix frontend
+```
+
+---
+
+With these snippets you’ll:
+
+1. Add the new table without disrupting existing data
+2. Hide the import feature until you flip the flag
+3. Gate both API and UI so only Sales roles can see/use it
+4. Roll out safely via your CI/CD pipeline
+
+Let me know if you need anything else!
