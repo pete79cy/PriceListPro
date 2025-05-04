@@ -83,15 +83,7 @@ def nl2br(value):
     result = value.replace('\n', '<br>\n')
     return Markup(result)
 
-def basename(path):
-    """Extract basename from a file path"""
-    if not path:
-        return ""
-    import os
-    return os.path.basename(path)
-
 app.jinja_env.filters['nl2br'] = nl2br
-app.jinja_env.filters['basename'] = basename
 
 # Setup Flask-Login
 login_manager = LoginManager()
@@ -163,14 +155,6 @@ with app.app_context():
             logger.info("Database backup blueprint registered successfully")
         except (ImportError, Exception) as e:
             logger.warning(f"Backup blueprint could not be registered: {str(e)}")
-            
-        # Register the feature-flagged import quotations blueprint
-        try:
-            from blueprints.import_quotations import import_quotations_bp
-            app.register_blueprint(import_quotations_bp, url_prefix='/quotations')
-            logger.info("Import Quotations blueprint registered successfully")
-        except (ImportError, Exception) as e:
-            logger.warning(f"Import Quotations blueprint could not be registered: {str(e)}")
     except (ImportError, Exception) as e:
         logger.warning(f"Blueprints could not be registered: {str(e)}")
         pass

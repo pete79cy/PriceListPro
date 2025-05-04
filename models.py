@@ -270,36 +270,3 @@ class CompanySettings(db.Model):
 
     def __repr__(self):
         return f'<CompanySettings {self.name}>'
-
-class ImportLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.Text, nullable=False)
-    import_type = db.Column(db.String(50), nullable=False)  # e.g. 'quotation_excel' or 'quotation_pdf'
-    success_count = db.Column(db.Integer, nullable=False, default=0)
-    failure_count = db.Column(db.Integer, nullable=False, default=0)
-    imported_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'success', 'partial', 'failed', 'rolled_back'
-    error_message = db.Column(db.Text, nullable=True)
-    rollback_data = db.Column(db.Text, nullable=True)  # JSON metadata for rollback
-    
-    # Relationships
-    user = db.relationship('User', backref='import_logs', lazy=True)
-    
-    def __repr__(self):
-        return f'<ImportLog {self.import_type} - {self.filename}>'
-    
-    def to_dict(self):
-        """Convert to dictionary for serialization"""
-        return {
-            "id": self.id,
-            "filename": self.filename,
-            "import_type": self.import_type,
-            "success_count": self.success_count,
-            "failure_count": self.failure_count,
-            "imported_by": self.imported_by,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "status": self.status,
-            "error_message": self.error_message,
-            "rollback_data": self.rollback_data
-        }
