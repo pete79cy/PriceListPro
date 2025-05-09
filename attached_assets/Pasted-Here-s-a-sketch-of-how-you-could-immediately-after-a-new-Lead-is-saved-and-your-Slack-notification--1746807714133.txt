@@ -1,0 +1,96 @@
+Here’s a sketch of how you could, immediately after a new Lead is saved and your Slack notification fires, push that same data into your external quotation system as a “Draft” via its HTTP-API. You’ll end up with:
+	1.	create_draft_quote() — a helper that calls your quoting-tool’s API
+	2.	A call to that helper in your quote_request view, right after you save the Lead
+
+⸻
+
+
+# utils/quoting.py
+import os
+import requests
+import logging
+
+QUOTER_API_URL   = os.getenv("QUOTER_API_URL")    # e.g. https://quotes.yourvendor.com/api/drafts
+QUOTER_API_TOKEN = os.getenv("QUOTER_API_TOKEN")  # Bearer token or API key
+
+log = logging.getLogger(__name__)
+
+def create_draft_quote(lead):
+    """
+    Push a new draft into the external quotation system.
+    Expects the external API to accept JSON like:
+    {
+      "customer_name": "...",
+      "customer_email": "...",
+      "customer_phone": "...",
+      "items": [
+         {"plant_id": 123, "name": "Blue bango", "size": "2L", "qty": 50},
+         ...
+      ]
+    }
+    """
+    payload = {
+        "customer_name":  lead.name,
+        "customer_email": lead.email,
+        "customer_phone": lead.phone,
+        "items": [
+            {
+                "plant_id": item["id"],
+                "name":     item["name"],
+                "size":     item["size"],
+                "qty":      item["qty"],
+            }
+            for item in lead.items  # however you store your items list
+        ]
+    }
+    headers = {
+        "Authorization": f"Bearer {QUOTER_API_TOKEN}",
+        "Content-Type":  "application/json",
+    }
+
+    try:
+        resp = requests.post(QUOTER_API_URL, json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        log.info("Created draft quote #%s in Quoter, external_id=%s",
+                 lead.id, data.get("draft_id"))
+        return data
+
+    except requests.RequestException as e:
+        log.error("Failed to create draft quote for Lead %s: %s", lead.id, e, exc_info=True)
+        # you might retry or alert here
+        return None
+
+# main.py (excerpt)
+from utils.quoting import create_draft_quote
+
+@app.route("/quote/request", methods=["POST"])
+def quote_request():
+    form = QuoteForm()
+    if form.validate_on_submit():
+        lead = save_lead_to_db(form)  # however you persist your Lead
+        send_slack_notification(lead)  # your existing Slack call
+
+        # --- NEW: auto-create draft in your Quotation program ---
+        draft = create_draft_quote(lead)
+        if not draft:
+            flash("Δημιουργία προσχέδιου στο σύστημα προσφορών απέτυχε. Θα ενημερωθούμε σύντομα.", "warning")
+        else:
+            flash("Το προσχέδιο της προσφοράς δημιουργήθηκε στο σύστημά μας.", "success")
+        # --------------------------------------------------------
+
+        return redirect(url_for("quote_confirmation"))
+    # on error, re-render form…
+    return render_template("quote_request.html", form=form)
+
+What you’ll need to wire up:
+	•	Environment variables for QUOTER_API_URL and QUOTER_API_TOKEN.
+	•	The exact payload shape your quoting tool expects—adjust the payload dict.
+	•	Error-handling or retry logic if your service is flaky.
+
+With that in place, every time a customer submits a quote request you’ll:
+	1.	Insert your own Lead row in Postgres
+	2.	Notify Slack
+	3.	Automatically push a “Draft” into your external Quoter via its REST API
+
+Let me know if you need help tailoring the payload or handling authentication (OAuth, API-key header, etc.) for your specific quotation system!
