@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Pricing System API</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Prism.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism-okaidia.min.css">
+    <style>
+        .api-endpoint {
+            border-left: 4px solid #0d6efd;
+            padding-left: 15px;
+            margin-bottom: 30px;
+        }
+        .http-method {
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-right: 10px;
+        }
+        .method-post {
+            background-color: #28a745;
+            color: white;
+        }
+        .method-get {
+            background-color: #0d6efd;
+            color: white;
+        }
+        pre {
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .endpoint-url {
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-seedling"></i> Plant Pricing System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/api/v1/">API Documentation</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1 class="mb-4">Plant Pricing System API Documentation</h1>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            <strong>Authentication:</strong> All API requests require a Bearer token in the Authorization header.
+            <div class="mt-2">Example: <code>Authorization: Bearer your_api_token</code></div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">Quotations API</h2>
+            </div>
+            <div class="card-body">
+                <!-- Create Quotation -->
+                <div class="api-endpoint">
+                    <h3>
+                        <span class="http-method method-post">POST</span>
+                        <span class="endpoint-url">/api/v1/quotations</span>
+                    </h3>
+                    <p>Create a new quotation with customer information and items.</p>
+                    
+                    <h4>Request Body</h4>
+                    <pre><code class="language-json">{
+  "customer": {
+    "name": "Acme Garden Center",
+    "email": "info@acmegarden.com",
+    "phone": "+1234567890",
+    "address": "123 Garden Street, Plant City"
+  },
+  "items": [
+    {
+      "description": "Ficus Lyrata",
+      "scientific_name": "Ficus lyrata",
+      "pot_size": "17cm",
+      "height": "80cm",
+      "quantity": 5,
+      "selling_price": 29.99,
+      "vat_rate": 19.0
+    },
+    {
+      "description": "Monstera Deliciosa",
+      "scientific_name": "Monstera deliciosa",
+      "pot_size": "21cm",
+      "height": "100cm",
+      "quantity": 3,
+      "selling_price": 45.50,
+      "vat_rate": 19.0
+    }
+  ],
+  "currency": "€",
+  "notes": "Special order for showroom display."
+}</code></pre>
+
+                    <h4>Response (201 Created)</h4>
+                    <pre><code class="language-json">{
+  "status": "success",
+  "quotation_id": 123,
+  "quotation_number": "PAK-2025-042",
+  "edit_url": "https://example.com/quotation/edit/123"
+}</code></pre>
+                </div>
+
+                <!-- Get Quotation -->
+                <div class="api-endpoint">
+                    <h3>
+                        <span class="http-method method-get">GET</span>
+                        <span class="endpoint-url">/api/v1/quotations/{quotation_number}</span>
+                    </h3>
+                    <p>Retrieve a quotation by its quotation number.</p>
+                    
+                    <h4>Response (200 OK)</h4>
+                    <pre><code class="language-json">{
+  "status": "success",
+  "quotation_id": 123,
+  "quotation_number": "PAK-2025-042",
+  "quotation_date": "2025-05-09",
+  "customer": {
+    "id": 45,
+    "name": "Acme Garden Center",
+    "email": "info@acmegarden.com",
+    "phone": "+1234567890",
+    "address": "123 Garden Street, Plant City"
+  },
+  "items": [
+    {
+      "id": 256,
+      "description": "Ficus Lyrata",
+      "scientific_name": "Ficus lyrata",
+      "pot_size": "17cm",
+      "height": "80cm",
+      "quantity": 5,
+      "selling_price": 29.99,
+      "vat_rate": 19.0,
+      "total": 149.95,
+      "position": 0
+    },
+    {
+      "id": 257,
+      "description": "Monstera Deliciosa",
+      "scientific_name": "Monstera deliciosa",
+      "pot_size": "21cm",
+      "height": "100cm",
+      "quantity": 3,
+      "selling_price": 45.50,
+      "vat_rate": 19.0,
+      "total": 136.50,
+      "position": 1
+    }
+  ],
+  "currency": "€",
+  "notes": "Special order for showroom display.",
+  "total_amount": 286.45,
+  "created_at": "2025-05-09T16:28:30.123456Z",
+  "updated_at": "2025-05-09T16:28:30.123456Z",
+  "edit_url": "https://example.com/quotation/edit/123"
+}</code></pre>
+                </div>
+
+                <!-- List Quotations -->
+                <div class="api-endpoint">
+                    <h3>
+                        <span class="http-method method-get">GET</span>
+                        <span class="endpoint-url">/api/v1/quotations</span>
+                    </h3>
+                    <p>List all quotations, with optional filtering.</p>
+                    
+                    <h4>Query Parameters</h4>
+                    <ul>
+                        <li><code>customer_id</code> (optional) - Filter by customer ID</li>
+                        <li><code>limit</code> (optional, default: 50) - Maximum number of results</li>
+                        <li><code>offset</code> (optional, default: 0) - Pagination offset</li>
+                    </ul>
+                    
+                    <h4>Response (200 OK)</h4>
+                    <pre><code class="language-json">{
+  "status": "success",
+  "count": 2,
+  "quotations": [
+    {
+      "id": 123,
+      "quotation_number": "PAK-2025-042",
+      "customer_name": "Acme Garden Center",
+      "quotation_date": "2025-05-09",
+      "total_amount": 286.45,
+      "currency": "€",
+      "item_count": 2,
+      "created_at": "2025-05-09T16:28:30.123456Z"
+    },
+    {
+      "id": 122,
+      "quotation_number": "PAK-2025-041",
+      "customer_name": "Green Thumb Nursery",
+      "quotation_date": "2025-05-08",
+      "total_amount": 425.75,
+      "currency": "€",
+      "item_count": 5,
+      "created_at": "2025-05-08T14:15:30.123456Z"
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">API Testing</h2>
+            </div>
+            <div class="card-body">
+                <p>You can test the API using curl or any HTTP client. Here are some examples:</p>
+                <h4>Create a new quotation</h4>
+                <pre><code class="language-bash">curl -X POST https://example.com/api/v1/quotations \
+  -H "Authorization: Bearer your_api_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {"name":"Acme Garden Center","email":"info@acmegarden.com"},
+    "items":[{"description":"Ficus Lyrata","quantity":5,"selling_price":29.99}],
+    "currency":"€",
+    "notes":"Test quotation"
+  }'</code></pre>
+                
+                <h4>Get a quotation</h4>
+                <pre><code class="language-bash">curl -H "Authorization: Bearer your_api_token" \
+  https://example.com/api/v1/quotations/PAK-2025-042</code></pre>
+                
+                <h4>List quotations</h4>
+                <pre><code class="language-bash">curl -H "Authorization: Bearer your_api_token" \
+  https://example.com/api/v1/quotations?limit=10</code></pre>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">Error Responses</h2>
+            </div>
+            <div class="card-body">
+                <p>The API returns standard HTTP status codes and JSON error responses:</p>
+                <pre><code class="language-json">{
+  "status": "error",
+  "message": "Error message describing the problem"
+}</code></pre>
+                
+                <h4>Common Error Codes</h4>
+                <ul>
+                    <li><code>400 Bad Request</code> - Missing or invalid request parameters</li>
+                    <li><code>401 Unauthorized</code> - Missing or invalid API token</li>
+                    <li><code>404 Not Found</code> - Resource not found</li>
+                    <li><code>500 Internal Server Error</code> - Server-side error</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Plant Pricing System API Documentation &copy; 2025</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap and Prism JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/components/prism-bash.min.js"></script>
+</body>
+</html>

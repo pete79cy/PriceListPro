@@ -3,7 +3,7 @@ API Blueprint for Quotation Management.
 Provides endpoints for creating and retrieving quotations via JSON.
 """
 import os
-from flask import Blueprint, request, jsonify, current_app, url_for, abort
+from flask import Blueprint, request, jsonify, current_app, url_for, abort, render_template
 from flask_httpauth import HTTPTokenAuth
 from app import db
 from models import Quotation, QuotationItem, Customer
@@ -305,6 +305,12 @@ def api_documentation():
     """
     Show API documentation.
     """
+    # Show HTML documentation page
+    if request.headers.get('Accept', '').find('text/html') >= 0 or \
+       request.headers.get('User-Agent', '').find('Mozilla') >= 0:
+        return render_template('api_docs.html')
+    
+    # Return JSON if requested via API client
     return jsonify({
         "status": "success",
         "message": "Plant Pricing System API v1",
