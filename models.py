@@ -200,15 +200,6 @@ class Supplier(db.Model):
         
     def to_dict(self):
         """Convert supplier object to dictionary for JSON serialization"""
-        from sqlalchemy.orm import object_session
-        session = object_session(self)
-        product_count = 0
-        if session:
-            from sqlalchemy import func
-            from sqlalchemy.future import select
-            stmt = select(func.count()).select_from(SupplierProduct).where(SupplierProduct.supplier_id == self.id)
-            product_count = session.execute(stmt).scalar() or 0
-            
         return {
             "id": self.id,
             "name": self.name,
@@ -220,7 +211,7 @@ class Supplier(db.Model):
             "is_inhouse": self.is_inhouse,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "product_count": product_count
+            "product_count": len(self.products) if self.products else 0
         }
 
 class SupplierProduct(db.Model):
@@ -239,14 +230,7 @@ class SupplierProduct(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        from sqlalchemy.orm import object_session
-        session = object_session(self)
-        supplier_name = "Unknown"
-        if session and self.supplier_id:
-            supplier = session.get(Supplier, self.supplier_id)
-            if supplier:
-                supplier_name = supplier.name
-        return f'<SupplierProduct {self.product_name} from {supplier_name}>'
+        return f'<SupplierProduct {self.product_name} from {self.supplier.name if self.supplier else "Unknown"}>'
 
 class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -286,27 +270,3 @@ class CompanySettings(db.Model):
 
     def __repr__(self):
         return f'<CompanySettings {self.name}>'
-
-class Lead(db.Model):
-    """
-    Lead model to store information about potential customers who have requested a quote.
-    This captures initial customer interest before converting to a formal quotation.
-    """
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), nullable=True)
-    message = db.Column(db.Text, nullable=True)
-    source = db.Column(db.String(50), nullable=True)  # Where did this lead come from? (e.g., website, referral)
-    status = db.Column(db.String(20), default='New')  # New, Contacted, Converted, Lost
-    items = db.Column(db.JSON, nullable=True)  # Stores the requested products as a JSON array
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    converted_to_quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=True)
-    quoter_draft_id = db.Column(db.String(100), nullable=True)  # ID of the draft in the external quotation system
-    
-    # Relationships
-    quotation = db.relationship('Quotation', backref='source_lead', lazy=True, foreign_keys=[converted_to_quotation_id])
-    
-    def __repr__(self):
-        return f'<Lead {self.name} ({self.status})>'
