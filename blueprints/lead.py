@@ -85,16 +85,15 @@ def quote_request():
                 i += 1
                 
         # Create new lead
-        lead = Lead(
-            name=name,
-            email=email,
-            phone=phone,
-            message=message,
-            source='website',
-            items=items,
-            status='New',
-            created_at=datetime.utcnow()
-        )
+        lead = Lead()
+        lead.name = name
+        lead.email = email
+        lead.phone = phone
+        lead.message = message
+        lead.source = 'website'
+        lead.items = items
+        lead.status = 'New'
+        lead.created_at = datetime.utcnow()
         
         db.session.add(lead)
         
@@ -149,11 +148,10 @@ def convert_to_customer(lead_id):
         flash(f"Lead linked to existing customer: {existing_customer.name}", "info")
     else:
         # Create a new customer from the lead
-        new_customer = Customer(
-            name=lead.name,
-            email=lead.email,
-            phone=lead.phone,
-        )
+        new_customer = Customer()
+        new_customer.name = lead.name
+        new_customer.email = lead.email
+        new_customer.phone = lead.phone
         db.session.add(new_customer)
         
         # Update the lead status

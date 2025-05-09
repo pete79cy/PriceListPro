@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+
+{% block title %}Quote Request Confirmation{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h2 class="h4 mb-0">Quote Request Submitted</h2>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h4>Thank You!</h4>
+                    <p class="lead">Your quote request has been successfully submitted.</p>
+                    
+                    <p>We have received your information and will prepare a detailed quote for you. 
+                       Our team will be in touch with you shortly.</p>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-grid gap-2 col-md-6 mx-auto">
+                        <a href="{{ url_for('lead.quote_request') }}" class="btn btn-outline-primary">Submit Another Request</a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Return to Home</a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>If you have any questions, please contact us at {{ config.get('COMPANY_EMAIL', 'info@example.com') }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
