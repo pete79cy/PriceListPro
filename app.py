@@ -155,6 +155,16 @@ with app.app_context():
             logger.info("Database backup blueprint registered successfully")
         except (ImportError, Exception) as e:
             logger.warning(f"Backup blueprint could not be registered: {str(e)}")
+            
+        # Register API blueprint
+        try:
+            from blueprints.routes_api import api
+            # Add API token to app config
+            app.config["API_TOKEN"] = os.environ.get("API_TOKEN", "test_api_token")
+            app.register_blueprint(api)
+            logger.info("API blueprint registered successfully")
+        except (ImportError, Exception) as e:
+            logger.warning(f"API blueprint could not be registered: {str(e)}")
     except (ImportError, Exception) as e:
         logger.warning(f"Blueprints could not be registered: {str(e)}")
         pass

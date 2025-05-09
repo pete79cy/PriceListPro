@@ -173,6 +173,8 @@ def log_function_call(func_name, duration_ms=None, **kwargs):
     }
     log_with_context('info', f"Function {func_name} completed in {duration_ms}ms", **context)
 
+# This function has been replaced by log_api_call
+# Keeping it for backward compatibility
 def log_api_request(endpoint, method, status_code, duration_ms, **kwargs):
     """
     Log an API request with timing and result.
@@ -184,16 +186,7 @@ def log_api_request(endpoint, method, status_code, duration_ms, **kwargs):
         duration_ms: Duration in milliseconds
         **kwargs: Additional context to include
     """
-    context = {
-        'endpoint': endpoint,
-        'method': method,
-        'status_code': status_code,
-        'duration_ms': duration_ms,
-        **kwargs
-    }
-    log_with_context('info', 
-                    f"API {method} {endpoint} completed with status {status_code} in {duration_ms}ms", 
-                    **context)
+    log_api_call(endpoint, method, status_code, duration_ms, **kwargs)
 
 def log_document_processing(document_type, document_id, status, duration_ms=None, **kwargs):
     """
@@ -235,6 +228,28 @@ def log_user_action(user_id, action, status, **kwargs):
     }
     log_with_context('info', f"User {user_id} {action} - {status}", **context)
     
+def log_api_call(endpoint, method, status_code, duration_ms, **kwargs):
+    """
+    Log an API request with timing and result.
+    
+    Args:
+        endpoint: API endpoint
+        method: HTTP method
+        status_code: HTTP status code
+        duration_ms: Duration in milliseconds
+        **kwargs: Additional context to include
+    """
+    context = {
+        'endpoint': endpoint,
+        'method': method,
+        'status_code': status_code,
+        'duration_ms': duration_ms,
+        **kwargs
+    }
+    log_with_context('info', 
+                    f"API {method} {endpoint} completed with status {status_code} in {duration_ms}ms", 
+                    **context)
+
 def log_api_request(func):
     """
     Decorator to log API requests with timing and status code.
@@ -258,7 +273,7 @@ def log_api_request(func):
             
             # Log successful request
             duration_ms = round((time.time() - start_time) * 1000, 2)
-            log_api_request(endpoint, method, status_code, duration_ms, client_ip=client_ip)
+            log_api_call(endpoint, method, status_code, duration_ms, client_ip=client_ip)
             
             return response
         except Exception as e:
