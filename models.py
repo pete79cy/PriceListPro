@@ -270,3 +270,27 @@ class CompanySettings(db.Model):
 
     def __repr__(self):
         return f'<CompanySettings {self.name}>'
+
+class Lead(db.Model):
+    """
+    Lead model to store information about potential customers who have requested a quote.
+    This captures initial customer interest before converting to a formal quotation.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=True)
+    message = db.Column(db.Text, nullable=True)
+    source = db.Column(db.String(50), nullable=True)  # Where did this lead come from? (e.g., website, referral)
+    status = db.Column(db.String(20), default='New')  # New, Contacted, Converted, Lost
+    items = db.Column(db.JSON, nullable=True)  # Stores the requested products as a JSON array
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    converted_to_quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=True)
+    quoter_draft_id = db.Column(db.String(100), nullable=True)  # ID of the draft in the external quotation system
+    
+    # Relationships
+    quotation = db.relationship('Quotation', backref='source_lead', lazy=True, foreign_keys=[converted_to_quotation_id])
+    
+    def __repr__(self):
+        return f'<Lead {self.name} ({self.status})>'
