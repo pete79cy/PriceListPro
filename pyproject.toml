@@ -25,4 +25,5 @@ dependencies = [
     "fpdf2>=2.8.2",
     "markupsafe>=3.0.2",
     "flask-httpauth>=4.8.0",
+    "slack-sdk>=3.35.0",
 ]
