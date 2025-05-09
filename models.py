@@ -200,6 +200,15 @@ class Supplier(db.Model):
         
     def to_dict(self):
         """Convert supplier object to dictionary for JSON serialization"""
+        from sqlalchemy.orm import object_session
+        session = object_session(self)
+        product_count = 0
+        if session:
+            from sqlalchemy import func
+            from sqlalchemy.future import select
+            stmt = select(func.count()).select_from(SupplierProduct).where(SupplierProduct.supplier_id == self.id)
+            product_count = session.execute(stmt).scalar() or 0
+            
         return {
             "id": self.id,
             "name": self.name,
@@ -211,7 +220,7 @@ class Supplier(db.Model):
             "is_inhouse": self.is_inhouse,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "product_count": len(self.products) if self.products else 0
+            "product_count": product_count
         }
 
 class SupplierProduct(db.Model):
@@ -230,7 +239,14 @@ class SupplierProduct(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f'<SupplierProduct {self.product_name} from {self.supplier.name if self.supplier else "Unknown"}>'
+        from sqlalchemy.orm import object_session
+        session = object_session(self)
+        supplier_name = "Unknown"
+        if session and self.supplier_id:
+            supplier = session.get(Supplier, self.supplier_id)
+            if supplier:
+                supplier_name = supplier.name
+        return f'<SupplierProduct {self.product_name} from {supplier_name}>'
 
 class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
