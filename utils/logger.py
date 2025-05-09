@@ -8,7 +8,9 @@ import json
 import time
 import traceback
 import socket
+import functools
 from datetime import datetime
+from flask import request
 
 # Create a custom logger
 logger = logging.getLogger('plant_pricing_system')
@@ -232,6 +234,47 @@ def log_user_action(user_id, action, status, **kwargs):
         **kwargs
     }
     log_with_context('info', f"User {user_id} {action} - {status}", **context)
+    
+def log_api_request(func):
+    """
+    Decorator to log API requests with timing and status code.
+    
+    Args:
+        func: The function to decorate
+        
+    Returns:
+        The decorated function
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        endpoint = request.path
+        method = request.method
+        client_ip = request.remote_addr
+        
+        try:
+            response = func(*args, **kwargs)
+            status_code = response[1] if isinstance(response, tuple) and len(response) > 1 else 200
+            
+            # Log successful request
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            log_api_request(endpoint, method, status_code, duration_ms, client_ip=client_ip)
+            
+            return response
+        except Exception as e:
+            # Log failed request
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            log_with_context('error', 
+                            f"API {method} {endpoint} failed after {duration_ms}ms: {str(e)}",
+                            endpoint=endpoint,
+                            method=method,
+                            status_code=500,
+                            duration_ms=duration_ms,
+                            client_ip=client_ip,
+                            exception=str(e))
+            raise
+            
+    return wrapper
 
 # Context manager for timing operations
 class TimingLogger:

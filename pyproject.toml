@@ -24,4 +24,5 @@ dependencies = [
     "fpdf>=1.7.2",
     "fpdf2>=2.8.2",
     "markupsafe>=3.0.2",
+    "flask-httpauth>=4.8.0",
 ]

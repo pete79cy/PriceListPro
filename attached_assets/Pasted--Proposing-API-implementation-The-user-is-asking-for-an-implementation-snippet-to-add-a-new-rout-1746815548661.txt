@@ -1,0 +1,178 @@
+**Proposing API implementation**
+
+The user is asking for an implementation snippet to add a new route file for an API in a Flask-based application. This will include defining routes in `routes_api.py`, registering a blueprint, and using Flask-HTTPAuth for Bearer token authentication. The API will need to handle `POST` and `GET` requests with error handling, decorators, and JSON responses. I'll also make sure to follow the user's provided design, including dependencies and a quotation draft model for clarity.
+
+
+Thought for 10 seconds
+
+
+Below is a minimal, self-contained example showing how you can spin up a `/api/v1/quotations` Blueprint with two endpoints (“create draft” and “get draft”), protected by simple Bearer-token auth via **Flask-HTTPAuth**. We assume you already have a `Lead` (quote request) model and corresponding `LeadItem` children in your ORM.
+
+---
+
+### 1. Install Dependency
+
+```bash
+pip install flask-httpauth
+```
+
+---
+
+### 2. routes\_api.py
+
+```python
+# routes_api.py
+import os
+from flask import Blueprint, request, jsonify, current_app, url_for, abort
+from flask_httpauth import HTTPTokenAuth
+from main import db
+from models import Lead, LeadItem  # adjust import paths as needed
+
+auth = HTTPTokenAuth(scheme="Bearer")
+api = Blueprint("quotations_api", __name__, url_prefix="/api/v1/quotations")
+
+# Load your token from env (e.g. export API_TOKEN=xyz)
+@auth.verify_token
+def verify_token(token):
+    return token == current_app.config["API_TOKEN"]
+
+
+def make_lead_response(lead):
+    return {
+        "status": "success",
+        "message": "Draft quotation created",
+        "quotation_id": lead.id,
+        "quotation_number": f"DRAFT-{lead.id:04d}",
+        "edit_url": url_for("admin.edit_lead", lead_id=lead.id)  # adjust as needed
+    }
+
+
+@api.route("/drafts", methods=["POST"])
+@auth.login_required
+def create_draft():
+    data = request.get_json() or {}
+    cust = data.get("customer", {})
+    items = data.get("items", [])
+    currency = data.get("currency", current_app.config.get("DEFAULT_CURRENCY", "€"))
+    notes = data.get("notes", "")
+
+    # Basic validation
+    if not cust.get("name") or not items:
+        return jsonify({"status": "error", "error": "Missing customer name or items"}), 400
+
+    # Create Lead
+    lead = Lead(
+        name=cust["name"],
+        email=cust.get("email", ""),
+        phone=cust.get("phone", ""),
+        currency=currency,
+        notes=notes,
+        status="draft",
+    )
+    db.session.add(lead)
+    db.session.flush()  # get lead.id
+
+    # Create associated items
+    for it in items:
+        li = LeadItem(
+            lead_id=lead.id,
+            plant_id=it.get("plant_id"),
+            scientific_name=it.get("scientific_name"),
+            pot_size=it.get("pot_size"),
+            quantity=it.get("quantity", 0),
+        )
+        db.session.add(li)
+
+    db.session.commit()
+    resp = make_lead_response(lead)
+    return jsonify(resp), 201
+
+
+@api.route("/drafts/<int:quotation_id>", methods=["GET"])
+@auth.login_required
+def get_draft(quotation_id):
+    lead = Lead.query.get_or_404(quotation_id)
+    items = [
+        {
+            "plant_id": li.plant_id,
+            "scientific_name": li.scientific_name,
+            "pot_size": li.pot_size,
+            "quantity": li.quantity,
+        }
+        for li in lead.items
+    ]
+    return jsonify({
+        "status": "success",
+        "quotation_id": lead.id,
+        "customer": {
+            "name": lead.name,
+            "email": lead.email,
+            "phone": lead.phone,
+        },
+        "items": items,
+        "currency": lead.currency,
+        "notes": lead.notes,
+        "status": lead.status,
+    })
+```
+
+---
+
+### 3. Register the Blueprint in your `app.py`
+
+```python
+# app.py (excerpt)
+from flask import Flask
+from routes_api import api as quotations_api
+
+app = Flask(__name__)
+app.config.from_prefixed_env()  # e.g. API_TOKEN=..., DEFAULT_CURRENCY=...
+# or explicitly:
+# app.config['API_TOKEN'] = os.environ['API_TOKEN']
+# app.config['DEFAULT_CURRENCY'] = '€'
+
+# register API blueprint
+app.register_blueprint(quotations_api)
+
+# … your existing routes & startup logic …
+```
+
+---
+
+### 4. Environment Variables
+
+```bash
+export API_TOKEN="your_super_secret_api_token"
+export DEFAULT_CURRENCY="€"
+```
+
+---
+
+### 5. How to Use
+
+* **Create draft**
+
+  ```bash
+  curl -X POST https://<your-domain>/api/v1/quotations/drafts \
+    -H "Authorization: Bearer your_super_secret_api_token" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "customer": {"name":"Acme Corp","email":"joe@acme","phone":"+123456"},
+          "items":[{"plant_id":17,"scientific_name":"Ficus","pot_size":"5L","quantity":3}],
+          "currency":"€",
+          "notes":"Please advise shipping"
+        }'
+  ```
+
+  → returns JSON with `quotation_id`, `quotation_number`, and `edit_url`.
+
+* **Fetch draft**
+
+  ```bash
+  curl -H "Authorization: Bearer your_super_secret_api_token" \
+    https://<your-domain>/api/v1/quotations/drafts/17
+  ```
+
+---
+
+That gives you a secure, standalone API for programmatically creating and retrieving quotation drafts. You can hook that into your external quotation system (or mobile app, etc.) by consuming these endpoints.
