@@ -1,0 +1,164 @@
+Based on the information you provided, the problem appears to be related to page break handling in WeasyPrint. WeasyPrint is a powerful tool for converting HTML/CSS to PDF, but sometimes it can encounter difficulties with precise page break control. Here are some specific solutions to fix the problem:
+
+### 1. Improvements to the HTML Template
+
+Add CSS properties to control page breaks in the products table:
+
+```css
+/* Add this to your template's CSS */
+tr.product-row {
+  page-break-inside: avoid; /* Prevents a product row from splitting across two pages */
+}
+
+table.product-table {
+  page-break-after: auto; /* Allows page breaks after the table if needed */
+}
+
+@media print {
+  /* Increase bottom margin to allow more space before the footer */
+  @page {
+    margin-bottom: 30mm; /* Adjust according to your footer size */
+  }
+  
+  /* Ensure the footer doesn't overlap content */
+  .footer {
+    position: fixed;
+    bottom: 10mm;
+    width: 100%;
+  }
+}
+```
+
+### 2. Python Code Improvements with WeasyPrint
+
+```python
+# Add these settings when creating the PDF with WeasyPrint
+from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
+
+font_config = FontConfiguration()
+html = HTML(string=html_content)
+
+# Create additional CSS for better page break control
+additional_css = CSS(string='''
+    tr { page-break-inside: avoid !important; }
+    @page { margin-bottom: 30mm; }
+''', font_config=font_config)
+
+# Combine existing CSS with the additional CSS
+css_files = [...existing_css_files...]  # Your existing CSS references
+css_files.append(additional_css)
+
+# Generate the PDF with improved settings
+pdf = html.write_pdf(stylesheets=css_files, font_config=font_config)
+```
+
+### 3. Table Size Control with Programmatic Logic
+
+```python
+def adjust_table_rows_for_pagination(products):
+    """
+    Adjusts the product list for better pagination.
+    Divides products into pages with a specific number of products per page.
+    """
+    # Calculate how many products fit on the first page (e.g., 7)
+    first_page_items = 7
+    
+    # Calculate how many products fit on subsequent pages (e.g., 8)
+    other_pages_items = 8
+    
+    # Organize products into pages
+    paginated_products = []
+    
+    # First page
+    if len(products) > 0:
+        paginated_products.append({
+            'page': 1,
+            'products': products[:first_page_items]
+        })
+    
+    # Subsequent pages
+    remaining_products = products[first_page_items:]
+    page_num = 2
+    
+    while remaining_products:
+        page_products = remaining_products[:other_pages_items]
+        paginated_products.append({
+            'page': page_num,
+            'products': page_products
+        })
+        remaining_products = remaining_products[other_pages_items:]
+        page_num += 1
+    
+    return paginated_products
+```
+
+### 4. Template Modification for Using Paginated Data
+
+```html
+<!-- In your HTML template, replace the products table with something like this -->
+{% for page in paginated_products %}
+  <!-- Start a new page except for the first one -->
+  {% if page.page > 1 %}
+  <div style="page-break-before: always;"></div>
+  {% endif %}
+  
+  <table class="product-table">
+    <!-- Table header -->
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Description</th>
+        <th>Scientific Name</th>
+        <!-- Other columns... -->
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in page.products %}
+      <tr class="product-row">
+        <td>{{ product.number }}</td>
+        <td>{{ product.description }}</td>
+        <td>{{ product.scientific_name }}</td>
+        <!-- Other fields... -->
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endfor %}
+```
+
+### 5. Improvement for Footer Handling
+
+```python
+# In the code that creates the template context
+def generate_modern_quotation_pdf(quotation_id):
+    # ... existing code ...
+    
+    # Calculate paginated products
+    paginated_products = adjust_table_rows_for_pagination(products)
+    
+    # Add to context
+    context = {
+        # ... existing context ...
+        'paginated_products': paginated_products,
+        'total_pages': len(paginated_products),
+    }
+    
+    # ... rest of the code ...
+```
+
+### Additional Tips for WeasyPrint:
+
+1. **Update WeasyPrint to the latest version**: Newer versions have better support for page break control.
+
+2. **Use explicit page breaks**: If needed, add explicit page breaks (page-break-before: always) at specific points to precisely control where the page changes.
+
+3. **Adjust @page margins**: Make sure you have enough space for the footer with appropriate margins in @page.
+
+4. **Debug with weasyprint.logger**: Enable logging to identify potential issues with page breaks.
+
+5. **Consider a fixed row height**: Setting a fixed height for table rows can help WeasyPrint calculate page breaks more accurately.
+
+6. **Test with different paper sizes**: Sometimes slightly adjusting the paper size can help resolve layout issues.
+
+This approach should help solve the problem with item #10 being hidden or cut off on page 2 of your quotation document.
