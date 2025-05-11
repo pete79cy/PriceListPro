@@ -21,6 +21,21 @@
                     <a href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}" class="btn btn-primary">
                         <i class="fas fa-file-alt me-2"></i> Modern PDF
                     </a>
+                    <a href="{{ url_for('export_quotation_fixed', quotation_id=quotation.id) }}" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i> Fixed PDF
+                    </a>
+                    <a href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}" class="btn btn-info">
+                        <i class="fas fa-cog me-2"></i> Custom PDF
+                    </a>
+                    <a href="{{ url_for('quotation.customize_fields', quotation_id=quotation.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-sliders-h me-2"></i> Customize Fields
+                    </a>
+                    <a href="{{ url_for('export_quotation_debug', quotation_id=quotation.id) }}" class="btn btn-warning">
+                        <i class="fas fa-bug me-2"></i> Debug PDF
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#excelOptionsModal">
+                        <i class="fas fa-file-excel me-2"></i> Excel
+                    </button>
                 </div>
                 <a href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}" class="btn btn-primary">
                     <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
@@ -318,6 +333,12 @@
             </div>
             <form id="editItemForm" action="" method="POST">
                 <div class="modal-body">
+                    <div class="alert alert-success d-none" id="formSuccessAlert">
+                        Item updated successfully!
+                    </div>
+                    <div class="alert alert-danger d-none" id="formErrorAlert">
+                        An error occurred. Please try again.
+                    </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="edit_description" class="form-label">Description *</label>
@@ -396,6 +417,83 @@
         </div>
     </div>
 </div>
+
+<!-- Excel Export Options Modal -->
+<div class="modal fade" id="excelOptionsModal" tabindex="-1" aria-labelledby="excelOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="excelOptionsModalLabel">Excel Export Options</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="GET" action="{{ url_for('export_quotation_excel', quotation_id=quotation.id) }}">
+                <div class="modal-body">
+                    <fieldset>
+                        <legend class="fs-5 mb-3">Select Columns to Export</legend>
+                        <div class="row mb-2">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllColumns">Select All</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllColumns">Deselect All</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="index" id="column_index" checked>
+                                    <label class="form-check-label" for="column_index">#</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="description" id="column_description" checked>
+                                    <label class="form-check-label" for="column_description">Description</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="scientific_name" id="column_scientific_name" checked>
+                                    <label class="form-check-label" for="column_scientific_name">Scientific Name</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="pot_size" id="column_pot_size" checked>
+                                    <label class="form-check-label" for="column_pot_size">Actual Size</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="height" id="column_height" checked>
+                                    <label class="form-check-label" for="column_height">Asked Size</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="quantity" id="column_quantity" checked>
+                                    <label class="form-check-label" for="column_quantity">Quantity</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="unit_price" id="column_unit_price" checked>
+                                    <label class="form-check-label" for="column_unit_price">Unit Price</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="vat_rate" id="column_vat_rate" checked>
+                                    <label class="form-check-label" for="column_vat_rate">VAT Rate</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="supplier" id="column_supplier" checked>
+                                    <label class="form-check-label" for="column_supplier">Supplier</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input excel-column" type="checkbox" name="columns" value="total_price" id="column_total_price" checked>
+                                    <label class="form-check-label" for="column_total_price">Total</label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-file-excel me-2"></i> Export Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block head %}
@@ -420,27 +518,139 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Include SortableJS for drag and drop functionality -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 <!-- Include our custom quotation.js -->
 <script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
 
 <!-- Initialize AI Insights for this quotation -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener("DOMContentLoaded", function() {
     // Set up the quotation context for AI insights
     if (window.aiInsights) {
         window.aiInsights.setDocumentContext(
-            'quotation', 
+            "quotation", 
             {{ quotation.id }}, 
-            'Quotation #{{ quotation.quotation_number }}'
+            "Quotation #{{ quotation.quotation_number }}"
         );
     }
     
     // Add click handler for the AI insights button
-    document.getElementById('showAiInsightsButton').addEventListener('click', function() {
+    document.getElementById("showAiInsightsButton").addEventListener("click", function() {
         if (window.aiInsights) {
             window.aiInsights.showSidebar();
         }
     });
+
+    // Initialize drag and drop functionality
+    initDragAndDrop();
+    
+    // Initialize Excel column select/deselect buttons
+    initExcelColumnSelectors();
 });
+
+// Initialize drag and drop sorting for quotation items
+function initDragAndDrop() {
+    const quotationId = document.getElementById("quotation-id").value;
+    const tbody = document.getElementById("quotation-items-tbody");
+    
+    if (!tbody) return;
+    
+    // Initialize Sortable
+    new Sortable(tbody, {
+        handle: ".drag-handle",
+        animation: 150,
+        ghostClass: "bg-light",
+        onEnd: function(evt) {
+            // Get all rows
+            const rows = Array.from(tbody.querySelectorAll("tr.item-row"));
+            
+            // Map rows to IDs and positions
+            const itemOrder = rows.map((row, index) => {
+                return {
+                    id: row.getAttribute("data-id"),
+                    position: index + 1
+                };
+            });
+            
+            // Update the positions in the backend via AJAX
+            updateItemPositions(quotationId, itemOrder);
+            
+            // Update visible row numbers
+            updateRowNumbers();
+        }
+    });
+}
+
+// Update item positions in the backend
+function updateItemPositions(quotationId, itemOrder) {
+    // Show a loading indicator
+    showPriceAssistantMessage("Updating item positions...", "info");
+    
+    fetch(`/quotation/${quotationId}/reorder-items`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items: itemOrder })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to update item order");
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showPriceAssistantMessage("Item order updated successfully", "success");
+        } else {
+            showPriceAssistantMessage(data.error || "Error updating item order", "danger");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating item positions:", error);
+        showPriceAssistantMessage("Error updating item order: " + error.message, "danger");
+    });
+}
+
+// Update row numbers after reordering
+function updateRowNumbers() {
+    const tbody = document.getElementById("quotation-items-tbody");
+    const rows = tbody.querySelectorAll("tr.item-row");
+    
+    rows.forEach((row, index) => {
+        const rowNumberCell = row.querySelector("td:nth-child(2)");
+        if (rowNumberCell) {
+            rowNumberCell.textContent = index + 1;
+        }
+    });
+}
+
+// Initialize Excel column select/deselect functionality
+function initExcelColumnSelectors() {
+    const selectAllBtn = document.getElementById('selectAllColumns');
+    const deselectAllBtn = document.getElementById('deselectAllColumns');
+    const columnCheckboxes = document.querySelectorAll('.excel-column');
+    
+    if (selectAllBtn && deselectAllBtn) {
+        // Select all columns
+        selectAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            columnCheckboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        });
+        
+        // Deselect all columns
+        deselectAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            columnCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        });
+    }
+}
 </script>
 {% endblock %}
+

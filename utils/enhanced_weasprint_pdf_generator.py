@@ -15,6 +15,7 @@ import uuid
 import logging
 from html import unescape
 from datetime import datetime
+from types import SimpleNamespace
 from flask import render_template
 from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
@@ -28,12 +29,13 @@ def adjust_table_rows_for_pagination(items):
     """
     Adjusts the product list for better pagination.
     Organizes products into pages with a specific number of products per page.
+    Returns a list of SimpleNamespace objects with page number and items list.
     
     Args:
         items: List of quotation items
         
     Returns:
-        list: List of page dictionaries with products per page
+        list: List of SimpleNamespace objects with page and items attributes
     """
     # Calculate how many products fit on the first page (e.g., 7)
     first_page_items = 7
@@ -41,15 +43,17 @@ def adjust_table_rows_for_pagination(items):
     # Calculate how many products fit on subsequent pages (e.g., 8)
     other_pages_items = 8
     
-    # Organize products into pages
+    # Organize products into pages using SimpleNamespace to avoid dict.items() method conflict
     paginated_items = []
     
     # First page
     if len(items) > 0:
-        paginated_items.append({
-            'page': 1,
-            'items': items[:first_page_items]
-        })
+        paginated_items.append(
+            SimpleNamespace(
+                page=1,
+                items=items[:first_page_items]
+            )
+        )
     
     # Subsequent pages
     remaining_items = items[first_page_items:]
@@ -57,10 +61,12 @@ def adjust_table_rows_for_pagination(items):
     
     while remaining_items:
         page_items = remaining_items[:other_pages_items]
-        paginated_items.append({
-            'page': page_num,
-            'items': page_items
-        })
+        paginated_items.append(
+            SimpleNamespace(
+                page=page_num,
+                items=page_items
+            )
+        )
         remaining_items = remaining_items[other_pages_items:]
         page_num += 1
     
