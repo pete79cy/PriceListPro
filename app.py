@@ -156,6 +156,15 @@ with app.app_context():
         except (ImportError, Exception) as e:
             logger.warning(f"Backup blueprint could not be registered: {str(e)}")
             
+        # Register enhanced quotation PDF blueprint
+        try:
+            from enhanced_quotation_blueprint import enhanced_quotation_bp, init_app
+            # Initialize the blueprint with the app context
+            init_app(app)
+            logger.info("Enhanced quotation PDF blueprint registered successfully")
+        except (ImportError, Exception) as e:
+            logger.warning(f"Enhanced quotation PDF blueprint could not be registered: {str(e)}")
+            
         # Register API blueprint
         try:
             from blueprints.routes_api import api
