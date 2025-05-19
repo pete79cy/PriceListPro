@@ -1,0 +1,77 @@
+General Application Information
+
+    Could you provide a detailed overview or documentation of the existing application?
+
+    What are the core technologies and versions currently in use (frontend, backend, database, PDF generation tools)?
+
+Quotation Management Module
+
+    How is customer-specific pricing currently managed and stored?
+
+    Could you share the data structure (schema) for quotations, particularly regarding price lists, customer-specific pricing, and versioning?
+
+    Does the existing quotation module support importing data via Excel or other bulk methods?
+
+    Is there existing logic for quotation expiry or validity periods?
+
+Order Management Module
+
+    How are daily orders currently recorded, stored, and managed in the system?
+
+    Is there any existing workflow automation for order status transitions (e.g., New → Preparing → Ready → Delivered)?
+
+    How is stock integration handled with daily orders currently (automatic or manual adjustments)?
+
+PDF Generation Capabilities
+
+    Which tool (Puppeteer, WeasyPrint, or other) does the application currently use for PDF generation?
+
+    Can the existing tool handle multilingual content effectively, especially Arabic RTL support and font embedding?
+
+    Do you have any known limitations or issues in the current PDF implementation?
+
+Customer and Pricing Data
+
+    Is there a centralized customer database? Could you describe its structure and integration points?
+
+    Are there customer-specific pricing tiers or discounts currently supported?
+
+    How is customer data linked across quotations, orders, and pricing modules?
+
+Data Export and Import Features
+
+    Could you describe or share the data formats used for Excel imports/exports for quotations, price lists, and orders?
+
+    Are there existing validation rules or logic for imported data?
+
+Technical Integration & API
+
+    Is there an existing API documentation you could provide?
+
+    Can key features such as quotations, orders, and pricing data be accessed or integrated externally through existing APIs?
+
+Development & Deployment Environment
+
+    What development and deployment tools are currently in use (Docker, VS Code, Replit CLI, GitHub Actions, etc.)?
+
+    Are there any particular constraints or requirements for setting up a compatible development environment?
+
+Security and Authentication
+
+    How is user authentication and authorization currently handled?
+
+    Is there role-based access control implemented, or is it currently single-user?
+
+Performance & Scalability
+
+    Are there known performance bottlenecks or scalability challenges in the current application?
+
+    Could you share any performance metrics or stress tests conducted?
+
+Lessons Learned & Recommendations
+
+    Could you share any specific challenges encountered while developing the existing application?
+
+    Are there best practices or recommendations you'd advise based on your experience maintaining this application?
+
+This structured set of questions will ensure clarity and smooth integration of the existing application's features into your new PRD and project.
