@@ -113,76 +113,156 @@
                         </button>
                     </div>
                 </div>
-                <div class="card-body px-0 px-md-3">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 40px; width: 40px;"><i class="fas fa-sort" title="Drag items to reorder"></i></th>
-                                    <th style="min-width: 40px;">#</th>
-                                    <th style="min-width: 150px;">Description</th>
-                                    <th style="min-width: 150px;">Scientific Name</th>
-                                    <th style="min-width: 100px;">Actual Size</th>
-                                    <th style="min-width: 100px;">Asked Size</th>
-                                    <th style="min-width: 80px;" class="text-center">Quantity</th>
-                                    <th style="min-width: 100px;" class="text-end">Unit Price</th>
-                                    <th style="min-width: 80px;" class="text-center">VAT Rate</th>
-                                    <th style="min-width: 120px;">Supplier</th>
-                                    <th style="min-width: 100px;" class="text-end">Total</th>
-                                    <th style="min-width: 100px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="quotation-items-tbody" class="sortable-items">
-                                {% for item in quotation.items|sort(attribute='position') %}
-                                <tr class="item-row" data-id="{{ item.id }}" data-position="{{ item.position }}">
-                                    <td class="drag-handle text-center">
-                                        <i class="fas fa-grip-vertical text-muted" style="cursor: grab;"></i>
-                                    </td>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ item.description }}</td>
-                                    <td><em>{{ item.scientific_name or "" }}</em></td>
-                                    <td>{{ item.pot_size or "" }}</td>
-                                    <td>{{ item.height or "" }}</td>
-                                    <td class="text-center">{{ "%d"|format(item.quantity|int) }}</td>
-                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
-                                    <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
-                                    <td>{{ item.supplier or "Not specified" }}</td>
-                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
-                                                    data-id="{{ item.id }}"
-                                                    data-description="{{ item.description|e }}"
-                                                    data-scientific-name="{{ item.scientific_name|e or '' }}"
-                                                    data-pot-size="{{ item.pot_size|e or '' }}"
-                                                    data-height="{{ item.height|e or '' }}"
-                                                    data-quantity="{{ item.quantity }}"
-                                                    data-selling-price="{{ item.selling_price }}"
-                                                    data-vat-rate="{{ item.vat_rate }}"
-                                                    data-supplier="{{ item.supplier|e or '' }}"
-                                                    data-supplier-id="{{ item.supplier_id }}"
-                                                    data-cost-price="{{ item.cost_price or 0 }}">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
-                                               class="btn btn-danger btn-sm"
-                                               onclick="return confirm('Are you sure you want to delete this item?');">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot>
-                                <tr class="table-light fw-bold">
-                                    <td></td>
-                                    <td colspan="9" class="text-end">Total Amount:</td>
-                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                <div class="card-body">
+                    <!-- Desktop version (hidden on small screens) -->
+                    <div class="d-none d-lg-block">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40px;"><i class="fas fa-sort" title="Drag items to reorder"></i></th>
+                                        <th>#</th>
+                                        <th>Description</th>
+                                        <th>Scientific Name</th>
+                                        <th>Actual Size</th>
+                                        <th>Asked Size</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-end">Unit Price</th>
+                                        <th class="text-center">VAT Rate</th>
+                                        <th>Supplier</th>
+                                        <th class="text-end">Total</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quotation-items-tbody" class="sortable-items">
+                                    {% for item in quotation.items|sort(attribute='position') %}
+                                    <tr class="item-row" data-id="{{ item.id }}" data-position="{{ item.position }}">
+                                        <td class="drag-handle text-center">
+                                            <i class="fas fa-grip-vertical text-muted" style="cursor: grab;"></i>
+                                        </td>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ item.description }}</td>
+                                        <td><em>{{ item.scientific_name or "" }}</em></td>
+                                        <td>{{ item.pot_size or "" }}</td>
+                                        <td>{{ item.height or "" }}</td>
+                                        <td class="text-center">{{ "%d"|format(item.quantity|int) }}</td>
+                                        <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
+                                        <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
+                                        <td>{{ item.supplier or "Not specified" }}</td>
+                                        <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
+                                                        data-id="{{ item.id }}"
+                                                        data-description="{{ item.description|e }}"
+                                                        data-scientific-name="{{ item.scientific_name|e or '' }}"
+                                                        data-pot-size="{{ item.pot_size|e or '' }}"
+                                                        data-height="{{ item.height|e or '' }}"
+                                                        data-quantity="{{ item.quantity }}"
+                                                        data-selling-price="{{ item.selling_price }}"
+                                                        data-vat-rate="{{ item.vat_rate }}"
+                                                        data-supplier="{{ item.supplier|e or '' }}"
+                                                        data-supplier-id="{{ item.supplier_id }}"
+                                                        data-cost-price="{{ item.cost_price or 0 }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
+                                                   class="btn btn-danger btn-sm"
+                                                   onclick="return confirm('Are you sure you want to delete this item?');">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-light fw-bold">
+                                        <td></td>
+                                        <td colspan="9" class="text-end">Total Amount:</td>
+                                        <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile version (visible only on small screens) -->
+                    <div class="d-block d-lg-none">
+                        <div class="list-group mb-3">
+                            {% for item in quotation.items|sort(attribute='position') %}
+                            <div class="list-group-item p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">#{{ loop.index }} {{ item.description }}</h6>
+                                    <div class="d-flex gap-1">
+                                        <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
+                                                data-id="{{ item.id }}"
+                                                data-description="{{ item.description|e }}"
+                                                data-scientific-name="{{ item.scientific_name|e or '' }}"
+                                                data-pot-size="{{ item.pot_size|e or '' }}"
+                                                data-height="{{ item.height|e or '' }}"
+                                                data-quantity="{{ item.quantity }}"
+                                                data-selling-price="{{ item.selling_price }}"
+                                                data-vat-rate="{{ item.vat_rate }}"
+                                                data-supplier="{{ item.supplier|e or '' }}"
+                                                data-supplier-id="{{ item.supplier_id }}"
+                                                data-cost-price="{{ item.cost_price or 0 }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('Are you sure you want to delete this item?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-1">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Scientific Name:</small>
+                                        <div><em>{{ item.scientific_name or "Not specified" }}</em></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Supplier:</small>
+                                        <div>{{ item.supplier or "Not specified" }}</div>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-1">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Actual Size:</small>
+                                        <div>{{ item.pot_size or "Not specified" }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Asked Size:</small>
+                                        <div>{{ item.height or "Not specified" }}</div>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Quantity:</small>
+                                        <div class="fw-bold">{{ "%d"|format(item.quantity|int) }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Unit Price:</small>
+                                        <div>{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Total:</small>
+                                        <div class="fw-bold">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Total Amount:</h6>
+                                    <h5 class="mb-0">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</h5>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

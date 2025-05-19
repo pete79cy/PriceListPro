@@ -79,79 +79,155 @@
                         </div>
 
                         <h5 class="mb-3">Product Information</h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="productTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="min-width: 150px;">Description</th>
-                                        <th style="min-width: 150px;">Scientific Name</th>
-                                        <th style="min-width: 120px;">Actual Size</th>
-                                        <th style="min-width: 120px;">Asked Size</th>
-                                        <th style="min-width: 100px;" class="text-center">Quantity</th>
-                                        <th style="min-width: 200px;" class="text-center">Selling Price (€)</th>
-                                        <th style="min-width: 100px;" class="text-center">VAT (%)</th>
-                                        <th style="min-width: 150px;">Supplier</th>
-                                        <th style="min-width: 120px;" class="text-center">Cost Price (€)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for product in products %}
-                                    <tr>
-                                        <td>
-                                            <input type="text" class="form-control" name="description_{{ loop.index0 }}" value="{{ product.description }}" required>
-                                            <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
-                                        </td>
-                                        <td>
-                                            <input type="text" class="form-control" id="scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}">
-                                        </td>
-                                        <td>
+                        
+                        <!-- Desktop version (hidden on small screens) -->
+                        <div class="d-none d-lg-block">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="productTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Scientific Name</th>
+                                            <th>Actual Size</th>
+                                            <th>Asked Size</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-center">Selling Price (€)</th>
+                                            <th class="text-center">VAT (%)</th>
+                                            <th>Supplier</th>
+                                            <th class="text-center">Cost Price (€)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for product in products %}
+                                        <tr>
+                                            <td>
+                                                <input type="text" class="form-control" name="description_{{ loop.index0 }}" value="{{ product.description }}" required>
+                                                <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" id="scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" id="pot_size_{{ loop.index0 }}" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="e.g. P9, C3L">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30-40, 120/150cm">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
+                                            </td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
+                                                    <button type="button" class="btn btn-outline-primary suggest-price-btn" 
+                                                            data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
+                                                            data-pot-size-id="pot_size_{{ loop.index0 }}" 
+                                                            data-price-id="selling_price_{{ loop.index0 }}">
+                                                        <i class="fas fa-magic me-1"></i> Suggest
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <select class="form-select" name="vat_rate_{{ loop.index0 }}">
+                                                    <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
+                                                    <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
+                                                    <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="form-select" name="supplier_{{ loop.index0 }}">
+                                                    {% for supplier in suppliers %}
+                                                    <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
+                                                    {% endfor %}
+                                                    <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control text-end" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0">
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile version (visible only on small screens) -->
+                        <div class="d-block d-lg-none">
+                            {% for product in products %}
+                            <div class="card mb-3 product-card">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Product #{{ loop.index }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Description</label>
+                                        <input type="text" class="form-control" name="description_{{ loop.index0 }}" value="{{ product.description }}" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Scientific Name</label>
+                                        <input type="text" class="form-control" id="scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}">
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label">Actual Size</label>
                                             <input type="text" class="form-control" id="pot_size_{{ loop.index0 }}" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="e.g. P9, C3L">
-                                        </td>
-                                        <td>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Asked Size</label>
                                             <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30-40, 120/150cm">
-                                        </td>
-                                        <td>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label">Quantity</label>
                                             <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
-                                        </td>
-                                        <td>
-                                            <div class="input-group">
-                                                <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
-                                                <button type="button" class="btn btn-outline-primary suggest-price-btn d-none d-md-inline-block" 
-                                                        data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
-                                                        data-pot-size-id="pot_size_{{ loop.index0 }}" 
-                                                        data-price-id="selling_price_{{ loop.index0 }}">
-                                                    <i class="fas fa-magic me-1"></i> <span class="d-none d-lg-inline">Suggest Price</span>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary suggest-price-btn d-inline-block d-md-none" 
-                                                        data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
-                                                        data-pot-size-id="pot_size_{{ loop.index0 }}" 
-                                                        data-price-id="selling_price_{{ loop.index0 }}">
-                                                    <i class="fas fa-magic"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">VAT Rate</label>
                                             <select class="form-select" name="vat_rate_{{ loop.index0 }}">
                                                 <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
                                                 <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
                                                 <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
                                             </select>
-                                        </td>
-                                        <td>
-                                            <select class="form-select" name="supplier_{{ loop.index0 }}">
-                                                {% for supplier in suppliers %}
-                                                <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
-                                                {% endfor %}
-                                                <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <input type="number" class="form-control text-end" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0">
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Selling Price (€)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
+                                            <button type="button" class="btn btn-outline-primary suggest-price-btn" 
+                                                    data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
+                                                    data-pot-size-id="pot_size_{{ loop.index0 }}" 
+                                                    data-price-id="selling_price_{{ loop.index0 }}">
+                                                <i class="fas fa-magic me-1"></i> Suggest
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Supplier</label>
+                                        <select class="form-select" name="supplier_{{ loop.index0 }}">
+                                            {% for supplier in suppliers %}
+                                            <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
+                                            {% endfor %}
+                                            <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Cost Price (€)</label>
+                                        <input type="number" class="form-control text-end" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
 
                         <div class="row mt-4">
