@@ -81,44 +81,88 @@
                 </div>
                 <div class="card-body">
                     {% if quotations|length > 0 %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Quotation #</th>
-                                    <th>Customer</th>
-                                    <th>Date</th>
-                                    <th class="text-end">Total Amount</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for quotation in quotations %}
-                                <tr>
-                                    <td>{{ quotation.quotation_number }}</td>
-                                    <td>{{ quotation.customer.name }}</td>
-                                    <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
-                                    <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
-                                    <td>{{ quotation.created_at.strftime('%Y-%m-%d') }}</td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-file-pdf"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <!-- Desktop version (hidden on small screens) -->
+                    <div class="d-none d-lg-block">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Quotation #</th>
+                                        <th>Customer</th>
+                                        <th>Date</th>
+                                        <th class="text-end">Total Amount</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for quotation in quotations %}
+                                    <tr>
+                                        <td>{{ quotation.quotation_number }}</td>
+                                        <td>{{ quotation.customer.name }}</td>
+                                        <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
+                                        <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
+                                        <td>{{ quotation.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile version (visible only on small screens) -->
+                    <div class="d-block d-lg-none">
+                        <div class="list-group">
+                            {% for quotation in quotations %}
+                            <div class="list-group-item p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">{{ quotation.quotation_number }}</h6>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-1">
+                                    <div class="col-12">
+                                        <small class="text-muted d-block">Customer:</small>
+                                        <div>{{ quotation.customer.name }}</div>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Date:</small>
+                                        <div>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Total Amount:</small>
+                                        <div class="fw-bold">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% else %}
                     <div class="alert alert-info">
