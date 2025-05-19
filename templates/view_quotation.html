@@ -10,33 +10,28 @@
             <p class="text-muted">Quotation #{{ quotation.quotation_number }}</p>
         </div>
         <div class="col-lg-6 text-end">
-            <div class="btn-group">
+            <div class="d-flex flex-wrap justify-content-end gap-2 mb-2">
                 <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i> Back to Quotations
                 </a>
-                <div class="btn-group">
-                    <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="btn btn-primary">
-                        <i class="fas fa-file-pdf me-2"></i> Standard PDF
-                    </a>
-                    <a href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}" class="btn btn-primary">
-                        <i class="fas fa-file-alt me-2"></i> Modern PDF
-                    </a>
-                    <a href="{{ url_for('export_quotation_fixed', quotation_id=quotation.id) }}" class="btn btn-success">
-                        <i class="fas fa-check me-2"></i> Fixed PDF
-                    </a>
-                    <a href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}" class="btn btn-info">
-                        <i class="fas fa-cog me-2"></i> Custom PDF
-                    </a>
-                    <a href="{{ url_for('quotation.customize_fields', quotation_id=quotation.id) }}" class="btn btn-outline-primary">
-                        <i class="fas fa-sliders-h me-2"></i> Customize Fields
-                    </a>
-                    <a href="{{ url_for('export_quotation_debug', quotation_id=quotation.id) }}" class="btn btn-warning">
-                        <i class="fas fa-bug me-2"></i> Debug PDF
-                    </a>
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#excelOptionsModal">
-                        <i class="fas fa-file-excel me-2"></i> Excel
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="pdfOptionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-pdf me-2"></i> Export PDF
                     </button>
+                    <ul class="dropdown-menu" aria-labelledby="pdfOptionsDropdown">
+                        <li><a class="dropdown-item" href="{{ url_for('export_quotation', quotation_id=quotation.id) }}">Standard PDF</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}">Modern PDF</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('export_quotation_fixed', quotation_id=quotation.id) }}">Fixed PDF</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}">Custom PDF</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('export_quotation_debug', quotation_id=quotation.id) }}">Debug PDF</a></li>
+                    </ul>
                 </div>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#excelOptionsModal">
+                    <i class="fas fa-file-excel me-2"></i> Excel
+                </button>
+                <a href="{{ url_for('quotation.customize_fields', quotation_id=quotation.id) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-sliders-h me-2"></i> Customize Fields
+                </a>
                 <a href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}" class="btn btn-primary">
                     <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
                 </a>
@@ -118,23 +113,23 @@
                         </button>
                     </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body px-0 px-md-3">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 40px;"><i class="fas fa-sort" title="Drag items to reorder"></i></th>
-                                    <th>#</th>
-                                    <th>Description</th>
-                                    <th>Scientific Name</th>
-                                    <th>Actual Size</th>
-                                    <th>Asked Size</th>
-                                    <th class="text-center">Quantity</th>
-                                    <th class="text-end">Unit Price</th>
-                                    <th class="text-center">VAT Rate</th>
-                                    <th>Supplier</th>
-                                    <th class="text-end">Total</th>
-                                    <th>Actions</th>
+                                    <th style="min-width: 40px; width: 40px;"><i class="fas fa-sort" title="Drag items to reorder"></i></th>
+                                    <th style="min-width: 40px;">#</th>
+                                    <th style="min-width: 150px;">Description</th>
+                                    <th style="min-width: 150px;">Scientific Name</th>
+                                    <th style="min-width: 100px;">Actual Size</th>
+                                    <th style="min-width: 100px;">Asked Size</th>
+                                    <th style="min-width: 80px;" class="text-center">Quantity</th>
+                                    <th style="min-width: 100px;" class="text-end">Unit Price</th>
+                                    <th style="min-width: 80px;" class="text-center">VAT Rate</th>
+                                    <th style="min-width: 120px;">Supplier</th>
+                                    <th style="min-width: 100px;" class="text-end">Total</th>
+                                    <th style="min-width: 100px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="quotation-items-tbody" class="sortable-items">
@@ -154,25 +149,27 @@
                                     <td>{{ item.supplier or "Not specified" }}</td>
                                     <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
-                                                data-id="{{ item.id }}"
-                                                data-description="{{ item.description|e }}"
-                                                data-scientific-name="{{ item.scientific_name|e or '' }}"
-                                                data-pot-size="{{ item.pot_size|e or '' }}"
-                                                data-height="{{ item.height|e or '' }}"
-                                                data-quantity="{{ item.quantity }}"
-                                                data-selling-price="{{ item.selling_price }}"
-                                                data-vat-rate="{{ item.vat_rate }}"
-                                                data-supplier="{{ item.supplier|e or '' }}"
-                                                data-supplier-id="{{ item.supplier_id }}"
-                                                data-cost-price="{{ item.cost_price or 0 }}">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
-                                           class="btn btn-danger btn-sm"
-                                           onclick="return confirm('Are you sure you want to delete this item?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
+                                                    data-id="{{ item.id }}"
+                                                    data-description="{{ item.description|e }}"
+                                                    data-scientific-name="{{ item.scientific_name|e or '' }}"
+                                                    data-pot-size="{{ item.pot_size|e or '' }}"
+                                                    data-height="{{ item.height|e or '' }}"
+                                                    data-quantity="{{ item.quantity }}"
+                                                    data-selling-price="{{ item.selling_price }}"
+                                                    data-vat-rate="{{ item.vat_rate }}"
+                                                    data-supplier="{{ item.supplier|e or '' }}"
+                                                    data-supplier-id="{{ item.supplier_id }}"
+                                                    data-cost-price="{{ item.cost_price or 0 }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
+                                               class="btn btn-danger btn-sm"
+                                               onclick="return confirm('Are you sure you want to delete this item?');">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
