@@ -19,11 +19,8 @@
                         <i class="fas fa-file-pdf me-2"></i> Export PDF
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="pdfOptionsDropdown">
-                        <li><a class="dropdown-item" href="{{ url_for('export_quotation', quotation_id=quotation.id) }}">Standard PDF</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}">Modern PDF</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('export_quotation_fixed', quotation_id=quotation.id) }}">Fixed PDF</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}">Custom PDF</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('export_quotation_debug', quotation_id=quotation.id) }}">Debug PDF</a></li>
                     </ul>
                 </div>
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#excelOptionsModal">
