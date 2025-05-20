@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings
+from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings, QuotationStatus
 from flask_login import login_user, logout_user, login_required, current_user
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
@@ -2051,6 +2051,95 @@ def register_routes(app):
                               vat_summary=vat_summary,
                               suppliers=suppliers_dict,
                               all_suppliers=all_suppliers)
+    
+    @app.route('/quotation/<int:quotation_id>/transition_status', methods=['POST'])
+    @login_required
+    def quotation_transition_status(quotation_id):
+        """Handle quotation status transitions"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        target_status = request.form.get('target_status')
+        
+        if not target_status:
+            flash('Error: No target status provided', 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+            
+        # Check if the transition is allowed
+        if not quotation.can_transition_to(target_status):
+            flash(f'Error: Cannot transition from {quotation.get_status_label()} to {QuotationStatus.LABELS.get(target_status, target_status)}', 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
+        try:
+            # Handle special case: When transitioning to SUBMITTED, set valid_until date if not set
+            if target_status == QuotationStatus.SUBMITTED and not quotation.valid_until:
+                # Set valid_until to 30 days from now by default
+                quotation.valid_until = datetime.utcnow().date() + timedelta(days=30)
+            
+            # Perform the transition
+            if quotation.transition_to(target_status):
+                db.session.commit()
+                flash(f'Quotation status updated to {quotation.get_status_label()}', 'success')
+            else:
+                flash('Error updating quotation status', 'danger')
+                
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error transitioning quotation status: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f'Error updating quotation status: {str(e)}', 'danger')
+        
+        return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
+    @app.route('/quotation/<int:quotation_id>/duplicate', methods=['GET'])
+    @login_required
+    def duplicate_quotation(quotation_id):
+        """Duplicate a quotation to create a new one with the same items"""
+        original = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            # Create new quotation with the same customer and details
+            new_quotation = Quotation(
+                customer_id=original.customer_id,
+                quotation_number=generate_quotation_number(),  # Generate new number
+                quotation_date=datetime.utcnow().date(),
+                total_amount=original.total_amount,
+                currency=original.currency,
+                notes=f"Duplicated from {original.quotation_number}",
+                status=QuotationStatus.DRAFT,  # Always start as draft
+                valid_until=datetime.utcnow().date() + timedelta(days=30)  # 30 days from now
+            )
+            db.session.add(new_quotation)
+            db.session.flush()  # Get ID before creating items
+            
+            # Duplicate all items
+            for item in original.items:
+                new_item = QuotationItem(
+                    quotation_id=new_quotation.id,
+                    product_id=item.product_id,
+                    description=item.description,
+                    scientific_name=item.scientific_name,
+                    pot_size=item.pot_size,
+                    height=item.height,
+                    quantity=item.quantity,
+                    selling_price=item.selling_price,
+                    vat_rate=item.vat_rate,
+                    supplier=item.supplier,
+                    supplier_id=item.supplier_id,
+                    cost_price=item.cost_price,
+                    total=item.total,
+                    position=item.position
+                )
+                db.session.add(new_item)
+            
+            db.session.commit()
+            flash(f'Quotation duplicated successfully as {new_quotation.quotation_number}', 'success')
+            return redirect(url_for('view_quotation', quotation_id=new_quotation.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error duplicating quotation: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f'Error duplicating quotation: {str(e)}', 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/export')
     @login_required
