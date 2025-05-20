@@ -53,11 +53,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('invoices') }}">
-                            <i class="fas fa-file-invoice"></i> Invoices
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('quotations') }}">
                             <i class="fas fa-file-contract"></i> Quotations
                         </a>
@@ -69,6 +64,7 @@
                         <ul class="dropdown-menu" aria-labelledby="supplierDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('suppliers') }}"><i class="fas fa-building"></i> Manage Suppliers</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('supplier_products') }}"><i class="fas fa-leaf"></i> Supplier Products</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('invoices') }}"><i class="fas fa-file-invoice"></i> Invoices</a></li>
                         </ul>
                     </li>
                     
