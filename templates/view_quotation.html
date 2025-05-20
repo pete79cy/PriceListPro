@@ -58,17 +58,15 @@
                     <div class="status-timeline d-flex justify-content-between position-relative mb-4">
                         <div class="timeline-line position-absolute" style="height: 3px; background-color: #e9ecef; top: 15px; left: 10%; width: 80%; z-index: 1;"></div>
                         
-                        {% set status_steps = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'CONVERTED'] %}
+                        {% set status_steps = ['DRAFT', 'SENT', 'ACCEPTED', 'COMPLETED'] %}
                         {% for step in status_steps %}
                             {% set is_active = quotation.status == step %}
                             {% set is_past = false %}
                             {% if step == 'DRAFT' and quotation.status != 'DRAFT' %}
                                 {% set is_past = true %}
-                            {% elif step == 'SUBMITTED' and quotation.status in ['UNDER_REVIEW', 'ACCEPTED', 'CONVERTED'] %}
+                            {% elif step == 'SENT' and quotation.status in ['ACCEPTED', 'COMPLETED'] %}
                                 {% set is_past = true %}
-                            {% elif step == 'UNDER_REVIEW' and quotation.status in ['ACCEPTED', 'CONVERTED'] %}
-                                {% set is_past = true %}
-                            {% elif step == 'ACCEPTED' and quotation.status == 'CONVERTED' %}
+                            {% elif step == 'ACCEPTED' and quotation.status == 'COMPLETED' %}
                                 {% set is_past = true %}
                             {% endif %}
                             
@@ -104,27 +102,22 @@
                                                         <option value="" selected disabled>-- Select new status --</option>
                                                         
                                                         {% if quotation.status == 'DRAFT' %}
-                                                            <option value="SUBMITTED" data-icon="fa-paper-plane" data-color="#1E90FF">Mark as Submitted</option>
+                                                            <option value="SENT" data-icon="fa-paper-plane" data-color="#1E90FF">Mark as Sent</option>
                                                         
-                                                        {% elif quotation.status == 'SUBMITTED' %}
-                                                            <option value="UNDER_REVIEW" data-icon="fa-eye" data-color="#FFD54F">Under Review</option>
+                                                        {% elif quotation.status == 'SENT' %}
                                                             <option value="ACCEPTED" data-icon="fa-check-circle" data-color="#4CAF50">Accepted</option>
-                                                            <option value="REJECTED" data-icon="fa-times-circle" data-color="#F44336">Rejected</option>
-                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
-                                                            
-                                                        {% elif quotation.status == 'UNDER_REVIEW' %}
-                                                            <option value="ACCEPTED" data-icon="fa-check-circle" data-color="#4CAF50">Accepted</option>
-                                                            <option value="REJECTED" data-icon="fa-times-circle" data-color="#F44336">Rejected</option>
+                                                            <option value="COMPLETED" data-icon="fa-clipboard-check" data-color="#8BC34A">Completed</option>
                                                             <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
                                                             
                                                         {% elif quotation.status == 'ACCEPTED' %}
-                                                            <option value="CONVERTED" data-icon="fa-file-invoice" data-color="#673AB7">Convert to Order</option>
+                                                            <option value="COMPLETED" data-icon="fa-clipboard-check" data-color="#8BC34A">Completed</option>
                                                             <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
                                                             
-                                                        {% elif quotation.status == 'REJECTED' %}
+                                                        {% elif quotation.status == 'COMPLETED' %}
                                                             <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
                                                             
-                                                        {% elif quotation.status == 'EXPIRED' %}
+                                                        {% elif quotation.status == 'created' %}
+                                                            <option value="SENT" data-icon="fa-paper-plane" data-color="#1E90FF">Mark as Sent</option>
                                                             <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
                                                         {% endif %}
                                                     </select>
@@ -178,18 +171,14 @@
                                             statusButton.className = 'btn';
                                             
                                             // Set button color based on status
-                                            if (selectedOption.value === 'SUBMITTED') {
+                                            if (selectedOption.value === 'SENT') {
                                                 statusButton.classList.add('btn-primary');
-                                            } else if (selectedOption.value === 'UNDER_REVIEW') {
-                                                statusButton.classList.add('btn-info');
                                             } else if (selectedOption.value === 'ACCEPTED') {
                                                 statusButton.classList.add('btn-success');
-                                            } else if (selectedOption.value === 'REJECTED') {
-                                                statusButton.classList.add('btn-danger');
+                                            } else if (selectedOption.value === 'COMPLETED') {
+                                                statusButton.classList.add('btn-info');
                                             } else if (selectedOption.value === 'DRAFT') {
                                                 statusButton.classList.add('btn-secondary');
-                                            } else if (selectedOption.value === 'CONVERTED') {
-                                                statusButton.classList.add('btn-primary');
                                             } else {
                                                 statusButton.classList.add('btn-primary');
                                             }
