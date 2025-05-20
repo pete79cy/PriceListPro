@@ -160,6 +160,49 @@ class ProductUpdateRequest(db.Model):
     def __repr__(self):
         return f'<ProductUpdateRequest Product: {self.product_id}, Old: {self.old_price}, New: {self.new_price}, Status: {self.status}>'
 
+class QuotationStatus:
+    """Enum-like class for quotation statuses"""
+    DRAFT = 'DRAFT'
+    SUBMITTED = 'SUBMITTED'
+    UNDER_REVIEW = 'UNDER_REVIEW'
+    ACCEPTED = 'ACCEPTED'
+    REJECTED = 'REJECTED'
+    EXPIRED = 'EXPIRED'
+    CONVERTED = 'CONVERTED'
+    
+    # Status display names for UI
+    LABELS = {
+        DRAFT: 'Draft',
+        SUBMITTED: 'Submitted',
+        UNDER_REVIEW: 'Under Review',
+        ACCEPTED: 'Accepted',
+        REJECTED: 'Rejected',
+        EXPIRED: 'Expired',
+        CONVERTED: 'Converted to Order'
+    }
+    
+    # Status colors for UI
+    COLORS = {
+        DRAFT: '#B0B0B0',  # Grey
+        SUBMITTED: '#1E90FF',  # Blue
+        UNDER_REVIEW: '#FFD54F',  # Amber
+        ACCEPTED: '#4CAF50',  # Green
+        REJECTED: '#F44336',  # Red
+        EXPIRED: '#9C27B0',  # Purple
+        CONVERTED: '#673AB7'  # Indigo
+    }
+    
+    # Valid status transitions
+    TRANSITIONS = {
+        DRAFT: [SUBMITTED],
+        SUBMITTED: [UNDER_REVIEW, ACCEPTED, REJECTED, EXPIRED, DRAFT],
+        UNDER_REVIEW: [ACCEPTED, REJECTED, EXPIRED, DRAFT],
+        ACCEPTED: [CONVERTED, DRAFT],
+        REJECTED: [DRAFT],
+        EXPIRED: [DRAFT],
+        CONVERTED: []  # No further transitions from converted
+    }
+    
 class Quotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
@@ -171,6 +214,12 @@ class Quotation(db.Model):
     file_path = db.Column(db.String(255), nullable=True)  # Path to the stored PDF (if generated)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = db.Column(db.String(20), nullable=False, default=QuotationStatus.DRAFT)
+    valid_until = db.Column(db.Date, nullable=True)  # Date until when the quotation is valid
+    viewed_at = db.Column(db.DateTime, nullable=True)  # When the customer viewed the quotation
+    accepted_at = db.Column(db.DateTime, nullable=True)  # When the customer accepted the quotation
+    rejected_at = db.Column(db.DateTime, nullable=True)  # When the customer rejected the quotation
+    order_id = db.Column(db.String(50), nullable=True)  # Reference to the created order
     
     # Relationships
     customer = db.relationship('Customer', backref='quotations', lazy=True)
@@ -179,6 +228,44 @@ class Quotation(db.Model):
     
     def __repr__(self):
         return f'<Quotation {self.quotation_number}>'
+        
+    def get_status_label(self):
+        """Get the human-readable status label"""
+        return QuotationStatus.LABELS.get(self.status, self.status)
+        
+    def get_status_color(self):
+        """Get the color code for the status"""
+        return QuotationStatus.COLORS.get(self.status, '#000000')
+        
+    def can_transition_to(self, target_status):
+        """Check if the quotation can transition to the target status"""
+        return target_status in QuotationStatus.TRANSITIONS.get(self.status, [])
+        
+    def transition_to(self, target_status):
+        """
+        Transition the quotation to a new status if allowed
+        Returns True if transition was successful, False otherwise
+        """
+        if not self.can_transition_to(target_status):
+            return False
+            
+        # Update status timestamp based on the transition
+        now = datetime.utcnow()
+        
+        if target_status == QuotationStatus.UNDER_REVIEW:
+            self.viewed_at = now
+        elif target_status == QuotationStatus.ACCEPTED:
+            self.accepted_at = now
+        elif target_status == QuotationStatus.REJECTED:
+            self.rejected_at = now
+            
+        self.status = target_status
+        self.updated_at = now
+        return True
+        
+    def is_editable(self):
+        """Check if the quotation is in an editable state"""
+        return self.status == QuotationStatus.DRAFT
 
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
