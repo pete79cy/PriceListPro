@@ -32,7 +32,7 @@
                 <div class="card-body">
                     <form method="get" action="{{ url_for('quotations') }}">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label for="customer" class="form-label">Customer</label>
                                 <select class="form-select" id="customer" name="customer_id">
                                     <option value="">All Customers</option>
@@ -41,11 +41,22 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="">All Statuses</option>
+                                    <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                                    <option value="SENT" {% if selected_status == 'SENT' %}selected{% endif %}>Sent</option>
+                                    <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+                                    <option value="COMPLETED" {% if selected_status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                                    <option value="created" {% if selected_status == 'created' %}selected{% endif %}>Created</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
                                 <label for="date_from" class="form-label">Date From</label>
                                 <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label for="date_to" class="form-label">Date To</label>
                                 <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
                             </div>
