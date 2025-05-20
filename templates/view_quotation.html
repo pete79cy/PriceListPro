@@ -96,112 +96,110 @@
                                     <h6 class="mb-0">Change Status</h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        {% if quotation.status == 'DRAFT' %}
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="SUBMITTED">
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="fas fa-paper-plane me-1"></i> Mark as Submitted
-                                                </button>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" id="statusChangeForm">
+                                                <div class="input-group">
+                                                    <select class="form-select" name="target_status" id="statusChangeSelect">
+                                                        <option value="" selected disabled>-- Select new status --</option>
+                                                        
+                                                        {% if quotation.status == 'DRAFT' %}
+                                                            <option value="SUBMITTED" data-icon="fa-paper-plane" data-color="#1E90FF">Mark as Submitted</option>
+                                                        
+                                                        {% elif quotation.status == 'SUBMITTED' %}
+                                                            <option value="UNDER_REVIEW" data-icon="fa-eye" data-color="#FFD54F">Under Review</option>
+                                                            <option value="ACCEPTED" data-icon="fa-check-circle" data-color="#4CAF50">Accepted</option>
+                                                            <option value="REJECTED" data-icon="fa-times-circle" data-color="#F44336">Rejected</option>
+                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
+                                                            
+                                                        {% elif quotation.status == 'UNDER_REVIEW' %}
+                                                            <option value="ACCEPTED" data-icon="fa-check-circle" data-color="#4CAF50">Accepted</option>
+                                                            <option value="REJECTED" data-icon="fa-times-circle" data-color="#F44336">Rejected</option>
+                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
+                                                            
+                                                        {% elif quotation.status == 'ACCEPTED' %}
+                                                            <option value="CONVERTED" data-icon="fa-file-invoice" data-color="#673AB7">Convert to Order</option>
+                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
+                                                            
+                                                        {% elif quotation.status == 'REJECTED' %}
+                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
+                                                            
+                                                        {% elif quotation.status == 'EXPIRED' %}
+                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
+                                                        {% endif %}
+                                                    </select>
+                                                    <button type="submit" class="btn btn-primary" id="statusChangeButton">
+                                                        <i class="fas fa-arrow-right me-1"></i> Change Status
+                                                    </button>
+                                                </div>
                                             </form>
-                                            
-                                        {% elif quotation.status == 'SUBMITTED' %}
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="UNDER_REVIEW">
-                                                <button type="submit" class="btn btn-info">
-                                                    <i class="fas fa-eye me-1"></i> Under Review
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="ACCEPTED">
-                                                <button type="submit" class="btn btn-success">
-                                                    <i class="fas fa-check-circle me-1"></i> Accepted
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="REJECTED">
-                                                <button type="submit" class="btn btn-danger">
-                                                    <i class="fas fa-times-circle me-1"></i> Rejected
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="DRAFT">
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fas fa-undo me-1"></i> Back to Draft
-                                                </button>
-                                            </form>
-                                            
-                                        {% elif quotation.status == 'UNDER_REVIEW' %}
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="ACCEPTED">
-                                                <button type="submit" class="btn btn-success">
-                                                    <i class="fas fa-check-circle me-1"></i> Accepted
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="REJECTED">
-                                                <button type="submit" class="btn btn-danger">
-                                                    <i class="fas fa-times-circle me-1"></i> Rejected
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="DRAFT">
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fas fa-undo me-1"></i> Back to Draft
-                                                </button>
-                                            </form>
-                                            
-                                        {% elif quotation.status == 'ACCEPTED' %}
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="CONVERTED">
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="fas fa-file-invoice me-1"></i> Convert to Order
-                                                </button>
-                                            </form>
-                                            
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="DRAFT">
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fas fa-undo me-1"></i> Back to Draft
-                                                </button>
-                                            </form>
-                                            
-                                        {% elif quotation.status == 'REJECTED' %}
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="DRAFT">
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fas fa-undo me-1"></i> Back to Draft
-                                                </button>
-                                            </form>
-                                            
+                                        </div>
+                                        
+                                        {% if quotation.status == 'REJECTED' %}
+                                        <div class="col-md-6 mt-3 mt-md-0 d-flex align-items-center">
                                             <a href="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" class="btn btn-info">
                                                 <i class="fas fa-copy me-1"></i> Duplicate Quotation
                                             </a>
-                                            
-                                        {% elif quotation.status == 'EXPIRED' %}
-                                            <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post">
-                                                <input type="hidden" name="target_status" value="DRAFT">
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fas fa-undo me-1"></i> Back to Draft
-                                                </button>
-                                            </form>
-                                            
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if quotation.status == 'CONVERTED' and quotation.order_id %}
+                                        <div class="col-md-6 mt-3 mt-md-0 d-flex align-items-center">
+                                            <a href="#" class="btn btn-primary">
+                                                <i class="fas fa-file-invoice me-1"></i> View Order #{{ quotation.order_id }}
+                                            </a>
+                                        </div>
                                         {% elif quotation.status == 'CONVERTED' %}
-                                            {% if quotation.order_id %}
-                                                <a href="#" class="btn btn-primary">
-                                                    <i class="fas fa-file-invoice me-1"></i> View Order #{{ quotation.order_id }}
-                                                </a>
-                                            {% else %}
-                                                <span class="text-muted">This quotation has been converted to an order.</span>
-                                            {% endif %}
+                                        <div class="col-md-6 mt-3 mt-md-0 d-flex align-items-center">
+                                            <span class="text-muted">This quotation has been converted to an order.</span>
+                                        </div>
                                         {% endif %}
                                     </div>
                                 </div>
+                                
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const statusSelect = document.getElementById('statusChangeSelect');
+                                    const statusButton = document.getElementById('statusChangeButton');
+                                    
+                                    // Disable submit button if no option is selected
+                                    statusButton.disabled = !statusSelect.value;
+                                    
+                                    // Update button on select change
+                                    statusSelect.addEventListener('change', function() {
+                                        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+                                        statusButton.disabled = !statusSelect.value;
+                                        
+                                        if (selectedOption.value) {
+                                            const icon = selectedOption.getAttribute('data-icon');
+                                            const color = selectedOption.getAttribute('data-color');
+                                            
+                                            statusButton.innerHTML = `<i class="fas ${icon} me-1"></i> ${selectedOption.text}`;
+                                            statusButton.className = 'btn';
+                                            
+                                            // Set button color based on status
+                                            if (selectedOption.value === 'SUBMITTED') {
+                                                statusButton.classList.add('btn-primary');
+                                            } else if (selectedOption.value === 'UNDER_REVIEW') {
+                                                statusButton.classList.add('btn-info');
+                                            } else if (selectedOption.value === 'ACCEPTED') {
+                                                statusButton.classList.add('btn-success');
+                                            } else if (selectedOption.value === 'REJECTED') {
+                                                statusButton.classList.add('btn-danger');
+                                            } else if (selectedOption.value === 'DRAFT') {
+                                                statusButton.classList.add('btn-secondary');
+                                            } else if (selectedOption.value === 'CONVERTED') {
+                                                statusButton.classList.add('btn-primary');
+                                            } else {
+                                                statusButton.classList.add('btn-primary');
+                                            }
+                                        } else {
+                                            statusButton.innerHTML = '<i class="fas fa-arrow-right me-1"></i> Change Status';
+                                            statusButton.className = 'btn btn-primary';
+                                        }
+                                    });
+                                });
+                                </script>
                             </div>
                         </div>
                         
