@@ -163,44 +163,36 @@ class ProductUpdateRequest(db.Model):
 class QuotationStatus:
     """Enum-like class for quotation statuses"""
     DRAFT = 'DRAFT'
-    SUBMITTED = 'SUBMITTED'
-    UNDER_REVIEW = 'UNDER_REVIEW'
+    SENT = 'SENT'
     ACCEPTED = 'ACCEPTED'
-    REJECTED = 'REJECTED'
-    EXPIRED = 'EXPIRED'
-    CONVERTED = 'CONVERTED'
+    COMPLETED = 'COMPLETED'
+    CREATED = 'created'  # Odd casing exists in the database
     
     # Status display names for UI
     LABELS = {
         DRAFT: 'Draft',
-        SUBMITTED: 'Submitted',
-        UNDER_REVIEW: 'Under Review',
+        SENT: 'Sent',
         ACCEPTED: 'Accepted',
-        REJECTED: 'Rejected',
-        EXPIRED: 'Expired',
-        CONVERTED: 'Converted to Order'
+        COMPLETED: 'Completed',
+        CREATED: 'Created'
     }
     
     # Status colors for UI
     COLORS = {
         DRAFT: '#B0B0B0',  # Grey
-        SUBMITTED: '#1E90FF',  # Blue
-        UNDER_REVIEW: '#FFD54F',  # Amber
+        SENT: '#1E90FF',   # Blue
         ACCEPTED: '#4CAF50',  # Green
-        REJECTED: '#F44336',  # Red
-        EXPIRED: '#9C27B0',  # Purple
-        CONVERTED: '#673AB7'  # Indigo
+        COMPLETED: '#8BC34A',  # Light Green
+        CREATED: '#607D8B'  # Blue Grey
     }
     
     # Valid status transitions
     TRANSITIONS = {
-        DRAFT: [SUBMITTED],
-        SUBMITTED: [UNDER_REVIEW, ACCEPTED, REJECTED, EXPIRED, DRAFT],
-        UNDER_REVIEW: [ACCEPTED, REJECTED, EXPIRED, DRAFT],
-        ACCEPTED: [CONVERTED, DRAFT],
-        REJECTED: [DRAFT],
-        EXPIRED: [DRAFT],
-        CONVERTED: []  # No further transitions from converted
+        DRAFT: [SENT],
+        SENT: [ACCEPTED, COMPLETED, DRAFT],
+        ACCEPTED: [COMPLETED, DRAFT],
+        COMPLETED: [DRAFT],
+        CREATED: [SENT, DRAFT]
     }
     
 class Quotation(db.Model):
@@ -252,12 +244,15 @@ class Quotation(db.Model):
         # Update status timestamp based on the transition
         now = datetime.utcnow()
         
-        if target_status == QuotationStatus.UNDER_REVIEW:
+        if target_status == 'SENT':
+            # When marked as sent, set viewed_at time
             self.viewed_at = now
-        elif target_status == QuotationStatus.ACCEPTED:
+        elif target_status == 'ACCEPTED':
             self.accepted_at = now
-        elif target_status == QuotationStatus.REJECTED:
-            self.rejected_at = now
+        elif target_status == 'COMPLETED':
+            # When completed, make sure accepted_at is set if it wasn't already
+            if not self.accepted_at:
+                self.accepted_at = now
             
         self.status = target_status
         self.updated_at = now
