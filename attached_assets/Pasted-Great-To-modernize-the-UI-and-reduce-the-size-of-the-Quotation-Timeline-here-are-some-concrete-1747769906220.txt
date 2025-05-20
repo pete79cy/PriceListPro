@@ -1,0 +1,92 @@
+Great! To modernize the UI and reduce the size of the **Quotation Timeline**, here are some concrete improvements you can make:
+
+### ✅ UI Modernization Suggestions:
+
+1. **Compact Card Design**:
+
+   * Reduce padding/margins.
+   * Use icons with labels inline (side-by-side) instead of stacked.
+
+2. **Typography & Spacing**:
+
+   * Use a cleaner, modern font (like Inter or Roboto).
+   * Reduce font size slightly (e.g., 14px instead of 16px).
+   * Add tighter line-height.
+
+3. **Visual Hierarchy**:
+
+   * Make timestamps lighter (gray) and smaller.
+   * Use subtle divider lines or background shading to segment events.
+
+4. **Color & Icons**:
+
+   * Use flat design with subtle hover effects.
+   * Keep icons minimal and consistent in style.
+
+---
+
+### 🛠 Example HTML/CSS Redesign of Quotation Timeline
+
+If you're using HTML/CSS, here's a minimal refactor:
+
+```html
+<div class="timeline-card">
+  <div class="timeline-item">
+    <i class="icon-doc" title="Created"></i>
+    <span class="label">Created:</span>
+    <span class="timestamp">2025-05-07 18:22</span>
+  </div>
+  <div class="timeline-item">
+    <i class="icon-paper-plane" title="Submitted"></i>
+    <span class="label">Submitted:</span>
+    <span class="timestamp">2025-05-20 19:17</span>
+  </div>
+  <div class="timeline-item">
+    <i class="icon-eye" title="Viewed"></i>
+    <span class="label">Viewed:</span>
+    <span class="timestamp">2025-05-20 19:16</span>
+  </div>
+  <div class="timeline-item">
+    <i class="icon-check-circle" title="Accepted"></i>
+    <span class="label">Accepted:</span>
+    <span class="timestamp">2025-05-20 19:17</span>
+  </div>
+</div>
+```
+
+```css
+.timeline-card {
+  background: #1f1f1f;
+  padding: 12px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #ccc;
+  width: fit-content;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+}
+
+.timeline-item i {
+  margin-right: 8px;
+  color: #4ade80;
+}
+
+.label {
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+.timestamp {
+  color: #888;
+  font-size: 13px;
+}
+```
+
+---
+
+Would you like help implementing this in your existing code or want this adapted for a specific front-end framework (like React, Tailwind, etc.)?

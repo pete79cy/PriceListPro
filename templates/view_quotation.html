@@ -62,53 +62,92 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Compact Status Timeline -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="position-relative flex-grow-1 mx-3" style="height: 6px; background-color: #e9ecef; border-radius: 3px;">
-                            <!-- Active progress bar portion -->
-                            {% set progress = 0 %}
-                            {% if quotation.status == 'SENT' %}
-                                {% set progress = 33 %}
-                            {% elif quotation.status == 'ACCEPTED' %}
-                                {% set progress = 66 %}
-                            {% elif quotation.status == 'COMPLETED' %}
-                                {% set progress = 100 %}
-                            {% endif %}
-                            <div class="position-absolute top-0 left-0 h-100" 
-                                 style="width: {{ progress }}%; background-color: {{ quotation.get_status_color() }}; border-radius: 3px;"></div>
-                            
-                            <!-- Status steps -->
-                            {% set status_steps = ['DRAFT', 'SENT', 'ACCEPTED', 'COMPLETED'] %}
-                            {% set positions = [0, 33, 66, 100] %}
-                            {% for step in status_steps %}
-                                {% set index = loop.index0 %}
-                                {% set is_active = quotation.status == step %}
-                                {% set is_past = false %}
-                                {% if step == 'DRAFT' and quotation.status != 'DRAFT' %}
-                                    {% set is_past = true %}
-                                {% elif step == 'SENT' and quotation.status in ['ACCEPTED', 'COMPLETED'] %}
-                                    {% set is_past = true %}
-                                {% elif step == 'ACCEPTED' and quotation.status == 'COMPLETED' %}
-                                    {% set is_past = true %}
+                    <!-- Modern Horizontal Timeline -->
+                    <div class="row g-0 mb-3">
+                        <!-- Progress Indicator -->
+                        <div class="col-12 mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="position-relative flex-grow-1" style="height: 4px; background-color: #e9ecef; border-radius: 2px;">
+                                {% set progress = 0 %}
+                                {% if quotation.status == 'SENT' %}
+                                    {% set progress = 33 %}
+                                {% elif quotation.status == 'ACCEPTED' %}
+                                    {% set progress = 66 %}
+                                {% elif quotation.status == 'COMPLETED' %}
+                                    {% set progress = 100 %}
                                 {% endif %}
-                                
-                                <div class="position-absolute" style="top: -7px; left: {{ positions[index] }}%; margin-left: -10px;">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                             style="width: 20px; height: 20px; 
-                                                    background-color: {% if is_active %}{{ quotation.get_status_color() }}{% elif is_past %}#4CAF50{% else %}#e9ecef{% endif %}; 
-                                                    border: 2px solid {% if is_active or is_past %}{{ quotation.get_status_color() }}{% else %}#ced4da{% endif %};">
-                                            {% if is_past %}
-                                            <i class="fas fa-check text-white" style="font-size: 10px;"></i>
-                                            {% elif is_active %}
-                                            <i class="fas fa-circle text-white" style="font-size: 6px;"></i>
-                                            {% endif %}
-                                        </div>
-                                        <div class="small mt-1" style="font-size: 0.75rem; white-space: nowrap;">{{ step|replace('_', ' ')|title }}</div>
-                                    </div>
+                                <div class="position-absolute top-0 left-0 h-100" 
+                                    style="width: {{ progress }}%; background-color: {{ quotation.get_status_color() }}; border-radius: 2px;"></div>
                                 </div>
-                            {% endfor %}
+                            </div>
                         </div>
+
+                        <!-- Status Steps as Compact Pills -->
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                {% set status_steps = ['DRAFT', 'SENT', 'ACCEPTED', 'COMPLETED'] %}
+                                {% for step in status_steps %}
+                                    {% set is_active = quotation.status == step %}
+                                    {% set is_past = false %}
+                                    {% if step == 'DRAFT' and quotation.status != 'DRAFT' %}
+                                        {% set is_past = true %}
+                                    {% elif step == 'SENT' and quotation.status in ['ACCEPTED', 'COMPLETED'] %}
+                                        {% set is_past = true %}
+                                    {% elif step == 'ACCEPTED' and quotation.status == 'COMPLETED' %}
+                                        {% set is_past = true %}
+                                    {% endif %}
+                                    
+                                    <div class="text-center">
+                                        <span class="badge d-inline-flex align-items-center px-2 py-1 rounded-pill"
+                                              style="background-color: {% if is_active %}{{ quotation.get_status_color() }}{% elif is_past %}#4CAF50{% else %}#f0f0f0{% endif %}; 
+                                                    color: {% if is_active or is_past %}white{% else %}#666{% endif %}; 
+                                                    font-size: 0.7rem; font-weight: 500; border: 1px solid {% if is_active or is_past %}transparent{% else %}#ddd{% endif %};">
+                                            {% if is_past %}
+                                                <i class="fas fa-check me-1" style="font-size: 0.6rem;"></i>
+                                            {% elif is_active %}
+                                                <i class="fas fa-circle me-1" style="font-size: 0.4rem;"></i>
+                                            {% endif %}
+                                            <span>{{ step|replace('_', ' ')|title }}</span>
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Compact Timeline Card -->
+                    <div class="timeline-card p-2 mb-3 bg-light rounded" style="font-size: 0.85rem;">
+                        {% if quotation.created_at %}
+                        <div class="timeline-item d-flex align-items-center py-1">
+                            <i class="fas fa-file-alt me-2" style="color: #607D8B;"></i>
+                            <span class="label fw-medium me-1">Created:</span>
+                            <span class="timestamp text-muted">{{ quotation.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if quotation.viewed_at %}
+                        <div class="timeline-item d-flex align-items-center py-1">
+                            <i class="fas fa-paper-plane me-2" style="color: #1E90FF;"></i>
+                            <span class="label fw-medium me-1">Sent:</span>
+                            <span class="timestamp text-muted">{{ quotation.viewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if quotation.accepted_at %}
+                        <div class="timeline-item d-flex align-items-center py-1">
+                            <i class="fas fa-check-circle me-2" style="color: #4CAF50;"></i>
+                            <span class="label fw-medium me-1">Accepted:</span>
+                            <span class="timestamp text-muted">{{ quotation.accepted_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if quotation.valid_until %}
+                        <div class="timeline-item d-flex align-items-center py-1">
+                            <i class="fas fa-calendar-alt me-2" style="color: {% if quotation.is_old() %}#dc3545{% else %}#FF9800{% endif %};"></i>
+                            <span class="label fw-medium me-1">Valid until:</span>
+                            <span class="timestamp {% if quotation.is_old() %}text-danger{% else %}text-muted{% endif %}">{{ quotation.valid_until.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <!-- Status actions (simplified and more user-friendly) -->
