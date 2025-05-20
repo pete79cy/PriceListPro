@@ -123,7 +123,7 @@ def draw_supplier_section(pdf, supplier_name, items, include_prices, base_font="
             'scientific_name': lambda i: i.scientific_name or '',
             'pot_size': lambda i: i.pot_size or '',
             'height': lambda i: i.height or '',
-            'quantity': lambda i: str(i.quantity or 0),
+            'quantity': lambda i: str(int(i.quantity or 0)),  # Convert to integer to remove decimal points
             'selling_price': lambda i: f"{currency}{i.selling_price:.2f}" if hasattr(i, 'selling_price') and i.selling_price else f"{currency}0.00",
             'cost_price': lambda i: f"{currency}{i.cost_price:.2f}" if i.cost_price else f"{currency}0.00",
             'total': lambda i: f"{currency}{line_total:.2f}",
