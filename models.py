@@ -261,6 +261,20 @@ class Quotation(db.Model):
     def is_editable(self):
         """Check if the quotation is in an editable state"""
         return self.status == QuotationStatus.DRAFT
+        
+    def is_old(self):
+        """Check if the quotation is more than 30 days old since being sent"""
+        # If not in SENT status, it's not considered old
+        if self.status != 'SENT':
+            return False
+            
+        # If no valid_until date, we can't determine if it's old
+        if not self.valid_until:
+            return False
+            
+        # Check if current date is past the valid_until date
+        current_date = datetime.utcnow().date()
+        return current_date > self.valid_until
 
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
