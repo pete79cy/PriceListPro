@@ -1,0 +1,79 @@
+Below is a more polished and UX-focused version of the Quotation Status Workflow.
+I kept your original intent but layered in UI behaviours, permissions, and a few optional statuses that often crop up in quoting modules. Feel free to drop any you don’t need.
+
+⸻
+
+1. Statuses & Purpose (with default colour tags)
+
+#	Status	Purpose in plain language	Dashboard Chip Colour
+0	Draft	Still cooking—nothing has left your screen. Only admins (or any role with quotation.edit) can see or change it.	#B0B0B0 (grey)
+1	Submitted	Sent to the customer (email, portal share, or PDF export). Content is locked except via Duplicate or New Version.	#1E90FF (blue)
+2	Under Review (optional)	Customer opened the quote but hasn’t clicked “Accept/Reject” yet. Great for follow-up reminders.	#FFD54F (amber)
+3	Accepted	Customer gave the green light. Unlocks Generate Supplier Order and Schedule Delivery.	#4CAF50 (green)
+4	Rejected	Customer declined. Auto-archives after 30 days (configurable) but stays searchable for analytics.	#F44336 (red)
+5	Expired (optional)	Quote was neither accepted nor rejected before its “valid-until” date.	#9C27B0 (purple)
+6	Converted to Order	Quote successfully became an Order / Delivery note. Read-only, linked to the spawned order ID.	#673AB7 (indigo)
+
+Why the extras?
+• Under Review drives follow-up automations (“Nudge after 3 days”).
+• Expired prevents awkward re-negotiations on old prices.
+
+⸻
+
+2. Automatic Transitions
+
+Trigger	From → To
+User clicks Send Quote (email/PDF/portal)	Draft → Submitted
+Customer views quote online	Submitted → Under Review
+Customer presses Accept	Submitted/Under Review → Accepted
+Customer presses Reject	Submitted/Under Review → Rejected
+“Valid-until” date passes with no response	Submitted/Under Review → Expired
+Admin clicks Convert to Order	Accepted → Converted to Order
+
+Manual overrides are always available to users with the quotation.manage_status permission.
+
+⸻
+
+3. Permissions & UI Rules (per status)
+	•	Draft
+	•	Full edit rights.
+	•	Danger-zone: Delete Draft (with confirmation modal).
+	•	Submitted / Under Review / Expired
+	•	Fields read-only.
+	•	Action buttons: Duplicate, New Version, Withdraw (moves back to Draft).
+	•	Timeline banner showing “Valid until ” with countdown.
+	•	Accepted
+	•	Show Create Supplier Order and Schedule Delivery CTA buttons.
+	•	Lock price fields; allow changing delivery details only.
+	•	Rejected
+	•	Archive icon appears in list; collapsible under “Show Archived”.
+	•	Reveal Duplicate button so sales can tweak and resend quickly.
+	•	Converted to Order
+	•	Read-only.
+	•	Link to the generated Order (#ORD-1234).
+	•	“View Delivery Schedule” quick link.
+
+⸻
+
+4. Dashboard UX Touches
+	•	Progress Timeline (mini wizard) at the top of each quotation. Filled circles show the current step; past steps clickable for audit log.
+	•	Colour-coded Chips in list and Kanban views for at-a-glance status.
+	•	Notification Rules
+	•	Slack/Email on “Accepted”, “Rejected”, or “Expired”.
+	•	Push reminder X days before “valid-until” date.
+	•	Filters: “My Drafts”, “Waiting for Customer”, “Needs Conversion”, “Archived”.
+
+⸻
+
+5. Implementation Hints
+	•	Keep statuses in an enum table so front-end (web/mobile) and API share a single source of truth.
+	•	Use a simple state-machine helper (e.g., XState or your backend ORM’s enum + allowed-transition map) to enforce the rules.
+	•	Store the colour hex in the same enum so design tweaks don’t touch code.
+
+⸻
+
+Next step
+
+Let me know if you’re happy with this expanded spec.
+	•	If yes, I’ll drop it straight into the PRD under “Quotation Management – Status Workflow”.
+	•	If you’d like further tweaks—or wish to skip the optional statuses—just ping me!
