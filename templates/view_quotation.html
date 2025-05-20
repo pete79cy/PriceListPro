@@ -127,39 +127,45 @@
                         </div>
                     </div>
                     
-                    <!-- Compact Timeline Card -->
-                    <div class="timeline-card p-2 mb-3 bg-light rounded" style="font-size: 0.85rem;">
-                        {% if quotation.created_at %}
-                        <div class="timeline-item d-flex align-items-center py-1">
-                            <i class="fas fa-file-alt me-2" style="color: #607D8B;"></i>
-                            <span class="label fw-medium me-1">Created:</span>
-                            <span class="timestamp text-muted">{{ quotation.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <!-- Ultra-Compact Horizontal Timeline -->
+                    <div class="timeline-card p-2 mb-3 bg-light rounded" style="font-size: 0.75rem;">
+                        <div class="d-flex align-items-center flex-wrap">
+                            {% if quotation.created_at %}
+                            <div class="timeline-item d-inline-flex align-items-center me-3">
+                                <i class="fas fa-file-alt me-1" style="color: #607D8B;"></i>
+                                <span class="fw-medium me-1">Created</span>
+                                <small style="color: #888;">{{ quotation.created_at.strftime('%d %b %y, %H:%M') }}</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if quotation.viewed_at %}
+                            <div class="timeline-item d-inline-flex align-items-center me-3">
+                                <i class="fas fa-arrow-right mx-1" style="color: #888; font-size: 0.6rem;"></i>
+                                <i class="fas fa-paper-plane me-1" style="color: #1E90FF;"></i>
+                                <span class="fw-medium me-1">Sent</span>
+                                <small style="color: #888;">{{ quotation.viewed_at.strftime('%d %b %y, %H:%M') }}</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if quotation.accepted_at %}
+                            <div class="timeline-item d-inline-flex align-items-center me-3">
+                                <i class="fas fa-arrow-right mx-1" style="color: #888; font-size: 0.6rem;"></i>
+                                <i class="fas fa-check-circle me-1" style="color: #4CAF50;"></i>
+                                <span class="fw-medium me-1">Accepted</span>
+                                <small style="color: #888;">{{ quotation.accepted_at.strftime('%d %b %y, %H:%M') }}</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if quotation.valid_until %}
+                            <div class="timeline-item d-inline-flex align-items-center">
+                                <i class="fas fa-calendar-alt me-1" style="color: {% if quotation.is_old() %}#dc3545{% else %}#FF9800{% endif %};"></i>
+                                <span class="fw-medium me-1">Valid until</span>
+                                <small {% if quotation.is_old() %}style="color: #dc3545;"{% else %}style="color: #888;"{% endif %}>
+                                    {{ quotation.valid_until.strftime('%d %b %y') }}
+                                </small>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                        
-                        {% if quotation.viewed_at %}
-                        <div class="timeline-item d-flex align-items-center py-1">
-                            <i class="fas fa-paper-plane me-2" style="color: #1E90FF;"></i>
-                            <span class="label fw-medium me-1">Sent:</span>
-                            <span class="timestamp text-muted">{{ quotation.viewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                        </div>
-                        {% endif %}
-                        
-                        {% if quotation.accepted_at %}
-                        <div class="timeline-item d-flex align-items-center py-1">
-                            <i class="fas fa-check-circle me-2" style="color: #4CAF50;"></i>
-                            <span class="label fw-medium me-1">Accepted:</span>
-                            <span class="timestamp text-muted">{{ quotation.accepted_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                        </div>
-                        {% endif %}
-                        
-                        {% if quotation.valid_until %}
-                        <div class="timeline-item d-flex align-items-center py-1">
-                            <i class="fas fa-calendar-alt me-2" style="color: {% if quotation.is_old() %}#dc3545{% else %}#FF9800{% endif %};"></i>
-                            <span class="label fw-medium me-1">Valid until:</span>
-                            <span class="timestamp {% if quotation.is_old() %}text-danger{% else %}text-muted{% endif %}">{{ quotation.valid_until.strftime('%Y-%m-%d') }}</span>
-                        </div>
-                        {% endif %}
                     </div>
                     
                     <!-- Status actions (simplified and more user-friendly) -->
@@ -345,57 +351,85 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Quotation Information</h5>
+        <div class="col-md-12">
+            <div class="card mb-3">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <div class="d-flex gap-4">
+                        <h5 class="mb-0">Quotation Information</h5>
+                        <h5 class="mb-0 text-muted">|</h5>
+                        <h5 class="mb-0">Customer Information</h5>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table table-borderless">
-                        <tr>
-                            <th style="width: 40%">Quotation Number:</th>
-                            <td>{{ quotation.quotation_number }}</td>
-                        </tr>
-                        <tr>
-                            <th>Quotation Date:</th>
-                            <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
-                        </tr>
-                        <tr>
-                            <th>Valid Until:</th>
-                            <td>{{ quotation.valid_until.strftime('%Y-%m-%d') if quotation.valid_until else 'Not specified' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Total Amount:</th>
-                            <td>{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Customer Information</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-borderless">
-                        <tr>
-                            <th style="width: 40%">Customer Name:</th>
-                            <td>{{ quotation.customer.name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Customer Email:</th>
-                            <td>{{ quotation.customer.email or "Not specified" }}</td>
-                        </tr>
-                        <tr>
-                            <th>Customer Phone:</th>
-                            <td>{{ quotation.customer.phone or "Not specified" }}</td>
-                        </tr>
-                        <tr>
-                            <th>Customer Address:</th>
-                            <td>{{ quotation.customer.address or "Not specified" }}</td>
-                        </tr>
-                    </table>
+                <div class="card-body py-2">
+                    <div class="row">
+                        <!-- Quotation Information Column -->
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr>
+                                    <th style="width: 40%" class="py-2">Quotation Number:</th>
+                                    <td class="py-2">{{ quotation.quotation_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="py-2">Quotation Date:</th>
+                                    <td class="py-2">{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="py-2">Valid Until:</th>
+                                    <td class="py-2">
+                                        {% if quotation.valid_until %}
+                                            {{ quotation.valid_until.strftime('%Y-%m-%d') }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic small">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="py-2">Total Amount:</th>
+                                    <td class="py-2 fw-bold">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Customer Information Column -->
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr>
+                                    <th style="width: 40%" class="py-2">Customer Name:</th>
+                                    <td class="py-2">{{ quotation.customer.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="py-2">Customer Email:</th>
+                                    <td class="py-2">
+                                        {% if quotation.customer.email %}
+                                            {{ quotation.customer.email }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic small">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="py-2">Customer Phone:</th>
+                                    <td class="py-2">
+                                        {% if quotation.customer.phone %}
+                                            {{ quotation.customer.phone }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic small">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="py-2">Customer Address:</th>
+                                    <td class="py-2">
+                                        {% if quotation.customer.address %}
+                                            {{ quotation.customer.address }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic small">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
