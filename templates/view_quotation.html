@@ -455,7 +455,7 @@
                     <div class="d-none d-lg-block">
                         <div class="table-responsive">
                             <table class="table table-hover">
-                                <thead class="table-light">
+                                <thead class="table-light sticky-top bg-light" style="position: sticky; top: 0; z-index: 1;">
                                     <tr>
                                         <th style="width: 40px;"><i class="fas fa-sort" title="Drag items to reorder"></i></th>
                                         <th>#</th>
@@ -468,7 +468,7 @@
                                         <th class="text-center">VAT Rate</th>
                                         <th>Supplier</th>
                                         <th class="text-end">Total</th>
-                                        <th>Actions</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="quotation-items-tbody" class="sortable-items">
@@ -485,11 +485,17 @@
                                         <td class="text-center">{{ "%d"|format(item.quantity|int) }}</td>
                                         <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.selling_price) }}</td>
                                         <td class="text-center">{{ "%.1f"|format(item.vat_rate) }}%</td>
-                                        <td>{{ item.supplier or "Not specified" }}</td>
-                                        <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                                         <td>
-                                            <div class="d-flex gap-1">
-                                                <button type="button" class="btn btn-warning btn-sm edit-item-btn" 
+                                            {% if item.supplier %}
+                                                {{ item.supplier }}
+                                            {% else %}
+                                                <span class="text-muted fst-italic small">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end fw-medium">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+                                        <td class="text-center">
+                                            <div class="d-flex gap-1 justify-content-center">
+                                                <button type="button" class="btn btn-ghost edit-item-btn" 
                                                         data-id="{{ item.id }}"
                                                         data-description="{{ item.description|e }}"
                                                         data-scientific-name="{{ item.scientific_name|e or '' }}"
@@ -501,12 +507,12 @@
                                                         data-supplier="{{ item.supplier|e or '' }}"
                                                         data-supplier-id="{{ item.supplier_id }}"
                                                         data-cost-price="{{ item.cost_price or 0 }}">
-                                                    <i class="fas fa-edit"></i>
+                                                    <i class="fas fa-edit text-primary"></i>
                                                 </button>
                                                 <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
-                                                   class="btn btn-danger btn-sm"
+                                                   class="btn btn-ghost"
                                                    onclick="return confirm('Are you sure you want to delete this item?');">
-                                                    <i class="fas fa-trash"></i>
+                                                    <i class="fas fa-trash text-danger"></i>
                                                 </a>
                                             </div>
                                         </td>
@@ -1066,5 +1072,56 @@ function initExcelColumnSelectors() {
     }
 }
 </script>
+
+<style>
+    /* Ghost button style */
+    .btn-ghost {
+        background: transparent;
+        border: none;
+        padding: 0.25rem 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-ghost:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+    }
+    
+    /* Hover effects for table rows */
+    .item-row:hover {
+        background-color: rgba(0, 123, 255, 0.04);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+    }
+    
+    /* Improved handle for drag-drop */
+    .drag-handle {
+        cursor: grab;
+    }
+    
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+    
+    /* Nicer styling for info cards */
+    .card {
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Hover effect for buttons */
+    .btn:not(.btn-ghost) {
+        transition: transform 0.15s ease;
+    }
+    
+    .btn:not(.btn-ghost):hover {
+        transform: translateY(-1px);
+    }
+</style>
 {% endblock %}
 
