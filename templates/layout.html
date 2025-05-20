@@ -69,19 +69,17 @@
                     </li>
                     
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="aiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-robot"></i> AI Insights
+                        <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-tools"></i> Tools
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="aiDropdown">
+                        <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('uploads') }}"><i class="fas fa-upload"></i> Upload Files</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">AI Tools</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('ai_settings') }}"><i class="fas fa-cog"></i> AI Settings</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('ai_insights_feedback_dashboard') }}"><i class="fas fa-star"></i> Feedback Dashboard</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="developerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-code"></i> Developer
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="developerDropdown">
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Developer Tools</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('api.api_documentation') }}"><i class="fas fa-server"></i> API Documentation</a></li>
                         </ul>
                     </li>
