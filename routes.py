@@ -2069,8 +2069,8 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
         
         try:
-            # Handle special case: When transitioning to SUBMITTED, set valid_until date if not set
-            if target_status == QuotationStatus.SUBMITTED and not quotation.valid_until:
+            # Handle special case: When transitioning to SENT, set valid_until date if not set
+            if target_status == 'SENT' and not quotation.valid_until:
                 # Set valid_until to 30 days from now by default
                 quotation.valid_until = datetime.utcnow().date() + timedelta(days=30)
             
