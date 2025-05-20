@@ -1,0 +1,76 @@
+Thanks for the updated screenshot! Here are **practical layout and UI/UX improvements** for modernizing and decluttering your **Quotation Details** page while enhancing usability:
+
+---
+
+## 🔧 **Layout & Presentation Improvements**
+
+### 1. **Compact & Aligned Header Section**
+
+* **Group actions** like `Export PDF`, `Excel`, `Customize Fields`, and `Delete` into a **dropdown or icon bar** with tooltips.
+* Move the `Back to Quotations` button to the **top-left**, styled as a subtle link or icon.
+* Reduce vertical space above the title (`Quotation Details`) and remove redundant white space.
+
+---
+
+### 2. **Quotation Status Bar**
+
+* Use a **progress bar style** rather than discrete dots and text. For example:
+
+```text
+[✓ Draft] ───── [✓ Sent] ───── [○ Accepted] ───── [○ Completed]
+```
+
+* Add color transitions (e.g., gray → blue → green) for visual clarity.
+* Make it **horizontal and responsive**, scaling well on smaller screens.
+
+---
+
+### 3. **Quotation Timeline**
+
+* Make this a **horizontal timeline** with icons and dates:
+
+  ```text
+  📄 Created → 🚀 Submitted → 👁️ Viewed → ✅ Accepted
+  ```
+* Reduce card padding and font size.
+* Consider showing this **inline below the status bar** to save vertical space.
+
+---
+
+### 4. **Information Cards**
+
+* Merge **Quotation Information** and **Customer Information** into a **single two-column card** for compactness.
+* Use modern UI cards:
+
+  * Rounded corners (e.g., `border-radius: 12px`)
+  * Lighter background (e.g., `#2a2a2a`)
+  * Left-aligned labels with bold titles, light descriptions
+
+---
+
+### 5. **Quotation Items Table**
+
+* Make the table **full width**, and use zebra striping or subtle row hover highlights.
+* Add **icon-based tooltips** for edit/delete buttons.
+* Consider sticky headers for long item lists.
+
+---
+
+### 6. **General Design Suggestions**
+
+* Use a **lighter shade of dark** (e.g., `#1c1c1e`) for better contrast.
+* Use a **modern font** like Inter, Roboto, or SF UI.
+* Add subtle shadows to cards for depth.
+* Add **responsive behavior** for mobile or tablet view (e.g., cards stack vertically).
+
+---
+
+## ✨ Optional Enhancements
+
+* Add **collapse/expand toggles** for sections (Timeline, Customer Info).
+* Add **status badges** (like Chips) for each timeline step.
+* Consider a **floating action button (FAB)** for "Add Item" instead of the top-right button.
+
+---
+
+Would you like me to generate a sample HTML/CSS layout based on these improvements or help refactor your existing code?

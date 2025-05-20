@@ -3,41 +3,53 @@
 {% block title %}View Quotation{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-lg-6">
-            <h1>Quotation Details</h1>
-            <p class="text-muted">Quotation #{{ quotation.quotation_number }}</p>
+<div class="container py-3">
+    <!-- Compact Header Section -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('quotations') }}" class="btn btn-sm btn-outline-secondary rounded-circle me-2" title="Back to Quotations">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h2 class="mb-0">Quotation Details</h2>
+                <p class="text-muted small mb-0">Quotation #{{ quotation.quotation_number }}</p>
+            </div>
         </div>
-        <div class="col-lg-6 text-end">
-            <div class="d-flex flex-wrap justify-content-end gap-2 mb-2">
-                <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-2"></i> Back to Quotations
-                </a>
-                <div class="dropdown">
-                    <button class="btn btn-primary dropdown-toggle" type="button" id="pdfOptionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-file-pdf me-2"></i> Export PDF
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="pdfOptionsDropdown">
-                        <li><a class="dropdown-item" href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}">Modern PDF</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}">Custom PDF</a></li>
-                    </ul>
-                </div>
-                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#excelOptionsModal">
-                    <i class="fas fa-file-excel me-2"></i> Excel
+
+        <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+            <div class="dropdown">
+                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="pdfOptionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-file-pdf me-1"></i> PDF
                 </button>
-                <a href="{{ url_for('quotation.customize_fields', quotation_id=quotation.id) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-sliders-h me-2"></i> Customize Fields
-                </a>
-                <a href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}" class="btn btn-primary">
-                    <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
-                </a>
-                <button type="button" class="btn btn-primary" id="showAiInsightsButton">
-                    <i class="fas fa-robot me-2"></i> AI Insights
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="pdfOptionsDropdown">
+                    <li><a class="dropdown-item" href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}">Modern PDF</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}">Custom PDF</a></li>
+                </ul>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#excelOptionsModal">
+                <i class="fas fa-file-excel me-1"></i> Excel
+            </button>
+
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="moreActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v"></i>
                 </button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
-                    <i class="fas fa-trash me-2"></i> Delete
-                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreActionsDropdown">
+                    <li><a class="dropdown-item" href="{{ url_for('quotation.customize_fields', quotation_id=quotation.id) }}">
+                        <i class="fas fa-sliders-h me-2"></i> Customize Fields
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}">
+                        <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
+                    </a></li>
+                    <li><a class="dropdown-item" id="showAiInsightsButton" href="#">
+                        <i class="fas fa-robot me-2"></i> AI Insights
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="confirmDelete('{{ url_for('delete_quotation', quotation_id=quotation.id) }}')">
+                        <i class="fas fa-trash me-2"></i> Delete
+                    </a></li>
+                </ul>
             </div>
         </div>
     </div>
