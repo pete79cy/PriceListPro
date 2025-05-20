@@ -1,0 +1,47 @@
+/* Status Timeline Styles */
+.timeline-items li {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 10px;
+}
+
+.timeline-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 12px;
+}
+
+.timeline-dot {
+    transition: all 0.3s ease;
+}
+
+/* Custom status colors */
+.bg-purple {
+    background-color: #673AB7;
+}
+
+/* Fix for status buttons on mobile */
+@media (max-width: 768px) {
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group form {
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+    
+    .timeline-step {
+        flex: 1;
+    }
+}
