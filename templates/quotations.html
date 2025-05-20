@@ -89,6 +89,8 @@
                                     <th>Quotation #</th>
                                     <th>Customer</th>
                                     <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Valid Until</th>
                                     <th class="text-end">Total Amount</th>
                                     <th>Actions</th>
                                 </tr>
@@ -99,6 +101,12 @@
                                     <td>{{ quotation.quotation_number }}</td>
                                     <td>{{ quotation.customer.name }}</td>
                                     <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill" style="background-color: {{ quotation.get_status_color() }};">
+                                            {{ quotation.get_status_label() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ quotation.valid_until.strftime('%Y-%m-%d') if quotation.valid_until else '-' }}</td>
                                     <td class="text-end">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</td>
                                     <td>
                                         <div class="btn-group">
@@ -129,6 +137,16 @@
                                     <div>
                                         <div class="fw-bold">{{ quotation.quotation_number }}</div>
                                         <div>{{ quotation.customer.name }}</div>
+                                        <div class="mt-1">
+                                            <span class="badge rounded-pill" style="background-color: {{ quotation.get_status_color() }};">
+                                                {{ quotation.get_status_label() }}
+                                            </span>
+                                            {% if quotation.valid_until %}
+                                            <span class="badge rounded-pill bg-secondary ms-1" title="Valid until date">
+                                                <i class="fas fa-calendar-alt me-1"></i> {{ quotation.valid_until.strftime('%Y-%m-%d') }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="text-end">
                                         <div class="fw-bold">{{ quotation.currency }} {{ "%.2f"|format(quotation.total_amount or 0) }}</div>

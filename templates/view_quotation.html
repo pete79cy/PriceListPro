@@ -43,6 +43,242 @@
     </div>
 
     <div class="row mb-4">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Quotation Status</h5>
+                    <div>
+                        <span class="badge rounded-pill px-3 py-2" style="background-color: {{ quotation.get_status_color() }}; font-size: 1rem;">
+                            {{ quotation.get_status_label() }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Status progress timeline -->
+                    <div class="status-timeline d-flex justify-content-between position-relative mb-4">
+                        <div class="timeline-line position-absolute" style="height: 3px; background-color: #e9ecef; top: 15px; left: 10%; width: 80%; z-index: 1;"></div>
+                        
+                        {% set status_steps = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'CONVERTED'] %}
+                        {% for step in status_steps %}
+                            {% set is_active = quotation.status == step %}
+                            {% set is_past = false %}
+                            {% if step == 'DRAFT' and quotation.status != 'DRAFT' %}
+                                {% set is_past = true %}
+                            {% elif step == 'SUBMITTED' and quotation.status in ['UNDER_REVIEW', 'ACCEPTED', 'CONVERTED'] %}
+                                {% set is_past = true %}
+                            {% elif step == 'UNDER_REVIEW' and quotation.status in ['ACCEPTED', 'CONVERTED'] %}
+                                {% set is_past = true %}
+                            {% elif step == 'ACCEPTED' and quotation.status == 'CONVERTED' %}
+                                {% set is_past = true %}
+                            {% endif %}
+                            
+                            <div class="timeline-step text-center" style="z-index: 2; position: relative;">
+                                <div class="timeline-dot mx-auto mb-1 rounded-circle d-flex align-items-center justify-content-center" 
+                                     style="width: 32px; height: 32px; 
+                                            background-color: {% if is_active %}{{ quotation.get_status_color() }}{% elif is_past %}#4CAF50{% else %}#e9ecef{% endif %}; 
+                                            border: 2px solid {% if is_active or is_past %}{{ quotation.get_status_color() }}{% else %}#ced4da{% endif %};">
+                                    {% if is_past %}
+                                    <i class="fas fa-check text-white"></i>
+                                    {% elif is_active %}
+                                    <i class="fas fa-circle text-white" style="font-size: 10px;"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="small" style="width: 90px; margin-left: -30px;">{{ quotation.get_status_label() if step == quotation.status else step|replace('_', ' ')|title }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Status actions and timestamps -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex flex-column">
+                                {% if quotation.status == 'DRAFT' %}
+                                <p class="text-muted mb-2">This quotation is still in draft mode. It can be edited and has not been sent to the customer.</p>
+                                <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="d-inline">
+                                    <input type="hidden" name="target_status" value="SUBMITTED">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i> Submit Quotation
+                                    </button>
+                                </form>
+                                
+                                {% elif quotation.status == 'SUBMITTED' %}
+                                <p class="text-muted mb-2">This quotation has been submitted to the customer on {{ quotation.updated_at.strftime('%Y-%m-%d') }}.</p>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="UNDER_REVIEW">
+                                        <button type="submit" class="btn btn-info">
+                                            <i class="fas fa-eye me-2"></i> Mark as Under Review
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="ACCEPTED">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check-circle me-2"></i> Mark as Accepted
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="REJECTED">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-times-circle me-2"></i> Mark as Rejected
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="DRAFT">
+                                        <button type="submit" class="btn btn-secondary">
+                                            <i class="fas fa-undo me-2"></i> Revert to Draft
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                {% elif quotation.status == 'UNDER_REVIEW' %}
+                                <p class="text-muted mb-2">The customer is reviewing this quotation. It was viewed on {{ quotation.viewed_at.strftime('%Y-%m-%d %H:%M') if quotation.viewed_at else 'N/A' }}.</p>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="ACCEPTED">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check-circle me-2"></i> Mark as Accepted
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="REJECTED">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-times-circle me-2"></i> Mark as Rejected
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="DRAFT">
+                                        <button type="submit" class="btn btn-secondary">
+                                            <i class="fas fa-undo me-2"></i> Revert to Draft
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                {% elif quotation.status == 'ACCEPTED' %}
+                                <p class="text-muted mb-2">This quotation was accepted on {{ quotation.accepted_at.strftime('%Y-%m-%d %H:%M') if quotation.accepted_at else 'N/A' }}.</p>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="CONVERTED">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-file-invoice me-2"></i> Convert to Order
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="me-2">
+                                        <input type="hidden" name="target_status" value="DRAFT">
+                                        <button type="submit" class="btn btn-secondary">
+                                            <i class="fas fa-undo me-2"></i> Revert to Draft
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                {% elif quotation.status == 'REJECTED' %}
+                                <p class="text-muted mb-2">This quotation was rejected on {{ quotation.rejected_at.strftime('%Y-%m-%d %H:%M') if quotation.rejected_at else 'N/A' }}.</p>
+                                <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="d-inline">
+                                    <input type="hidden" name="target_status" value="DRAFT">
+                                    <button type="submit" class="btn btn-secondary">
+                                        <i class="fas fa-undo me-2"></i> Revert to Draft
+                                    </button>
+                                </form>
+                                <a href="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" class="btn btn-info ms-2">
+                                    <i class="fas fa-copy me-2"></i> Duplicate Quotation
+                                </a>
+                                
+                                {% elif quotation.status == 'EXPIRED' %}
+                                <p class="text-muted mb-2">This quotation expired on {{ quotation.valid_until.strftime('%Y-%m-%d') if quotation.valid_until else 'N/A' }}.</p>
+                                <form action="{{ url_for('quotation_transition_status', quotation_id=quotation.id) }}" method="post" class="d-inline">
+                                    <input type="hidden" name="target_status" value="DRAFT">
+                                    <button type="submit" class="btn btn-secondary">
+                                        <i class="fas fa-undo me-2"></i> Revert to Draft
+                                    </button>
+                                </form>
+                                
+                                {% elif quotation.status == 'CONVERTED' %}
+                                <p class="text-muted mb-2">This quotation has been converted to an order{% if quotation.order_id %} #{{ quotation.order_id }}{% endif %}.</p>
+                                {% if quotation.order_id %}
+                                <a href="#" class="btn btn-primary">
+                                    <i class="fas fa-file-invoice me-2"></i> View Order #{{ quotation.order_id }}
+                                </a>
+                                {% endif %}
+                                
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title">Quotation Timeline</h6>
+                                    <ul class="list-unstyled timeline-items">
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="timeline-icon bg-primary me-2">
+                                                <i class="fas fa-file-alt text-white"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted">Created</small>
+                                                <div>{{ quotation.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </li>
+                                        {% if quotation.status != 'DRAFT' %}
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="timeline-icon bg-info me-2">
+                                                <i class="fas fa-paper-plane text-white"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted">Submitted</small>
+                                                <div>{{ quotation.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </li>
+                                        {% endif %}
+                                        {% if quotation.viewed_at %}
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="timeline-icon bg-warning me-2">
+                                                <i class="fas fa-eye text-white"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted">Viewed by Customer</small>
+                                                <div>{{ quotation.viewed_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </li>
+                                        {% endif %}
+                                        {% if quotation.accepted_at %}
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="timeline-icon bg-success me-2">
+                                                <i class="fas fa-check-circle text-white"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted">Accepted</small>
+                                                <div>{{ quotation.accepted_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </li>
+                                        {% endif %}
+                                        {% if quotation.rejected_at %}
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="timeline-icon bg-danger me-2">
+                                                <i class="fas fa-times-circle text-white"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted">Rejected</small>
+                                                <div>{{ quotation.rejected_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </li>
+                                        {% endif %}
+                                        {% if quotation.status == 'CONVERTED' %}
+                                        <li class="d-flex align-items-center">
+                                            <span class="timeline-icon bg-purple me-2">
+                                                <i class="fas fa-file-invoice text-white"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted">Converted to Order</small>
+                                                <div>{{ quotation.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                            </div>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-light">
@@ -57,6 +293,10 @@
                         <tr>
                             <th>Quotation Date:</th>
                             <td>{{ quotation.quotation_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Valid Until:</th>
+                            <td>{{ quotation.valid_until.strftime('%Y-%m-%d') if quotation.valid_until else 'Not specified' }}</td>
                         </tr>
                         <tr>
                             <th>Total Amount:</th>
