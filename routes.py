@@ -1740,70 +1740,7 @@ def register_routes(app):
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
         
-    @app.route('/test-encoding', methods=['GET', 'POST'])
-    @login_required
-    def test_encoding():
-        """Test the application's ability to handle different character encodings"""
-        # Fetch products with potential Unicode characters
-        products = Product.query.filter(
-            db.or_(
-                Product.name.like('%Κ%'),        # Greek
-                Product.name.like('%Т%'),        # Cyrillic
-                Product.scientific_name.like('%Δ%')  # Greek
-            )
-        ).limit(10).all()
-        
-        return render_template('test_encoding.html', products=products)
-        
-    @app.route('/test-encoding-submit', methods=['POST'])
-    @login_required
-    def test_encoding_submit():
-        """Handle the test encoding form submission"""
-        # Get form data
-        name = request.form.get('name')
-        category = request.form.get('category')
-        scientific_name = request.form.get('scientific_name')
-        pot = request.form.get('pot')
-        
-        # Create a test product with the provided data
-        from utils.excel_parser import sanitize_string
-        
-        # Apply sanitization to ensure consistent handling
-        safe_name = sanitize_string(name)
-        safe_category = sanitize_string(category)
-        safe_scientific_name = sanitize_string(scientific_name)
-        safe_pot = sanitize_string(pot)
-        safe_description = f"{safe_scientific_name or ''} {safe_pot or ''}".strip() or None
-        
-        product = Product(
-            name=safe_name,
-            category=safe_category,
-            scientific_name=safe_scientific_name,
-            pot=safe_pot,
-            description=safe_description
-        )
-        
-        # Log the data being saved
-        logger.info(f"Test Encoding - Saving product with name: {safe_name}")
-        logger.info(f"Test Encoding - Category: {safe_category}")
-        logger.info(f"Test Encoding - Scientific Name: {safe_scientific_name}")
-        logger.info(f"Test Encoding - Pot: {safe_pot}")
-        
-        # Save to database
-        db.session.add(product)
-        db.session.commit()
-        
-        # Fetch products with potential Unicode characters, including the one just created
-        products = Product.query.filter(
-            db.or_(
-                Product.name.like('%Κ%'),        # Greek
-                Product.name.like('%Т%'),        # Cyrillic
-                Product.scientific_name.like('%Δ%')  # Greek
-            )
-        ).limit(10).all()
-        
-        # Return to the test encoding page with the results
-        return render_template('test_encoding.html', product=product, products=products)
+
         
     # Quotation Management Routes
     @app.route('/quotations')
