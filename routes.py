@@ -1751,6 +1751,7 @@ def register_routes(app):
         customer_id = request.args.get('customer_id', type=int)
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
+        status = request.args.get('status')
         
         # Build the query
         query = Quotation.query
@@ -1758,6 +1759,9 @@ def register_routes(app):
         # Apply filters if provided
         if customer_id:
             query = query.filter(Quotation.customer_id == customer_id)
+            
+        if status:
+            query = query.filter(Quotation.status == status)
             
         if date_from:
             try:
@@ -1783,6 +1787,7 @@ def register_routes(app):
                               quotations=quotations,
                               customers=customers,
                               selected_customer_id=customer_id,
+                              selected_status=status,
                               date_from=date_from,
                               date_to=date_to)
     
