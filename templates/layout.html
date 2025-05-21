@@ -87,7 +87,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('ai_insights_feedback_dashboard') }}"><i class="fas fa-star"></i> Feedback Dashboard</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">Developer Tools</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('api.api_documentation') }}"><i class="fas fa-server"></i> API Documentation</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-server"></i> API Documentation</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
@@ -125,7 +125,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('ai_settings') }}"><i class="fas fa-robot"></i> AI Document Insights</a></li>
                             {% if current_user.is_admin %}
                             <li><a class="dropdown-item" href="{{ url_for('backup.index') }}"><i class="fas fa-database"></i> Database Backup</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('api.api_documentation') }}"><i class="fas fa-server"></i> API Documentation</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-server"></i> API Documentation</a></li>
                             {# Viber integration temporarily hidden for future use
                             <li><a class="dropdown-item" href="{{ url_for('viber_settings') }}"><i class="fab fa-viber"></i> Viber Integration</a></li>
                             #}
