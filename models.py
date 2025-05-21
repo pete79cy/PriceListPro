@@ -413,8 +413,9 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships - use foreign_keys to avoid ambiguity
-    customer = db.relationship('Customer', foreign_keys=[customer_id], backref=db.backref('customer_orders', lazy=True), lazy=True)
+    # Relationships
+    # Use backref='customer_orders' to avoid conflicts with the 'orders' name
+    customer = db.relationship('Customer', foreign_keys=[customer_id], backref='customer_orders', lazy=True)
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
