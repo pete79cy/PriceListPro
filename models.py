@@ -3,6 +3,43 @@ from enum import Enum, auto
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+import re
+
+
+class OrderStatus(str, Enum):
+    """Status options for order workflow"""
+    NEW = "new"               # Newly created order
+    PREPARING = "preparing"   # Order is being prepared
+    READY = "ready"           # Order is ready for delivery
+    DELIVERED = "delivered"   # Order has been delivered to customer
+    CANCELLED = "cancelled"   # Order was cancelled
+    
+    # Labels for UI display
+    LABELS = {
+        NEW: "New",
+        PREPARING: "Preparing",
+        READY: "Ready for Delivery",
+        DELIVERED: "Delivered",
+        CANCELLED: "Cancelled"
+    }
+    
+    # Colors for UI display
+    COLORS = {
+        NEW: "#FF9800",        # Orange
+        PREPARING: "#2196F3",  # Blue
+        READY: "#4CAF50",      # Green
+        DELIVERED: "#9E9E9E",  # Gray
+        CANCELLED: "#F44336"   # Red
+    }
+    
+    # Valid transitions between statuses
+    TRANSITIONS = {
+        NEW: [PREPARING, CANCELLED],
+        PREPARING: [READY, CANCELLED],
+        READY: [DELIVERED, CANCELLED],
+        DELIVERED: [],  # Terminal state
+        CANCELLED: []   # Terminal state
+    }
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,6 +85,7 @@ class Customer(db.Model):
     price_lists = db.relationship('PriceList', backref='customer', lazy=True)
     invoices = db.relationship('Invoice', backref='customer', lazy=True)
     contacts = db.relationship('CustomerContact', backref='customer', lazy=True, cascade="all, delete-orphan")
+    orders = db.relationship('Order', backref='customer', lazy=True)
     
     def __repr__(self):
         return f'<Customer {self.name}>'
@@ -471,6 +509,104 @@ class QuotationItem(db.Model):
     
     def __repr__(self):
         return f'<QuotationItem {self.description}>'
+
+class Order(db.Model):
+    """
+    Order model for tracking daily customer orders with status workflow.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    order_number = db.Column(db.String(20), unique=True, nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    status = db.Column(db.Enum(OrderStatus), default=OrderStatus.NEW, nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    delivery_date = db.Column(db.Date, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<Order {self.order_number}>'
+    
+    @staticmethod
+    def generate_order_number():
+        """Generate a unique order number with format ORD-YYYY-XXXX"""
+        year = datetime.now().year
+        
+        # Get the highest order number for the current year
+        last_order = Order.query.filter(
+            Order.order_number.like(f'ORD-{year}-%')
+        ).order_by(db.desc(Order.order_number)).first()
+        
+        if last_order:
+            # Extract the number portion and increment
+            try:
+                num = int(last_order.order_number.split('-')[-1])
+                new_num = num + 1
+            except (ValueError, IndexError):
+                new_num = 1
+        else:
+            new_num = 1
+            
+        # Format with 4 digits
+        return f'ORD-{year}-{new_num:04d}'
+    
+    def get_status_label(self):
+        """Get human-readable status label"""
+        return OrderStatus.LABELS.get(self.status, "Unknown")
+    
+    def get_status_color(self):
+        """Get color code for the status for UI display"""
+        return OrderStatus.COLORS.get(self.status, "#999999")
+    
+    def can_transition_to(self, new_status):
+        """Check if order can transition to a new status"""
+        # Define valid transitions between statuses
+        valid_transitions = {
+            OrderStatus.NEW: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
+            OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
+            OrderStatus.READY: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+            OrderStatus.DELIVERED: [],  # Terminal state
+            OrderStatus.CANCELLED: []   # Terminal state
+        }
+        
+        return new_status in valid_transitions.get(self.status, [])
+    
+    def is_due_today(self):
+        """Check if the order is due for delivery today"""
+        if not self.delivery_date:
+            return False
+        return self.delivery_date == date.today()
+    
+    def is_due_tomorrow(self):
+        """Check if the order is due for delivery tomorrow"""
+        if not self.delivery_date:
+            return False
+        return self.delivery_date == date.today() + timedelta(days=1)
+
+
+class OrderItem(db.Model):
+    """
+    Item in a customer order.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    plant_name = db.Column(db.String(200), nullable=False)
+    size = db.Column(db.String(50), nullable=True)  # Size or pot size
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    price = db.Column(db.Float, nullable=False, default=0.0)
+    notes = db.Column(db.Text, nullable=True)
+    updated_price_list = db.Column(db.Boolean, default=False)  # Indicates if price list was updated
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    product = db.relationship('Product', backref='order_items', lazy=True)
+    
+    def __repr__(self):
+        return f'<OrderItem {self.plant_name} ({self.quantity})>'
+
 
 class CompanySettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
