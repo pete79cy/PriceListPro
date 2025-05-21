@@ -6,8 +6,8 @@ from flask_login import UserMixin
 import re
 
 
-class OrderStatus(str, Enum):
-    """Status options for order workflow"""
+class OrderStatusEnum(str, Enum):
+    """Enum for order status values - for use as string literals"""
     NEW = "new"               # Newly created order
     PREPARING = "preparing"   # Order is being prepared
     READY = "ready"           # Order is ready for delivery
@@ -19,29 +19,29 @@ class OrderStatus(str, Enum):
 
 # UI display labels for order statuses
 ORDER_STATUS_LABELS = {
-    OrderStatus.NEW: "New",
-    OrderStatus.PREPARING: "Preparing",
-    OrderStatus.READY: "Ready for Delivery",
-    OrderStatus.DELIVERED: "Delivered",
-    OrderStatus.CANCELLED: "Cancelled"
+    "new": "New",
+    "preparing": "Preparing",
+    "ready": "Ready for Delivery", 
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
 }
 
 # Colors for UI display
 ORDER_STATUS_COLORS = {
-    OrderStatus.NEW: "#FF9800",        # Orange
-    OrderStatus.PREPARING: "#2196F3",  # Blue
-    OrderStatus.READY: "#4CAF50",      # Green
-    OrderStatus.DELIVERED: "#9E9E9E",  # Gray
-    OrderStatus.CANCELLED: "#F44336"   # Red
+    "new": "#FF9800",        # Orange
+    "preparing": "#2196F3",  # Blue
+    "ready": "#4CAF50",      # Green
+    "delivered": "#9E9E9E",  # Gray
+    "cancelled": "#F44336"   # Red
 }
 
 # Valid transitions between statuses
 ORDER_STATUS_TRANSITIONS = {
-    OrderStatus.NEW: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
-    OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
-    OrderStatus.READY: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
-    OrderStatus.DELIVERED: [],  # Terminal state
-    OrderStatus.CANCELLED: []   # Terminal state
+    "new": ["preparing", "cancelled"],
+    "preparing": ["ready", "cancelled"],
+    "ready": ["delivered", "cancelled"],
+    "delivered": [],  # Terminal state
+    "cancelled": []   # Terminal state
 }
 
 class User(UserMixin, db.Model):

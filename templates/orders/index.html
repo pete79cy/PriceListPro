@@ -1,240 +1,93 @@
 {% extends 'base.html' %}
 
-{% block title %}Orders Dashboard{% endblock %}
+{% block title %}Daily Orders{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Daily Orders</h1>
-        <div>
-            <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> New Order
-            </a>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-filter"></i> Filters
-            </h5>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ url_for('orders.index') }}">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" id="status" name="status">
-                            <option value="">All Statuses</option>
-                            {% for status in statuses %}
-                            <option value="{{ status.name }}" {% if status_filter == status.name %}selected{% endif %}>
-                                {{ status.LABELS.value }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="customer_id" class="form-label">Customer</label>
-                        <select class="form-select" id="customer_id" name="customer_id">
-                            <option value="">All Customers</option>
-                            {% for customer in customers %}
-                            <option value="{{ customer.id }}" {% if customer_filter == customer.id|string %}selected{% endif %}>
-                                {{ customer.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="date_from" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from or '' }}">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="date_to" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to or '' }}">
-                    </div>
-                </div>
-                <div class="d-flex justify-content-end">
-                    <a href="{{ url_for('orders.index') }}" class="btn btn-outline-secondary me-2">
-                        <i class="fas fa-undo"></i> Reset Filters
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Daily Orders</h1>
+                <div>
+                    <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Order
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Apply Filters
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tabs for different views -->
-    <ul class="nav nav-tabs mb-4" id="orderTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view" type="button" role="tab" aria-controls="table-view" aria-selected="true">
-                <i class="fas fa-table"></i> Table View
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button" role="tab" aria-controls="calendar-view" aria-selected="false">
-                <i class="fas fa-calendar"></i> Upcoming Deliveries
-            </button>
-        </li>
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content" id="orderTabsContent">
-        <!-- Table View -->
-        <div class="tab-pane fade show active" id="table-view" role="tabpanel" aria-labelledby="table-tab">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    {% if orders %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Order #</th>
-                                    <th>Customer</th>
-                                    <th>Items</th>
-                                    <th>Total</th>
-                                    <th>Delivery Date</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for order in orders %}
-                                <tr>
-                                    <td>{{ order.order_number }}</td>
-                                    <td>{{ order.customer.name }}</td>
-                                    <td>{{ order.items|length }}</td>
-                                    <td>{{ "%.2f"|format(order.items|sum(attribute='price * quantity')) }}</td>
-                                    <td>
-                                        {% if order.delivery_date %}
-                                        <span class="{{ 'text-danger fw-bold' if order.is_due_today() else '' }}{{ 'text-warning fw-bold' if order.is_due_tomorrow() else '' }}">
-                                            {{ order.delivery_date.strftime('%Y-%m-%d') }}
-                                            {% if order.is_due_today() %}
-                                            <span class="badge bg-danger">Today</span>
-                                            {% elif order.is_due_tomorrow() %}
-                                            <span class="badge bg-warning text-dark">Tomorrow</span>
-                                            {% endif %}
-                                        </span>
-                                        {% else %}
-                                        <span class="text-muted">Not set</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge" style="background-color: {{ order.get_status_color() }}">
-                                            {{ order.get_status_label() }}
-                                        </span>
-                                    </td>
-                                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('orders.view', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ url_for('orders.delivery_notes', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
-                                                <i class="fas fa-file-alt"></i>
-                                            </a>
-                                            <a href="{{ url_for('orders.pdf_delivery_notes', order_id=order.id) }}" class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-download"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <div class="display-1 text-muted">
-                            <i class="fas fa-seedling"></i>
-                        </div>
-                        <p class="lead">No orders found matching your filters.</p>
-                        <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary mt-3">
-                            <i class="fas fa-plus"></i> Create New Order
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Calendar / Upcoming View -->
-        <div class="tab-pane fade" id="calendar-view" role="tabpanel" aria-labelledby="calendar-tab">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Upcoming Deliveries</h5>
+            <!-- Status filter tabs -->
+            <ul class="nav nav-tabs mb-4" id="orderStatusTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">
+                        All Orders <span class="badge bg-secondary">{{ orders|length }}</span>
+                    </button>
+                </li>
+                {% for status in OrderStatus %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="{{ status.value }}-tab" data-bs-toggle="tab" data-bs-target="#{{ status.value }}" type="button" role="tab" aria-controls="{{ status.value }}" aria-selected="false">
+                        {{ status.value|capitalize }} <span class="badge" style="background-color: {{ ORDER_STATUS_COLORS.get(status) }}">{{ status_counts.get(status.value, 0) }}</span>
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <!-- Today's deliveries section -->
+            {% if today_deliveries %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-truck"></i> Today's Deliveries ({{ today_deliveries|length }})</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        {% for day in upcoming_week %}
-                        {% set day_str = day.strftime('%Y-%m-%d') %}
-                        {% set day_orders = upcoming_deliveries[day_str] %}
-                        <div class="col-md-12 mb-4">
-                            <div class="card {{ 'border-danger' if day == today else 'border-light' }}">
-                                <div class="card-header {{ 'bg-danger text-white' if day == today else '' }}">
-                                    <h5 class="card-title mb-0">
-                                        {{ day.strftime('%A, %d %B %Y') }}
-                                        {% if day == today %}
-                                        <span class="badge bg-white text-danger">Today</span>
-                                        {% elif day == today + timedelta(days=1) %}
-                                        <span class="badge bg-warning">Tomorrow</span>
-                                        {% endif %}
-                                    </h5>
-                                </div>
+                        {% for order in today_deliveries %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if order.status == 'delivered' %}border-success{% else %}border-warning{% endif %}">
                                 <div class="card-body">
-                                    {% if day_orders %}
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Order #</th>
-                                                    <th>Customer</th>
-                                                    <th>Items</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for order in day_orders %}
-                                                <tr>
-                                                    <td>{{ order.order_number }}</td>
-                                                    <td>{{ order.customer.name }}</td>
-                                                    <td>{{ order.items|length }}</td>
-                                                    <td>
-                                                        <span class="badge" style="background-color: {{ order.get_status_color() }}">
-                                                            {{ order.get_status_label() }}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <div class="btn-group">
-                                                            <a href="{{ url_for('orders.view', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
-                                                                <i class="fas fa-eye"></i>
-                                                            </a>
-                                                            <a href="{{ url_for('orders.pdf_delivery_notes', order_id=order.id) }}" class="btn btn-sm btn-outline-success">
-                                                                <i class="fas fa-download"></i>
-                                                            </a>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    {% else %}
-                                    <div class="text-center py-3 text-muted">
-                                        <i class="fas fa-truck-loading fa-2x mb-2"></i>
-                                        <p>No deliveries scheduled for this day</p>
-                                    </div>
-                                    {% endif %}
+                                    <h5 class="card-title">{{ order.order_number }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ order.customer.name }}</h6>
+                                    <p class="card-text">
+                                        <span class="badge rounded-pill" style="background-color: {{ order.get_status_color() }}">
+                                            {{ order.get_status_label() }}
+                                        </span>
+                                    </p>
+                                    <p class="card-text small">
+                                        <strong>Items:</strong> {{ order.items|length }}<br>
+                                        <strong>Notes:</strong> {{ order.notes|truncate(50) if order.notes else 'None' }}
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{{ url_for('orders.print_delivery_note', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                        <i class="fas fa-print"></i> Print
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
+            </div>
+            {% endif %}
+
+            <!-- Orders table with status filter -->
+            <div class="tab-content" id="orderStatusTabsContent">
+                <!-- All orders tab -->
+                <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+                    {% include 'orders/_orders_table.html' with context %}
+                </div>
+
+                <!-- Status-specific tabs -->
+                {% for status in OrderStatus %}
+                <div class="tab-pane fade" id="{{ status.value }}" role="tabpanel" aria-labelledby="{{ status.value }}-tab">
+                    {% with filtered_orders = orders|selectattr('status', 'equalto', status.value)|list %}
+                    {% if filtered_orders %}
+                    {% include 'orders/_orders_table.html' with context %}
+                    {% else %}
+                    <div class="alert alert-info mt-3">No orders with {{ status.value }} status.</div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -243,23 +96,34 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Preserve the active tab after page reload
-        const activeTab = localStorage.getItem('activeOrderTab');
-        if (activeTab) {
-            const tab = document.querySelector(activeTab);
-            if (tab) {
-                const tabInstance = new bootstrap.Tab(tab);
-                tabInstance.show();
-            }
-        }
-        
-        // Store active tab on change
-        const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
-        tabs.forEach(tab => {
-            tab.addEventListener('shown.bs.tab', (event) => {
-                localStorage.setItem('activeOrderTab', '#' + event.target.id);
+    // Initialize date range picker for filtering
+    $(document).ready(function() {
+        // Add search functionality to the orders table
+        $("#orderSearchInput").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#ordersTable tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
             });
+        });
+        
+        // Update customer filter
+        $('#customerFilter').on('change', function() {
+            var customerId = $(this).val();
+            
+            if (customerId === '') {
+                // Show all rows if no customer selected
+                $('#ordersTable tbody tr').show();
+            } else {
+                // Hide rows that don't match the selected customer
+                $('#ordersTable tbody tr').each(function() {
+                    var rowCustomerId = $(this).data('customer-id');
+                    if (rowCustomerId == customerId) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            }
         });
     });
 </script>
