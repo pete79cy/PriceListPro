@@ -1,0 +1,78 @@
+<!-- Order search and filter controls -->
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="orderSearchInput" placeholder="Search orders...">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="input-group">
+                    <label class="input-group-text" for="customerFilter">Customer</label>
+                    <select class="form-select" id="customerFilter">
+                        <option value="" selected>All Customers</option>
+                        {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders table -->
+<div class="table-responsive">
+    <table class="table table-hover" id="ordersTable">
+        <thead class="table-light">
+            <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Delivery Date</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if orders|length > 0 %}
+                {% for order in orders %}
+                <tr data-customer-id="{{ order.customer_id }}">
+                    <td><strong>{{ order.order_number }}</strong></td>
+                    <td>{{ order.customer.name }}</td>
+                    <td>
+                        <span class="badge rounded-pill" style="background-color: {{ order.get_status_color() }}">
+                            {{ order.get_status_label() }}
+                        </span>
+                    </td>
+                    <td>{{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else 'Not specified' }}</td>
+                    <td>{{ order.items|length }}</td>
+                    <td>
+                        {% set total = order.items|sum(attribute='price') %}
+                        €{{ "%.2f"|format(total) }}
+                    </td>
+                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('orders.view_order', order_id=order.id) }}" 
+                               class="btn btn-sm btn-primary">View</a>
+                            <a href="{{ url_for('orders.print_delivery_note', order_id=order.id) }}" 
+                               class="btn btn-sm btn-secondary" target="_blank">
+                                <i class="fas fa-print"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">No orders found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
