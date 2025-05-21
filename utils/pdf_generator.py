@@ -63,7 +63,11 @@ def generate_supplier_catalog_pdf(supplier_id):
 def get_pdf_output_dir():
     """Get the output directory for PDF files"""
     from flask import current_app
-    output_dir = os.path.join(current_app.static_folder, 'pdfs')
+    if not current_app.static_folder:
+        # Fallback for testing environment
+        output_dir = os.path.join('static', 'pdfs')
+    else:
+        output_dir = os.path.join(current_app.static_folder, 'pdfs')
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
 
@@ -88,6 +92,9 @@ def generate_delivery_note_pdf(order_or_orders, language='en', batch=False):
             # Arabic language settings (right-to-left)
             os.environ['WEASYPRINT_LANGUAGE'] = 'ar'
             os.environ['WEASYPRINT_DIRECTION'] = 'rtl'
+        
+        # Import needed at function level to avoid circular imports
+        from models import Order
         
         # Determine whether we're processing a single order or multiple orders
         if not batch and not isinstance(order_or_orders, list):
