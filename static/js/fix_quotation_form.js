@@ -3,11 +3,11 @@
  */
 $(document).ready(function() {
     // Check if we're on the edit quotation page
-    if ($('#quotation-form').length) {
+    if ($('#quotationForm').length) {
         console.log('Quotation form found, applying enhanced handlers...');
         
         // Special handler for PAK-2025-029
-        $('#quotation-form').submit(function(e) {
+        $('#quotationForm').submit(function(e) {
             const quotationNumber = $('#quotation_number').val();
             
             // If this is the problematic quotation number, use our special route
