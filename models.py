@@ -88,7 +88,7 @@ class Customer(db.Model):
     price_lists = db.relationship('PriceList', backref='customer', lazy=True)
     invoices = db.relationship('Invoice', backref='customer', lazy=True)
     contacts = db.relationship('CustomerContact', backref='customer', lazy=True, cascade="all, delete-orphan")
-    orders = db.relationship('Order', lazy=True)
+    # Order relationship is defined through the backref on the Order model
     
     def __repr__(self):
         return f'<Customer {self.name}>'
@@ -413,9 +413,8 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships - we use a foreign key reference without a backref here
-    # because the Customer model already has a relationship to Order
-    customer = db.relationship('Customer', foreign_keys=[customer_id], lazy=True)
+    # Relationships - use foreign_keys to avoid ambiguity
+    customer = db.relationship('Customer', foreign_keys=[customer_id], backref=db.backref('customer_orders', lazy=True), lazy=True)
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
