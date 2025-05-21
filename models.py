@@ -531,21 +531,7 @@ class QuotationItem(db.Model):
     def __repr__(self):
         return f'<QuotationItem {self.description}>'
 
-class Order(db.Model):
-    """
-    Order model for tracking daily customer orders with status workflow.
-    """
-    id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(20), unique=True, nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    status = db.Column(db.String(20), default=OrderStatusEnum.NEW.value, nullable=False)
-    notes = db.Column(db.Text, nullable=True)
-    delivery_date = db.Column(db.Date, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
+# Order model is already defined earlier in the file
     
     def __repr__(self):
         return f'<Order {self.order_number}>'
