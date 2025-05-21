@@ -413,8 +413,8 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    customer = db.relationship('Customer', backref='orders', lazy=True)
+    # Relationships - avoid creating a backref on customer to prevent conflicts
+    customer = db.relationship('Customer', lazy=True)
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -600,11 +600,7 @@ class QuotationItem(db.Model):
 
 # PriceList model is already defined earlier in the file
     
-    # Relationships
-    items = db.relationship('PriceListItem', backref='price_list', lazy=True, cascade="all, delete-orphan")
-    
-    def __repr__(self):
-        return f'<PriceList {self.name}>'
+    # PriceList relationships and methods are defined above
 
 
 class PriceListItem(db.Model):
