@@ -149,7 +149,8 @@ def check_vat_rendering(quotation_number='PAK-2025-028'):
         
         # Check if we have multiple VAT rates
         if len(vat_list) > 1:
-            print(f"Multiple VAT rates detected: {', '.join([f'{v['rate']}%' for v in vat_list])}")
+            rates = [f"{v['rate']}%" for v in vat_list]
+            print(f"Multiple VAT rates detected: {', '.join(rates)}")
         else:
             print(f"Single VAT rate detected: {vat_list[0]['rate']}%")
         
