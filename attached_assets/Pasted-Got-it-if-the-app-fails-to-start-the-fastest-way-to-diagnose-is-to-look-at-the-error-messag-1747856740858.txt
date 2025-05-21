@@ -1,0 +1,95 @@
+Got it — if the **app fails to start**, the fastest way to diagnose is to look at the **error message printed in the terminal** when you run:
+
+```bash
+python app.py
+```
+
+---
+
+### ⚠️ Common Reasons (based on your recent changes):
+
+#### ✅ 1. **Enum / OrderStatus Conflict**
+
+You may see something like:
+
+```
+TypeError: object of type 'OrderStatusEnum' has no len()
+```
+
+This usually means you're trying to use a Python `Enum` directly in a SQLAlchemy `Enum` column without converting it to a string.
+
+✅ Fix: Replace
+
+```python
+status = Column(Enum(OrderStatusEnum), default=OrderStatusEnum.NEW)
+```
+
+with
+
+```python
+status = Column(String, default=OrderStatusEnum.NEW.value)
+```
+
+And define your enum like:
+
+```python
+class OrderStatusEnum(str, Enum):
+    NEW = "new"
+    PREPARING = "preparing"
+    READY = "ready"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+```
+
+---
+
+#### ✅ 2. **Duplicate Model Definitions**
+
+If you copied code or merged files, check `models.py` for **duplicate class names**, like:
+
+```python
+class Order(...)
+class Order(...)  # ❌ This will cause failure
+```
+
+✅ Fix: Keep only **one definition** per model (`Order`, `OrderItem`, etc.)
+
+---
+
+#### ✅ 3. **Bad Relationship or Backref**
+
+A common error:
+
+```
+ArgumentError: Error creating backref 'orders' on relationship 'Customer.orders': property of that name exists on mapper
+```
+
+✅ Fix: In `Customer` and `Order` models, make sure you're not declaring `orders` twice or causing cyclic relationships.
+
+Use something like:
+
+```python
+class Order(Base):
+    customer_id = Column(Integer, ForeignKey("customers.id"))
+    customer = relationship("Customer", backref="customer_orders")
+```
+
+And remove `orders = relationship(...)` from `Customer` if it's duplicated.
+
+---
+
+### ✅ What I Need to Fix It
+
+Please copy & paste here the **full traceback or last few lines** you get when you run:
+
+```bash
+python app.py
+```
+
+Or if you’re using Flask directly:
+
+```bash
+flask run
+```
+
+Even 10 lines of the error will help me fix it in one go.
