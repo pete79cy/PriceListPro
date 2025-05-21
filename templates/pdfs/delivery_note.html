@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Note</title>
+    <style>
+        @page {
+            size: a4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .logo {
+            max-width: 200px;
+            max-height: 80px;
+        }
+        h1 {
+            font-size: 18pt;
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+        .document-info {
+            margin-bottom: 20px;
+        }
+        .info-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+        }
+        .info-value {
+            flex: 1;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+            font-weight: bold;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        .notes {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            font-size: 9pt;
+            color: #777;
+            text-align: center;
+        }
+        .signature-area {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 45%;
+            border-top: 1px solid #999;
+            padding-top: 5px;
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 7px;
+            font-size: 9pt;
+            font-weight: bold;
+            line-height: 1;
+            color: white;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 10px;
+        }
+        .badge-warning {
+            background-color: #f39c12;
+        }
+        .badge-info {
+            background-color: #3498db;
+        }
+        .badge-success {
+            background-color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/pakkoutis_logo_300x100.png', _external=True) }}" alt="Company Logo" class="logo">
+        <h1>Delivery Note{% if batch %} - Batch{% endif %}</h1>
+    </div>
+
+    {% if not batch %}
+    <!-- Single Order Delivery Note -->
+    <div class="document-info">
+        <div class="info-box">
+            <div class="info-title">Order Information</div>
+            <div class="info-row">
+                <div class="info-label">Order Number:</div>
+                <div class="info-value">{{ order.order_number }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Order Date:</div>
+                <div class="info-value">{{ order.created_at.strftime('%Y-%m-%d') }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Delivery Date:</div>
+                <div class="info-value">{{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else 'Not specified' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Status:</div>
+                <div class="info-value">
+                    <span class="badge badge-{{ 'warning' if order.status == 'NEW' else 'info' if order.status == 'PREPARING' else 'success' }}">
+                        {{ order.get_status_label() }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-title">Customer Information</div>
+            <div class="info-row">
+                <div class="info-label">Customer:</div>
+                <div class="info-value">{{ order.customer.name }}</div>
+            </div>
+            {% if order.customer.address %}
+            <div class="info-row">
+                <div class="info-label">Address:</div>
+                <div class="info-value">{{ order.customer.address }}</div>
+            </div>
+            {% endif %}
+            {% if order.customer.phone %}
+            <div class="info-row">
+                <div class="info-label">Phone:</div>
+                <div class="info-value">{{ order.customer.phone }}</div>
+            </div>
+            {% endif %}
+            {% if order.customer.email %}
+            <div class="info-row">
+                <div class="info-label">Email:</div>
+                <div class="info-value">{{ order.customer.email }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Plant</th>
+                <th>Size</th>
+                <th>Quantity</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.plant_name }}</td>
+                <td>{{ item.size or '-' }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.notes or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="3" style="text-align: right;">Total Items:</th>
+                <th>{{ order.items|sum(attribute='quantity') }}</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+    {% if order.notes %}
+    <div class="notes">
+        <div class="info-title">Order Notes:</div>
+        <p>{{ order.notes }}</p>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Batch Delivery Note -->
+    <div class="document-info">
+        <div class="info-box">
+            <div class="info-title">Batch Delivery Information</div>
+            <div class="info-row">
+                <div class="info-label">Date Generated:</div>
+                <div class="info-value">{{ generation_date.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Customers:</div>
+                <div class="info-value">{{ orders_by_customer|length }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Orders:</div>
+                <div class="info-value">
+                    {% set total_orders = 0 %}
+                    {% for customer_data in orders_by_customer.values() %}
+                        {% set total_orders = total_orders + customer_data.orders|length %}
+                    {% endfor %}
+                    {{ total_orders }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for customer_id, customer_data in orders_by_customer.items() %}
+    <div style="margin-top: 20px; page-break-inside: avoid;">
+        <h2>{{ customer_data.customer.name }}</h2>
+        
+        <div class="info-box">
+            <div class="info-title">Customer Information</div>
+            {% if customer_data.customer.address %}
+            <div class="info-row">
+                <div class="info-label">Address:</div>
+                <div class="info-value">{{ customer_data.customer.address }}</div>
+            </div>
+            {% endif %}
+            {% if customer_data.customer.phone %}
+            <div class="info-row">
+                <div class="info-label">Phone:</div>
+                <div class="info-value">{{ customer_data.customer.phone }}</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% for order in customer_data.orders %}
+        <div style="margin-top: 15px; page-break-inside: avoid;">
+            <h3>Order: {{ order.order_number }} - {{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else 'No Delivery Date' }}</h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Plant</th>
+                        <th>Size</th>
+                        <th>Quantity</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.plant_name }}</td>
+                        <td>{{ item.size or '-' }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" style="text-align: right;">Total Items:</th>
+                        <th>{{ order.items|sum(attribute='quantity') }}</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            {% if order.notes %}
+            <div class="notes">
+                <div class="info-title">Order Notes:</div>
+                <p>{{ order.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="signature-area">
+        <div class="signature-box">
+            <div>Delivered by:</div>
+            <br><br>
+            <div>________________________</div>
+            <div>Name / Signature / Date</div>
+        </div>
+        <div class="signature-box">
+            <div>Received by:</div>
+            <br><br>
+            <div>________________________</div>
+            <div>Name / Signature / Date</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Generated on {{ generation_date.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <p>This is an official delivery document. Please retain for your records.</p>
+    </div>
+</body>
+</html>
