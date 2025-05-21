@@ -593,37 +593,12 @@ class QuotationItem(db.Model):
         return self.delivery_date == date.today() + timedelta(days=1)
 
 
-class OrderItem(db.Model):
-    """
-    Item in a customer order.
-    """
-    id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
-    plant_name = db.Column(db.String(200), nullable=False)
-    size = db.Column(db.String(50), nullable=True)  # Size or pot size
-    quantity = db.Column(db.Integer, nullable=False, default=1)
-    price = db.Column(db.Float, nullable=False, default=0.0)
-    notes = db.Column(db.Text, nullable=True)
-    updated_price_list = db.Column(db.Boolean, default=False)  # Indicates if price list was updated
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+# OrderItem model is already defined earlier in the file
     
-    # Relationships
-    product = db.relationship('Product', backref='order_items', lazy=True)
-    
-    def __repr__(self):
-        return f'<OrderItem {self.plant_name} ({self.quantity})>'
+    # OrderItem relationships and methods are defined above
 
 
-class PriceList(db.Model):
-    """Customer-specific price lists"""
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-    notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+# PriceList model is already defined earlier in the file
     
     # Relationships
     items = db.relationship('PriceListItem', backref='price_list', lazy=True, cascade="all, delete-orphan")
