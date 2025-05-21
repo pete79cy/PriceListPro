@@ -1,263 +1,200 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ language }}">
 <head>
     <meta charset="UTF-8">
-    <title>{{ _('Delivery Note') }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ translations.delivery_note }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 1cm;
-            @top-center {
-                content: "{{ _('DELIVERY NOTE') }}";
-                font-size: 12pt;
-                font-weight: bold;
-            }
-            @bottom-center {
-                content: "{{ _('Thank you for your business! This delivery note is not an invoice.') }}";
-                font-size: 9pt;
-                font-style: italic;
-            }
-        }
-        
         body {
             font-family: Arial, sans-serif;
-            font-size: 10pt;
-            line-height: 1.4;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            color: #333;
             {% if language == 'ar' %}
             direction: rtl;
             {% endif %}
         }
-        
         .header {
+            text-align: center;
             margin-bottom: 20px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
         }
-        
         .logo {
-            max-height: 80px;
             max-width: 200px;
+            max-height: 100px;
         }
-        
-        .company-info {
-            text-align: right;
-        }
-        
         h1 {
-            font-size: 18pt;
-            margin: 0 0 5px 0;
-            color: #333;
+            color: #2c3e50;
+            margin: 10px 0;
         }
-        
-        h2 {
-            font-size: 14pt;
-            margin: 20px 0 10px 0;
-            color: #555;
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .info-box {
+            width: 48%;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
             border-bottom: 1px solid #eee;
             padding-bottom: 5px;
         }
-        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 20px 0;
         }
-        
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        
-        th {
-            background-color: #f8f8f8;
+        th, td {
+            padding: 10px;
             text-align: left;
-            padding: 8px;
-            font-weight: bold;
+            border-bottom: 1px solid #ddd;
         }
-        
         {% if language == 'ar' %}
-        th {
+        th, td {
             text-align: right;
         }
         {% endif %}
-        
-        td {
-            padding: 8px;
-            vertical-align: top;
-        }
-        
-        .info-table {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        
-        .info-table td {
-            padding: 5px;
-            border: none;
-        }
-        
-        .info-table .label {
+        th {
+            background-color: #f8f9fa;
             font-weight: bold;
+        }
+        .total-section {
             width: 40%;
-        }
-        
-        .signature-section {
-            margin-top: 40px;
-            page-break-inside: avoid;
-        }
-        
-        .signature {
-            width: 45%;
-            border-top: 1px solid #333;
-            margin-top: 70px;
-            padding-top: 5px;
-            display: inline-block;
-        }
-        
-        .left {
-            float: left;
-        }
-        
-        .right {
-            float: right;
-        }
-        
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-        
-        .notes {
-            border: 1px solid #ddd;
-            padding: 10px;
+            margin-left: auto;
             margin-top: 20px;
-            min-height: 60px;
         }
-        
-        .no-items {
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .total-label {
+            font-weight: bold;
+        }
+        .grand-total {
+            font-weight: bold;
+            font-size: 1.2em;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+            margin-top: 5px;
+        }
+        .notes-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 45%;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 10px;
+        }
+        .footer {
+            margin-top: 40px;
             text-align: center;
-            padding: 30px;
-            color: #888;
+            color: #777;
+            font-size: 0.9em;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <table style="border: none; margin: 0;">
-            <tr>
-                <td style="border: none; width: 50%;">
-                    <h1>{{ _('Delivery Note') }}</h1>
-                    <p># {{ order.order_number }}</p>
-                </td>
-                <td style="border: none; text-align: right;">
-                    <p><strong>{{ _('Company Name') }}</strong><br>
-                    {{ _('Address Line 1') }}<br>
-                    {{ _('City, Postal Code') }}<br>
-                    {{ _('Phone') }}: (123) 456-7890<br>
-                    {{ _('Email') }}: info@example.com</p>
-                </td>
-            </tr>
-        </table>
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Company Logo" class="logo">
+        <h1>{{ translations.delivery_note }}</h1>
     </div>
     
-    <div class="content">
-        <div class="row">
-            <div style="width: 48%; float: left;">
-                <h2>{{ _('Order Information') }}</h2>
-                <table class="info-table">
-                    <tr>
-                        <td class="label">{{ _('Order Number') }}:</td>
-                        <td>{{ order.order_number }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">{{ _('Order Date') }}:</td>
-                        <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">{{ _('Delivery Date') }}:</td>
-                        <td>
-                            {% if order.delivery_date %}
-                                {{ order.delivery_date.strftime('%Y-%m-%d') }}
-                            {% else %}
-                                {{ _('Not specified') }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                </table>
-            </div>
-            
-            <div style="width: 48%; float: right;">
-                <h2>{{ _('Customer Information') }}</h2>
-                <table class="info-table">
-                    <tr>
-                        <td class="label">{{ _('Customer') }}:</td>
-                        <td>{{ order.customer.name }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">{{ _('Address') }}:</td>
-                        <td>
-                            {% if order.customer.address %}
-                                {{ order.customer.address }}
-                            {% else %}
-                                {{ _('N/A') }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">{{ _('Phone') }}:</td>
-                        <td>{{ order.customer.phone or _('N/A') }}</td>
-                    </tr>
-                </table>
-            </div>
-            <div style="clear: both;"></div>
+    <div class="info-section">
+        <div class="info-box">
+            <h3>{{ translations.order_number }}</h3>
+            <p>{{ order.order_number }}</p>
+            <p>{{ translations.date }}: {{ date }}</p>
         </div>
-        
-        <h2>{{ _('Order Items') }}</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 50%;">{{ _('Product/Plant') }}</th>
-                    <th style="width: 15%;">{{ _('Quantity') }}</th>
-                    <th style="width: 35%;">{{ _('Notes') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if order.items %}
-                    {% for item in order.items %}
-                    <tr>
-                        <td>
-                            {{ item.plant_name }}
-                            {% if item.size %}<br><small>({{ item.size }})</small>{% endif %}
-                        </td>
-                        <td>{{ item.quantity }}</td>
-                        <td></td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="3" class="no-items">{{ _('No items in this order') }}</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-        
-        {% if order.notes %}
-        <h2>{{ _('Notes') }}</h2>
-        <div class="notes">
-            {{ order.notes }}
+        <div class="info-box">
+            <h3>{{ translations.customer }}</h3>
+            <p>{{ order.customer.name }}</p>
+            <p>{{ order.customer.address }}</p>
+            <p>{{ order.customer.phone }}</p>
         </div>
-        {% endif %}
-        
-        <div class="signature-section clearfix">
-            <div class="signature left">
-                {{ _('Delivered By (Signature & Name)') }}
-            </div>
-            <div class="signature right">
-                {{ _('Received By (Signature & Name)') }}
-            </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="info-box">
+            <h3>{{ translations.delivery_address }}</h3>
+            <p>{{ order.delivery_address }}</p>
         </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>{{ translations.item }}</th>
+                <th>{{ translations.description }}</th>
+                <th>{{ translations.quantity }}</th>
+                <th>{{ translations.unit }}</th>
+                <th>{{ translations.price }}</th>
+                <th>{{ translations.total }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.product.code }}</td>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.product.unit }}</td>
+                <td>€{{ "%.2f"|format(item.price) }}</td>
+                <td>€{{ "%.2f"|format(item.price * item.quantity) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="total-section">
+        <div class="total-row">
+            <span class="total-label">{{ translations.subtotal }}:</span>
+            <span>€{{ "%.2f"|format(order.subtotal) }}</span>
+        </div>
+        <div class="total-row">
+            <span class="total-label">{{ translations.vat }} ({{ order.vat_rate }}%):</span>
+            <span>€{{ "%.2f"|format(order.vat_amount) }}</span>
+        </div>
+        <div class="total-row grand-total">
+            <span class="total-label">{{ translations.grand_total }}:</span>
+            <span>€{{ "%.2f"|format(order.total) }}</span>
+        </div>
+    </div>
+    
+    {% if order.notes %}
+    <div class="notes-section">
+        <h3>{{ translations.notes }}</h3>
+        <p>{{ order.notes }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line">{{ translations.signature }} ({{ translations.customer }})</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">{{ translations.signature }} ({{ translations.delivery_note }})</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>{{ translations.thank_you }}</p>
     </div>
 </body>
 </html>
