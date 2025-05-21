@@ -1,153 +1,246 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Order Details: {{ order.order_number }}{% endblock %}
+{% block title %}View Order - {{ order.order_number }}{% endblock %}
+
+{% block styles %}
+<style>
+    .status-badge {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 5px;
+        font-weight: bold;
+        color: white;
+    }
+    .item-card {
+        border-left: 3px solid #4CAF50;
+        margin-bottom: 15px;
+    }
+    .item-price {
+        font-weight: bold;
+        color: #555;
+    }
+    .total-section {
+        font-size: 1.2rem;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        border-left: 3px solid #2196F3;
+    }
+    .info-label {
+        font-weight: bold;
+        color: #555;
+        min-width: 120px;
+        display: inline-block;
+    }
+    .action-buttons {
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        padding: 15px 0;
+        border-top: 1px solid #eee;
+        z-index: 100;
+    }
+    .order-notes {
+        background-color: #f9fbe7;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 3px solid #cddc39;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>
-            Order Details: {{ order.order_number }}
-            <span class="badge" style="background-color: {{ order.get_status_color() }}">
-                {{ order.get_status_label() }}
-            </span>
-        </h1>
-        <div class="btn-group">
-            <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-primary">
-                <i class="fas fa-edit me-1"></i> Edit
-            </a>
-            <a href="{{ url_for('orders.generate_delivery_note', order_id=order.id) }}" class="btn btn-success">
-                <i class="fas fa-file-export me-1"></i> Delivery Note
-            </a>
+        <h1>Order: {{ order.order_number }}</h1>
+        <div>
             <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Order Details -->
-        <div class="col-md-5">
-            <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Order Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Customer:</div>
-                        <div class="col-md-8">{{ order.customer.name }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Order Date:</div>
-                        <div class="col-md-8">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Delivery Date:</div>
-                        <div class="col-md-8">
-                            {% if order.delivery_date %}
-                                {{ order.delivery_date.strftime('%Y-%m-%d') }}
-                                {% if order.is_due_today() %}
-                                    <span class="badge bg-warning">Due Today</span>
-                                {% elif order.is_due_tomorrow() %}
-                                    <span class="badge bg-info">Due Tomorrow</span>
-                                {% endif %}
-                            {% else %}
-                                Not specified
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Status:</div>
-                        <div class="col-md-8">
-                            <span class="badge" style="background-color: {{ order.get_status_color() }}">
-                                {{ order.get_status_label() }}
-                            </span>
-                        </div>
-                    </div>
-                    {% if order.notes %}
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Notes:</div>
-                        <div class="col-md-8">{{ order.notes }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Status Update Form -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Update Status</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
-                        <div class="form-group mb-3">
-                            <label for="status" class="form-label">New Status:</label>
-                            <select class="form-select" id="status" name="status" required>
-                                <option value="">Select new status</option>
-                                {% for status in order.status|attr('TRANSITIONS', []) %}
-                                <option value="{{ status }}">{{ status|attr('LABELS')|getitem(status) }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Update Status</button>
-                    </form>
-                </div>
-            </div>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Order Details</h5>
+            <span class="status-badge" style="background-color: {{ order.get_status_color() }};">
+                {{ order.get_status_label() }}
+            </span>
         </div>
-
-        <!-- Order Items -->
-        <div class="col-md-7">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Order Items</h5>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><span class="info-label">Customer:</span> {{ order.customer.name }}</p>
+                    <p><span class="info-label">Contact:</span> 
+                        {% if order.customer.phone %}
+                            {{ order.customer.phone }}
+                        {% else %}
+                            <span class="text-muted">Not available</span>
+                        {% endif %}
+                    </p>
+                    <p><span class="info-label">Email:</span> 
+                        {% if order.customer.email %}
+                            {{ order.customer.email }}
+                        {% else %}
+                            <span class="text-muted">Not available</span>
+                        {% endif %}
+                    </p>
+                    <p><span class="info-label">Address:</span> 
+                        {% if order.customer.address %}
+                            {{ order.customer.address }}
+                        {% else %}
+                            <span class="text-muted">Not available</span>
+                        {% endif %}
+                    </p>
                 </div>
-                <div class="card-body">
-                    {% if order.items %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Plant</th>
-                                    <th>Size</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in order.items %}
+                <div class="col-md-6">
+                    <p><span class="info-label">Order Date:</span> {{ order.created_at.strftime('%d-%m-%Y %H:%M') }}</p>
+                    <p><span class="info-label">Delivery Date:</span> 
+                        {% if order.delivery_date %}
+                            {{ order.delivery_date.strftime('%d-%m-%Y') }}
+                            {% if order.is_due_today() %}
+                                <span class="badge bg-warning">Due Today</span>
+                            {% elif order.is_due_tomorrow() %}
+                                <span class="badge bg-info">Due Tomorrow</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">Not scheduled</span>
+                        {% endif %}
+                    </p>
+                    <p><span class="info-label">Last Updated:</span> {{ order.updated_at.strftime('%d-%m-%Y %H:%M') }}</p>
+                </div>
+            </div>
+
+            {% if order.notes %}
+            <div class="order-notes mt-3">
+                <h6><i class="fas fa-sticky-note me-2"></i> Order Notes:</h6>
+                <p class="mb-0">{{ order.notes|nl2br }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Status update form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Update Status</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('orders.update_status', order_id=order.id) }}" class="d-flex align-items-center">
+                <select name="status" class="form-select me-3" style="max-width: 200px;">
+                    <option value="">-- Select Status --</option>
+                    {% for status, label in OrderStatus.LABELS.items() %}
+                        {% if order.can_transition_to(status) %}
+                            <option value="{{ status }}">{{ label }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-arrow-circle-right me-1"></i> Update Status
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order items -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Order Items</h5>
+        </div>
+        <div class="card-body">
+            {% if order.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Plant Name</th>
+                                <th>Size</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set order_total = 0 %}
+                            {% for item in order.items %}
+                                {% set item_total = item.quantity * item.price %}
+                                {% set order_total = order_total + item_total %}
                                 <tr>
                                     <td>{{ loop.index }}</td>
                                     <td>
                                         {{ item.plant_name }}
                                         {% if item.notes %}
-                                        <div class="text-muted small">{{ item.notes }}</div>
+                                            <div class="small text-muted fst-italic">{{ item.notes }}</div>
+                                        {% endif %}
+                                        {% if item.updated_price_list %}
+                                            <div class="small text-success"><i class="fas fa-sync-alt me-1"></i> Price list updated</div>
                                         {% endif %}
                                     </td>
-                                    <td>{{ item.size or '-' }}</td>
-                                    <td>€{{ "%.2f"|format(item.price) }}</td>
+                                    <td>{{ item.size if item.size else 'N/A' }}</td>
                                     <td>{{ item.quantity }}</td>
-                                    <td>€{{ "%.2f"|format(item.price * item.quantity) }}</td>
+                                    <td>€{{ "%.2f"|format(item.price) }}</td>
+                                    <td>€{{ "%.2f"|format(item_total) }}</td>
                                 </tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="4" class="text-end">Total:</th>
-                                    <th>{{ order.items|sum(attribute='quantity') }}</th>
-                                    <th>€{{ "%.2f"|format(order.items|sum(attribute=lambda x: x.price * x.quantity)) }}</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i> No items in this order.
-                    </div>
-                    {% endif %}
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="5" class="text-end fw-bold">Order Total:</td>
+                                <td class="fw-bold">€{{ "%.2f"|format(order_total) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i> This order has no items.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <div class="d-flex justify-content-between">
+            <div>
+                <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary me-2">
+                    <i class="fas fa-list me-1"></i> All Orders
+                </a>
+                <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit me-1"></i> Edit Order
+                </a>
+            </div>
+            <div>
+                <a href="{{ url_for('orders.generate_delivery_note', order_id=order.id) }}" class="btn btn-success">
+                    <i class="fas fa-file-pdf me-1"></i> Generate Delivery Note
+                </a>
+                <div class="btn-group ms-2">
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-globe me-1"></i> Language
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('orders.generate_delivery_note', order_id=order.id, language='en') }}">English</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('orders.generate_delivery_note', order_id=order.id, language='el') }}">Greek</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('orders.generate_delivery_note', order_id=order.id, language='ar') }}">Arabic</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Highlight table rows on hover
+        $('.table tbody tr').hover(
+            function() { $(this).addClass('table-active'); },
+            function() { $(this).removeClass('table-active'); }
+        );
+        
+        // Auto-focus status dropdown
+        $('select[name="status"]').focus();
+    });
+</script>
 {% endblock %}

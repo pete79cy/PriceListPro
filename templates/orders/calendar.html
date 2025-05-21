@@ -1,183 +1,404 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Orders Calendar{% endblock %}
+{% block title %}Delivery Calendar{% endblock %}
 
 {% block styles %}
 <style>
-    .calendar-container {
-        margin-top: 20px;
+    #calendar {
+        max-width: 1200px;
+        margin: 0 auto;
     }
-    .calendar-header {
-        background-color: #f8f9fa;
-        text-align: center;
-        padding: 10px;
+    .fc-event {
+        cursor: pointer;
+    }
+    .fc-day-today {
+        background-color: rgba(33, 150, 243, 0.1) !important;
+    }
+    .order-status-new {
+        background-color: #FF9800;
+        border-color: #FF9800;
+    }
+    .order-status-preparing {
+        background-color: #2196F3;
+        border-color: #2196F3;
+    }
+    .order-status-ready {
+        background-color: #4CAF50;
+        border-color: #4CAF50;
+    }
+    .order-status-delivered {
+        background-color: #9E9E9E;
+        border-color: #9E9E9E;
+        text-decoration: line-through;
+    }
+    .order-status-cancelled {
+        background-color: #F44336;
+        border-color: #F44336;
+        text-decoration: line-through;
+    }
+    #orderModal .order-header {
+        padding: 15px;
         border-radius: 5px;
         margin-bottom: 15px;
-    }
-    .calendar-day {
-        min-height: 120px;
-        border: 1px solid #dee2e6;
-        padding: 10px;
-        margin-bottom: 15px;
-        border-radius: 5px;
-        position: relative;
-    }
-    .calendar-day-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-        padding-bottom: 5px;
-        border-bottom: 1px solid #eee;
-    }
-    .calendar-day.weekend {
-        background-color: #f8f9fa;
-    }
-    .calendar-day.today {
-        border: 2px solid #007bff;
-        background-color: #f0f8ff;
-    }
-    .date-number {
-        font-size: 1.2rem;
-        font-weight: bold;
-    }
-    .date-day {
-        color: #6c757d;
-    }
-    .order-count {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background-color: #28a745;
         color: white;
-        border-radius: 50%;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
     }
-    .order-item {
-        padding: 8px;
-        margin-bottom: 5px;
+    #orderModal .modal-body {
+        padding: 20px;
+    }
+    .status-label {
+        display: inline-block;
+        padding: 5px 10px;
         border-radius: 4px;
-        font-size: 0.9rem;
-    }
-    .order-item.new {
-        background-color: #fff3cd;
-        border-left: 3px solid #ffc107;
-    }
-    .order-item.preparing {
-        background-color: #cce5ff;
-        border-left: 3px solid #007bff;
-    }
-    .order-item.ready {
-        background-color: #d4edda;
-        border-left: 3px solid #28a745;
-    }
-    .order-item.delivered {
-        background-color: #f8f9fa;
-        border-left: 3px solid #6c757d;
+        font-size: 0.85rem;
+        color: white;
+        font-weight: bold;
     }
 </style>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Orders Calendar</h1>
-        <div class="btn-group">
-            <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">
-                <i class="fas fa-th-large me-1"></i> Dashboard
+        <h1>Delivery Calendar</h1>
+        <div>
+            <a href="{{ url_for('orders.index') }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Dashboard
             </a>
             <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
-                <i class="fas fa-plus-circle me-1"></i> New Order
+                <i class="fas fa-plus"></i> New Order
             </a>
         </div>
     </div>
 
-    <!-- Date Range Selection -->
     <div class="card mb-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Select Date Range</h5>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Delivery Schedule</h5>
         </div>
         <div class="card-body">
-            <form method="get" action="{{ url_for('orders.calendar') }}" class="row g-3">
-                <div class="col-md-4">
-                    <label for="start_date" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
-                </div>
-                <div class="col-md-4">
-                    <label for="end_date" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Apply</button>
-                    <a href="{{ url_for('orders.calendar') }}" class="btn btn-secondary">Reset</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Quick Navigation -->
-    <div class="d-flex justify-content-center mb-4">
-        <div class="btn-group">
-            <a href="{{ url_for('orders.calendar', start_date=(start_date - timedelta(days=14)).strftime('%Y-%m-%d'), end_date=(end_date - timedelta(days=14)).strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
-                <i class="fas fa-chevron-left me-1"></i> Previous 2 Weeks
-            </a>
-            <a href="{{ url_for('orders.calendar') }}" class="btn btn-outline-primary">Current Period</a>
-            <a href="{{ url_for('orders.calendar', start_date=(start_date + timedelta(days=14)).strftime('%Y-%m-%d'), end_date=(end_date + timedelta(days=14)).strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
-                Next 2 Weeks <i class="fas fa-chevron-right ms-1"></i>
-            </a>
-        </div>
-    </div>
-
-    <!-- Calendar View -->
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <h3>{{ start_date.strftime('%B %d, %Y') }} to {{ end_date.strftime('%B %d, %Y') }}</h3>
-        </div>
-        
-        <div class="row">
-            {% for day in days %}
-            <div class="col-md-3">
-                <div class="calendar-day {{ 'weekend' if day.is_weekend }} {{ 'today' if day.is_today }}">
-                    <div class="calendar-day-header">
-                        <span>
-                            <span class="date-number">{{ day.date.day }}</span>
-                            <span class="date-day">{{ day.date.strftime('%a') }}</span>
-                        </span>
-                        <span class="text-muted">{{ day.date.strftime('%b %Y') }}</span>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="btn-group">
+                        <button id="prev" class="btn btn-outline-secondary">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button id="today" class="btn btn-outline-primary">Today</button>
+                        <button id="next" class="btn btn-outline-secondary">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
-                    
-                    {% if day.orders %}
-                    <span class="order-count">{{ day.orders|length }}</span>
-                    <div class="order-list">
-                        {% for order in day.orders %}
-                        <div class="order-item {{ order.status.lower() }}">
-                            <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="text-decoration-none text-dark">
-                                <div class="d-flex justify-content-between">
-                                    <span><strong>{{ order.order_number }}</strong></span>
-                                    <span class="badge" style="background-color: {{ order.get_status_color() }}">
-                                        {{ order.get_status_label() }}
-                                    </span>
-                                </div>
-                                <div>{{ order.customer.name }}</div>
-                                <small>{{ order.items|length }} items</small>
-                            </a>
+                    <div class="btn-group ms-2">
+                        <button id="monthView" class="btn btn-outline-secondary active">Month</button>
+                        <button id="weekView" class="btn btn-outline-secondary">Week</button>
+                        <button id="dayView" class="btn btn-outline-secondary">Day</button>
+                    </div>
+                    <div class="float-end">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-filter me-1"></i> Filter Status
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" data-status="all">
+                                        <input type="checkbox" checked class="me-2"> Show All
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% for status, label in statuses.items() %}
+                                <li>
+                                    <a class="dropdown-item" href="#" data-status="{{ status }}">
+                                        <input type="checkbox" checked class="me-2"> {{ label }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-center text-muted py-3">
-                        <i class="fas fa-calendar-day mb-2" style="font-size: 1.5rem;"></i>
-                        <p class="mb-0">No orders</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
-            {% endfor %}
+            <div id="calendar"></div>
         </div>
     </div>
 </div>
+
+<!-- Order Detail Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderModalLabel">Order Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="order-header bg-primary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 id="modalOrderNumber" class="mb-0"></h4>
+                        <span id="modalOrderStatus" class="status-label"></span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Customer:</strong> <span id="modalCustomer"></span></p>
+                        <p><strong>Contact:</strong> <span id="modalContact"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Delivery Date:</strong> <span id="modalDeliveryDate"></span></p>
+                        <p><strong>Created:</strong> <span id="modalCreatedAt"></span></p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover" id="modalItemsTable">
+                        <thead>
+                            <tr>
+                                <th>Plant Name</th>
+                                <th>Size</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="4" class="text-end fw-bold">Order Total:</td>
+                                <td id="modalOrderTotal" class="fw-bold"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div id="modalNotes" class="mt-3 p-3 bg-light" style="display: none;">
+                    <h6><i class="fas fa-sticky-note me-2"></i> Notes:</h6>
+                    <p class="mb-0"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="viewOrderBtn" class="btn btn-primary">
+                    <i class="fas fa-eye me-1"></i> View Order
+                </a>
+                <a href="#" id="deliveryNoteBtn" class="btn btn-success">
+                    <i class="fas fa-file-pdf me-1"></i> Delivery Note
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calendar orders data
+        const ordersData = {{ calendar_data|tojson }};
+        
+        // Initialize calendar
+        const calendarEl = document.getElementById('calendar');
+        
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: '',
+                center: 'title',
+                right: ''
+            },
+            events: ordersData,
+            eventClick: function(info) {
+                showOrderDetails(info.event.extendedProps.order_id);
+            },
+            eventDidMount: function(info) {
+                // Add tooltip
+                const tooltip = `
+                    <div>
+                        <strong>${info.event.title}</strong><br>
+                        Customer: ${info.event.extendedProps.customer}<br>
+                        Status: ${info.event.extendedProps.status_label}<br>
+                        Items: ${info.event.extendedProps.items_count}
+                    </div>
+                `;
+                
+                $(info.el).tooltip({
+                    title: tooltip,
+                    html: true,
+                    placement: 'top',
+                    container: 'body'
+                });
+            },
+            dayMaxEvents: true, // allow "more" link when too many events
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                meridiem: 'short'
+            }
+        });
+        
+        calendar.render();
+        
+        // Button handlers
+        document.getElementById('prev').addEventListener('click', function() {
+            calendar.prev();
+        });
+        
+        document.getElementById('next').addEventListener('click', function() {
+            calendar.next();
+        });
+        
+        document.getElementById('today').addEventListener('click', function() {
+            calendar.today();
+        });
+        
+        document.getElementById('monthView').addEventListener('click', function() {
+            calendar.changeView('dayGridMonth');
+            updateViewButtons('monthView');
+        });
+        
+        document.getElementById('weekView').addEventListener('click', function() {
+            calendar.changeView('timeGridWeek');
+            updateViewButtons('weekView');
+        });
+        
+        document.getElementById('dayView').addEventListener('click', function() {
+            calendar.changeView('timeGridDay');
+            updateViewButtons('dayView');
+        });
+        
+        // Status filter handlers
+        const statusFilters = document.querySelectorAll('[data-status]');
+        statusFilters.forEach(function(filter) {
+            filter.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                const status = this.dataset.status;
+                
+                // Toggle checkbox
+                checkbox.checked = !checkbox.checked;
+                
+                if (status === 'all') {
+                    // Handle "Show All" option
+                    const showAll = checkbox.checked;
+                    statusFilters.forEach(function(f) {
+                        if (f.dataset.status !== 'all') {
+                            f.querySelector('input[type="checkbox"]').checked = showAll;
+                        }
+                    });
+                    
+                    // Show/hide all events
+                    filterEvents();
+                } else {
+                    // Update "Show All" checkbox state
+                    updateShowAllCheckbox();
+                    
+                    // Filter events
+                    filterEvents();
+                }
+            });
+        });
+        
+        // Function to update view buttons active state
+        function updateViewButtons(activeView) {
+            document.getElementById('monthView').classList.remove('active');
+            document.getElementById('weekView').classList.remove('active');
+            document.getElementById('dayView').classList.remove('active');
+            document.getElementById(activeView).classList.add('active');
+        }
+        
+        // Function to update "Show All" checkbox based on other checkboxes
+        function updateShowAllCheckbox() {
+            const allChecked = Array.from(statusFilters)
+                .filter(f => f.dataset.status !== 'all')
+                .every(f => f.querySelector('input[type="checkbox"]').checked);
+                
+            const showAllCheckbox = document.querySelector('[data-status="all"] input[type="checkbox"]');
+            showAllCheckbox.checked = allChecked;
+        }
+        
+        // Function to filter events based on selected statuses
+        function filterEvents() {
+            const selectedStatuses = Array.from(statusFilters)
+                .filter(f => f.dataset.status !== 'all' && f.querySelector('input[type="checkbox"]').checked)
+                .map(f => f.dataset.status);
+                
+            calendar.getEvents().forEach(function(event) {
+                if (selectedStatuses.includes(event.extendedProps.status)) {
+                    event.setProp('display', 'auto');
+                } else {
+                    event.setProp('display', 'none');
+                }
+            });
+        }
+        
+        // Function to show order details in modal
+        function showOrderDetails(orderId) {
+            // Fetch order details via AJAX
+            fetch(`/orders/api/order/${orderId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Populate modal with order details
+                    document.getElementById('modalOrderNumber').textContent = data.order_number;
+                    document.getElementById('modalCustomer').textContent = data.customer.name;
+                    document.getElementById('modalContact').textContent = data.customer.phone || 'N/A';
+                    document.getElementById('modalDeliveryDate').textContent = data.delivery_date;
+                    document.getElementById('modalCreatedAt').textContent = data.created_at;
+                    
+                    // Set status
+                    const statusElement = document.getElementById('modalOrderStatus');
+                    statusElement.textContent = data.status_label;
+                    statusElement.style.backgroundColor = data.status_color;
+                    
+                    // Set header color based on status
+                    document.querySelector('.order-header').style.backgroundColor = data.status_color;
+                    
+                    // Populate items table
+                    const tableBody = document.getElementById('modalItemsTable').querySelector('tbody');
+                    tableBody.innerHTML = '';
+                    
+                    let orderTotal = 0;
+                    
+                    data.items.forEach(item => {
+                        const row = document.createElement('tr');
+                        const itemTotal = (item.quantity * item.price);
+                        orderTotal += itemTotal;
+                        
+                        row.innerHTML = `
+                            <td>${item.plant_name}${item.notes ? '<div class="small text-muted fst-italic">' + item.notes + '</div>' : ''}</td>
+                            <td>${item.size || 'N/A'}</td>
+                            <td>${item.quantity}</td>
+                            <td>€${item.price.toFixed(2)}</td>
+                            <td>€${itemTotal.toFixed(2)}</td>
+                        `;
+                        
+                        tableBody.appendChild(row);
+                    });
+                    
+                    // Set order total
+                    document.getElementById('modalOrderTotal').textContent = `€${orderTotal.toFixed(2)}`;
+                    
+                    // Set notes if any
+                    const notesContainer = document.getElementById('modalNotes');
+                    if (data.notes) {
+                        notesContainer.style.display = 'block';
+                        notesContainer.querySelector('p').textContent = data.notes;
+                    } else {
+                        notesContainer.style.display = 'none';
+                    }
+                    
+                    // Set links
+                    document.getElementById('viewOrderBtn').href = `/orders/view/${orderId}`;
+                    document.getElementById('deliveryNoteBtn').href = `/orders/delivery-note/${orderId}`;
+                    
+                    // Show the modal
+                    const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching order details:', error);
+                    alert('Failed to load order details. Please try again.');
+                });
+        }
+    });
+</script>
 {% endblock %}
