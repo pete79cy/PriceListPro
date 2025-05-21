@@ -8,7 +8,7 @@ from flask import render_template, current_app
 from weasyprint import HTML, CSS
 import logging
 
-def generate_delivery_note(order, language='en'):
+def generate_delivery_note_pdf(order, language='en'):
     """
     Generate a PDF delivery note for an order
     
@@ -34,9 +34,10 @@ def generate_delivery_note(order, language='en'):
     pdf = HTML(string=html).write_pdf()
     return pdf
 
-def generate_delivery_note_pdf(order, language='en'):
-    """Alias for generate_delivery_note with the _pdf suffix for consistent naming"""
-    return generate_delivery_note(order, language)
+# For backward compatibility
+def generate_delivery_note(order, language='en'):
+    """Alias for generate_delivery_note_pdf for backward compatibility"""
+    return generate_delivery_note_pdf(order, language)
 
 def generate_quotation_pdf(quotation, items=None):
     """
