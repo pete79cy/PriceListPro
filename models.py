@@ -19,29 +19,29 @@ class OrderStatusEnum(str, Enum):
 
 # UI display labels for order statuses
 ORDER_STATUS_LABELS = {
-    "new": "New",
-    "preparing": "Preparing",
-    "ready": "Ready for Delivery", 
-    "delivered": "Delivered",
-    "cancelled": "Cancelled"
+    OrderStatusEnum.NEW: "New",
+    OrderStatusEnum.PREPARING: "Preparing",
+    OrderStatusEnum.READY: "Ready for Delivery", 
+    OrderStatusEnum.DELIVERED: "Delivered",
+    OrderStatusEnum.CANCELLED: "Cancelled"
 }
 
 # Colors for UI display
 ORDER_STATUS_COLORS = {
-    "new": "#FF9800",        # Orange
-    "preparing": "#2196F3",  # Blue
-    "ready": "#4CAF50",      # Green
-    "delivered": "#9E9E9E",  # Gray
-    "cancelled": "#F44336"   # Red
+    OrderStatusEnum.NEW: "#FF9800",        # Orange
+    OrderStatusEnum.PREPARING: "#2196F3",  # Blue
+    OrderStatusEnum.READY: "#4CAF50",      # Green
+    OrderStatusEnum.DELIVERED: "#9E9E9E",  # Gray
+    OrderStatusEnum.CANCELLED: "#F44336"   # Red
 }
 
 # Valid transitions between statuses
 ORDER_STATUS_TRANSITIONS = {
-    "new": ["preparing", "cancelled"],
-    "preparing": ["ready", "cancelled"],
-    "ready": ["delivered", "cancelled"],
-    "delivered": [],  # Terminal state
-    "cancelled": []   # Terminal state
+    OrderStatusEnum.NEW: [OrderStatusEnum.PREPARING, OrderStatusEnum.CANCELLED],
+    OrderStatusEnum.PREPARING: [OrderStatusEnum.READY, OrderStatusEnum.CANCELLED],
+    OrderStatusEnum.READY: [OrderStatusEnum.DELIVERED, OrderStatusEnum.CANCELLED],
+    OrderStatusEnum.DELIVERED: [],  # Terminal state
+    OrderStatusEnum.CANCELLED: []   # Terminal state
 }
 
 class User(UserMixin, db.Model):
@@ -440,10 +440,10 @@ class Order(db.Model):
     def can_transition_to(self, target_status):
         """Check if the order can transition to the target status"""
         try:
-            current_status_enum = OrderStatus(self.status)
+            current_status_enum = OrderStatusEnum(self.status)
             # If target_status is already enum, use its value for comparison
-            target_value = target_status.value if isinstance(target_status, OrderStatus) else target_status
-            target_enum = OrderStatus(target_value)
+            target_value = target_status.value if isinstance(target_status, OrderStatusEnum) else target_status
+            target_enum = OrderStatusEnum(target_value)
             return target_enum in ORDER_STATUS_TRANSITIONS.get(current_status_enum, [])
         except ValueError:
             return False
@@ -457,7 +457,7 @@ class Order(db.Model):
             return False
         
         # Store status value (string) in the database    
-        self.status = target_status.value if isinstance(target_status, OrderStatus) else target_status
+        self.status = target_status.value if isinstance(target_status, OrderStatusEnum) else target_status
         self.updated_at = datetime.utcnow()
         return True
     
