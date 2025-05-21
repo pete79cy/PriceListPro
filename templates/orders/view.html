@@ -3,266 +3,245 @@
 {% block title %}Order {{ order.order_number }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Order header with status control -->
+<div class="container-fluid py-4">
     <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1>Order: {{ order.order_number }}</h1>
-                    <h5 class="text-muted">{{ order.customer.name }}</h5>
-                </div>
-                <div>
-                    <a href="{{ url_for('orders.index') }}" class="btn btn-outline-secondary me-2">
-                        <i class="fas fa-arrow-left"></i> Back to Orders
-                    </a>
-                    <a href="{{ url_for('orders.print_delivery_note', order_id=order.id) }}" class="btn btn-outline-primary" target="_blank">
-                        <i class="fas fa-print"></i> Print Delivery Note
-                    </a>
-                </div>
-            </div>
+        <div class="col">
+            <h1 class="h3 mb-0">Order {{ order.order_number }}</h1>
+            <p class="text-muted">{{ order.customer.name }}</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('orders.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
         </div>
     </div>
-
-    <!-- Order details -->
-    <div class="row">
-        <!-- Left column - Order info -->
+    
+    <div class="row mb-4">
+        <!-- Order details card -->
         <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Order Details</h5>
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Order Details</h5>
+                    <span class="badge" style="background-color: {{ ORDER_STATUS_COLORS.get(order.status, '#6c757d') }}">
+                        {{ order.status|title }}
+                    </span>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <strong>Status:</strong>
-                        <span class="badge rounded-pill" style="background-color: {{ order.get_status_color() }}">
-                            {{ order.get_status_label() }}
-                        </span>
+                        <form method="POST" action="{{ url_for('orders.update_status', order_id=order.id) }}" class="mb-3">
+                            <label for="status" class="form-label">Change Status</label>
+                            <div class="input-group">
+                                <select name="status" id="status" class="form-select">
+                                    {% for status in available_statuses %}
+                                    <option value="{{ status.value }}" {% if status.value == order.status %}selected{% endif %}>
+                                        {{ status.value|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-outline-primary">Update</button>
+                            </div>
+                        </form>
                     </div>
                     
-                    <!-- Status update form -->
-                    <form action="{{ url_for('orders.update_status', order_id=order.id) }}" method="post" class="mb-4">
-                        <div class="input-group">
-                            <select class="form-select" name="status">
-                                {% for status_option in available_statuses %}
-                                <option value="{{ status_option.value }}" {% if status_option.value == order.status %}selected{% endif %}>
-                                    {{ status_option.value|capitalize }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <button class="btn btn-primary" type="submit">Update Status</button>
-                        </div>
-                    </form>
-                    
-                    <dl class="row">
-                        <dt class="col-sm-5">Created On:</dt>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Order Number</dt>
+                        <dd class="col-sm-7">{{ order.order_number }}</dd>
+                        
+                        <dt class="col-sm-5">Customer</dt>
+                        <dd class="col-sm-7">{{ order.customer.name }}</dd>
+                        
+                        <dt class="col-sm-5">Created</dt>
                         <dd class="col-sm-7">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                         
-                        <dt class="col-sm-5">Last Updated:</dt>
+                        <dt class="col-sm-5">Last Updated</dt>
                         <dd class="col-sm-7">{{ order.updated_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                         
-                        <dt class="col-sm-5">Delivery Date:</dt>
+                        <dt class="col-sm-5">Delivery Date</dt>
                         <dd class="col-sm-7">
                             {% if order.delivery_date %}
                                 {{ order.delivery_date.strftime('%Y-%m-%d') }}
-                                {% if order.is_due_today() %}
-                                    <span class="badge bg-warning">Today</span>
-                                {% endif %}
                             {% else %}
-                                Not specified
+                                <span class="text-muted">Not set</span>
                             {% endif %}
                         </dd>
+                        
+                        {% if order.notes %}
+                        <dt class="col-sm-5">Notes</dt>
+                        <dd class="col-sm-7">{{ order.notes }}</dd>
+                        {% endif %}
                     </dl>
-                    
-                    <!-- Notes section -->
-                    <h6 class="mt-4">Notes:</h6>
-                    <p class="border p-2 bg-light" style="min-height: 80px;">
-                        {{ order.notes or 'No notes for this order.' }}
-                    </p>
                 </div>
-            </div>
-            
-            <!-- Customer details -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Customer Details</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">Name:</dt>
-                        <dd class="col-sm-8">{{ order.customer.name }}</dd>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('orders.print_delivery_note', order_id=order.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="fas fa-file-pdf"></i> Delivery Note
+                        </a>
                         
-                        <dt class="col-sm-4">Email:</dt>
-                        <dd class="col-sm-8">{{ order.customer.email or 'N/A' }}</dd>
-                        
-                        <dt class="col-sm-4">Phone:</dt>
-                        <dd class="col-sm-8">{{ order.customer.phone or 'N/A' }}</dd>
-                        
-                        <dt class="col-sm-4">Address:</dt>
-                        <dd class="col-sm-8">{{ order.customer.address or 'N/A' }}</dd>
-                    </dl>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-language"></i> Language
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('orders.print_delivery_note', order_id=order.id, lang='en') }}" target="_blank">
+                                        English
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('orders.print_delivery_note', order_id=order.id, lang='el') }}" target="_blank">
+                                        Greek
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('orders.print_delivery_note', order_id=order.id, lang='ar') }}" target="_blank">
+                                        Arabic
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Right column - Order items -->
+        <!-- Order items card -->
         <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Order Items</h5>
-                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Order Items</h5>
+                    
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
                         <i class="fas fa-plus"></i> Add Item
                     </button>
                 </div>
-                <div class="card-body">
-                    {% if order.items %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Plant/Product</th>
-                                        <th class="text-end">Quantity</th>
-                                        <th class="text-end">Price</th>
-                                        <th class="text-end">Total</th>
-                                        <th class="text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in order.items %}
-                                    <tr>
-                                        <td>
-                                            {% if item.product %}
-                                                {{ item.product.name }}
-                                            {% else %}
-                                                {{ item.plant_name }}
-                                            {% endif %}
-                                            {% if item.size %}
-                                                <small class="text-muted d-block">{{ item.size }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-end">{{ item.quantity }}</td>
-                                        <td class="text-end">€{{ "%.2f"|format(item.price) }}</td>
-                                        <td class="text-end">€{{ "%.2f"|format(item.quantity * item.price) }}</td>
-                                        <td class="text-center">
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-primary" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#editItemModal{{ item.id }}">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#deleteItemModal{{ item.id }}">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                            
-                                            <!-- Edit Item Modal -->
-                                            <div class="modal fade" id="editItemModal{{ item.id }}" tabindex="-1" aria-labelledby="editItemModalLabel{{ item.id }}" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="editItemModalLabel{{ item.id }}">Edit Item</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Plant/Product</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>
+                                        {{ item.plant_name }}
+                                        {% if item.size %}<br><small class="text-muted">Size: {{ item.size }}</small>{% endif %}
+                                    </td>
+                                    <td class="text-end">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(item.price) }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(item.price * item.quantity) }}</td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editItemModal{{ item.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteItemModal{{ item.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Edit Item Modal -->
+                                        <div class="modal fade" id="editItemModal{{ item.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Edit Item</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('orders.update_item', order_id=order.id, item_id=item.id) }}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="item{{ item.id }}_name" class="form-label">Plant/Product</label>
+                                                                <input type="text" class="form-control" id="item{{ item.id }}_name" value="{{ item.plant_name }}" readonly>
+                                                            </div>
+                                                            
+                                                            <div class="mb-3">
+                                                                <label for="item{{ item.id }}_quantity" class="form-label">Quantity</label>
+                                                                <input type="number" class="form-control" id="item{{ item.id }}_quantity" name="quantity" value="{{ item.quantity }}" min="1" required>
+                                                            </div>
+                                                            
+                                                            <div class="mb-3">
+                                                                <label for="item{{ item.id }}_price" class="form-label">Unit Price</label>
+                                                                <input type="number" class="form-control" id="item{{ item.id }}_price" name="unit_price" value="{{ item.price }}" min="0" step="0.01" required>
+                                                            </div>
+                                                            
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="item{{ item.id }}_update_price" name="update_price_list" checked>
+                                                                <label class="form-check-label" for="item{{ item.id }}_update_price">
+                                                                    Update customer's price list with this price
+                                                                </label>
+                                                            </div>
                                                         </div>
-                                                        <form action="{{ url_for('orders.update_item', order_id=order.id, item_id=item.id) }}" method="post">
-                                                            <div class="modal-body">
-                                                                <div class="mb-3">
-                                                                    <label class="form-label">Product: 
-                                                                        {% if item.product %}
-                                                                            {{ item.product.name }}
-                                                                        {% else %}
-                                                                            {{ item.plant_name }}
-                                                                        {% endif %}
-                                                                    </label>
-                                                                </div>
-                                                                <div class="mb-3">
-                                                                    <label for="quantity{{ item.id }}" class="form-label">Quantity:</label>
-                                                                    <input type="number" class="form-control" id="quantity{{ item.id }}" name="quantity" value="{{ item.quantity }}" min="1" step="1" required>
-                                                                </div>
-                                                                <div class="mb-3">
-                                                                    <label for="price{{ item.id }}" class="form-label">Unit Price (€):</label>
-                                                                    <input type="number" class="form-control" id="price{{ item.id }}" name="unit_price" value="{{ item.price }}" min="0" step="0.01" required>
-                                                                </div>
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox" value="1" id="updatePriceList{{ item.id }}" name="update_price_list" checked>
-                                                                    <label class="form-check-label" for="updatePriceList{{ item.id }}">
-                                                                        Update customer's price list with this price
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-primary">Save Changes</button>
-                                                            </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Delete Item Modal -->
+                                        <div class="modal fade" id="deleteItemModal{{ item.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Remove Item</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to remove <strong>{{ item.plant_name }}</strong> from this order?</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form method="POST" action="{{ url_for('orders.remove_item', order_id=order.id, item_id=item.id) }}">
+                                                            <button type="submit" class="btn btn-danger">Remove</button>
                                                         </form>
                                                     </div>
                                                 </div>
                                             </div>
-                                            
-                                            <!-- Delete Item Modal -->
-                                            <div class="modal fade" id="deleteItemModal{{ item.id }}" tabindex="-1" aria-labelledby="deleteItemModalLabel{{ item.id }}" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="deleteItemModalLabel{{ item.id }}">Confirm Delete</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <p>Are you sure you want to remove this item from the order?</p>
-                                                            <p class="mb-0"><strong>Product:</strong> 
-                                                                {% if item.product %}
-                                                                    {{ item.product.name }}
-                                                                {% else %}
-                                                                    {{ item.plant_name }}
-                                                                {% endif %}
-                                                            </p>
-                                                            <p class="mb-0"><strong>Quantity:</strong> {{ item.quantity }}</p>
-                                                            <p class="mb-0"><strong>Price:</strong> €{{ "%.2f"|format(item.price) }}</p>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <form action="{{ url_for('orders.remove_item', order_id=order.id, item_id=item.id) }}" method="post">
-                                                                <button type="submit" class="btn btn-danger">Delete</button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                                <tfoot class="table-light">
-                                    {% set subtotal = order.items|sum(attribute=lambda x: x.quantity * x.price) %}
-                                    {% set vat = subtotal * 0.24 %}
-                                    {% set total = subtotal + vat %}
-                                    <tr>
-                                        <th colspan="3" class="text-end">Subtotal:</th>
-                                        <th class="text-end">€{{ "%.2f"|format(subtotal) }}</th>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <th colspan="3" class="text-end">VAT (24%):</th>
-                                        <th class="text-end">€{{ "%.2f"|format(vat) }}</th>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <th colspan="3" class="text-end">Total:</th>
-                                        <th class="text-end">€{{ "%.2f"|format(total) }}</th>
-                                        <td></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-info">
-                            No items have been added to this order yet.
-                            <button type="button" class="btn btn-sm btn-outline-primary float-end" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                                <i class="fas fa-plus"></i> Add Item
-                            </button>
-                        </div>
-                    {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center p-4">
+                                        <i class="fas fa-seedling fa-3x text-muted mb-3"></i>
+                                        <p>No items added to this order yet</p>
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                            Add First Item
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if order.items|length > 0 %}
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="3" class="text-end">Subtotal:</th>
+                                    <th class="text-end">
+                                        {% set subtotal = namespace(value=0) %}
+                                        {% for item in order.items %}
+                                            {% set subtotal.value = subtotal.value + (item.price * item.quantity) %}
+                                        {% endfor %}
+                                        {{ "%.2f"|format(subtotal.value) }}
+                                    </th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -270,36 +249,39 @@
 </div>
 
 <!-- Add Item Modal -->
-<div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+<div class="modal fade" id="addItemModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addItemModalLabel">Add Item to Order</h5>
+                <h5 class="modal-title">Add Item to Order</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('orders.add_item', order_id=order.id) }}" method="post">
+            <form method="POST" action="{{ url_for('orders.add_item', order_id=order.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="product_id" class="form-label">Product:</label>
-                        <select class="form-select" id="product_id" name="product_id" required>
-                            <option value="" selected disabled>Select a product...</option>
+                        <label for="product_id" class="form-label">Select Product</label>
+                        <select name="product_id" id="product_id" class="form-select" required>
+                            <option value="">Choose a product</option>
                             {% for product in products %}
-                                <option value="{{ product.id }}" data-price="{{ product.standard_price }}">{{ product.name }}</option>
+                            <option value="{{ product.id }}">{{ product.name }} {% if product.pot %}({{ product.pot }}){% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="quantity" class="form-label">Quantity:</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" step="1" required>
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" required>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="unit_price" class="form-label">Unit Price (€):</label>
-                        <input type="number" class="form-control" id="unit_price" name="unit_price" min="0" step="0.01">
-                        <small class="text-muted">Leave blank to use price from customer's price list or product's standard price.</small>
+                        <label for="unit_price" class="form-label">Unit Price</label>
+                        <input type="number" class="form-control" id="unit_price" name="unit_price" min="0" step="0.01" placeholder="Will use customer's price list if empty">
+                        <small class="text-muted">Leave empty to use the customer's current price list</small>
                     </div>
+                    
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="1" id="updatePriceList" name="update_price_list" checked>
-                        <label class="form-check-label" for="updatePriceList">
+                        <input class="form-check-input" type="checkbox" id="update_price_list" name="update_price_list" checked>
+                        <label class="form-check-label" for="update_price_list">
                             Update customer's price list with this price
                         </label>
                     </div>
@@ -312,20 +294,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-$(document).ready(function() {
-    // Auto-fill the price field when a product is selected
-    $('#product_id').on('change', function() {
-        const productPrice = $(this).find(':selected').data('price');
-        if (productPrice) {
-            $('#unit_price').val(productPrice);
-        } else {
-            $('#unit_price').val('');
-        }
-    });
-});
-</script>
 {% endblock %}

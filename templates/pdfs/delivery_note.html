@@ -2,229 +2,262 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ _('Delivery Note') }} - {{ order.order_number }}</title>
+    <title>{{ _('Delivery Note') }}</title>
     <style>
         @page {
             size: A4;
             margin: 1cm;
+            @top-center {
+                content: "{{ _('DELIVERY NOTE') }}";
+                font-size: 12pt;
+                font-weight: bold;
+            }
+            @bottom-center {
+                content: "{{ _('Thank you for your business! This delivery note is not an invoice.') }}";
+                font-size: 9pt;
+                font-style: italic;
+            }
         }
+        
         body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 10pt;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
-            direction: {{ 'rtl' if language == 'ar' else 'ltr' }};
+            {% if language == 'ar' %}
+            direction: rtl;
+            {% endif %}
         }
+        
         .header {
-            display: flex;
-            justify-content: space-between;
+            margin-bottom: 20px;
             border-bottom: 1px solid #ddd;
             padding-bottom: 10px;
-            margin-bottom: 20px;
         }
+        
         .logo {
-            max-width: 200px;
             max-height: 80px;
+            max-width: 200px;
         }
+        
         .company-info {
-            text-align: {{ 'left' if language == 'ar' else 'right' }};
-            font-size: 10px;
+            text-align: right;
         }
-        .document-title {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            margin: 20px 0;
+        
+        h1 {
+            font-size: 18pt;
+            margin: 0 0 5px 0;
+            color: #333;
         }
-        .order-info, .customer-info {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        .section-title {
-            font-weight: bold;
-            border-bottom: 1px solid #ddd;
+        
+        h2 {
+            font-size: 14pt;
+            margin: 20px 0 10px 0;
+            color: #555;
+            border-bottom: 1px solid #eee;
             padding-bottom: 5px;
-            margin-bottom: 10px;
         }
-        .info-table {
+        
+        table {
             width: 100%;
             border-collapse: collapse;
+            margin: 15px 0;
         }
-        .info-table td {
-            padding: 5px;
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f8f8;
+            text-align: left;
+            padding: 8px;
+            font-weight: bold;
+        }
+        
+        {% if language == 'ar' %}
+        th {
+            text-align: right;
+        }
+        {% endif %}
+        
+        td {
+            padding: 8px;
             vertical-align: top;
         }
-        .info-table td:first-child {
+        
+        .info-table {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .info-table td {
+            padding: 5px;
+            border: none;
+        }
+        
+        .info-table .label {
             font-weight: bold;
-            width: 30%;
+            width: 40%;
         }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .items-table th, .items-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: {{ 'right' if language == 'ar' else 'left' }};
-        }
-        .items-table th {
-            background-color: #f9f9f9;
-        }
-        .items-table .number-column {
-            text-align: center;
-            width: 40px;
-        }
-        .items-table .quantity-column {
-            text-align: center;
-            width: 80px;
-        }
+        
         .signature-section {
-            margin-top: 50px;
-            display: flex;
-            justify-content: space-between;
+            margin-top: 40px;
+            page-break-inside: avoid;
         }
-        .signature-box {
+        
+        .signature {
             width: 45%;
-        }
-        .signature-line {
-            border-top: 1px solid #000;
-            margin-top: 50px;
-            margin-bottom: 5px;
-        }
-        .notes {
-            margin-top: 20px;
-            border-top: 1px dotted #ddd;
-            padding-top: 10px;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            font-size: 9px;
-            color: #777;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #333;
+            margin-top: 70px;
             padding-top: 5px;
+            display: inline-block;
         }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
+        
+        .left {
+            float: left;
+        }
+        
+        .right {
+            float: right;
+        }
+        
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        
+        .notes {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            min-height: 60px;
+        }
+        
+        .no-items {
+            text-align: center;
+            padding: 30px;
+            color: #888;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div>
-            <img src="{{ url_for('static', filename='images/logo.png', _external=True) }}" class="logo" alt="Company Logo">
-        </div>
-        <div class="company-info">
-            <p><strong>{{ _('Company Name') }}</strong></p>
-            <p>{{ _('Address Line 1') }}</p>
-            <p>{{ _('City, Postal Code') }}</p>
-            <p>{{ _('Phone') }}: +30 210 1234567</p>
-            <p>{{ _('Email') }}: info@example.com</p>
-        </div>
+        <table style="border: none; margin: 0;">
+            <tr>
+                <td style="border: none; width: 50%;">
+                    <h1>{{ _('Delivery Note') }}</h1>
+                    <p># {{ order.order_number }}</p>
+                </td>
+                <td style="border: none; text-align: right;">
+                    <p><strong>{{ _('Company Name') }}</strong><br>
+                    {{ _('Address Line 1') }}<br>
+                    {{ _('City, Postal Code') }}<br>
+                    {{ _('Phone') }}: (123) 456-7890<br>
+                    {{ _('Email') }}: info@example.com</p>
+                </td>
+            </tr>
+        </table>
     </div>
-
-    <div class="document-title">{{ _('DELIVERY NOTE') }}</div>
-
-    <div class="container">
+    
+    <div class="content">
         <div class="row">
-            <div class="order-info">
-                <div class="section-title">{{ _('Order Information') }}</div>
+            <div style="width: 48%; float: left;">
+                <h2>{{ _('Order Information') }}</h2>
                 <table class="info-table">
                     <tr>
-                        <td>{{ _('Order Number') }}:</td>
+                        <td class="label">{{ _('Order Number') }}:</td>
                         <td>{{ order.order_number }}</td>
                     </tr>
                     <tr>
-                        <td>{{ _('Order Date') }}:</td>
+                        <td class="label">{{ _('Order Date') }}:</td>
                         <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
                     </tr>
                     <tr>
-                        <td>{{ _('Delivery Date') }}:</td>
-                        <td>{{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else _('Not specified') }}</td>
+                        <td class="label">{{ _('Delivery Date') }}:</td>
+                        <td>
+                            {% if order.delivery_date %}
+                                {{ order.delivery_date.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                {{ _('Not specified') }}
+                            {% endif %}
+                        </td>
                     </tr>
                 </table>
             </div>
-
-            <div class="customer-info">
-                <div class="section-title">{{ _('Customer Information') }}</div>
+            
+            <div style="width: 48%; float: right;">
+                <h2>{{ _('Customer Information') }}</h2>
                 <table class="info-table">
                     <tr>
-                        <td>{{ _('Customer') }}:</td>
+                        <td class="label">{{ _('Customer') }}:</td>
                         <td>{{ order.customer.name }}</td>
                     </tr>
                     <tr>
-                        <td>{{ _('Address') }}:</td>
-                        <td>{{ order.customer.address or _('N/A') }}</td>
+                        <td class="label">{{ _('Address') }}:</td>
+                        <td>
+                            {% if order.customer.address %}
+                                {{ order.customer.address }}
+                            {% else %}
+                                {{ _('N/A') }}
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
-                        <td>{{ _('Phone') }}:</td>
+                        <td class="label">{{ _('Phone') }}:</td>
                         <td>{{ order.customer.phone or _('N/A') }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ _('Email') }}:</td>
-                        <td>{{ order.customer.email or _('N/A') }}</td>
                     </tr>
                 </table>
             </div>
+            <div style="clear: both;"></div>
         </div>
-
-        <div class="items-section">
-            <div class="section-title">{{ _('Order Items') }}</div>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th class="number-column">#</th>
-                        <th>{{ _('Product/Plant') }}</th>
-                        <th class="quantity-column">{{ _('Quantity') }}</th>
-                        <th>{{ _('Notes') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
+        
+        <h2>{{ _('Order Items') }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">{{ _('Product/Plant') }}</th>
+                    <th style="width: 15%;">{{ _('Quantity') }}</th>
+                    <th style="width: 35%;">{{ _('Notes') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if order.items %}
                     {% for item in order.items %}
                     <tr>
-                        <td class="number-column">{{ loop.index }}</td>
                         <td>
-                            {% if item.product %}
-                                {{ item.product.name }}
-                            {% else %}
-                                {{ item.plant_name }}
-                            {% endif %}
-                            {% if item.size %}
-                                <br><small>{{ item.size }}</small>
-                            {% endif %}
+                            {{ item.plant_name }}
+                            {% if item.size %}<br><small>({{ item.size }})</small>{% endif %}
                         </td>
-                        <td class="quantity-column">{{ item.quantity }}</td>
+                        <td>{{ item.quantity }}</td>
                         <td></td>
                     </tr>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="no-items">{{ _('No items in this order') }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
         {% if order.notes %}
+        <h2>{{ _('Notes') }}</h2>
         <div class="notes">
-            <div class="section-title">{{ _('Notes') }}</div>
-            <p>{{ order.notes }}</p>
+            {{ order.notes }}
         </div>
         {% endif %}
-
-        <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-line"></div>
-                <div class="text-center">{{ _('Delivered By (Signature & Name)') }}</div>
+        
+        <div class="signature-section clearfix">
+            <div class="signature left">
+                {{ _('Delivered By (Signature & Name)') }}
             </div>
-            <div class="signature-box">
-                <div class="signature-line"></div>
-                <div class="text-center">{{ _('Received By (Signature & Name)') }}</div>
+            <div class="signature right">
+                {{ _('Received By (Signature & Name)') }}
             </div>
         </div>
-    </div>
-
-    <div class="footer">
-        {{ _('Thank you for your business! This delivery note is not an invoice.') }}
     </div>
 </body>
 </html>
