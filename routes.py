@@ -289,19 +289,38 @@ def register_routes(app):
                 category_chart_json = json.dumps({"labels": [], "values": []})
                 invoice_chart_json = json.dumps({"labels": [], "values": []})
                 
-            # Variables for template compatibility
+            # Variables for template compatibility (keeping for other templates)
             category_labels_json = category_chart_json
             invoice_labels_json = invoice_chart_json
             
-            return render_template('dashboard_improved.html', 
+            # Get quotation statistics by status for analytics
+            try:
+                # Count quotations by status
+                quotation_status_counts = db.session.query(
+                    QuotationStatus.status, 
+                    db.func.count(QuotationStatus.id)
+                ).join(Quotation).group_by(QuotationStatus.status).all()
+                
+                # Create a dictionary of status counts
+                status_counts = {}
+                for status, count in quotation_status_counts:
+                    # Convert status to lowercase for template variable compatibility
+                    status_key = f"quotation_{status.lower()}" if status else "quotation_unknown"
+                    status_counts[status_key] = count
+                    
+                # Update stats with quotation status counts
+                stats.update(status_counts)
+                
+            except Exception as e:
+                # Log error but continue with default values
+                logger.error(f"Error getting quotation status counts: {str(e)}")
+            
+            # Use our new card-based dashboard
+            return render_template('dashboard_card_based.html', 
                                   stats=stats,
                                   card_classes=card_classes,
                                   pending_update_count=pending_update_count,
-                                  recent_activities=recent_activities,
-                                  category_labels_json=category_labels_json,
-                                  category_values_json=category_labels_json,  # Using same variable as a fallback
-                                  invoice_labels_json=invoice_labels_json,
-                                  invoice_values_json=invoice_labels_json)
+                                  recent_activities=recent_activities)
         # Otherwise show the login page
         return render_template('index.html')
         
