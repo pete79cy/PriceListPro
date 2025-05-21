@@ -2,10 +2,7 @@ from app import app, db
 from utils.version_tracker import get_current_version, log_deployment
 from utils.logger import logger
 from admin import init_admin_views  # Import the admin initialization function
-from blueprints.orders import orders  # Import the orders blueprint
-
-# Register the orders blueprint
-app.register_blueprint(orders, url_prefix='/orders')
+# The orders blueprint is already registered in app.py
 
 # Initialize Flask-Admin with the app and db
 with app.app_context():
