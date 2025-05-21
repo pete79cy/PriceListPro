@@ -1878,35 +1878,59 @@ def register_routes(app):
             if not customer:
                 customer = Customer.query.first()  # Fallback to first customer
                 
-            # Create quotation with PAK-2025-029
-            quotation = Quotation(
-                customer_id=customer.id,
-                quotation_number="PAK-2025-029",
-                quotation_date=datetime.now().date(),
-                currency="€",
-                notes="Created via direct route for troubleshooting"
+            # Delete any existing quotation with this number first
+            existing = Quotation.query.filter_by(quotation_number="PAK-2025-029").first()
+            if existing:
+                # Delete the quotation and its items
+                for item in existing.items:
+                    db.session.delete(item)
+                db.session.delete(existing)
+                db.session.commit()
+                
+            # Create new quotation with a direct SQL approach to avoid any ORM issues
+            from sqlalchemy import text
+            
+            # Insert the quotation directly with SQL
+            quotation_result = db.session.execute(
+                text("INSERT INTO quotation (customer_id, quotation_number, quotation_date, currency, notes, total_amount, status, created_at, updated_at) VALUES (:customer_id, :quotation_number, :quotation_date, :currency, :notes, :total_amount, :status, NOW(), NOW()) RETURNING id"),
+                {
+                    "customer_id": customer.id,
+                    "quotation_number": "PAK-2025-029",
+                    "quotation_date": datetime.now().date(),
+                    "currency": "€",
+                    "notes": "Created via direct route for troubleshooting",
+                    "total_amount": 10.0,
+                    "status": "DRAFT"
+                }
             )
-            db.session.add(quotation)
             
-            # Add a dummy item
-            item = QuotationItem(
-                quotation_id=quotation.id,
-                description="Test Product",
-                scientific_name="Test Scientific Name",
-                pot_size="P9",
-                height="30cm",
-                quantity=1,
-                selling_price=10.0,
-                vat_rate=19.0,
-                position=0
+            # Get the new quotation ID
+            quotation_id = quotation_result.fetchone()[0]
+            
+            # Insert item with direct SQL
+            db.session.execute(
+                text("INSERT INTO quotation_item (quotation_id, description, scientific_name, pot_size, height, quantity, selling_price, vat_rate, total, position, delivery_status, supplier_order_status) VALUES (:quotation_id, :description, :scientific_name, :pot_size, :height, :quantity, :selling_price, :vat_rate, :total, :position, :delivery_status, :supplier_order_status)"),
+                {
+                    "quotation_id": quotation_id,
+                    "description": "Test Product",
+                    "scientific_name": "Test Scientific Name",
+                    "pot_size": "P9",
+                    "height": "30cm",
+                    "quantity": 1,
+                    "selling_price": 10.0,
+                    "vat_rate": 19.0,
+                    "total": 10.0,
+                    "position": 0,
+                    "delivery_status": "PENDING",
+                    "supplier_order_status": "NOT_ORDERED"
+                }
             )
             
-            # Calculate item total
-            item.total = item.quantity * item.selling_price
-            quotation.total_amount = item.total
-            
-            db.session.add(item)
+            # Commit the changes
             db.session.commit()
+            
+            # Get the newly created quotation object for redirect
+            quotation = Quotation.query.get(quotation_id)
             
             flash('Emergency quotation PAK-2025-029 created successfully!', 'success')
             return redirect(url_for('view_quotation', quotation_id=quotation.id))
