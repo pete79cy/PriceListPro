@@ -88,7 +88,7 @@ def index():
     today = date.today()
     today_deliveries = Order.query.filter(
         Order.delivery_date == today,
-        Order.status.in_(['new', 'preparing', 'ready'])
+        Order.status.in_([OrderStatusEnum.NEW.value, OrderStatusEnum.PREPARING.value, OrderStatusEnum.READY.value])
     ).all()
     
     # Count orders by status
