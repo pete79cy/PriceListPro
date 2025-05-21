@@ -1,74 +1,151 @@
 """
-Orders blueprint for the Plant Pricing System.
+Orders Blueprint - Handles all order-related routes and functionality.
 
-This blueprint handles all order-related routes, including:
+This blueprint provides routes for:
+- Order dashboard
 - Creating new orders
-- Viewing order lists
-- Order status management
-- Delivery note generation
+- Viewing and updating existing orders
+- Generating delivery notes
+- Calendar view for upcoming deliveries
 """
 import os
-import uuid
 import json
 from datetime import datetime, date, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, send_file
+from collections import defaultdict
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
 from flask_login import login_required, current_user
+from sqlalchemy import desc, and_, or_, func
 from werkzeug.utils import secure_filename
+
 from app import db
-from models import Customer, Product, PriceList, Order, OrderItem, OrderStatus
-from utils.logger import logger
+from models import Order, OrderItem, Customer, Product, PriceList, OrderStatus
 from utils.pdf_generator import generate_delivery_note_pdf
 
-# Initialize blueprint
-orders_bp = Blueprint('orders', __name__, url_prefix='/orders')
+# Create the blueprint
+orders = Blueprint('orders', __name__)
 
+# Helper functions
 def generate_order_number():
-    """Generate a unique order number with format ORD-YYYY-XXXX"""
-    year = datetime.now().year
-    # Get count of orders for the current year and increment by 1
-    count = Order.query.filter(Order.order_number.like(f'ORD-{year}-%')).count() + 1
-    return f'ORD-{year}-{count:04d}'
+    """Generate a unique order number with format 'ORD-YYYY-XXXX'"""
+    year = date.today().year
+    # Get the last order number for this year
+    last_order = Order.query.filter(
+        Order.order_number.like(f'ORD-{year}-%')
+    ).order_by(desc(Order.order_number)).first()
+    
+    if last_order:
+        # Extract the sequence number from the last order
+        try:
+            seq_num = int(last_order.order_number.split('-')[-1])
+            next_seq_num = seq_num + 1
+        except ValueError:
+            next_seq_num = 1
+    else:
+        next_seq_num = 1
+    
+    # Format with 4 digits padding
+    return f'ORD-{year}-{next_seq_num:04d}'
 
-@orders_bp.route('/')
+def update_price_list(customer_id, product_id, plant_name, size, price):
+    """
+    Update or create a price list entry for a customer/product.
+    
+    Args:
+        customer_id: The customer ID
+        product_id: The product ID (or None if not linked to a product)
+        plant_name: Name of the plant
+        size: Size or pot size
+        price: The price to set
+        
+    Returns:
+        PriceList: The created or updated price list object
+    """
+    # If no product_id, try to find an existing product or create one
+    if not product_id:
+        # Look for a product with the same name and pot size
+        product = Product.query.filter(
+            func.lower(Product.name) == func.lower(plant_name)
+        ).filter(
+            func.lower(Product.pot) == func.lower(size) if size else Product.pot.is_(None)
+        ).first()
+        
+        if product:
+            product_id = product.id
+        else:
+            # Create a new product
+            product = Product(
+                name=plant_name,
+                pot=size
+            )
+            db.session.add(product)
+            db.session.flush()  # Get the ID without committing
+            product_id = product.id
+    
+    # Check if a price list entry already exists
+    price_list = None
+    if product_id:
+        price_list = PriceList.query.filter_by(
+            customer_id=customer_id,
+            product_id=product_id
+        ).first()
+    
+    if price_list:
+        # Update existing price list
+        price_list.price = price
+        price_list.effective_date = date.today()
+    else:
+        # Create new price list entry
+        price_list = PriceList(
+            customer_id=customer_id,
+            product_id=product_id,
+            price=price,
+            effective_date=date.today()
+        )
+        db.session.add(price_list)
+    
+    return price_list
+
+# Routes
+
+@orders.route('/')
 @login_required
 def index():
-    """Orders dashboard"""
-    # Get overview statistics
+    """Orders dashboard with overview and stats"""
+    # Get stats
     total_orders = Order.query.count()
     new_orders = Order.query.filter_by(status=OrderStatus.NEW).count()
     preparing_orders = Order.query.filter_by(status=OrderStatus.PREPARING).count()
     ready_orders = Order.query.filter_by(status=OrderStatus.READY).count()
-    delivered_orders = Order.query.filter_by(status=OrderStatus.DELIVERED).count()
     
-    # Get orders due soon
+    # Get orders due today
     today = date.today()
-    tomorrow = today + timedelta(days=1)
-    next_week = today + timedelta(days=7)
-    
     orders_due_today = Order.query.filter(
         Order.delivery_date == today,
-        Order.status.in_([OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.READY])
-    ).all()
+        Order.status != OrderStatus.DELIVERED
+    ).order_by(Order.updated_at.desc()).all()
     
+    # Get orders due tomorrow
+    tomorrow = today + timedelta(days=1)
     orders_due_tomorrow = Order.query.filter(
         Order.delivery_date == tomorrow,
-        Order.status.in_([OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.READY])
-    ).all()
+        Order.status != OrderStatus.DELIVERED
+    ).order_by(Order.updated_at.desc()).all()
     
-    # Get recent orders (last 5)
-    recent_orders = Order.query.order_by(Order.created_at.desc()).limit(5).all()
+    # Get recent orders
+    recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
     
-    return render_template('orders/index.html',
-                          total_orders=total_orders,
-                          new_orders=new_orders,
-                          preparing_orders=preparing_orders,
-                          ready_orders=ready_orders,
-                          delivered_orders=delivered_orders,
-                          orders_due_today=orders_due_today,
-                          orders_due_tomorrow=orders_due_tomorrow,
-                          recent_orders=recent_orders)
+    return render_template(
+        'orders/index.html',
+        total_orders=total_orders,
+        new_orders=new_orders,
+        preparing_orders=preparing_orders,
+        ready_orders=ready_orders,
+        orders_due_today=orders_due_today,
+        orders_due_tomorrow=orders_due_tomorrow,
+        recent_orders=recent_orders
+    )
 
-@orders_bp.route('/new', methods=['GET', 'POST'])
+@orders.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_order():
     """Create a new order"""
@@ -78,13 +155,17 @@ def new_order():
             customer_id = request.form.get('customer_id')
             delivery_date_str = request.form.get('delivery_date')
             notes = request.form.get('notes')
+            items_data = json.loads(request.form.get('items_data', '[]'))
             
-            # Validate required fields
             if not customer_id:
                 flash('Customer is required', 'danger')
                 return redirect(url_for('orders.new_order'))
             
-            # Parse delivery date if provided
+            if not items_data:
+                flash('At least one item is required', 'danger')
+                return redirect(url_for('orders.new_order'))
+            
+            # Parse delivery date
             delivery_date = None
             if delivery_date_str:
                 try:
@@ -101,157 +182,77 @@ def new_order():
                 delivery_date=delivery_date,
                 notes=notes
             )
-            
-            # Get order items from form
-            items_data = request.form.get('items_data', '[]')
-            items_list = json.loads(items_data)
-            
-            if not items_list:
-                flash('At least one order item is required', 'danger')
-                return redirect(url_for('orders.new_order'))
-            
-            # Add order to database first to get ID
             db.session.add(order)
-            db.session.commit()
+            db.session.flush()  # Get the order ID without committing
             
-            # Process each item
-            for item in items_list:
-                plant_name = item.get('plant_name')
-                product_id = item.get('product_id')
-                quantity = int(item.get('quantity', 1))
-                size = item.get('size')
-                price = float(item.get('price', 0))
-                item_notes = item.get('notes', '')
+            # Process order items
+            for item_data in items_data:
+                product_id = item_data.get('product_id') or None
+                plant_name = item_data.get('plant_name')
+                size = item_data.get('size')
+                quantity = int(item_data.get('quantity', 1))
+                price = float(item_data.get('price', 0))
+                notes = item_data.get('notes')
                 
-                # Validate required item fields
-                if not plant_name or price <= 0:
-                    continue
+                if not plant_name:
+                    continue  # Skip blank items
                 
-                # Check if price differs from price list and update if needed
-                price_list_entry = None
-                price_updated = False
-                
-                if product_id:
-                    # Find existing price list entry for this customer and product
-                    price_list_entry = PriceList.query.filter_by(
-                        customer_id=customer_id,
-                        product_id=product_id
-                    ).first()
-                    
-                    if price_list_entry:
-                        if price_list_entry.price != price:
-                            # Update price list with new price
-                            price_list_entry.price = price
-                            price_list_entry.updated_at = datetime.utcnow()
-                            price_updated = True
-                    else:
-                        # Create new price list entry
-                        price_list_entry = PriceList(
-                            customer_id=customer_id,
-                            product_id=product_id,
-                            price=price,
-                            effective_date=date.today()
-                        )
-                        db.session.add(price_list_entry)
-                        price_updated = True
-                
-                # Create order item
+                # Create new order item
                 order_item = OrderItem(
                     order_id=order.id,
                     product_id=product_id,
-                    price_list_id=price_list_entry.id if price_list_entry else None,
                     plant_name=plant_name,
                     size=size,
                     quantity=quantity,
                     price=price,
-                    updated_price_list=price_updated,
-                    notes=item_notes
+                    notes=notes
+                )
+                db.session.add(order_item)
+                
+                # Update price list
+                price_list = update_price_list(
+                    customer_id=customer_id,
+                    product_id=product_id,
+                    plant_name=plant_name,
+                    size=size,
+                    price=price
                 )
                 
-                db.session.add(order_item)
+                # Link order item to price list
+                if price_list:
+                    order_item.price_list_id = price_list.id
+                    order_item.updated_price_list = True
             
-            # Commit all changes
             db.session.commit()
-            
             flash(f'Order {order.order_number} created successfully', 'success')
             return redirect(url_for('orders.view_order', order_id=order.id))
             
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error creating order: {str(e)}")
+            current_app.logger.error(f"Error creating order: {str(e)}")
             flash(f'Error creating order: {str(e)}', 'danger')
             return redirect(url_for('orders.new_order'))
     
-    # GET request - show order form
+    # GET method - show form
     customers = Customer.query.order_by(Customer.name).all()
     products = Product.query.order_by(Product.name).all()
+    today = date.today().strftime('%Y-%m-%d')
     
-    return render_template('orders/new.html', 
-                          customers=customers,
-                          products=products,
-                          today=date.today().strftime('%Y-%m-%d'))
+    return render_template(
+        'orders/new.html',
+        customers=customers,
+        products=products,
+        today=today
+    )
 
-@orders_bp.route('/list')
-@login_required
-def list_orders():
-    """List all orders with filters"""
-    # Get filter parameters
-    status = request.args.get('status')
-    customer_id = request.args.get('customer_id')
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
-    
-    # Base query
-    query = Order.query
-    
-    # Apply filters
-    if status:
-        query = query.filter_by(status=status)
-    
-    if customer_id:
-        query = query.filter_by(customer_id=customer_id)
-    
-    if date_from:
-        try:
-            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-            query = query.filter(Order.delivery_date >= from_date)
-        except ValueError:
-            pass
-    
-    if date_to:
-        try:
-            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-            query = query.filter(Order.delivery_date <= to_date)
-        except ValueError:
-            pass
-    
-    # Execute query with pagination
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    orders = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=per_page)
-    
-    # Get data for filters
-    customers = Customer.query.order_by(Customer.name).all()
-    
-    return render_template('orders/list.html',
-                          orders=orders,
-                          customers=customers,
-                          statuses=OrderStatus.LABELS,
-                          current_filters={
-                              'status': status,
-                              'customer_id': customer_id,
-                              'date_from': date_from,
-                              'date_to': date_to
-                          })
-
-@orders_bp.route('/<int:order_id>')
+@orders.route('/view/<int:order_id>')
 @login_required
 def view_order(order_id):
-    """View a single order"""
+    """View a specific order"""
     order = Order.query.get_or_404(order_id)
     return render_template('orders/view.html', order=order)
 
-@orders_bp.route('/<int:order_id>/edit', methods=['GET', 'POST'])
+@orders.route('/edit/<int:order_id>', methods=['GET', 'POST'])
 @login_required
 def edit_order(order_id):
     """Edit an existing order"""
@@ -260,186 +261,110 @@ def edit_order(order_id):
     if request.method == 'POST':
         try:
             # Get form data
-            customer_id = request.form.get('customer_id')
             delivery_date_str = request.form.get('delivery_date')
             notes = request.form.get('notes')
-            status = request.form.get('status')
+            items_data = json.loads(request.form.get('items_data', '[]'))
             
-            # Validate required fields
-            if not customer_id:
-                flash('Customer is required', 'danger')
+            if not items_data:
+                flash('At least one item is required', 'danger')
                 return redirect(url_for('orders.edit_order', order_id=order.id))
             
-            # Parse delivery date if provided
-            delivery_date = None
+            # Parse delivery date
             if delivery_date_str:
                 try:
-                    delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
+                    order.delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
                 except ValueError:
                     flash('Invalid delivery date format', 'danger')
                     return redirect(url_for('orders.edit_order', order_id=order.id))
+            else:
+                order.delivery_date = None
             
-            # Update order
-            order.customer_id = customer_id
-            order.delivery_date = delivery_date
+            # Update order data
             order.notes = notes
             
-            # Update status if changed
-            if status and status != order.status:
-                if order.can_transition_to(status):
-                    order.transition_to(status)
-                else:
-                    flash(f'Invalid status transition from {order.status} to {status}', 'warning')
+            # Keep track of processed items to delete removed ones
+            processed_item_ids = []
             
-            # Get order items from form
-            items_data = request.form.get('items_data', '[]')
-            items_list = json.loads(items_data)
-            
-            if not items_list:
-                flash('At least one order item is required', 'danger')
-                return redirect(url_for('orders.edit_order', order_id=order.id))
-            
-            # Remove existing items not in the list
-            item_ids_to_keep = [int(item.get('id')) for item in items_list if item.get('id')]
-            for item in order.items:
-                if item.id not in item_ids_to_keep:
-                    db.session.delete(item)
-            
-            # Process each item
-            for item_data in items_list:
+            # Process order items
+            for item_data in items_data:
                 item_id = item_data.get('id')
+                product_id = item_data.get('product_id') or None
                 plant_name = item_data.get('plant_name')
-                product_id = item_data.get('product_id')
-                quantity = int(item_data.get('quantity', 1))
                 size = item_data.get('size')
+                quantity = int(item_data.get('quantity', 1))
                 price = float(item_data.get('price', 0))
-                item_notes = item_data.get('notes', '')
+                notes = item_data.get('notes')
+                
+                if not plant_name:
+                    continue  # Skip blank items
                 
                 if item_id:
                     # Update existing item
                     item = OrderItem.query.get(item_id)
                     if item and item.order_id == order.id:
-                        item.plant_name = plant_name
                         item.product_id = product_id
-                        item.quantity = quantity
+                        item.plant_name = plant_name
                         item.size = size
+                        item.quantity = quantity
                         item.price = price
-                        item.notes = item_notes
-                        
-                        # Check if price differs from price list and update if needed
-                        if product_id:
-                            price_list_entry = PriceList.query.filter_by(
-                                customer_id=customer_id,
-                                product_id=product_id
-                            ).first()
-                            
-                            if price_list_entry:
-                                if price_list_entry.price != price:
-                                    # Update price list with new price
-                                    price_list_entry.price = price
-                                    price_list_entry.updated_at = datetime.utcnow()
-                                    item.updated_price_list = True
-                                    item.price_list_id = price_list_entry.id
-                            else:
-                                # Create new price list entry
-                                price_list_entry = PriceList(
-                                    customer_id=customer_id,
-                                    product_id=product_id,
-                                    price=price,
-                                    effective_date=date.today()
-                                )
-                                db.session.add(price_list_entry)
-                                db.session.flush()  # Get ID
-                                item.price_list_id = price_list_entry.id
-                                item.updated_price_list = True
+                        item.notes = notes
+                        processed_item_ids.append(item.id)
                 else:
                     # Create new item
-                    # Validate required item fields
-                    if not plant_name or price <= 0:
-                        continue
-                    
-                    # Check if price differs from price list and update if needed
-                    price_list_id = None
-                    price_updated = False
-                    
-                    if product_id:
-                        # Find existing price list entry for this customer and product
-                        price_list_entry = PriceList.query.filter_by(
-                            customer_id=customer_id,
-                            product_id=product_id
-                        ).first()
-                        
-                        if price_list_entry:
-                            if price_list_entry.price != price:
-                                # Update price list with new price
-                                price_list_entry.price = price
-                                price_list_entry.updated_at = datetime.utcnow()
-                                price_updated = True
-                            price_list_id = price_list_entry.id
-                        else:
-                            # Create new price list entry
-                            price_list_entry = PriceList(
-                                customer_id=customer_id,
-                                product_id=product_id,
-                                price=price,
-                                effective_date=date.today()
-                            )
-                            db.session.add(price_list_entry)
-                            db.session.flush()  # Get ID
-                            price_list_id = price_list_entry.id
-                            price_updated = True
-                    
-                    # Create order item
                     new_item = OrderItem(
                         order_id=order.id,
                         product_id=product_id,
-                        price_list_id=price_list_id,
                         plant_name=plant_name,
                         size=size,
                         quantity=quantity,
                         price=price,
-                        updated_price_list=price_updated,
-                        notes=item_notes
+                        notes=notes
                     )
-                    
                     db.session.add(new_item)
+                    db.session.flush()  # Get ID without committing
+                    processed_item_ids.append(new_item.id)
+                
+                # Update price list
+                price_list = update_price_list(
+                    customer_id=order.customer_id,
+                    product_id=product_id,
+                    plant_name=plant_name,
+                    size=size,
+                    price=price
+                )
+                
+                # Link order item to price list if new
+                if price_list and not item_id:
+                    new_item.price_list_id = price_list.id
+                    new_item.updated_price_list = True
             
-            # Save all changes
+            # Remove items that were deleted
+            for item in order.items:
+                if item.id not in processed_item_ids:
+                    db.session.delete(item)
+            
             db.session.commit()
-            
             flash(f'Order {order.order_number} updated successfully', 'success')
             return redirect(url_for('orders.view_order', order_id=order.id))
             
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error updating order: {str(e)}")
+            current_app.logger.error(f"Error updating order: {str(e)}")
             flash(f'Error updating order: {str(e)}', 'danger')
             return redirect(url_for('orders.edit_order', order_id=order.id))
     
-    # GET request - show edit form
+    # GET method - show form
     customers = Customer.query.order_by(Customer.name).all()
     products = Product.query.order_by(Product.name).all()
     
-    # Format items as JSON for JavaScript
-    items_json = json.dumps([{
-        'id': item.id,
-        'product_id': item.product_id,
-        'plant_name': item.plant_name,
-        'size': item.size,
-        'quantity': item.quantity,
-        'price': item.price,
-        'notes': item.notes
-    } for item in order.items])
-    
-    return render_template('orders/edit.html',
-                          order=order,
-                          customers=customers,
-                          products=products,
-                          items_json=items_json,
-                          statuses=OrderStatus.LABELS,
-                          status_transitions=OrderStatus.TRANSITIONS[order.status])
+    return render_template(
+        'orders/edit.html',
+        order=order,
+        customers=customers,
+        products=products
+    )
 
-@orders_bp.route('/<int:order_id>/status', methods=['POST'])
+@orders.route('/update_status/<int:order_id>', methods=['POST'])
 @login_required
 def update_status(order_id):
     """Update the status of an order"""
@@ -450,228 +375,238 @@ def update_status(order_id):
         flash('Status is required', 'danger')
         return redirect(url_for('orders.view_order', order_id=order.id))
     
-    if new_status == order.status:
-        flash('Status is already set to ' + OrderStatus.LABELS[new_status], 'info')
-        return redirect(url_for('orders.view_order', order_id=order.id))
-    
-    if order.can_transition_to(new_status):
-        order.transition_to(new_status)
+    if order.transition_to(new_status):
         db.session.commit()
-        flash(f'Order status updated to {OrderStatus.LABELS[new_status]}', 'success')
+        flash(f'Order status updated to {order.get_status_label()}', 'success')
     else:
-        flash(f'Invalid status transition from {order.status} to {new_status}', 'danger')
+        flash(f'Cannot transition from {order.get_status_label()} to {OrderStatus.LABELS.get(new_status, new_status)}', 'danger')
     
     return redirect(url_for('orders.view_order', order_id=order.id))
 
-@orders_bp.route('/delivery-notes')
+@orders.route('/list')
 @login_required
-def delivery_notes():
-    """Delivery notes generation page"""
+def list_orders():
+    """List all orders with filtering options"""
     # Get filter parameters
-    delivery_date_str = request.args.get('delivery_date')
+    status = request.args.get('status')
     customer_id = request.args.get('customer_id')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    page = request.args.get('page', 1, type=int)
     
-    # Default to today if no date provided
-    if not delivery_date_str:
-        delivery_date = date.today()
-        delivery_date_str = delivery_date.strftime('%Y-%m-%d')
-    else:
-        try:
-            delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            flash('Invalid delivery date format', 'danger')
-            delivery_date = date.today()
-            delivery_date_str = delivery_date.strftime('%Y-%m-%d')
+    # Base query
+    query = Order.query
     
-    # Base query for orders due on the selected date
-    query = Order.query.filter(
-        Order.delivery_date == delivery_date,
-        Order.status.in_([OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.READY])
-    )
+    # Apply filters
+    if status:
+        query = query.filter(Order.status == status)
     
-    # Apply customer filter if provided
     if customer_id:
-        query = query.filter_by(customer_id=customer_id)
+        query = query.filter(Order.customer_id == customer_id)
     
-    # Get orders
-    orders = query.all()
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(Order.delivery_date >= date_from_obj)
+        except ValueError:
+            flash('Invalid "from" date format', 'warning')
     
-    # Get customers for filter dropdown
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(Order.delivery_date <= date_to_obj)
+        except ValueError:
+            flash('Invalid "to" date format', 'warning')
+    
+    # Order by creation date (newest first)
+    query = query.order_by(Order.created_at.desc())
+    
+    # Paginate results
+    orders = query.paginate(page=page, per_page=20, error_out=False)
+    
+    # Get all customers for filter dropdown
     customers = Customer.query.order_by(Customer.name).all()
     
-    return render_template('orders/delivery_notes.html',
-                          orders=orders,
-                          customers=customers,
-                          delivery_date=delivery_date_str)
-
-@orders_bp.route('/<int:order_id>/delivery-note')
-@login_required
-def generate_delivery_note(order_id):
-    """Generate a delivery note for a specific order"""
-    order = Order.query.get_or_404(order_id)
+    # Get all order statuses
+    statuses = OrderStatus.LABELS
     
-    language = request.args.get('language', 'en')  # Default to English
+    return render_template(
+        'orders/list.html',
+        orders=orders,
+        customers=customers,
+        statuses=statuses,
+        current_filters={
+            'status': status,
+            'customer_id': customer_id,
+            'date_from': date_from,
+            'date_to': date_to
+        }
+    )
+
+@orders.route('/delivery_notes')
+@login_required
+def delivery_notes():
+    """Show form to generate delivery notes for today's orders"""
+    # Get filter parameters
+    delivery_date_str = request.args.get('delivery_date', date.today().strftime('%Y-%m-%d'))
+    customer_id = request.args.get('customer_id')
     
     try:
-        # Generate PDF delivery note
-        pdf_path = generate_delivery_note_pdf(order, language)
-        
-        if not pdf_path or not os.path.exists(pdf_path):
-            flash('Error generating delivery note', 'danger')
-            return redirect(url_for('orders.view_order', order_id=order.id))
-        
-        # Return the generated PDF
-        return send_file(
-            pdf_path,
-            download_name=f'Delivery_Note_{order.order_number}.pdf',
-            as_attachment=True
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generating delivery note: {str(e)}")
-        flash(f'Error generating delivery note: {str(e)}', 'danger')
-        return redirect(url_for('orders.view_order', order_id=order.id))
+        delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        delivery_date = date.today()
+    
+    # Query orders
+    query = Order.query.filter(
+        Order.delivery_date == delivery_date,
+        Order.status.in_([OrderStatus.PREPARING, OrderStatus.READY])
+    )
+    
+    if customer_id:
+        query = query.filter(Order.customer_id == customer_id)
+    
+    orders = query.order_by(Order.created_at).all()
+    
+    # Get all customers for filter dropdown
+    customers = Customer.query.order_by(Customer.name).all()
+    
+    return render_template(
+        'orders/delivery_notes.html',
+        orders=orders,
+        customers=customers,
+        delivery_date=delivery_date_str
+    )
 
-@orders_bp.route('/batch-delivery-note', methods=['POST'])
+@orders.route('/generate_delivery_note/<int:order_id>')
+@login_required
+def generate_delivery_note(order_id):
+    """Generate a delivery note PDF for a single order"""
+    order = Order.query.get_or_404(order_id)
+    language = request.args.get('language', 'en')
+    
+    # Generate PDF
+    pdf_path = generate_delivery_note_pdf(order_id, language)
+    
+    if not pdf_path:
+        flash('Error generating delivery note', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
+    
+    # Get just the filename from the path
+    pdf_filename = os.path.basename(pdf_path)
+    
+    # Return the PDF file
+    return redirect(url_for('static', filename=f'pdfs/{pdf_filename}'))
+
+@orders.route('/generate_batch_delivery_note', methods=['POST'])
 @login_required
 def generate_batch_delivery_note():
-    """Generate a combined delivery note for multiple orders"""
+    """Generate delivery notes for multiple orders"""
     order_ids = request.form.getlist('order_ids')
     language = request.form.get('language', 'en')
     
     if not order_ids:
-        flash('No orders selected', 'danger')
+        flash('No orders selected', 'warning')
         return redirect(url_for('orders.delivery_notes'))
     
-    try:
-        # Fetch all selected orders
-        orders = Order.query.filter(Order.id.in_(order_ids)).all()
-        
-        if not orders:
-            flash('No valid orders found', 'danger')
-            return redirect(url_for('orders.delivery_notes'))
-        
-        # Generate combined PDF delivery note
-        pdf_path = generate_delivery_note_pdf(orders, language, batch=True)
-        
-        if not pdf_path or not os.path.exists(pdf_path):
-            flash('Error generating batch delivery note', 'danger')
-            return redirect(url_for('orders.delivery_notes'))
-        
-        # Return the generated PDF
-        delivery_date = orders[0].delivery_date.strftime('%Y-%m-%d') if orders[0].delivery_date else 'batch'
-        return send_file(
-            pdf_path,
-            download_name=f'Delivery_Notes_{delivery_date}.pdf',
-            as_attachment=True
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generating batch delivery note: {str(e)}")
-        flash(f'Error generating batch delivery note: {str(e)}', 'danger')
+    # Convert to integers
+    order_ids = [int(id) for id in order_ids]
+    
+    # Generate batch PDF
+    pdf_path = generate_delivery_note_pdf(order_ids, language, batch=True)
+    
+    if not pdf_path:
+        flash('Error generating delivery notes', 'danger')
         return redirect(url_for('orders.delivery_notes'))
+    
+    # Get just the filename from the path
+    pdf_filename = os.path.basename(pdf_path)
+    
+    # Return the PDF file
+    return redirect(url_for('static', filename=f'pdfs/{pdf_filename}'))
 
-@orders_bp.route('/calendar')
+@orders.route('/calendar')
 @login_required
 def calendar():
-    """Calendar view of upcoming deliveries"""
-    # Get the current month/year or from query parameters
-    current_date = date.today()
-    month = request.args.get('month', current_date.month, type=int)
-    year = request.args.get('year', current_date.year, type=int)
+    """Show calendar view of upcoming deliveries"""
+    # Get date range parameters or use defaults
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
     
-    # Validate month/year
-    if month < 1 or month > 12:
-        month = current_date.month
-    if year < current_date.year or year > current_date.year + 5:
-        year = current_date.year
+    # Default to this week
+    today = date.today()
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=13)  # Two weeks
     
-    # Get first and last day of the month
-    first_day = date(year, month, 1)
-    if month == 12:
-        last_day = date(year + 1, 1, 1) - timedelta(days=1)
-    else:
-        last_day = date(year, month + 1, 1) - timedelta(days=1)
+    # Parse custom date range if provided
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        else:
+            start_date = start_of_week
+            
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        else:
+            end_date = end_of_week
+    except ValueError:
+        start_date = start_of_week
+        end_date = end_of_week
+        flash('Invalid date format, showing default range', 'warning')
     
-    # Get orders for this month
+    # Query orders within the date range
     orders = Order.query.filter(
-        Order.delivery_date >= first_day,
-        Order.delivery_date <= last_day
-    ).all()
+        Order.delivery_date.between(start_date, end_date)
+    ).order_by(Order.delivery_date, Order.created_at).all()
     
-    # Group orders by day
-    calendar_data = {}
-    for day in range(1, last_day.day + 1):
-        current_day = date(year, month, day)
-        calendar_data[day] = [order for order in orders if order.delivery_date == current_day]
+    # Group orders by date
+    orders_by_date = defaultdict(list)
+    for order in orders:
+        if order.delivery_date:
+            orders_by_date[order.delivery_date].append(order)
     
-    # Next and previous month links
-    if month == 1:
-        prev_month = 12
-        prev_year = year - 1
-    else:
-        prev_month = month - 1
-        prev_year = year
-        
-    if month == 12:
-        next_month = 1
-        next_year = year + 1
-    else:
-        next_month = month + 1
-        next_year = year
+    # Generate calendar days
+    days = []
+    current_date = start_date
+    while current_date <= end_date:
+        days.append({
+            'date': current_date,
+            'is_today': current_date == today,
+            'is_weekend': current_date.weekday() >= 5,  # 5=Saturday, 6=Sunday
+            'orders': orders_by_date.get(current_date, [])
+        })
+        current_date += timedelta(days=1)
     
-    return render_template('orders/calendar.html',
-                          year=year,
-                          month=month,
-                          current_date=current_date,
-                          calendar_data=calendar_data,
-                          month_name=first_day.strftime('%B'),
-                          prev_month=prev_month,
-                          prev_year=prev_year,
-                          next_month=next_month,
-                          next_year=next_year,
-                          first_day_weekday=first_day.weekday())
+    return render_template(
+        'orders/calendar.html',
+        days=days,
+        start_date=start_date,
+        end_date=end_date,
+        today=today
+    )
 
-@orders_bp.route('/api/get-product-info/<int:product_id>')
+@orders.route('/api/product_info/<int:product_id>')
 @login_required
 def get_product_info(product_id):
-    """API endpoint to get product information"""
+    """API endpoint to get product information including customer-specific pricing"""
     product = Product.query.get_or_404(product_id)
-    
-    # Try to get price from price list if customer_id is provided
     customer_id = request.args.get('customer_id')
-    price = None
     
-    if customer_id:
-        price_list_entry = PriceList.query.filter_by(
-            customer_id=customer_id,
-            product_id=product_id
-        ).order_by(PriceList.updated_at.desc()).first()
-        
-        if price_list_entry:
-            price = price_list_entry.price
-    
-    return jsonify({
+    response = {
         'id': product.id,
         'name': product.name,
         'scientific_name': product.scientific_name,
         'pot': product.pot,
-        'price': price
-    })
-
-# Helper function for routes that need to generate delivery notes
-def generate_delivery_note_pdf(order_or_orders, language='en', batch=False):
-    """
-    Generate a PDF delivery note for a single order or multiple orders.
+        'price': None
+    }
     
-    Args:
-        order_or_orders: A single Order object or a list of Order objects
-        language: Language code for the delivery note ('en', 'el', or 'ar')
-        batch: Whether this is a batch delivery note
+    # If customer_id is provided, try to get the customer-specific price
+    if customer_id:
+        price_list = PriceList.query.filter_by(
+            customer_id=customer_id,
+            product_id=product_id
+        ).order_by(PriceList.effective_date.desc()).first()
         
-    Returns:
-        str: Path to the generated PDF
-    """
-    # Placeholder until we implement the actual PDF generator
-    # This should be implemented in utils/pdf_generator.py
-    return None
+        if price_list:
+            response['price'] = price_list.price
+    
+    return jsonify(response)
