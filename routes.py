@@ -1905,10 +1905,10 @@ def register_routes(app):
                 # Create new quotation
                 quotation = Quotation(
                     customer_id=customer_id,
-                quotation_number=quotation_number,
-                quotation_date=quotation_date,
-                currency=currency,
-                notes=notes
+                    quotation_number=quotation_number,
+                    quotation_date=quotation_date,
+                    currency=currency,
+                    notes=notes
             )
             db.session.add(quotation)
             db.session.flush()  # Generate the quotation.id
