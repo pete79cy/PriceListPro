@@ -143,10 +143,12 @@ with app.app_context():
     try:
         from blueprints.customer import customer_bp
         from blueprints.quotation import quotation_bp
+        from blueprints.orders import orders
         
         app.register_blueprint(customer_bp)
         app.register_blueprint(quotation_bp)
-        logger.info("Customer and Quotation blueprints registered successfully")
+        app.register_blueprint(orders)
+        logger.info("Customer, Quotation, and Orders blueprints registered successfully")
         
         # Register backup blueprint
         try:

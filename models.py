@@ -608,6 +608,41 @@ class OrderItem(db.Model):
         return f'<OrderItem {self.plant_name} ({self.quantity})>'
 
 
+class PriceList(db.Model):
+    """Customer-specific price lists"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    items = db.relationship('PriceListItem', backref='price_list', lazy=True, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<PriceList {self.name}>'
+
+
+class PriceListItem(db.Model):
+    """Individual items in a customer's price list"""
+    id = db.Column(db.Integer, primary_key=True)
+    price_list_id = db.Column(db.Integer, db.ForeignKey('price_list.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    name = db.Column(db.String(200), nullable=False)  # Plant name
+    size = db.Column(db.String(50), nullable=True)    # Size or pot size
+    price = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    product = db.relationship('Product', backref='price_list_items', lazy=True)
+    
+    def __repr__(self):
+        return f'<PriceListItem {self.name} - {self.price}>'
+
+
 class CompanySettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=True, default="Your Company Name")
