@@ -407,7 +407,7 @@ class Order(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     order_number = db.Column(db.String(50), unique=True, nullable=False)
     # Store status as string in the database
-    status = db.Column(db.String(20), nullable=False, default=OrderStatus.NEW.value)
+    status = db.Column(db.String(20), nullable=False, default="new")  # OrderStatus.NEW.value
     delivery_date = db.Column(db.Date, nullable=True)  # Requested delivery date
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -425,7 +425,7 @@ class Order(db.Model):
         # Convert string status to enum for lookup
         try:
             status_enum = OrderStatus(self.status)
-            return OrderStatus.LABELS.get(status_enum, self.status)
+            return ORDER_STATUS_LABELS.get(status_enum, self.status)
         except ValueError:
             return self.status
         
@@ -433,7 +433,7 @@ class Order(db.Model):
         """Get the color code for the status"""
         try:
             status_enum = OrderStatus(self.status)
-            return OrderStatus.COLORS.get(status_enum, '#000000')
+            return ORDER_STATUS_COLORS.get(status_enum, '#000000')
         except ValueError:
             return '#000000'
         
@@ -444,7 +444,7 @@ class Order(db.Model):
             # If target_status is already enum, use its value for comparison
             target_value = target_status.value if isinstance(target_status, OrderStatus) else target_status
             target_enum = OrderStatus(target_value)
-            return target_enum in OrderStatus.TRANSITIONS.get(current_status_enum, [])
+            return target_enum in ORDER_STATUS_TRANSITIONS.get(current_status_enum, [])
         except ValueError:
             return False
         

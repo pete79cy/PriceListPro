@@ -1,420 +1,304 @@
-"""
-Orders Blueprint - Handles all routes related to daily orders management
-"""
-from datetime import datetime, timedelta
-import os
-from io import BytesIO
-
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import desc
-from werkzeug.utils import secure_filename
+from datetime import datetime, date
+import json
 
 from app import db
-from models import Order, OrderItem, OrderStatus, Customer, Product, PriceList, PriceListItem
-from utils.pdf_generator import generate_pdf
-from utils.translations import get_translations
+from models import Customer, Product, Order, OrderItem, PriceList, PriceListItem, OrderStatus
+from utils.translations import translate_to_language
+from utils.pdf_generator import generate_delivery_note_pdf
 
-# Initialize blueprint
-orders = Blueprint('orders', __name__, url_prefix='/orders')
+# Create the blueprint
+orders_bp = Blueprint('orders', __name__, url_prefix='/orders')
 
-# Helper functions
-def get_status_choices():
-    """Get a list of order status options for forms"""
-    return [(status.name, status.value['label']) for status in OrderStatus]
+# Global variables to store translated status labels
+TRANSLATED_STATUS_LABELS = {}
 
-def get_status_colors():
-    """Get a dictionary of status colors for UI rendering"""
-    return {status.name: status.value['color'] for status in OrderStatus}
+# Routes for daily orders
 
-def generate_order_number():
-    """Generate a unique order number with format ORD-YYYY-XXX"""
-    year = datetime.now().year
-    latest_order = Order.query.filter(
-        Order.order_number.like(f"ORD-{year}-%")
-    ).order_by(desc(Order.order_number)).first()
-    
-    if latest_order:
-        try:
-            # Extract the numerical part from the latest order number
-            latest_number = int(latest_order.order_number.split('-')[-1])
-            new_number = latest_number + 1
-        except (ValueError, IndexError):
-            # If parsing fails, start from 1
-            new_number = 1
-    else:
-        new_number = 1
-    
-    return f"ORD-{year}-{new_number:03d}"
-
-def get_default_delivery_date():
-    """Return tomorrow's date as the default delivery date"""
-    return datetime.now().date() + timedelta(days=1)
-
-def can_cancel_order(order):
-    """Check if an order can be cancelled"""
-    return order.status != OrderStatus.DELIVERED and order.status != OrderStatus.CANCELLED
-
-# Routes
-@orders.route('/')
+@orders_bp.route('/')
 @login_required
 def index():
-    """Orders dashboard view"""
-    # Get filter parameters
-    status_filter = request.args.get('status')
-    customer_filter = request.args.get('customer_id')
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
+    """Order dashboard page"""
+    # Get all orders with sorting by date (most recent first)
+    orders = Order.query.order_by(Order.created_at.desc()).all()
     
-    # Base query
-    query = Order.query
+    # Get counts for status filter badges
+    status_counts = {}
+    for status in OrderStatus:
+        count = Order.query.filter_by(status=status.value).count()
+        status_counts[status.value] = count
     
-    # Apply filters
-    if status_filter:
-        query = query.filter(Order.status == OrderStatus[status_filter])
-    
-    if customer_filter:
-        query = query.filter(Order.customer_id == customer_filter)
-    
-    if date_from:
-        try:
-            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-            query = query.filter(Order.delivery_date >= date_from_obj)
-        except ValueError:
-            flash('Invalid from date format. Please use YYYY-MM-DD.', 'warning')
-    
-    if date_to:
-        try:
-            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-            query = query.filter(Order.delivery_date <= date_to_obj)
-        except ValueError:
-            flash('Invalid to date format. Please use YYYY-MM-DD.', 'warning')
-    
-    # Get orders, sorted by newest first
-    orders_list = query.order_by(desc(Order.created_at)).all()
-    
-    # Get customers for filter dropdown
+    # Get distinct customers for filter
     customers = Customer.query.order_by(Customer.name).all()
     
-    # Prepare data for calendar view (upcoming deliveries)
-    today = datetime.now().date()
-    upcoming_week = [today + timedelta(days=i) for i in range(7)]
+    # Get today's delivery orders
+    today = date.today()
+    today_deliveries = Order.query.filter(Order.delivery_date == today).all()
     
-    upcoming_deliveries = {}
-    for day in upcoming_week:
-        day_str = day.strftime('%Y-%m-%d')
-        upcoming_deliveries[day_str] = Order.query.filter(
-            Order.delivery_date == day,
-            Order.status != OrderStatus.CANCELLED
-        ).all()
-    
-    return render_template(
-        'orders/index.html',
-        orders=orders_list,
-        customers=customers,
-        statuses=OrderStatus,
-        status_filter=status_filter,
-        customer_filter=customer_filter,
-        date_from=date_from,
-        date_to=date_to,
-        upcoming_deliveries=upcoming_deliveries,
-        upcoming_week=upcoming_week,
-        today=today
-    )
+    return render_template('orders/index.html', 
+                           orders=orders,
+                           status_counts=status_counts,
+                           customers=customers,
+                           today_deliveries=today_deliveries,
+                           OrderStatus=OrderStatus)
 
-@orders.route('/new', methods=['GET', 'POST'])
+@orders_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_order():
     """Create a new order"""
     if request.method == 'POST':
+        # Extract form data
         customer_id = request.form.get('customer_id')
         delivery_date_str = request.form.get('delivery_date')
         notes = request.form.get('notes')
         
-        # Validate customer
+        # Basic validation
         if not customer_id:
-            flash('Customer is required.', 'danger')
+            flash('Customer is required', 'danger')
             return redirect(url_for('orders.new_order'))
-        
-        # Parse delivery date if provided
+            
+        # Convert delivery date string to date object if provided
         delivery_date = None
-        if delivery_date_str:
+        if delivery_date_str and delivery_date_str.strip():
             try:
                 delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
             except ValueError:
-                flash('Invalid delivery date format.', 'warning')
+                flash('Invalid delivery date format', 'danger')
                 return redirect(url_for('orders.new_order'))
         
-        # Create the order
+        # Generate a unique order number (based on date and sequential numbering)
+        today = date.today()
+        # Count orders from today to determine the daily sequence number
+        daily_order_count = Order.query.filter(
+            db.func.date(Order.created_at) == today
+        ).count()
+        
+        # Format: ORD-YYYYMMDD-XXX where XXX is the sequence number
+        order_number = f"ORD-{today.strftime('%Y%m%d')}-{daily_order_count + 1:03d}"
+        
+        # Create new order
         order = Order(
-            order_number=generate_order_number(),
             customer_id=customer_id,
+            order_number=order_number,
+            status="new",  # Default status is NEW
             delivery_date=delivery_date,
-            notes=notes,
-            status=OrderStatus.NEW
+            notes=notes
         )
         
         db.session.add(order)
         db.session.commit()
         
-        flash(f'Order {order.order_number} created successfully.', 'success')
-        return redirect(url_for('orders.view', order_id=order.id))
+        flash(f'Order {order_number} created successfully', 'success')
+        return redirect(url_for('orders.view_order', order_id=order.id))
     
-    # GET request - show the new order form
+    # GET request - display the form
     customers = Customer.query.order_by(Customer.name).all()
-    return render_template(
-        'orders/new.html',
-        customers=customers,
-        default_delivery_date=get_default_delivery_date().strftime('%Y-%m-%d')
-    )
+    return render_template('orders/new.html', customers=customers)
 
-@orders.route('/<int:order_id>')
+@orders_bp.route('/<int:order_id>')
 @login_required
-def view(order_id):
-    """View a specific order"""
+def view_order(order_id):
+    """View a single order"""
     order = Order.query.get_or_404(order_id)
     products = Product.query.order_by(Product.name).all()
-    return render_template('orders/view.html', order=order, products=products, OrderStatus=OrderStatus)
+    
+    # Get all available statuses for the status transition dropdown
+    available_statuses = []
+    current_status = order.status
+    
+    # Convert string status to enum for transitions lookup
+    try:
+        from models import ORDER_STATUS_TRANSITIONS
+        current_status_enum = OrderStatus(current_status)
+        # Add current status and all available transitions
+        available_statuses = [current_status_enum] + list(ORDER_STATUS_TRANSITIONS.get(current_status_enum, []))
+    except ValueError:
+        # If invalid status, just show all statuses as available
+        available_statuses = list(OrderStatus)
+    
+    return render_template('orders/view.html', 
+                           order=order, 
+                           products=products,
+                           available_statuses=available_statuses)
 
-@orders.route('/<int:order_id>/edit', methods=['POST'])
-@login_required
-def edit_order(order_id):
-    """Edit order details"""
-    order = Order.query.get_or_404(order_id)
-    
-    # Update order details
-    delivery_date_str = request.form.get('delivery_date')
-    notes = request.form.get('notes')
-    
-    # Parse delivery date if provided
-    if delivery_date_str:
-        try:
-            order.delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            flash('Invalid delivery date format.', 'warning')
-            return redirect(url_for('orders.view', order_id=order.id))
-    else:
-        order.delivery_date = None
-    
-    order.notes = notes
-    db.session.commit()
-    
-    flash('Order details updated successfully.', 'success')
-    return redirect(url_for('orders.view', order_id=order.id))
-
-@orders.route('/<int:order_id>/status', methods=['POST'])
+@orders_bp.route('/<int:order_id>/update-status', methods=['POST'])
 @login_required
 def update_status(order_id):
-    """Update order status"""
+    """Update the status of an order"""
     order = Order.query.get_or_404(order_id)
-    status_name = request.form.get('status')
+    new_status = request.form.get('status')
     
-    if not status_name or status_name not in [s.name for s in OrderStatus]:
-        flash('Invalid status.', 'danger')
-        return redirect(url_for('orders.view', order_id=order.id))
+    if not new_status:
+        flash('Status is required', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
     
-    new_status = OrderStatus[status_name]
+    # Check if the requested status transition is valid
+    if not order.transition_to(new_status):
+        flash(f'Cannot transition from {order.status} to {new_status}', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
     
-    # Check if status transition is allowed
-    if not order.can_transition_to(new_status):
-        flash(f'Cannot change status from {order.get_status_label()} to {new_status.value["label"]}.', 'danger')
-        return redirect(url_for('orders.view', order_id=order.id))
-    
-    # Update status
-    order.status = new_status
     db.session.commit()
-    
-    flash(f'Order status updated to {new_status.value["label"]}.', 'success')
-    return redirect(url_for('orders.view', order_id=order.id))
+    flash('Order status updated successfully', 'success')
+    return redirect(url_for('orders.view_order', order_id=order.id))
 
-@orders.route('/<int:order_id>/add-item', methods=['POST'])
+@orders_bp.route('/<int:order_id>/add-item', methods=['POST'])
 @login_required
 def add_item(order_id):
-    """Add an item to an order"""
+    """Add a product to an order"""
     order = Order.query.get_or_404(order_id)
     
-    # Get form data
+    # Extract form data
     product_id = request.form.get('product_id')
-    plant_name = request.form.get('plant_name')
-    size = request.form.get('size')
-    quantity = request.form.get('quantity')
-    price = request.form.get('price')
-    notes = request.form.get('notes')
-    update_price_list = 'update_price_list' in request.form
+    quantity = request.form.get('quantity', type=float)
+    unit_price = request.form.get('unit_price', type=float)
     
-    # Validate required fields
-    if not plant_name or not quantity or not price:
-        flash('Plant name, quantity, and price are required.', 'danger')
-        return redirect(url_for('orders.view', order_id=order.id))
+    # Basic validation
+    if not product_id or not quantity:
+        flash('Product and quantity are required', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
     
-    try:
-        quantity = int(quantity)
-        price = float(price)
-    except ValueError:
-        flash('Quantity must be a whole number and price must be a decimal number.', 'danger')
-        return redirect(url_for('orders.view', order_id=order.id))
+    product = Product.query.get_or_404(product_id)
     
-    # Create order item
-    item = OrderItem(
-        order_id=order.id,
-        plant_name=plant_name,
-        size=size,
-        quantity=quantity,
-        price=price,
-        notes=notes,
-        product_id=product_id if product_id else None
-    )
-    
-    db.session.add(item)
-    
-    # Update or create price list item if requested
-    if update_price_list:
-        # Get or create a price list for this customer
-        price_list = PriceList.query.filter_by(
-            customer_id=order.customer_id,
-            is_active=True
+    # If unit price wasn't provided, look it up from customer's price list
+    if not unit_price:
+        # Try to find this product in the customer's price list
+        price_list_item = PriceListItem.query.join(PriceList).filter(
+            PriceList.customer_id == order.customer_id,
+            PriceListItem.product_id == product_id
         ).first()
         
-        if not price_list:
-            price_list = PriceList(
-                customer_id=order.customer_id,
-                name=f"{order.customer.name} Price List",
-                is_active=True
-            )
-            db.session.add(price_list)
-            db.session.flush()  # Get ID without committing yet
-        
-        # Check if this plant exists in the price list
-        existing_item = None
-        if product_id:
-            existing_item = PriceListItem.query.filter_by(
-                price_list_id=price_list.id,
-                product_id=product_id
-            ).first()
+        if price_list_item:
+            unit_price = price_list_item.price
         else:
-            # Search by name and size if no product_id
-            existing_item = PriceListItem.query.filter_by(
-                price_list_id=price_list.id,
-                plant_name=plant_name,
-                size=size
-            ).first()
-        
-        if existing_item:
-            # Update existing price
-            existing_item.price = price
-            existing_item.updated_at = datetime.now()
-        else:
-            # Create new price list item
-            price_list_item = PriceListItem(
-                price_list_id=price_list.id,
-                product_id=product_id if product_id else None,
-                plant_name=plant_name,
-                size=size,
-                price=price
-            )
-            db.session.add(price_list_item)
-        
-        # Mark this item as having updated the price list
-        item.updated_price_list = True
+            # Fall back to product's standard price
+            unit_price = product.standard_price or 0
+    
+    # Create the order item
+    order_item = OrderItem(
+        order_id=order.id,
+        product_id=product_id,
+        quantity=quantity,
+        unit_price=unit_price
+    )
+    
+    db.session.add(order_item)
+    
+    # Update customer's price list with this price if it's different
+    update_customer_price_list(order.customer_id, product_id, unit_price)
     
     db.session.commit()
-    
-    flash('Item added to order.', 'success')
-    return redirect(url_for('orders.view', order_id=order.id))
+    flash('Item added to order', 'success')
+    return redirect(url_for('orders.view_order', order_id=order.id))
 
-@orders.route('/<int:order_id>/remove-item/<int:item_id>', methods=['POST'])
+@orders_bp.route('/<int:order_id>/remove-item/<int:item_id>', methods=['POST'])
 @login_required
 def remove_item(order_id, item_id):
     """Remove an item from an order"""
     order = Order.query.get_or_404(order_id)
     item = OrderItem.query.get_or_404(item_id)
     
-    # Ensure item belongs to this order
+    # Verify the item belongs to this order
     if item.order_id != order.id:
-        flash('Item does not belong to this order.', 'danger')
-        return redirect(url_for('orders.view', order_id=order.id))
+        flash('Item does not belong to this order', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
     
     db.session.delete(item)
     db.session.commit()
     
-    flash('Item removed from order.', 'success')
-    return redirect(url_for('orders.view', order_id=order.id))
+    flash('Item removed from order', 'success')
+    return redirect(url_for('orders.view_order', order_id=order.id))
 
-@orders.route('/product/<int:product_id>')
+@orders_bp.route('/<int:order_id>/update-item/<int:item_id>', methods=['POST'])
 @login_required
-def get_product(product_id):
-    """Get product details as JSON"""
-    product = Product.query.get_or_404(product_id)
-    customer_id = request.args.get('customer_id')
-    price = product.price  # Default to product's standard price
-    
-    # Check if there's a special price for this customer
-    if customer_id:
-        price_list = PriceList.query.filter_by(
-            customer_id=customer_id,
-            is_active=True
-        ).first()
-        
-        if price_list:
-            price_list_item = PriceListItem.query.filter_by(
-                price_list_id=price_list.id,
-                product_id=product_id
-            ).first()
-            
-            if price_list_item:
-                price = price_list_item.price
-    
-    return jsonify({
-        'id': product.id,
-        'name': product.name,
-        'size': product.size,
-        'price': price
-    })
-
-@orders.route('/<int:order_id>/delivery-notes')
-@login_required
-def delivery_notes(order_id):
-    """View delivery notes in HTML"""
+def update_item(order_id, item_id):
+    """Update an item in an order"""
     order = Order.query.get_or_404(order_id)
+    item = OrderItem.query.get_or_404(item_id)
+    
+    # Verify the item belongs to this order
+    if item.order_id != order.id:
+        flash('Item does not belong to this order', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
+    
+    # Extract form data
+    quantity = request.form.get('quantity', type=float)
+    unit_price = request.form.get('unit_price', type=float)
+    
+    # Basic validation
+    if not quantity or not unit_price:
+        flash('Quantity and unit price are required', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
+    
+    # Update item
+    item.quantity = quantity
+    item.unit_price = unit_price
+    
+    # Update customer's price list with the new price
+    update_customer_price_list(order.customer_id, item.product_id, unit_price)
+    
+    db.session.commit()
+    flash('Item updated', 'success')
+    return redirect(url_for('orders.view_order', order_id=order.id))
+
+@orders_bp.route('/<int:order_id>/print-delivery-note', methods=['GET'])
+@login_required
+def print_delivery_note(order_id):
+    """Generate PDF delivery note"""
+    order = Order.query.get_or_404(order_id)
+    
+    # Get requested language (default to English)
     language = request.args.get('language', 'en')
     
-    # Apply translations based on selected language
-    translations = get_translations(language)
+    # Generate the PDF
+    pdf_data = generate_delivery_note_pdf(order, language)
     
-    return render_template(
-        'pdfs/delivery_note.html',
-        order=order,
-        language=language,
-        _=translations.gettext  # Translation function
-    )
-
-@orders.route('/<int:order_id>/delivery-notes-pdf')
-@login_required
-def pdf_delivery_notes(order_id):
-    """Generate and download PDF delivery notes"""
-    order = Order.query.get_or_404(order_id)
-    language = request.args.get('language', 'en')
+    # Define filename for download
+    filename = f"delivery_note_{order.order_number}.pdf"
     
-    # Apply translations based on selected language
-    translations = get_translations(language)
-    
-    # Generate HTML with translations
-    html = render_template(
-        'pdfs/delivery_note.html',
-        order=order,
-        language=language,
-        _=translations.gettext  # Translation function
-    )
-    
-    # Generate PDF
-    pdf_file = generate_pdf(html)
-    
-    # Create a response with the PDF
-    filename = f"delivery_note_{order.order_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    
+    # Return the PDF as download
+    from flask import send_file
+    import io
     return send_file(
-        BytesIO(pdf_file),
-        download_name=filename,
+        io.BytesIO(pdf_data),
+        mimetype='application/pdf',
         as_attachment=True,
-        mimetype='application/pdf'
+        download_name=filename
     )
+
+def update_customer_price_list(customer_id, product_id, new_price):
+    """
+    Update a customer's price list with the new price for a product.
+    If the product doesn't exist in their price list, add it.
+    """
+    # Look for existing price list or create a new one
+    price_list = PriceList.query.filter_by(customer_id=customer_id).first()
+    if not price_list:
+        # Create a new price list for this customer
+        price_list = PriceList(
+            customer_id=customer_id,
+            name=f"Price List for Customer #{customer_id}",
+            is_active=True
+        )
+        db.session.add(price_list)
+        db.session.flush()  # Get the ID without committing
+    
+    # Look for existing price list item
+    price_list_item = PriceListItem.query.filter_by(
+        price_list_id=price_list.id, 
+        product_id=product_id
+    ).first()
+    
+    if price_list_item:
+        # Update existing price if it's different
+        if price_list_item.price != new_price:
+            price_list_item.price = new_price
+            price_list_item.updated_at = datetime.utcnow()
+    else:
+        # Add new price list item
+        price_list_item = PriceListItem(
+            price_list_id=price_list.id,
+            product_id=product_id,
+            price=new_price
+        )
+        db.session.add(price_list_item)
