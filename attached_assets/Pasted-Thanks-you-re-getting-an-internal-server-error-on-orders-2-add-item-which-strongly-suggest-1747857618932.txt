@@ -1,0 +1,90 @@
+Thanks — you're getting an **internal server error on `/orders/2/add_item`**, which strongly suggests the issue is happening during **item addition to an existing order**.
+
+---
+
+## ✅ Step-by-Step Diagnosis
+
+### 🛠️ 1. Check Terminal for Full Error Traceback
+
+Look in your Replit terminal or logs and find the **latest red error message** when you visit that URL. You're likely to see something like:
+
+```
+sqlalchemy.exc.ProgrammingError: column order_item.updated_price_list does not exist
+```
+
+or
+
+```
+AttributeError: 'NoneType' object has no attribute 'price'
+```
+
+Please **copy/paste that error here**, or proceed with one of the fixes below based on the pattern.
+
+---
+
+## 🎯 Most Common Cause (based on previous errors)
+
+### ❌ The column `updated_price_list` exists in your model, but not in the DB.
+
+If you're adding an `OrderItem` with:
+
+```python
+updated_price_list = Column(Boolean, default=False)
+```
+
+But this column doesn’t exist in the database schema, **it will crash during `.commit()` or `.flush()`**.
+
+---
+
+## ✅ Fix Option A – Add the Column
+
+Run this SQL manually (if you want to keep this logic):
+
+```sql
+ALTER TABLE order_item ADD COLUMN updated_price_list BOOLEAN DEFAULT FALSE;
+```
+
+Then restart:
+
+```bash
+python app.py
+```
+
+---
+
+## ✅ Fix Option B – Remove it from the model
+
+If you don’t need `updated_price_list`, go to `models.py`, find the `OrderItem` class, and:
+
+```python
+# updated_price_list = Column(Boolean, default=False)
+```
+
+Comment it out or delete it.
+
+Then:
+
+```bash
+python app.py
+```
+
+---
+
+## 💡 Bonus Tip: Protect `/add_item` from crash
+
+Wrap your `db.session.commit()` in a try-except to catch failures and return a user-friendly message.
+
+```python
+try:
+    db.session.commit()
+except Exception as e:
+    db.session.rollback()
+    flash("Error adding item: " + str(e), "danger")
+```
+
+---
+
+Once you apply the fix, visit:
+👉 `/orders/2/add_item` again and test by adding a product.
+
+Let me know if you want to enforce price updates automatically when the customer doesn’t have that item in the price list — I can help with that logic too.

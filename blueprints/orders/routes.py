@@ -45,12 +45,17 @@ def get_customer_price(customer_id, product_id):
     if price_list_item:
         return price_list_item.price
     
-    # If no customer-specific price found, get the product's standard price
-    product = Product.query.get(product_id)
-    if product:
-        return product.standard_price
-        
-    return None
+    # If no customer-specific price found, set a default price
+    # We don't have a standard_price field in the Product model
+    # So we'll return a reasonable default or look for other price sources
+    
+    # First try to find any price list entry for this product to use as reference
+    any_price_list = PriceList.query.filter_by(product_id=product_id).order_by(PriceList.updated_at.desc()).first()
+    if any_price_list:
+        return any_price_list.price
+    
+    # If still no price found, return a default value
+    return 0.0  # Default price can be adjusted as needed
 
 def update_customer_price_list(customer_id, product_id, price):
     """Update or create a price list entry for a customer-product pair"""
