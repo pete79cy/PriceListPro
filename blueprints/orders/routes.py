@@ -8,7 +8,7 @@ import uuid
 from . import orders
 from models import db, Customer, Product, PriceList, OrderStatusEnum, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_TRANSITIONS
 from models import Order, OrderItem
-from utils.pdf_generator import generate_delivery_note
+from utils.pdf_generator import generate_delivery_note_pdf
 from utils.translations import get_translations
 
 # Helper functions
@@ -318,7 +318,7 @@ def print_delivery_note(order_id):
     _ = get_translations(language)
     
     # Generate PDF
-    pdf_data = generate_delivery_note(order, language)
+    pdf_data = generate_delivery_note_pdf(order, language)
     if not pdf_data:
         flash('Error generating delivery note', 'danger')
         return redirect(url_for('orders.view_order', order_id=order.id))
