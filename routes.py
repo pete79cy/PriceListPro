@@ -1883,9 +1883,28 @@ def register_routes(app):
             # Get the number of products
             product_count = int(request.form.get('product_count', 0))
             
-            # Create new quotation
-            quotation = Quotation(
-                customer_id=customer_id,
+            # Check if quotation with this number already exists
+            existing_quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
+            
+            # Create new quotation or update existing one
+            if existing_quotation:
+                # Update the existing quotation instead of creating a new one
+                quotation = existing_quotation
+                quotation.customer_id = customer_id
+                quotation.quotation_date = quotation_date
+                quotation.currency = currency
+                quotation.notes = notes
+                
+                # Delete existing items to replace with updated ones
+                for item in quotation.items:
+                    db.session.delete(item)
+                db.session.flush()
+                
+                logger.info(f"Updating existing quotation: {quotation_number}")
+            else:
+                # Create new quotation
+                quotation = Quotation(
+                    customer_id=customer_id,
                 quotation_number=quotation_number,
                 quotation_date=quotation_date,
                 currency=currency,
