@@ -354,6 +354,8 @@ def register_routes(app):
         product_count = Product.query.count()
         price_list_count = PriceList.query.count() 
         invoice_count = Invoice.query.count()
+        supplier_count = Supplier.query.count()
+        quotation_count = Quotation.query.count()
         
         # Build stats dictionary
         stats = {
@@ -361,10 +363,13 @@ def register_routes(app):
             'products': product_count,
             'price_lists': price_list_count,
             'invoices': invoice_count,
-            'pending_updates': pending_update_count
+            'pending_updates': pending_update_count,
+            'suppliers': supplier_count,
+            'quotations': quotation_count,
+            'orders': 0  # Placeholder for future order functionality
         }
         
-        # Dynamic card coloring based on thresholds
+        # Dynamic card coloring based on thresholds (keeping for compatibility)
         card_classes = {
             'customers': 'bg-primary' if customer_count > 10 else 'bg-warning',
             'products': 'bg-success' if product_count > 20 else 'bg-info',
@@ -436,19 +441,16 @@ def register_routes(app):
             category_chart_json = json.dumps({"labels": [], "values": []})
             invoice_chart_json = json.dumps({"labels": [], "values": []})
         
-        # Variables were renamed
+        # Variables were renamed (keeping for compatibility with other templates)
         category_labels_json = category_chart_json
         invoice_labels_json = invoice_chart_json
         
-        return render_template('dashboard_improved.html', 
+        # Use the new card-based dashboard template
+        return render_template('dashboard_card_based.html', 
                               stats=stats,
                               card_classes=card_classes,
                               pending_update_count=pending_update_count,
-                              recent_activities=recent_activities,
-                              category_labels_json=category_labels_json,
-                              category_values_json=category_labels_json,  # Using same variable as a fallback
-                              invoice_labels_json=invoice_labels_json,
-                              invoice_values_json=invoice_labels_json)
+                              recent_activities=recent_activities)
     
     @app.route('/uploads', methods=['GET'])
     @login_required
