@@ -237,36 +237,9 @@ class QuotationStatus:
         CREATED: [SENT, DRAFT]
     }
     
-class OrderStatus:
-    """Enum-like class for order statuses"""
-    NEW = 'NEW'
-    PREPARING = 'PREPARING'
-    READY = 'READY'
-    DELIVERED = 'DELIVERED'
-    
-    # Status display names for UI
-    LABELS = {
-        NEW: 'New',
-        PREPARING: 'Preparing',
-        READY: 'Ready',
-        DELIVERED: 'Delivered'
-    }
-    
-    # Status colors for UI
-    COLORS = {
-        NEW: '#FF9800',  # Orange
-        PREPARING: '#2196F3',  # Blue
-        READY: '#4CAF50',  # Green
-        DELIVERED: '#8BC34A',  # Light Green
-    }
-    
-    # Valid status transitions
-    TRANSITIONS = {
-        NEW: [PREPARING],
-        PREPARING: [READY, NEW],
-        READY: [DELIVERED, PREPARING],
-        DELIVERED: [NEW]  # Allow reopening completed orders if needed
-    }
+# This class is removed to avoid duplication with OrderStatusEnum
+# Use OrderStatusEnum for enum values and ORDER_STATUS_LABELS, 
+# ORDER_STATUS_COLORS, and ORDER_STATUS_TRANSITIONS for constants
     
 class Quotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -538,7 +511,7 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_number = db.Column(db.String(20), unique=True, nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    status = db.Column(db.Enum(OrderStatus), default=OrderStatus.NEW, nullable=False)
+    status = db.Column(db.String(20), default=OrderStatusEnum.NEW.value, nullable=False)
     notes = db.Column(db.Text, nullable=True)
     delivery_date = db.Column(db.Date, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -1,131 +1,159 @@
 """
-Translations module for multilingual delivery notes
-Supports English, Greek, and Arabic translations
+Translation utilities for multi-language support
+Supports English, Greek, and Arabic
 """
 
-# Dictionary of translations keyed by language code
+# English translations (default)
+EN_TRANSLATIONS = {
+    # General
+    'Company Name': 'Company Name',
+    'Address Line 1': 'Address Line 1',
+    'City, Postal Code': 'City, Postal Code',
+    'Phone': 'Phone',
+    'Email': 'Email',
+    
+    # Document title
+    'DELIVERY NOTE': 'DELIVERY NOTE',
+    'Delivery Note': 'Delivery Note',
+    
+    # Sections
+    'Order Information': 'Order Information',
+    'Customer Information': 'Customer Information',
+    'Order Items': 'Order Items',
+    'Notes': 'Notes',
+    
+    # Order info
+    'Order Number': 'Order Number',
+    'Order Date': 'Order Date',
+    'Delivery Date': 'Delivery Date',
+    'Not specified': 'Not specified',
+    
+    # Customer info
+    'Customer': 'Customer',
+    'Address': 'Address',
+    'N/A': 'N/A',
+    
+    # Items table
+    'Product/Plant': 'Product/Plant',
+    'Quantity': 'Quantity',
+    'Notes': 'Notes',
+    
+    # Signatures
+    'Delivered By (Signature & Name)': 'Delivered By (Signature & Name)',
+    'Received By (Signature & Name)': 'Received By (Signature & Name)',
+    
+    # Footer
+    'Thank you for your business! This delivery note is not an invoice.': 'Thank you for your business! This delivery note is not an invoice.'
+}
+
+# Greek translations
+EL_TRANSLATIONS = {
+    # General
+    'Company Name': 'Επωνυμία Εταιρείας',
+    'Address Line 1': 'Διεύθυνση Γραμμή 1',
+    'City, Postal Code': 'Πόλη, ΤΚ',
+    'Phone': 'Τηλέφωνο',
+    'Email': 'Email',
+    
+    # Document title
+    'DELIVERY NOTE': 'ΔΕΛΤΙΟ ΑΠΟΣΤΟΛΗΣ',
+    'Delivery Note': 'Δελτίο Αποστολής',
+    
+    # Sections
+    'Order Information': 'Πληροφορίες Παραγγελίας',
+    'Customer Information': 'Στοιχεία Πελάτη',
+    'Order Items': 'Είδη Παραγγελίας',
+    'Notes': 'Σημειώσεις',
+    
+    # Order info
+    'Order Number': 'Αριθμός Παραγγελίας',
+    'Order Date': 'Ημερομηνία Παραγγελίας',
+    'Delivery Date': 'Ημερομηνία Παράδοσης',
+    'Not specified': 'Δεν καθορίστηκε',
+    
+    # Customer info
+    'Customer': 'Πελάτης',
+    'Address': 'Διεύθυνση',
+    'N/A': 'Μ/Δ',
+    
+    # Items table
+    'Product/Plant': 'Προϊόν/Φυτό',
+    'Quantity': 'Ποσότητα',
+    
+    # Signatures
+    'Delivered By (Signature & Name)': 'Παραδόθηκε Από (Υπογραφή & Όνομα)',
+    'Received By (Signature & Name)': 'Παρελήφθη Από (Υπογραφή & Όνομα)',
+    
+    # Footer
+    'Thank you for your business! This delivery note is not an invoice.': 'Σας ευχαριστούμε για τη συνεργασία! Αυτό το δελτίο αποστολής δεν είναι τιμολόγιο.'
+}
+
+# Arabic translations
+AR_TRANSLATIONS = {
+    # General
+    'Company Name': 'اسم الشركة',
+    'Address Line 1': 'العنوان سطر 1',
+    'City, Postal Code': 'المدينة، الرمز البريدي',
+    'Phone': 'هاتف',
+    'Email': 'بريد إلكتروني',
+    
+    # Document title
+    'DELIVERY NOTE': 'مذكرة تسليم',
+    'Delivery Note': 'مذكرة تسليم',
+    
+    # Sections
+    'Order Information': 'معلومات الطلب',
+    'Customer Information': 'معلومات العميل',
+    'Order Items': 'عناصر الطلب',
+    'Notes': 'ملاحظات',
+    
+    # Order info
+    'Order Number': 'رقم الطلب',
+    'Order Date': 'تاريخ الطلب',
+    'Delivery Date': 'تاريخ التسليم',
+    'Not specified': 'غير محدد',
+    
+    # Customer info
+    'Customer': 'العميل',
+    'Address': 'العنوان',
+    'N/A': 'غير متوفر',
+    
+    # Items table
+    'Product/Plant': 'المنتج/النبات',
+    'Quantity': 'الكمية',
+    
+    # Signatures
+    'Delivered By (Signature & Name)': 'تم التسليم بواسطة (التوقيع والاسم)',
+    'Received By (Signature & Name)': 'تم الاستلام بواسطة (التوقيع والاسم)',
+    
+    # Footer
+    'Thank you for your business! This delivery note is not an invoice.': 'شكرًا لتعاملك معنا! مذكرة التسليم هذه ليست فاتورة.'
+}
+
+# Translation dictionaries by language code
 TRANSLATIONS = {
-    'en': {  # English (default)
-        'delivery_note': 'Delivery Note',
-        'order_number': 'Order Number',
-        'date': 'Date',
-        'customer': 'Customer',
-        'delivery_date': 'Delivery Date',
-        'item': 'Item',
-        'quantity': 'Quantity',
-        'unit_price': 'Unit Price',
-        'total': 'Total',
-        'notes': 'Notes',
-        'subtotal': 'Subtotal',
-        'vat': 'VAT',
-        'grand_total': 'Grand Total',
-        'thank_you': 'Thank you for your business!',
-        'signature': 'Signature',
-        'status': 'Status',
-        'prepared_by': 'Prepared By',
-        'received_by': 'Received By',
-        'page': 'Page',
-        'of': 'of'
-    },
-    'el': {  # Greek
-        'delivery_note': 'Δελτίο Παράδοσης',
-        'order_number': 'Αριθμός Παραγγελίας',
-        'date': 'Ημερομηνία',
-        'customer': 'Πελάτης',
-        'delivery_date': 'Ημερομηνία Παράδοσης',
-        'item': 'Είδος',
-        'quantity': 'Ποσότητα',
-        'unit_price': 'Τιμή Μονάδας',
-        'total': 'Σύνολο',
-        'notes': 'Σημειώσεις',
-        'subtotal': 'Μερικό Σύνολο',
-        'vat': 'ΦΠΑ',
-        'grand_total': 'Τελικό Σύνολο',
-        'thank_you': 'Ευχαριστούμε για τη συνεργασία!',
-        'signature': 'Υπογραφή',
-        'status': 'Κατάσταση',
-        'prepared_by': 'Συντάχθηκε από',
-        'received_by': 'Παραλήφθηκε από',
-        'page': 'Σελίδα',
-        'of': 'από'
-    },
-    'ar': {  # Arabic
-        'delivery_note': 'مذكرة تسليم',
-        'order_number': 'رقم الطلب',
-        'date': 'تاريخ',
-        'customer': 'عميل',
-        'delivery_date': 'تاريخ التسليم',
-        'item': 'بند',
-        'quantity': 'كمية',
-        'unit_price': 'سعر الوحدة',
-        'total': 'مجموع',
-        'notes': 'ملاحظات',
-        'subtotal': 'المجموع الفرعي',
-        'vat': 'ضريبة القيمة المضافة',
-        'grand_total': 'المبلغ الإجمالي',
-        'thank_you': 'شكرا لعملك!',
-        'signature': 'التوقيع',
-        'status': 'حالة',
-        'prepared_by': 'أعدها',
-        'received_by': 'استلمت من قبل',
-        'page': 'صفحة',
-        'of': 'من'
-    }
+    'en': EN_TRANSLATIONS,
+    'el': EL_TRANSLATIONS,
+    'ar': AR_TRANSLATIONS
 }
 
-# Status translations
-STATUS_TRANSLATIONS = {
-    'en': {  # English
-        'new': 'New',
-        'preparing': 'Preparing',
-        'ready': 'Ready for Delivery',
-        'delivered': 'Delivered',
-        'cancelled': 'Cancelled'
-    },
-    'el': {  # Greek
-        'new': 'Νέα',
-        'preparing': 'Σε προετοιμασία',
-        'ready': 'Έτοιμο για παράδοση',
-        'delivered': 'Παραδόθηκε',
-        'cancelled': 'Ακυρώθηκε'
-    },
-    'ar': {  # Arabic
-        'new': 'جديد',
-        'preparing': 'تحضير',
-        'ready': 'جاهز للتسليم',
-        'delivered': 'تم التسليم',
-        'cancelled': 'ألغيت'
-    }
-}
-
-def translate_to_language(key, language='en'):
+def get_translations(language_code='en'):
     """
-    Translate a key to the specified language
+    Get a translation function for the specified language
     
     Args:
-        key (str): The key to translate
-        language (str): Language code ('en', 'el', 'ar')
+        language_code (str): Language code ('en', 'el', 'ar')
         
     Returns:
-        str: Translated text or the key itself if not found
+        function: Translation function that takes a string and returns its translation
     """
-    if language not in TRANSLATIONS:
-        language = 'en'  # Default to English
-        
-    return TRANSLATIONS[language].get(key, key)
-
-def translate_status(status, language='en'):
-    """
-    Translate an order status to the specified language
+    # Get the translation dictionary for the requested language
+    # Fallback to English if the language is not supported
+    translations = TRANSLATIONS.get(language_code, EN_TRANSLATIONS)
     
-    Args:
-        status (str): The status value to translate
-        language (str): Language code ('en', 'el', 'ar')
-        
-    Returns:
-        str: Translated status or the status itself if not found
-    """
-    if language not in STATUS_TRANSLATIONS:
-        language = 'en'  # Default to English
-        
-    return STATUS_TRANSLATIONS[language].get(status, status)
+    # Create and return a translation function
+    def translate(text):
+        """Translate a string to the selected language"""
+        return translations.get(text, text)
+    
+    return translate
