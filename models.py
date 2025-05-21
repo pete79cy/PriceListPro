@@ -14,32 +14,35 @@ class OrderStatus(str, Enum):
     DELIVERED = "delivered"   # Order has been delivered to customer
     CANCELLED = "cancelled"   # Order was cancelled
     
-    # Labels for UI display
-    LABELS = {
-        NEW: "New",
-        PREPARING: "Preparing",
-        READY: "Ready for Delivery",
-        DELIVERED: "Delivered",
-        CANCELLED: "Cancelled"
-    }
-    
-    # Colors for UI display
-    COLORS = {
-        NEW: "#FF9800",        # Orange
-        PREPARING: "#2196F3",  # Blue
-        READY: "#4CAF50",      # Green
-        DELIVERED: "#9E9E9E",  # Gray
-        CANCELLED: "#F44336"   # Red
-    }
-    
-    # Valid transitions between statuses
-    TRANSITIONS = {
-        NEW: [PREPARING, CANCELLED],
-        PREPARING: [READY, CANCELLED],
-        READY: [DELIVERED, CANCELLED],
-        DELIVERED: [],  # Terminal state
-        CANCELLED: []   # Terminal state
-    }
+    def __str__(self):
+        return self.value
+
+# UI display labels for order statuses
+ORDER_STATUS_LABELS = {
+    OrderStatus.NEW: "New",
+    OrderStatus.PREPARING: "Preparing",
+    OrderStatus.READY: "Ready for Delivery",
+    OrderStatus.DELIVERED: "Delivered",
+    OrderStatus.CANCELLED: "Cancelled"
+}
+
+# Colors for UI display
+ORDER_STATUS_COLORS = {
+    OrderStatus.NEW: "#FF9800",        # Orange
+    OrderStatus.PREPARING: "#2196F3",  # Blue
+    OrderStatus.READY: "#4CAF50",      # Green
+    OrderStatus.DELIVERED: "#9E9E9E",  # Gray
+    OrderStatus.CANCELLED: "#F44336"   # Red
+}
+
+# Valid transitions between statuses
+ORDER_STATUS_TRANSITIONS = {
+    OrderStatus.NEW: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
+    OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
+    OrderStatus.READY: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+    OrderStatus.DELIVERED: [],  # Terminal state
+    OrderStatus.CANCELLED: []   # Terminal state
+}
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -403,7 +406,8 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     order_number = db.Column(db.String(50), unique=True, nullable=False)
-    status = db.Column(db.String(20), nullable=False, default=OrderStatus.NEW)
+    # Store status as string in the database
+    status = db.Column(db.String(20), nullable=False, default=OrderStatus.NEW.value)
     delivery_date = db.Column(db.Date, nullable=True)  # Requested delivery date
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -418,15 +422,31 @@ class Order(db.Model):
         
     def get_status_label(self):
         """Get the human-readable status label"""
-        return OrderStatus.LABELS.get(self.status, self.status)
+        # Convert string status to enum for lookup
+        try:
+            status_enum = OrderStatus(self.status)
+            return OrderStatus.LABELS.get(status_enum, self.status)
+        except ValueError:
+            return self.status
         
     def get_status_color(self):
         """Get the color code for the status"""
-        return OrderStatus.COLORS.get(self.status, '#000000')
+        try:
+            status_enum = OrderStatus(self.status)
+            return OrderStatus.COLORS.get(status_enum, '#000000')
+        except ValueError:
+            return '#000000'
         
     def can_transition_to(self, target_status):
         """Check if the order can transition to the target status"""
-        return target_status in OrderStatus.TRANSITIONS.get(self.status, [])
+        try:
+            current_status_enum = OrderStatus(self.status)
+            # If target_status is already enum, use its value for comparison
+            target_value = target_status.value if isinstance(target_status, OrderStatus) else target_status
+            target_enum = OrderStatus(target_value)
+            return target_enum in OrderStatus.TRANSITIONS.get(current_status_enum, [])
+        except ValueError:
+            return False
         
     def transition_to(self, target_status):
         """
@@ -435,8 +455,9 @@ class Order(db.Model):
         """
         if not self.can_transition_to(target_status):
             return False
-            
-        self.status = target_status
+        
+        # Store status value (string) in the database    
+        self.status = target_status.value if isinstance(target_status, OrderStatus) else target_status
         self.updated_at = datetime.utcnow()
         return True
     
