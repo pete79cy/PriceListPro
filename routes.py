@@ -1988,7 +1988,7 @@ def register_routes(app):
                     quotation_date=quotation_date,
                     currency=currency,
                     notes=notes
-            )
+                )
             db.session.add(quotation)
             db.session.flush()  # Generate the quotation.id
             
