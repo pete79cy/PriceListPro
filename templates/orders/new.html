@@ -1,273 +1,454 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}New Order{% endblock %}
 
+{% block styles %}
+<style>
+    .item-row {
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-left: 3px solid #4CAF50;
+    }
+    .item-row:hover {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .remove-item {
+        cursor: pointer;
+        color: #dc3545;
+    }
+    .remove-item:hover {
+        transform: scale(1.2);
+    }
+    .add-item-btn {
+        margin-bottom: 20px;
+    }
+    .price-info {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+    .price-updated {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .mobile-responsive {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .form-group {
+            margin-bottom: 0.5rem;
+        }
+        label {
+            margin-bottom: 0.2rem;
+        }
+        .item-row {
+            padding: 8px;
+        }
+        .col-form-label {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col">
-            <h1 class="mb-4">Create New Order</h1>
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Order Details</h5>
-                </div>
-                <div class="card-body">
-                    <form id="orderForm" method="post" action="{{ url_for('orders.new_order') }}">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="customer_id" class="form-label required">Customer</label>
-                                    <select class="form-select" id="customer_id" name="customer_id" required>
-                                        <option value="">Select a customer</option>
-                                        {% for customer in customers %}
-                                        <option value="{{ customer.id }}">{{ customer.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="delivery_date" class="form-label">Requested Delivery Date</label>
-                                    <input type="date" class="form-control" id="delivery_date" name="delivery_date" value="{{ today }}">
-                                </div>
-                            </div>
-                        </div>
-                        
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>New Order</h1>
+        <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <form id="orderForm" method="POST">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Order Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
                         <div class="form-group mb-3">
-                            <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                            <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
+                            <select id="customer_id" name="customer_id" class="form-control" required>
+                                <option value="">-- Select Customer --</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        
-                        <hr class="my-4">
-                        
-                        <h5 class="mb-3">Order Items</h5>
-                        
-                        <div id="itemsContainer">
-                            <!-- Item template will be cloned here -->
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="delivery_date" class="form-label">Delivery Date</label>
+                            <input type="date" id="delivery_date" name="delivery_date" class="form-control" value="{{ today }}">
                         </div>
-                        
-                        <div class="d-flex justify-content-between my-3">
-                            <button type="button" id="addItemBtn" class="btn btn-success">
-                                <i class="fas fa-plus-circle me-1"></i> Add Item
-                            </button>
-                            <div>
-                                <strong>Total Items: <span id="itemCount">0</span></strong>
-                            </div>
-                        </div>
-                        
-                        <input type="hidden" id="items_data" name="items_data" value="[]">
-                        
-                        <hr class="my-4">
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Create Order</button>
-                        </div>
-                    </form>
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Additional notes or special instructions"></textarea>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Item Template (hidden) -->
-<template id="itemTemplate">
-    <div class="card mb-3 order-item" data-item-index="__INDEX__">
-        <div class="card-header d-flex justify-content-between align-items-center bg-light">
-            <h6 class="mb-0">Item #<span class="item-number">__INDEX__</span></h6>
-            <button type="button" class="btn btn-sm btn-danger remove-item-btn">
-                <i class="fas fa-trash"></i>
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Order Items</h5>
+                <button type="button" id="addItemBtn" class="btn btn-sm btn-light">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="itemsContainer">
+                    <!-- Items will be added here dynamically -->
+                </div>
+                
+                <div class="alert alert-info" id="emptyItemsMessage">
+                    <i class="fas fa-info-circle me-2"></i> Click the "Add Item" button to add products to this order.
+                </div>
+                
+                <div class="text-end mt-3">
+                    <button type="button" id="calculateTotalBtn" class="btn btn-outline-primary">
+                        <i class="fas fa-calculator me-1"></i> Calculate Total
+                    </button>
+                    <span class="ms-3 fw-bold" id="orderTotal">Total: €0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i> Create Order
             </button>
         </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label required">Plant</label>
-                        <select class="form-select product-select">
-                            <option value="">Select plant or enter manually</option>
+
+        <!-- Hidden field to store items data as JSON -->
+        <input type="hidden" id="items_data" name="items_data" value="[]">
+    </form>
+</div>
+
+<!-- Item template (hidden) -->
+<template id="itemTemplate">
+    <div class="item-row mb-3" data-index="INDEX">
+        <div class="d-flex justify-content-between mb-2">
+            <h6 class="mb-0">Item #INDEX</h6>
+            <span class="remove-item" onclick="removeItem(INDEX)"><i class="fas fa-times"></i></span>
+        </div>
+        <div class="row">
+            <div class="col-md-8 col-lg-4 mb-2">
+                <div class="form-group">
+                    <label class="form-label">Plant <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select class="form-control product-select" onchange="productSelected(this, INDEX)">
+                            <option value="">-- Select or Type Plant Name --</option>
                             {% for product in products %}
                             <option value="{{ product.id }}">{{ product.name }}{% if product.pot %} ({{ product.pot }}){% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label required">Plant Name</label>
-                        <input type="text" class="form-control plant-name" placeholder="Enter plant name" required>
-                    </div>
+            </div>
+            <div class="col-md-4 col-lg-2 mb-2">
+                <div class="form-group">
+                    <label class="form-label">Size/Pot</label>
+                    <input type="text" class="form-control size-input" placeholder="Size">
                 </div>
             </div>
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Size/Pot</label>
-                        <input type="text" class="form-control size" placeholder="e.g. 17cm">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label required">Quantity</label>
-                        <input type="number" class="form-control quantity" value="1" min="1" required>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label required">Price</label>
-                        <div class="input-group">
-                            <span class="input-group-text">€</span>
-                            <input type="number" class="form-control price" step="0.01" required>
-                        </div>
-                    </div>
+            <div class="col-md-4 col-lg-2 mb-2">
+                <div class="form-group">
+                    <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control quantity-input" value="1" min="1" onchange="updateItemTotal(INDEX)">
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Notes</label>
-                <input type="text" class="form-control item-notes" placeholder="Any special notes for this item">
+            <div class="col-md-4 col-lg-2 mb-2">
+                <div class="form-group">
+                    <label class="form-label">Price <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control price-input" value="0.00" min="0" step="0.01" onchange="updateItemTotal(INDEX)">
+                    <div class="price-info"></div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-2 mb-2">
+                <div class="form-group">
+                    <label class="form-label">Total</label>
+                    <input type="text" class="form-control item-total" value="€0.00" readonly>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control item-notes" rows="1" placeholder="Item notes"></textarea>
+                </div>
             </div>
         </div>
     </div>
 </template>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const itemsContainer = document.getElementById('itemsContainer');
-        const itemTemplate = document.getElementById('itemTemplate');
-        const addItemBtn = document.getElementById('addItemBtn');
-        const itemsDataInput = document.getElementById('items_data');
-        const itemCountDisplay = document.getElementById('itemCount');
-        const customerSelect = document.getElementById('customer_id');
+    // Global variables
+    let itemCounter = 0;
+    let items = [];
+    
+    // Initialize when document is ready
+    $(document).ready(function() {
+        // Add first item automatically
+        addItem();
         
-        let itemCount = 0;
-        
-        // Function to add a new item
-        function addItem() {
-            itemCount++;
-            
-            // Clone the template
-            const newItem = document.importNode(itemTemplate.content, true);
-            
-            // Update index placeholders
-            newItem.querySelector('.order-item').dataset.itemIndex = itemCount;
-            newItem.querySelector('.item-number').textContent = itemCount;
-            
-            // Add event listeners
-            const itemElement = newItem.querySelector('.order-item');
-            
-            // Handle remove button
-            itemElement.querySelector('.remove-item-btn').addEventListener('click', function() {
-                itemElement.remove();
-                updateItemsData();
-                updateItemCount();
-            });
-            
-            // Handle product selection
-            const productSelect = itemElement.querySelector('.product-select');
-            const plantNameInput = itemElement.querySelector('.plant-name');
-            const sizeInput = itemElement.querySelector('.size');
-            const priceInput = itemElement.querySelector('.price');
-            
-            productSelect.addEventListener('change', function() {
-                const productId = this.value;
-                
-                if (productId) {
-                    // Get product info from the server
-                    const customerId = customerSelect.value;
-                    fetch(`{{ url_for('orders.get_product_info', product_id=0) }}`.replace('0', productId) + 
-                          (customerId ? `?customer_id=${customerId}` : ''))
-                        .then(response => response.json())
-                        .then(data => {
-                            plantNameInput.value = data.name;
-                            sizeInput.value = data.pot || '';
-                            
-                            // Set price if available from price list, otherwise leave empty
-                            if (data.price) {
-                                priceInput.value = data.price;
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching product info:', error);
-                        });
-                } else {
-                    // Clear fields if "Select or enter manually" is chosen
-                    plantNameInput.value = '';
-                    sizeInput.value = '';
-                    // Don't clear price to keep any manually entered value
-                }
-            });
-            
-            // Add input change listeners to update data
-            itemElement.querySelectorAll('input, select').forEach(input => {
-                input.addEventListener('change', updateItemsData);
-            });
-            
-            // Append the new item
-            itemsContainer.appendChild(newItem);
-            updateItemCount();
-            updateItemsData();
-            
-            return itemElement;
-        }
-        
-        // Function to collect all item data and update the hidden input
-        function updateItemsData() {
-            const items = [];
-            
-            document.querySelectorAll('.order-item').forEach(itemElement => {
-                const item = {
-                    product_id: itemElement.querySelector('.product-select').value || null,
-                    plant_name: itemElement.querySelector('.plant-name').value,
-                    size: itemElement.querySelector('.size').value,
-                    quantity: parseInt(itemElement.querySelector('.quantity').value, 10) || 1,
-                    price: parseFloat(itemElement.querySelector('.price').value) || 0,
-                    notes: itemElement.querySelector('.item-notes').value
-                };
-                
-                items.push(item);
-            });
-            
-            itemsDataInput.value = JSON.stringify(items);
-        }
-        
-        // Update the displayed item count
-        function updateItemCount() {
-            const count = document.querySelectorAll('.order-item').length;
-            itemCountDisplay.textContent = count;
-        }
-        
-        // Add an item button click handler
-        addItemBtn.addEventListener('click', addItem);
-        
-        // Form submission validation
-        document.getElementById('orderForm').addEventListener('submit', function(e) {
-            const items = JSON.parse(itemsDataInput.value);
-            if (items.length === 0) {
-                e.preventDefault();
-                alert('Please add at least one item to the order.');
-                return false;
-            }
-            
-            // Validate all items have required fields
-            let valid = true;
-            items.forEach((item, index) => {
-                if (!item.plant_name || item.price <= 0) {
-                    valid = false;
-                    alert(`Item #${index + 1} is missing required fields. Please ensure all items have a plant name and price.`);
-                }
-            });
-            
-            if (!valid) {
-                e.preventDefault();
-                return false;
-            }
+        // Add item button click
+        $('#addItemBtn').click(function() {
+            addItem();
         });
         
-        // Add at least one item by default
-        addItem();
+        // Calculate total button click
+        $('#calculateTotalBtn').click(function() {
+            calculateOrderTotal();
+        });
+        
+        // Form submission
+        $('#orderForm').submit(function(e) {
+            // Validate form
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Compile items data
+            compileItemsData();
+            
+            // Continue with form submission
+            return true;
+        });
+        
+        // Initialize select2 for customer dropdown if available
+        if ($.fn.select2) {
+            $('#customer_id').select2({
+                placeholder: "Select a customer",
+                allowClear: true
+            });
+            
+            // Initialize product selects if select2 is available
+            initializeProductSelects();
+        }
     });
+    
+    // Add a new item row
+    function addItem() {
+        itemCounter++;
+        
+        // Clone template
+        const template = document.getElementById('itemTemplate');
+        const clone = template.content.cloneNode(true);
+        
+        // Update index
+        $(clone).find('.item-row').attr('data-index', itemCounter);
+        $(clone).find('h6').text('Item #' + itemCounter);
+        
+        // Replace INDEX placeholders
+        let html = $(clone).html();
+        html = html.replace(/INDEX/g, itemCounter);
+        
+        // Add to container
+        $('#itemsContainer').append(html);
+        
+        // Hide empty message
+        $('#emptyItemsMessage').hide();
+        
+        // Initialize product select if select2 is available
+        if ($.fn.select2) {
+            initializeProductSelect(itemCounter);
+        }
+        
+        // Update items array
+        items.push({
+            index: itemCounter,
+            product_id: null,
+            plant_name: '',
+            size: '',
+            quantity: 1,
+            price: 0,
+            notes: ''
+        });
+        
+        return itemCounter;
+    }
+    
+    // Remove an item row
+    function removeItem(index) {
+        $('.item-row[data-index="' + index + '"]').remove();
+        
+        // Update items array
+        items = items.filter(item => item.index != index);
+        
+        // Show empty message if no items
+        if (items.length === 0) {
+            $('#emptyItemsMessage').show();
+        }
+        
+        // Update order total
+        calculateOrderTotal();
+    }
+    
+    // Initialize select2 for product dropdowns
+    function initializeProductSelects() {
+        $('.product-select').each(function() {
+            const index = $(this).closest('.item-row').data('index');
+            initializeProductSelect(index);
+        });
+    }
+    
+    function initializeProductSelect(index) {
+        $('.item-row[data-index="' + index + '"] .product-select').select2({
+            placeholder: "Select or type plant name",
+            allowClear: true,
+            tags: true,
+            createTag: function(params) {
+                return {
+                    id: null,
+                    text: params.term,
+                    newTag: true
+                };
+            }
+        });
+    }
+    
+    // Handle product selection
+    function productSelected(selectElement, index) {
+        const $row = $('.item-row[data-index="' + index + '"]');
+        const productId = $(selectElement).val();
+        const customerId = $('#customer_id').val();
+        
+        // If a new tag (custom entry), use the text as plant name
+        let plantName = '';
+        if (!productId) {
+            plantName = $(selectElement).find("option:selected").text();
+            $row.find('.price-info').text('New plant added');
+            $row.find('.price-info').removeClass('price-updated');
+        } else {
+            // If an existing product, fetch customer-specific price
+            if (customerId) {
+                // Get price from API
+                fetch(`/orders/api/product_info/${productId}?customer_id=${customerId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Fill in size if available
+                        if (data.pot) {
+                            $row.find('.size-input').val(data.pot);
+                        }
+                        
+                        // Fill in price if available
+                        if (data.price !== null) {
+                            $row.find('.price-input').val(data.price.toFixed(2));
+                            $row.find('.price-info').html('Price from customer\'s price list');
+                            $row.find('.price-info').addClass('price-updated');
+                        } else {
+                            $row.find('.price-info').text('No price in customer\'s list - will be added');
+                            $row.find('.price-info').removeClass('price-updated');
+                        }
+                        
+                        // Update item total
+                        updateItemTotal(index);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching product info:', error);
+                    });
+            } else {
+                $row.find('.price-info').text('Select a customer to see pricing');
+                $row.find('.price-info').removeClass('price-updated');
+            }
+        }
+        
+        // Update items array
+        const itemIndex = items.findIndex(item => item.index === parseInt(index));
+        if (itemIndex !== -1) {
+            items[itemIndex].product_id = productId;
+            items[itemIndex].plant_name = plantName || $(selectElement).find("option:selected").text();
+        }
+        
+        // Update item total
+        updateItemTotal(index);
+    }
+    
+    // Update the total for a single item
+    function updateItemTotal(index) {
+        const $row = $('.item-row[data-index="' + index + '"]');
+        const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
+        const price = parseFloat($row.find('.price-input').val()) || 0;
+        const total = quantity * price;
+        
+        // Update displayed total
+        $row.find('.item-total').val('€' + total.toFixed(2));
+        
+        // Update items array
+        const itemIndex = items.findIndex(item => item.index === parseInt(index));
+        if (itemIndex !== -1) {
+            items[itemIndex].quantity = quantity;
+            items[itemIndex].price = price;
+            items[itemIndex].size = $row.find('.size-input').val();
+            items[itemIndex].notes = $row.find('.item-notes').val();
+        }
+        
+        // Update order total
+        calculateOrderTotal();
+    }
+    
+    // Calculate the total for the entire order
+    function calculateOrderTotal() {
+        let total = 0;
+        
+        items.forEach(item => {
+            total += item.quantity * item.price;
+        });
+        
+        // Update displayed total
+        $('#orderTotal').text('Total: €' + total.toFixed(2));
+    }
+    
+    // Compile items data for form submission
+    function compileItemsData() {
+        const itemsData = items.map(item => {
+            const $row = $('.item-row[data-index="' + item.index + '"]');
+            return {
+                product_id: $row.find('.product-select').val() || null,
+                plant_name: $row.find('.product-select option:selected').text(),
+                size: $row.find('.size-input').val(),
+                quantity: parseFloat($row.find('.quantity-input').val()) || 0,
+                price: parseFloat($row.find('.price-input').val()) || 0,
+                notes: $row.find('.item-notes').val()
+            };
+        }).filter(item => item.plant_name && item.plant_name !== '-- Select or Type Plant Name --');
+        
+        // Set hidden field value
+        $('#items_data').val(JSON.stringify(itemsData));
+    }
+    
+    // Validate the form before submission
+    function validateForm() {
+        let isValid = true;
+        
+        // Check customer is selected
+        if (!$('#customer_id').val()) {
+            alert('Please select a customer');
+            isValid = false;
+        }
+        
+        // Make sure there's at least one valid item
+        compileItemsData();
+        const itemsData = JSON.parse($('#items_data').val());
+        
+        if (itemsData.length === 0) {
+            alert('Please add at least one item to the order');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
 </script>
 {% endblock %}

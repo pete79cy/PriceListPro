@@ -1,184 +1,254 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}Orders Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <h1 class="mb-4">Daily Orders Dashboard</h1>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Orders Dashboard</h1>
+        <div>
+            <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Order
+            </a>
+            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> All Orders
+            </a>
+            <a href="{{ url_for('orders.calendar') }}" class="btn btn-info">
+                <i class="fas fa-calendar-alt"></i> Calendar
+            </a>
+            <a href="{{ url_for('orders.delivery_notes') }}" class="btn btn-success">
+                <i class="fas fa-truck"></i> Delivery Notes
+            </a>
+        </div>
+    </div>
 
-    <!-- Stats Cards Row -->
+    <!-- Stats cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary h-100">
-                <div class="card-body">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-light h-100">
+                <div class="card-body text-center">
                     <h5 class="card-title">Total Orders</h5>
-                    <h1 class="display-4">{{ total_orders }}</h1>
+                    <p class="card-text display-4">{{ total_orders }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white" style="background-color: #FF9800;">
-                <div class="card-body">
+        <div class="col-md-3 mb-3">
+            <div class="card h-100" style="background-color: #FFF3E0;">
+                <div class="card-body text-center">
                     <h5 class="card-title">New Orders</h5>
-                    <h1 class="display-4">{{ new_orders }}</h1>
+                    <p class="card-text display-4" style="color: #FF9800;">{{ new_orders }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info h-100">
-                <div class="card-body">
+        <div class="col-md-3 mb-3">
+            <div class="card h-100" style="background-color: #E3F2FD;">
+                <div class="card-body text-center">
                     <h5 class="card-title">Preparing</h5>
-                    <h1 class="display-4">{{ preparing_orders }}</h1>
+                    <p class="card-text display-4" style="color: #2196F3;">{{ preparing_orders }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success h-100">
-                <div class="card-body">
+        <div class="col-md-3 mb-3">
+            <div class="card h-100" style="background-color: #E8F5E9;">
+                <div class="card-body text-center">
                     <h5 class="card-title">Ready for Delivery</h5>
-                    <h1 class="display-4">{{ ready_orders }}</h1>
+                    <p class="card-text display-4" style="color: #4CAF50;">{{ ready_orders }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <!-- Quick Actions Buttons -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-plus-circle me-2"></i> New Order
-                        </a>
-                        <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary btn-lg">
-                            <i class="fas fa-list me-2"></i> View All Orders
-                        </a>
-                        <a href="{{ url_for('orders.delivery_notes') }}" class="btn btn-success btn-lg">
-                            <i class="fas fa-file-export me-2"></i> Generate Delivery Notes
-                        </a>
-                        <a href="{{ url_for('orders.calendar') }}" class="btn btn-info btn-lg">
-                            <i class="fas fa-calendar-alt me-2"></i> Calendar View
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Orders Due Today -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">Due Today ({{ orders_due_today|length }})</h5>
-                </div>
-                <div class="card-body">
-                    {% if orders_due_today %}
-                    <div class="list-group">
-                        {% for order in orders_due_today %}
-                        <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1">{{ order.order_number }}</h5>
-                                <small class="text-white badge bg-{{ 'warning' if order.status == 'NEW' else 'info' if order.status == 'PREPARING' else 'success' }}">
-                                    {{ order.get_status_label() }}
-                                </small>
-                            </div>
-                            <p class="mb-1">{{ order.customer.name }}</p>
-                            <small>{{ order.items|length }} items</small>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> No orders due today
-                    </div>
-                    {% endif %}
-                    
-                    {% if orders_due_tomorrow %}
-                    <div class="mt-3">
-                        <h6 class="border-bottom pb-2">Due Tomorrow ({{ orders_due_tomorrow|length }})</h6>
-                        <div class="list-group">
-                            {% for order in orders_due_tomorrow %}
-                            <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">{{ order.order_number }}</h5>
-                                    <small class="text-white badge bg-{{ 'warning' if order.status == 'NEW' else 'info' if order.status == 'PREPARING' else 'success' }}">
-                                        {{ order.get_status_label() }}
-                                    </small>
-                                </div>
-                                <p class="mb-1">{{ order.customer.name }}</p>
-                                <small>{{ order.items|length }} items</small>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="card-footer">
-                    <a href="{{ url_for('orders.delivery_notes') }}" class="btn btn-sm btn-outline-warning">
-                        <i class="fas fa-file-export me-1"></i> Generate Delivery Notes for Today
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Orders -->
+    <!-- Orders due today -->
     <div class="card mb-4">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">Recent Orders</h5>
+        <div class="card-header bg-warning text-white">
+            <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i> Due Today</h5>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Order #</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Delivery Date</th>
-                            <th>Status</th>
-                            <th>Items</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in recent_orders %}
-                        <tr>
-                            <td>{{ order.order_number }}</td>
-                            <td>{{ order.customer.name }}</td>
-                            <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else 'Not set' }}</td>
-                            <td>
-                                <span class="badge" style="background-color: {{ order.get_status_color() }}">
-                                    {{ order.get_status_label() }}
-                                </span>
-                            </td>
-                            <td>{{ order.items|length }}</td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-info">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{{ url_for('orders.generate_delivery_note', order_id=order.id) }}" class="btn btn-success">
-                                        <i class="fas fa-file-export"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            {% if orders_due_today %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Items</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders_due_today %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.name }}</td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ order.get_status_color() }};">
+                                        {{ order.get_status_label() }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                                <td>{{ order.items|length }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('orders.generate_delivery_note', order_id=order.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No orders due for delivery today.
+                </div>
+            {% endif %}
         </div>
-        <div class="card-footer">
-            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-primary">View All Orders</a>
+    </div>
+
+    <!-- Orders due tomorrow -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i> Due Tomorrow</h5>
+        </div>
+        <div class="card-body">
+            {% if orders_due_tomorrow %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Items</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders_due_tomorrow %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.name }}</td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ order.get_status_color() }};">
+                                        {{ order.get_status_label() }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                                <td>{{ order.items|length }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('orders.generate_delivery_note', order_id=order.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No orders due for delivery tomorrow.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent orders -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i> Recent Orders</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Delivery Date</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.name }}</td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ order.get_status_color() }};">
+                                        {{ order.get_status_label() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if order.delivery_date %}
+                                        {{ order.delivery_date.strftime('%d-%m-%Y') }}
+                                    {% else %}
+                                        <span class="text-muted">Not set</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ order.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('orders.generate_delivery_note', order_id=order.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> No recent orders.
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Highlight rows on mouseover
+        $('.table tbody tr').hover(
+            function() {
+                $(this).addClass('table-active');
+            },
+            function() {
+                $(this).removeClass('table-active');
+            }
+        );
+    });
+</script>
 {% endblock %}

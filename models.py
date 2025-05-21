@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta
-from enum import Enum
+from enum import Enum, auto
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
