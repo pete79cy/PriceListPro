@@ -283,6 +283,26 @@
 <script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the form element
+    const form = document.getElementById('quotationForm');
+    
+    // Add click event to submit button as a fallback method
+    const submitButton = document.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.addEventListener('click', function(event) {
+            // Prevent the default action
+            event.preventDefault();
+            
+            console.log('Submit button clicked - forcing direct form submission');
+            
+            // Directly submit the form using standard HTML form submission
+            form.submit();
+        });
+    }
+});
+
+<script>
     // Calculate row and total values when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         calculateSummary();
