@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
+from enum import Enum
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -195,6 +196,37 @@ class QuotationStatus:
         CREATED: [SENT, DRAFT]
     }
     
+class OrderStatus:
+    """Enum-like class for order statuses"""
+    NEW = 'NEW'
+    PREPARING = 'PREPARING'
+    READY = 'READY'
+    DELIVERED = 'DELIVERED'
+    
+    # Status display names for UI
+    LABELS = {
+        NEW: 'New',
+        PREPARING: 'Preparing',
+        READY: 'Ready',
+        DELIVERED: 'Delivered'
+    }
+    
+    # Status colors for UI
+    COLORS = {
+        NEW: '#FF9800',  # Orange
+        PREPARING: '#2196F3',  # Blue
+        READY: '#4CAF50',  # Green
+        DELIVERED: '#8BC34A',  # Light Green
+    }
+    
+    # Valid status transitions
+    TRANSITIONS = {
+        NEW: [PREPARING],
+        PREPARING: [READY, NEW],
+        READY: [DELIVERED, PREPARING],
+        DELIVERED: [NEW]  # Allow reopening completed orders if needed
+    }
+    
 class Quotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
@@ -327,6 +359,94 @@ class SupplierProduct(db.Model):
     
     def __repr__(self):
         return f'<SupplierProduct {self.product_name} from {self.supplier.name if self.supplier else "Unknown"}>'
+        
+class Order(db.Model):
+    """Model for daily plant orders with mobile-friendly input"""
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    order_number = db.Column(db.String(50), unique=True, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default=OrderStatus.NEW)
+    delivery_date = db.Column(db.Date, nullable=True)  # Requested delivery date
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    customer = db.relationship('Customer', backref='orders', lazy=True)
+    items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<Order {self.order_number}>'
+        
+    def get_status_label(self):
+        """Get the human-readable status label"""
+        return OrderStatus.LABELS.get(self.status, self.status)
+        
+    def get_status_color(self):
+        """Get the color code for the status"""
+        return OrderStatus.COLORS.get(self.status, '#000000')
+        
+    def can_transition_to(self, target_status):
+        """Check if the order can transition to the target status"""
+        return target_status in OrderStatus.TRANSITIONS.get(self.status, [])
+        
+    def transition_to(self, target_status):
+        """
+        Transition the order to a new status if allowed
+        Returns True if transition was successful, False otherwise
+        """
+        if not self.can_transition_to(target_status):
+            return False
+            
+        self.status = target_status
+        self.updated_at = datetime.utcnow()
+        return True
+    
+    def is_due_today(self):
+        """Check if the order is due for delivery today"""
+        if not self.delivery_date:
+            return False
+        return self.delivery_date == date.today()
+    
+    def is_due_tomorrow(self):
+        """Check if the order is due for delivery tomorrow"""
+        if not self.delivery_date:
+            return False
+        return self.delivery_date == date.today() + timedelta(days=1)
+    
+    def is_due_this_week(self):
+        """Check if the order is due within the next 7 days"""
+        if not self.delivery_date:
+            return False
+        today = date.today()
+        next_week = today + timedelta(days=7)
+        return today <= self.delivery_date <= next_week
+        
+class OrderItem(db.Model):
+    """Model for individual items within an order"""
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    price_list_id = db.Column(db.Integer, db.ForeignKey('price_list.id'), nullable=True)
+    plant_name = db.Column(db.String(200), nullable=False)
+    size = db.Column(db.String(50), nullable=True)  # Size/pot size
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    price = db.Column(db.Float, nullable=False)
+    updated_price_list = db.Column(db.Boolean, default=False)  # Flag if this order updated the price list
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    product = db.relationship('Product', backref='order_items', lazy=True)
+    price_list = db.relationship('PriceList', backref='order_items', lazy=True)
+    
+    def __repr__(self):
+        return f'<OrderItem {self.plant_name} x {self.quantity}>'
+        
+    def get_total(self):
+        """Calculate the total price for this item"""
+        return self.quantity * self.price
 
 class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
