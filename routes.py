@@ -295,19 +295,16 @@ def register_routes(app):
             
             # Get quotation statistics by status for analytics
             try:
-                # Count quotations by status
-                quotation_status_counts = db.session.query(
-                    QuotationStatus.status, 
-                    db.func.count(QuotationStatus.id)
-                ).join(Quotation).group_by(QuotationStatus.status).all()
-                
-                # Create a dictionary of status counts
+                # Query all statuses and counts directly from the database
+                # Instead of using QuotationStatus class
                 status_counts = {}
-                for status, count in quotation_status_counts:
-                    # Convert status to lowercase for template variable compatibility
-                    status_key = f"quotation_{status.lower()}" if status else "quotation_unknown"
+                
+                # Get count for each status type
+                for status_type in ['DRAFT', 'SENT', 'ACCEPTED', 'COMPLETED', 'created']:
+                    count = Quotation.query.filter_by(status=status_type).count()
+                    status_key = f"quotation_{status_type.lower()}"
                     status_counts[status_key] = count
-                    
+                
                 # Update stats with quotation status counts
                 stats.update(status_counts)
                 
