@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}New Order{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col">
+            <h1 class="mb-4">Create New Order</h1>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form id="orderForm" method="post" action="{{ url_for('orders.new_order') }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="customer_id" class="form-label required">Customer</label>
+                                    <select class="form-select" id="customer_id" name="customer_id" required>
+                                        <option value="">Select a customer</option>
+                                        {% for customer in customers %}
+                                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="delivery_date" class="form-label">Requested Delivery Date</label>
+                                    <input type="date" class="form-control" id="delivery_date" name="delivery_date" value="{{ today }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h5 class="mb-3">Order Items</h5>
+                        
+                        <div id="itemsContainer">
+                            <!-- Item template will be cloned here -->
+                        </div>
+                        
+                        <div class="d-flex justify-content-between my-3">
+                            <button type="button" id="addItemBtn" class="btn btn-success">
+                                <i class="fas fa-plus-circle me-1"></i> Add Item
+                            </button>
+                            <div>
+                                <strong>Total Items: <span id="itemCount">0</span></strong>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="items_data" name="items_data" value="[]">
+                        
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Item Template (hidden) -->
+<template id="itemTemplate">
+    <div class="card mb-3 order-item" data-item-index="__INDEX__">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <h6 class="mb-0">Item #<span class="item-number">__INDEX__</span></h6>
+            <button type="button" class="btn btn-sm btn-danger remove-item-btn">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label required">Plant</label>
+                        <select class="form-select product-select">
+                            <option value="">Select plant or enter manually</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.name }}{% if product.pot %} ({{ product.pot }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label required">Plant Name</label>
+                        <input type="text" class="form-control plant-name" placeholder="Enter plant name" required>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Size/Pot</label>
+                        <input type="text" class="form-control size" placeholder="e.g. 17cm">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label required">Quantity</label>
+                        <input type="number" class="form-control quantity" value="1" min="1" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label required">Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number" class="form-control price" step="0.01" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <input type="text" class="form-control item-notes" placeholder="Any special notes for this item">
+            </div>
+        </div>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const itemsContainer = document.getElementById('itemsContainer');
+        const itemTemplate = document.getElementById('itemTemplate');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const itemsDataInput = document.getElementById('items_data');
+        const itemCountDisplay = document.getElementById('itemCount');
+        const customerSelect = document.getElementById('customer_id');
+        
+        let itemCount = 0;
+        
+        // Function to add a new item
+        function addItem() {
+            itemCount++;
+            
+            // Clone the template
+            const newItem = document.importNode(itemTemplate.content, true);
+            
+            // Update index placeholders
+            newItem.querySelector('.order-item').dataset.itemIndex = itemCount;
+            newItem.querySelector('.item-number').textContent = itemCount;
+            
+            // Add event listeners
+            const itemElement = newItem.querySelector('.order-item');
+            
+            // Handle remove button
+            itemElement.querySelector('.remove-item-btn').addEventListener('click', function() {
+                itemElement.remove();
+                updateItemsData();
+                updateItemCount();
+            });
+            
+            // Handle product selection
+            const productSelect = itemElement.querySelector('.product-select');
+            const plantNameInput = itemElement.querySelector('.plant-name');
+            const sizeInput = itemElement.querySelector('.size');
+            const priceInput = itemElement.querySelector('.price');
+            
+            productSelect.addEventListener('change', function() {
+                const productId = this.value;
+                
+                if (productId) {
+                    // Get product info from the server
+                    const customerId = customerSelect.value;
+                    fetch(`{{ url_for('orders.get_product_info', product_id=0) }}`.replace('0', productId) + 
+                          (customerId ? `?customer_id=${customerId}` : ''))
+                        .then(response => response.json())
+                        .then(data => {
+                            plantNameInput.value = data.name;
+                            sizeInput.value = data.pot || '';
+                            
+                            // Set price if available from price list, otherwise leave empty
+                            if (data.price) {
+                                priceInput.value = data.price;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching product info:', error);
+                        });
+                } else {
+                    // Clear fields if "Select or enter manually" is chosen
+                    plantNameInput.value = '';
+                    sizeInput.value = '';
+                    // Don't clear price to keep any manually entered value
+                }
+            });
+            
+            // Add input change listeners to update data
+            itemElement.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateItemsData);
+            });
+            
+            // Append the new item
+            itemsContainer.appendChild(newItem);
+            updateItemCount();
+            updateItemsData();
+            
+            return itemElement;
+        }
+        
+        // Function to collect all item data and update the hidden input
+        function updateItemsData() {
+            const items = [];
+            
+            document.querySelectorAll('.order-item').forEach(itemElement => {
+                const item = {
+                    product_id: itemElement.querySelector('.product-select').value || null,
+                    plant_name: itemElement.querySelector('.plant-name').value,
+                    size: itemElement.querySelector('.size').value,
+                    quantity: parseInt(itemElement.querySelector('.quantity').value, 10) || 1,
+                    price: parseFloat(itemElement.querySelector('.price').value) || 0,
+                    notes: itemElement.querySelector('.item-notes').value
+                };
+                
+                items.push(item);
+            });
+            
+            itemsDataInput.value = JSON.stringify(items);
+        }
+        
+        // Update the displayed item count
+        function updateItemCount() {
+            const count = document.querySelectorAll('.order-item').length;
+            itemCountDisplay.textContent = count;
+        }
+        
+        // Add an item button click handler
+        addItemBtn.addEventListener('click', addItem);
+        
+        // Form submission validation
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            const items = JSON.parse(itemsDataInput.value);
+            if (items.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one item to the order.');
+                return false;
+            }
+            
+            // Validate all items have required fields
+            let valid = true;
+            items.forEach((item, index) => {
+                if (!item.plant_name || item.price <= 0) {
+                    valid = false;
+                    alert(`Item #${index + 1} is missing required fields. Please ensure all items have a plant name and price.`);
+                }
+            });
+            
+            if (!valid) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Add at least one item by default
+        addItem();
+    });
+</script>
+{% endblock %}
