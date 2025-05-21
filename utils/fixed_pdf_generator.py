@@ -1,16 +1,12 @@
 """
-Fixed PDF generator that resolves all known issues with quotation PDF rendering.
-This module addresses:
-1. Missing items (especially #10, #14) in PDF output
-2. HTML entity encoding in headers
-3. Layout and spacing issues
-4. VAT calculation display for multiple rates
+Fixed PDF generator that properly handles multiple VAT rates.
+This module specifically addresses the issue with VAT calculation display in quotations
+that have items with different VAT rates (like 19% and 5%).
 """
 
 import os
 import uuid
 import logging
-from html import unescape
 from datetime import datetime
 from flask import render_template
 from weasyprint import HTML, CSS
@@ -22,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=True, debug=False):
     """
-    Fixed version of quotation PDF generator that resolves all known issues.
+    Fixed version of quotation PDF generator that resolves VAT calculation display issues.
     
     Args:
         quotation: The Quotation object
@@ -35,12 +31,12 @@ def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=T
     """
     try:
         # Calculate VAT based on rates
-        vat_dict = {}  # Dictionary to track VAT by rate
+        vat_dict = {}
         subtotal = 0
         
         # Count items to verify data
         item_count = len(quotation.items) if quotation.items else 0
-        logger.info(f"Generating fixed PDF for quotation {quotation.quotation_number} with {item_count} items")
+        logger.info(f"Generating fixed VAT PDF for quotation {quotation.quotation_number} with {item_count} items")
         
         # Create a sorted list of items by position to ensure proper ordering
         sorted_items = list(quotation.items)
@@ -53,7 +49,7 @@ def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=T
                             f"Position={getattr(item, 'position', 'unknown')}, "
                             f"Description={getattr(item, 'description', 'unknown')[:30]}")
         
-        # Calculate financial totals
+        # Calculate financial totals for each item
         for item in sorted_items:
             item_subtotal = item.quantity * item.selling_price
             subtotal += item_subtotal
@@ -67,9 +63,9 @@ def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=T
             else:
                 vat_dict[vat_rate] = vat_amount
         
-        # Convert to list for template and sort by rate for consistent display
+        # Convert to sorted list for template to ensure consistent order
         vat_list = [{'rate': rate, 'label': f'VAT {rate}%', 'amount': amount} 
-                   for rate, amount in sorted(vat_dict.items())]
+                    for rate, amount in sorted(vat_dict.items())]
         
         # Calculate grand total
         grand_total = subtotal + sum(item['amount'] for item in vat_list)
@@ -85,12 +81,8 @@ def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=T
         # Set the orientation based on company settings
         orientation = company.pdf_orientation  # 'portrait' or 'landscape'
         
-        # Clean any HTML entities in the company name to prevent &amp; issues
-        if company.name:
-            company.name = unescape(company.name)
-        
-        # Use our fixed template to avoid HTML entity issues
-        template_name = 'pdf/modern_quotation_template_fixed.html'
+        # Use modern template
+        template_name = 'pdf/modern_quotation_template.html'
         
         # Generate HTML content from the template
         html_content = render_template(
@@ -99,14 +91,13 @@ def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=T
             customer=quotation.customer,
             items=sorted_items,  # Use our explicitly sorted items
             subtotal=subtotal,
-            vat_list=vat_list,
+            vat_list=vat_list,  # This is now sorted by VAT rate
             grand_total=grand_total,
             currency=quotation.currency,
             date_generated=datetime.now().strftime('%Y-%m-%d %H:%M'),
             company=company,
             logo_data=logo_data,
-            orientation=orientation,
-            debug=debug  # Pass debug flag
+            orientation=orientation
         )
         
         # Save the HTML for inspection if in debug mode
@@ -117,95 +108,50 @@ def generate_fixed_quotation_pdf(quotation, upload_folder, use_modern_template=T
             logger.info(f"Debug HTML saved to: {debug_html_path}")
         
         # Generate a unique filename
-        prefix = "debug_" if debug else ""
-        template_type = f"{prefix}fixed_" if use_modern_template else f"{prefix}"
-        filename = f"{template_type}quotation_{quotation.quotation_number}_{uuid.uuid4().hex[:8]}.pdf"
+        prefix = "vat_fixed_"
+        filename = f"{prefix}quotation_{quotation.quotation_number}_{uuid.uuid4().hex[:8]}.pdf"
         output_path = os.path.join(upload_folder, filename)
         
-        # Define enhanced CSS to fix pagination and layout issues
+        # Define enhanced CSS to fix VAT display and other layout issues
         css_string = """
         @page { 
             margin: 1.5cm;
-            @top-center {
-                content: normal; /* Override template values to fix entity issues */
-            }
         }
-        
-        /* Critical fixes for table layout and pagination */
         table { 
-            width: 100% !important;
-            table-layout: fixed !important;
-            page-break-inside: auto !important;
-            border-collapse: collapse !important;
+            page-break-inside: auto;
+            box-sizing: border-box;
         }
-        
-        /* Header and footer handling */
-        thead { display: table-header-group !important; }
-        tfoot { display: table-footer-group !important; }
-        
-        /* Force row display and prevent page breaks */
+        thead { 
+            display: table-header-group;
+        }
         tr { 
-            page-break-inside: avoid !important; 
-            break-inside: avoid !important;
-            visibility: visible !important;
-            display: table-row !important;
-            height: auto !important;
-        }
-        
-        /* Cell handling for better text wrapping */
-        td, th { 
-            word-break: break-word !important;
-            overflow-wrap: break-word !important;
-            overflow: visible !important;
-            height: auto !important;
-        }
-        
-        /* Ensure the summary section stays together */
-        .summary-block { 
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
-        
-        /* Terms and conditions should not break across pages */
-        .terms { 
+        .summary-block {
             page-break-inside: avoid !important;
-            break-inside: avoid !important;
+        }
+        .summary-block .label {
+            font-weight: 600;
+            text-align: left;
+            color: #2c3e50;
+        }
+        .summary-block .amount {
+            font-weight: 600;
+            text-align: right;
+            color: #2c3e50;
         }
         """
         
-        # Add debugging styles if needed
-        if debug:
-            css_string += """
-            /* Debug borders and colors */
-            table { border: 3px solid blue !important; }
-            tr { border: 2px solid red !important; }
-            td, th { border: 1px solid green !important; }
-            
-            /* Highlight problematic rows */
-            tr.item-row.item-10,
-            tr.item-row.item-14 {
-                background-color: yellow !important;
-                border: 3px solid red !important;
-            }
-            """
-        
-        # Generate PDF with our enhanced CSS
+        # Generate PDF with enhanced CSS
         HTML(string=html_content).write_pdf(
-            output_path,
+            output_path, 
             stylesheets=[CSS(string=css_string)]
         )
         
-        # Validation: Log that all items were included
-        expected_item_count = len(quotation.items)
-        logger.info(f"PDF validation: Expected {expected_item_count} items, processed {len(sorted_items)} items")
-        if expected_item_count != len(sorted_items):
-            logger.warning(f"Item count mismatch! Expected {expected_item_count} but processed {len(sorted_items)}")
-        
-        logger.info(f"Fixed PDF successfully generated: {output_path}")
+        logger.info(f"Fixed VAT quotation PDF generated: {output_path}")
         return output_path
-        
+    
     except Exception as e:
-        logger.error(f"Error generating fixed quotation PDF: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"Error generating fixed VAT quotation PDF: {str(e)}")
         raise
