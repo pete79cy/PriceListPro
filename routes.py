@@ -22,7 +22,6 @@ from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_re
 from utils.enhanced_pdf_generator import generate_enhanced_pdf
 from utils.feedback_collector import get_feedback_collector
 from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_openai_for_resolution, flag_duplicate_products
-from utils.fixed_pdf_generator import generate_fixed_quotation_pdf
 
 # Helper function to get recent activities 
 def get_recent_activities(limit=5):
@@ -2253,78 +2252,9 @@ def register_routes(app):
             flash(f"Error generating modern PDF: {str(e)}", 'danger')
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
-    @app.route('/quotation/<int:quotation_id>/export/fixed_vat')
+    @app.route('/quotation/<int:quotation_id>/export/fixed')
     @login_required
-    def export_quotation_fixed_vat(quotation_id):
-        """Export a quotation as PDF with fixed VAT calculation display"""
-        quotation = Quotation.query.get_or_404(quotation_id)
-        
-        try:
-            # Generate the PDF using the fixed generator
-            pdf_path = generate_fixed_quotation_pdf(quotation, app.config['UPLOAD_FOLDER'], use_modern_template=True)
-            
-            # Send the file to the client
-            return send_from_directory(
-                directory=app.config['UPLOAD_FOLDER'],
-                path=os.path.basename(pdf_path),
-                as_attachment=True,
-                download_name=f"Fixed_Quotation_{quotation.quotation_number}.pdf"
-            )
-            
-        except Exception as e:
-            logger.error(f"Error exporting quotation with fixed template: {str(e)}")
-            logger.error(traceback.format_exc())
-            flash(f"Error generating fixed PDF: {str(e)}", 'danger')
-            return redirect(url_for('view_quotation', quotation_id=quotation_id))
-            
-    @app.route('/quotation/<int:quotation_id>/vat_analysis')
-    @login_required
-    def view_quotation_vat(quotation_id):
-        """View VAT calculation details for a quotation"""
-        quotation = Quotation.query.get_or_404(quotation_id)
-        
-        # Calculate VAT based on rates
-        vat_dict = {}
-        subtotal = 0
-        
-        for item in quotation.items:
-            item_subtotal = item.quantity * item.selling_price
-            subtotal += item_subtotal
-            
-            # Track VAT amounts by rate
-            vat_rate = item.vat_rate
-            vat_amount = item_subtotal * (vat_rate / 100)
-            
-            if vat_rate in vat_dict:
-                vat_dict[vat_rate] += vat_amount
-            else:
-                vat_dict[vat_rate] = vat_amount
-        
-        # Convert to list for template and sort by rate
-        vat_list = [{'rate': rate, 'label': f'VAT {rate}%', 'amount': amount} 
-                    for rate, amount in sorted(vat_dict.items())]
-        
-        # Calculate grand total
-        grand_total = subtotal + sum(item['amount'] for item in vat_list)
-        
-        # Get items grouped by VAT rate
-        items_by_rate = {}
-        for item in quotation.items:
-            rate = item.vat_rate
-            if rate not in items_by_rate:
-                items_by_rate[rate] = []
-            items_by_rate[rate].append(item)
-        
-        return render_template('vat_analysis.html',
-                              quotation=quotation,
-                              subtotal=subtotal,
-                              vat_list=vat_list,
-                              grand_total=grand_total,
-                              items_by_rate=items_by_rate)
-    
-    @app.route('/quotation/<int:quotation_id>/export/fixed_items')
-    @login_required
-    def export_quotation_fixed_items(quotation_id):
+    def export_quotation_fixed(quotation_id):
         """Export a quotation as PDF using the enhanced generator to fix missing items"""
         quotation = Quotation.query.get_or_404(quotation_id)
         
