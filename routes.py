@@ -1932,8 +1932,18 @@ def register_routes(app):
             # Get the newly created quotation object for redirect
             quotation = Quotation.query.get(quotation_id)
             
-            flash('Emergency quotation PAK-2025-029 created successfully!', 'success')
-            return redirect(url_for('view_quotation', quotation_id=quotation.id))
+            if request.is_xhr or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # For AJAX requests, respond with JSON
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Emergency quotation PAK-2025-029 created successfully!',
+                    'quotation_id': quotation.id,
+                    'redirect_url': url_for('view_quotation', quotation_id=quotation.id)
+                })
+            else:
+                # For direct browser access, use redirect
+                flash('Emergency quotation PAK-2025-029 created successfully!', 'success')
+                return redirect(url_for('view_quotation', quotation_id=quotation.id))
             
         try:
             # Get basic quotation data
