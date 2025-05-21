@@ -448,6 +448,28 @@ class Order(db.Model):
             return target_enum in ORDER_STATUS_TRANSITIONS.get(current_status_enum, [])
         except ValueError:
             return False
+    
+    @property
+    def subtotal(self):
+        """Calculate the subtotal for the order (sum of all items)"""
+        return sum(item.quantity * item.price for item in self.items) if self.items else 0.0
+    
+    @property
+    def total_items(self):
+        """Get the total number of items in this order"""
+        return sum(item.quantity for item in self.items) if self.items else 0
+    
+    @property
+    def vat_amount(self):
+        """Calculate VAT amount (for delivery notes that include VAT)"""
+        # Default VAT rate - this could be configurable
+        vat_rate = 0.24  # 24% VAT
+        return self.subtotal * vat_rate
+    
+    @property
+    def total(self):
+        """Calculate the total with VAT for the order"""
+        return self.subtotal + self.vat_amount
         
     def transition_to(self, target_status):
         """
