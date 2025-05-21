@@ -18,7 +18,7 @@ from utils.invoice_excel_parser import parse_invoice_excel, update_price_list_fr
 from utils.product_management import approve_price_update, reject_price_update
 from utils.quotation_parser import parse_quotation_file
 from utils.db_utils import with_db_reconnect, test_db_connection
-from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf
+from utils.pdf_generator import generate_quotation_pdf, generate_supplier_pdf_report, generate_supplier_products_pdf, generate_supplier_catalog_pdf, generate_delivery_note_pdf
 from utils.enhanced_pdf_generator import generate_enhanced_pdf
 from utils.feedback_collector import get_feedback_collector
 from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_openai_for_resolution, flag_duplicate_products
