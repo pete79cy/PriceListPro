@@ -86,10 +86,16 @@ def index():
     
     # Get today's delivery orders
     today = date.today()
-    today_deliveries = Order.query.filter(
-        Order.delivery_date == today,
-        Order.status.in_([OrderStatusEnum.NEW.value, OrderStatusEnum.PREPARING.value, OrderStatusEnum.READY.value])
-    ).all()
+    # Using separate filters for each status to avoid SQLAlchemy in_ operator issues
+    new_orders = Order.query.filter(Order.delivery_date == today, 
+                               Order.status == OrderStatusEnum.NEW.value).all()
+    preparing_orders = Order.query.filter(Order.delivery_date == today, 
+                                     Order.status == OrderStatusEnum.PREPARING.value).all()
+    ready_orders = Order.query.filter(Order.delivery_date == today, 
+                                 Order.status == OrderStatusEnum.READY.value).all()
+    
+    # Combine the separate query results
+    today_deliveries = new_orders + preparing_orders + ready_orders
     
     # Count orders by status
     status_counts = {
