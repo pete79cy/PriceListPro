@@ -1,0 +1,17 @@
+/* Dropdown fix CSS */
+
+/* Ensure table dropdowns appear above other elements */
+.dropdown-menu {
+    z-index: 9999 !important;
+    position: absolute !important;
+}
+
+/* Optionally enable this if dropdown menus still get cut off */
+.table-responsive {
+    overflow: visible !important;
+}
+
+/* Ensure proper dropdown positioning */
+.dropdown {
+    position: relative;
+}
