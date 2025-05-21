@@ -110,7 +110,9 @@
 </head>
 <body>
     <div class="header">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Company Logo" class="logo">
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Company Logo" class="logo">
+        <h2>Andreas Pakkoutis Nurseries</h2>
+        <p>Επαγγελματικά Φυτώρια – Μεσογειακά & Τροπικά Φυτά</p>
         <h1>{{ translations.delivery_note }}</h1>
     </div>
     
@@ -143,8 +145,6 @@
                 <th>{{ translations.description }}</th>
                 <th>{{ translations.quantity }}</th>
                 <th>{{ translations.unit }}</th>
-                <th>{{ translations.price }}</th>
-                <th>{{ translations.total }}</th>
             </tr>
         </thead>
         <tbody>
@@ -155,27 +155,12 @@
                 <td>{{ item.product.name }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.product.unit }}</td>
-                <td>€{{ "%.2f"|format(item.price) }}</td>
-                <td>€{{ "%.2f"|format(item.price * item.quantity) }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     
-    <div class="total-section">
-        <div class="total-row">
-            <span class="total-label">{{ translations.subtotal }}:</span>
-            <span>€{{ "%.2f"|format(order.subtotal) }}</span>
-        </div>
-        <div class="total-row">
-            <span class="total-label">{{ translations.vat }} ({{ order.vat_rate }}%):</span>
-            <span>€{{ "%.2f"|format(order.vat_amount) }}</span>
-        </div>
-        <div class="total-row grand-total">
-            <span class="total-label">{{ translations.grand_total }}:</span>
-            <span>€{{ "%.2f"|format(order.total) }}</span>
-        </div>
-    </div>
+    <!-- Price information removed from delivery note -->
     
     {% if order.notes %}
     <div class="notes-section">
