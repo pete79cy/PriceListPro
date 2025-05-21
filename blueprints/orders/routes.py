@@ -308,30 +308,6 @@ def remove_item(order_id, item_id):
 
 @orders.route('/<int:order_id>/delivery_note')
 @login_required
-
-@orders.route('/<int:order_id>/preview_delivery_note')
-@login_required
-def preview_delivery_note(order_id):
-    """Preview the delivery note HTML before generating PDF"""
-    order = Order.query.get_or_404(order_id)
-    
-    # Get requested language (default to English)
-    language = request.args.get('lang', 'en')
-    
-    # Only allow certain languages
-    if language not in ['en', 'el', 'ar']:
-        language = 'en'
-    
-    # Get translations for the preview
-    translations = get_translations(language)
-    
-    # Render the HTML template directly
-    return render_template('pdfs/delivery_note.html',
-                         order=order,
-                         translations=translations,
-                         language=language,
-                         date=datetime.now().strftime('%Y-%m-%d'))
-
 def print_delivery_note(order_id):
     """Generate and display a PDF delivery note"""
     order = Order.query.get_or_404(order_id)
