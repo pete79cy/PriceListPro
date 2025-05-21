@@ -424,7 +424,7 @@ class Order(db.Model):
         """Get the human-readable status label"""
         # Convert string status to enum for lookup
         try:
-            status_enum = OrderStatus(self.status)
+            status_enum = OrderStatusEnum(self.status)
             return ORDER_STATUS_LABELS.get(status_enum, self.status)
         except ValueError:
             return self.status
@@ -432,7 +432,7 @@ class Order(db.Model):
     def get_status_color(self):
         """Get the color code for the status"""
         try:
-            status_enum = OrderStatus(self.status)
+            status_enum = OrderStatusEnum(self.status)
             return ORDER_STATUS_COLORS.get(status_enum, '#000000')
         except ValueError:
             return '#000000'
