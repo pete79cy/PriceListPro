@@ -237,94 +237,36 @@ class QuotationStatus:
         CREATED: [SENT, DRAFT]
     }
     
-from enum import Enum
+# The OrderStatusEnum is defined at the top of the file
 
-class OrderStatusEnum(Enum):
-    """Enum for order statuses"""
-    NEW = 'new'
-    PREPARING = 'preparing'
-    READY = 'ready'
-    DELIVERED = 'delivered'
-    CANCELLED = 'cancelled'
-
-# Order status display names for UI
+# For convenience, we define UI constants for order status display
 ORDER_STATUS_LABELS = {
-    'new': 'New',
-    'preparing': 'Preparing',
-    'ready': 'Ready',
-    'delivered': 'Delivered',
-    'cancelled': 'Cancelled'
+    OrderStatusEnum.NEW.value: 'New',
+    OrderStatusEnum.PREPARING.value: 'Preparing',
+    OrderStatusEnum.READY.value: 'Ready',
+    OrderStatusEnum.DELIVERED.value: 'Delivered',
+    OrderStatusEnum.CANCELLED.value: 'Cancelled'
 }
 
 # Order status colors for UI
 ORDER_STATUS_COLORS = {
-    'new': '#FF9800',  # Orange
-    'preparing': '#2196F3',  # Blue
-    'ready': '#4CAF50',  # Green
-    'delivered': '#8BC34A',  # Light Green
-    'cancelled': '#F44336'  # Red
+    OrderStatusEnum.NEW.value: '#FF9800',  # Orange
+    OrderStatusEnum.PREPARING.value: '#2196F3',  # Blue
+    OrderStatusEnum.READY.value: '#4CAF50',  # Green
+    OrderStatusEnum.DELIVERED.value: '#8BC34A',  # Light Green
+    OrderStatusEnum.CANCELLED.value: '#F44336'  # Red
 }
 
 # Valid order status transitions
 ORDER_STATUS_TRANSITIONS = {
-    'new': ['preparing', 'cancelled'],
-    'preparing': ['ready', 'new', 'cancelled'],
-    'ready': ['delivered', 'preparing', 'cancelled'],
-    'delivered': ['new', 'cancelled'],
-    'cancelled': ['new']
+    OrderStatusEnum.NEW.value: [OrderStatusEnum.PREPARING.value, OrderStatusEnum.CANCELLED.value],
+    OrderStatusEnum.PREPARING.value: [OrderStatusEnum.READY.value, OrderStatusEnum.NEW.value, OrderStatusEnum.CANCELLED.value],
+    OrderStatusEnum.READY.value: [OrderStatusEnum.DELIVERED.value, OrderStatusEnum.PREPARING.value, OrderStatusEnum.CANCELLED.value],
+    OrderStatusEnum.DELIVERED.value: [OrderStatusEnum.NEW.value, OrderStatusEnum.CANCELLED.value],
+    OrderStatusEnum.CANCELLED.value: [OrderStatusEnum.NEW.value]
 }
 
-class Order(db.Model):
-    """Daily orders model"""
-    id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(20), unique=True, nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    status = db.Column(db.String(20), nullable=False, default='new')
-    notes = db.Column(db.Text)
-    delivery_date = db.Column(db.Date)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    customer = db.relationship('Customer', backref=db.backref('orders', lazy=True))
-    items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
-    
-    def __repr__(self):
-        return f'<Order {self.order_number}>'
-    
-    def get_status_display(self):
-        """Get the display name for the current status"""
-        return ORDER_STATUS_LABELS.get(self.status, self.status)
-    
-    def get_status_color(self):
-        """Get the color code for the current status"""
-        return ORDER_STATUS_COLORS.get(self.status, '#6c757d')  # Default gray
-    
-    def get_subtotal(self):
-        """Calculate the subtotal of all items"""
-        return sum(item.price * item.quantity for item in self.items)
-
-class OrderItem(db.Model):
-    """Items in a daily order"""
-    id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
-    plant_name = db.Column(db.String(100), nullable=False)
-    size = db.Column(db.String(50))
-    quantity = db.Column(db.Integer, nullable=False, default=1)
-    price = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    product = db.relationship('Product', backref=db.backref('order_items', lazy=True))
-    
-    def __repr__(self):
-        return f'<OrderItem {self.plant_name}>'
-    
-    def get_total(self):
-        """Calculate the total for this item"""
-        return self.price * self.quantity
+# The Order class is defined later in the file
     
 class Quotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
