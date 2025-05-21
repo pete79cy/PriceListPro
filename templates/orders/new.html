@@ -3,52 +3,51 @@
 {% block title %}New Order{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>New Order</h1>
-                <a href="{{ url_for('orders.index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Orders
-                </a>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Order Information</h5>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">New Order</h1>
+            <p class="text-muted">Create a new customer order</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('orders.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Order Information</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ url_for('orders.new_order') }}" method="post">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
-                                <select class="form-select" id="customer_id" name="customer_id" required>
-                                    <option value="" selected disabled>Select a customer...</option>
-                                    {% for customer in customers %}
-                                        <option value="{{ customer.id }}">{{ customer.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="delivery_date" class="form-label">Requested Delivery Date</label>
-                                <input type="date" class="form-control" id="delivery_date" name="delivery_date">
-                                <small class="text-muted">Optional - leave blank if no specific date</small>
-                            </div>
+                    <form method="POST" action="{{ url_for('orders.new_order') }}">
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
+                            <select name="customer_id" id="customer_id" class="form-select" required>
+                                <option value="">Select a customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="delivery_date" class="form-label">Delivery Date</label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date">
+                            <small class="text-muted">Optional - Leave blank if delivery date is not yet confirmed</small>
                         </div>
                         
                         <div class="mb-3">
                             <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Enter any additional details or instructions..."></textarea>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any special instructions or notes about this order..."></textarea>
                         </div>
                         
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> After creating the order, you'll be able to add items.
-                        </div>
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-save"></i> Create Order
-                            </button>
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('orders.index') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Order</button>
                         </div>
                     </form>
                 </div>
@@ -56,23 +55,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-$(document).ready(function() {
-    // Set today as the default date
-    var today = new Date().toISOString().substring(0, 10);
-    $('#delivery_date').val(today);
-    
-    // Select2 for customer dropdown (if available)
-    if ($.fn.select2) {
-        $('#customer_id').select2({
-            placeholder: "Select a customer",
-            allowClear: true,
-            theme: "bootstrap-5"
-        });
-    }
-});
-</script>
 {% endblock %}
