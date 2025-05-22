@@ -1,0 +1,25 @@
+/* 
+ * Modal fix for jumping/resizing issues
+ * This prevents modals from jumping when content changes height
+ */
+
+.modal-content {
+    max-height: 90vh;     /* 90% of viewport height */
+    overflow: hidden;
+}
+
+.modal-body {
+    max-height: 60vh;     /* 60% of viewport height */
+    overflow-y: auto;
+}
+
+/* Additional styling for smooth modal experience */
+.modal {
+    padding-right: 0 !important;
+}
+
+/* Prevent content shift when modal opens/closes */
+body.modal-open {
+    overflow: hidden;
+    padding-right: 0 !important;
+}
