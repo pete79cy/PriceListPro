@@ -181,6 +181,14 @@
                                                                 </div>
                                                             </div>
                                                             
+                                                            <div class="mb-3">
+                                                                <label for="item{{ item.id }}_vat_rate" class="form-label">VAT Rate</label>
+                                                                <select class="form-select" id="item{{ item.id }}_vat_rate" name="vat_rate">
+                                                                    <option value="19.0" {% if item.vat_rate == 19.0 %}selected{% endif %}>19%</option>
+                                                                    <option value="5.0" {% if item.vat_rate == 5.0 %}selected{% endif %}>5%</option>
+                                                                </select>
+                                                            </div>
+                                                            
                                                             <div class="form-check">
                                                                 <input class="form-check-input" type="checkbox" id="item{{ item.id }}_update_price" name="update_price_list" checked>
                                                                 <label class="form-check-label" for="item{{ item.id }}_update_price">
@@ -242,6 +250,42 @@
                                         {% endfor %}
                                         {{ "%.2f"|format(subtotal.value) }}
                                     </th>
+                                    <th></th>
+                                </tr>
+                                
+                                {# Calculate VAT amounts by rate #}
+                                {% set vat_5 = namespace(value=0) %}
+                                {% set vat_19 = namespace(value=0) %}
+                                {% for item in order.items %}
+                                    {% if item.vat_rate == 5.0 %}
+                                        {% set vat_5.value = vat_5.value + ((item.price * item.quantity) * 0.05) %}
+                                    {% elif item.vat_rate == 19.0 %}
+                                        {% set vat_19.value = vat_19.value + ((item.price * item.quantity) * 0.19) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {# Display VAT 5% if any items have this rate #}
+                                {% if vat_5.value > 0 %}
+                                <tr>
+                                    <th colspan="3" class="text-end">VAT 5%:</th>
+                                    <th class="text-end">{{ "%.2f"|format(vat_5.value) }}</th>
+                                    <th></th>
+                                </tr>
+                                {% endif %}
+                                
+                                {# Display VAT 19% if any items have this rate #}
+                                {% if vat_19.value > 0 %}
+                                <tr>
+                                    <th colspan="3" class="text-end">VAT 19%:</th>
+                                    <th class="text-end">{{ "%.2f"|format(vat_19.value) }}</th>
+                                    <th></th>
+                                </tr>
+                                {% endif %}
+                                
+                                {# Total including VAT #}
+                                <tr class="table-secondary">
+                                    <th colspan="3" class="text-end">Total:</th>
+                                    <th class="text-end">{{ "%.2f"|format(subtotal.value + vat_5.value + vat_19.value) }}</th>
                                     <th></th>
                                 </tr>
                             </tfoot>
@@ -314,6 +358,14 @@
                         <label for="unit_price" class="form-label">Unit Price</label>
                         <input type="number" class="form-control" id="unit_price" name="unit_price" min="0" step="0.01" placeholder="Will use customer's price list if empty">
                         <small class="text-muted">Leave empty to use the customer's current price list</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="vat_rate" class="form-label">VAT Rate</label>
+                        <select class="form-select" id="vat_rate" name="vat_rate">
+                            <option value="19.0" selected>19%</option>
+                            <option value="5.0">5%</option>
+                        </select>
                     </div>
                     
                     <div class="form-check">
