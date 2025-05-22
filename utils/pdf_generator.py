@@ -71,7 +71,7 @@ def generate_charge_sheet_pdf(order):
     total = subtotal + sum(item['amount'] for item in vat_breakdown)
     
     # Render the HTML template with order details
-    html = render_template('pdfs/charge_sheet.html',
+    html = render_template('pdfs/charge_sheet_new.html',
                           order=order,
                           subtotal=subtotal,
                           vat_breakdown=vat_breakdown,
