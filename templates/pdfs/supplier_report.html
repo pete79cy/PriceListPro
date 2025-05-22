@@ -63,10 +63,10 @@
                 {% for item in items %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ item.description|default('') }}</td>
-                    <td class="text-right">{{ item.quantity|default(1) }}</td>
-                    <td class="text-right">{{ "%.2f"|format(item.cost_price|default(0)) }}</td>
-                    <td class="text-right">{{ "%.2f"|format(item.cost_price|default(0) * item.quantity|default(1)) }}</td>
+                    <td>{{ item.description | default('') }}</td>
+                    <td class="text-right">{{ item.quantity | default(1) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.cost_price | default(0)) }}</td>
+                    <td class="text-right">{{ "%.2f"|format((item.cost_price | default(0)) * (item.quantity | default(1))) }}</td>
                 </tr>
                 {% endfor %}
             {% else %}
@@ -75,6 +75,22 @@
                 </tr>
             {% endif %}
         </tbody>
+        <tfoot>
+            {% if items %}
+            <tr>
+                <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                <td colspan="2" class="text-right">
+                    {% set total = 0 %}
+                    {% for item in items %}
+                        {% set item_cost = item.cost_price | default(0) %}
+                        {% set item_qty = item.quantity | default(1) %}
+                        {% set total = total + (item_cost * item_qty) %}
+                    {% endfor %}
+                    {{ "%.2f"|format(total) }}
+                </td>
+            </tr>
+            {% endif %}
+        </tfoot>
     </table>
     
     <div>
