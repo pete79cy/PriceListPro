@@ -129,13 +129,12 @@
         <div class="logo-icon"></div>
         <div class="logo">Andreas Pakkoutis & Sons Ltd</div>
       </div>
+      <div class="tagline">Wholesale Ornamental Plants</div>
     </div>
     <div class="metadata">
-      <div><span class="metadata-label">Order No.</span>: <span class="metadata-value">{{ order.order_number }}</span></div>
-      <div><span class="metadata-label">Issue Date</span>: <span class="metadata-value">{{ order.created_at.strftime('%d/%m/%Y') }}</span></div>
-      {% if order.delivery_date %}
-      <div><span class="metadata-label">Delivery Date</span>: <span class="metadata-value">{{ order.delivery_date.strftime('%d/%m/%Y') }}</span></div>
-      {% endif %}
+      <div><span class="metadata-label">Order No.</span>: <span class="metadata-value">ORD-2025-005</span></div>
+      <div><span class="metadata-label">Issue Date</span>: <span class="metadata-value">22/05/2025</span></div>
+      <div><span class="metadata-label">Delivery Date</span>: <span class="metadata-value">24/05/2025</span></div>
       <div style="margin-top: 5px; font-size: 6pt;">
         Tel: +357 99564330, +357 99684759 · <a href="mailto:panayiotis@pakkoutis.com">panayiotis@pakkoutis.com</a>
       </div>
@@ -147,11 +146,11 @@
   <div class="info-block">
     <div class="info-item">
       <div class="label">Customer / Πελάτης</div>
-      <div class="value">{% if order.customer %}{{ order.customer.name }}{% else %}{{ order.customer_name }}{% endif %}</div>
+      <div class="value">Γιάννης Μάστρου</div>
     </div>
     <div class="info-item">
       <div class="label">Order Ref</div>
-      <div class="value">{{ order.order_number }}</div>
+      <div class="value">ORD-2025-005</div>
     </div>
   </div>
 
@@ -165,26 +164,25 @@
       </tr>
     </thead>
     <tbody>
-      {% for item in order.items %}
       <tr>
-        <td>
-          {{ item.plant_name }}{% if item.size %} ({{ item.size }}){% endif %}<br>
-          {% if item.scientific_name %}<em>{{ item.scientific_name }}</em>{% endif %}
-        </td>
-        <td class="right-align">{{ item.quantity }}</td>
-        <td class="right-align">€{{ "%.2f"|format(item.price) }}</td>
-        <td class="right-align">€{{ "%.2f"|format(item.get_total()) }}</td>
+        <td>Στρελίτσια Nicolai (10L)<br><em>Strelitzia nicolai</em></td>
+        <td class="right-align">10</td>
+        <td class="right-align">€10.00</td>
+        <td class="right-align">€100.00</td>
       </tr>
-      {% endfor %}
+      <tr>
+        <td>Ευγενία Etna Fire (5L)<br><em>Etna Fire</em></td>
+        <td class="right-align">5</td>
+        <td class="right-align">€26.00</td>
+        <td class="right-align">€130.00</td>
+      </tr>
     </tbody>
   </table>
 
   <div class="totals">
-    <div><span>Subtotal</span><span>€{{ "%.2f"|format(subtotal) }}</span></div>
-    {% for vat_info in vat_breakdown %}
-    <div><span>VAT {{ "%.0f"|format(vat_info.rate) }}%</span><span>€{{ "%.2f"|format(vat_info.amount) }}</span></div>
-    {% endfor %}
-    <div class="total"><span>TOTAL</span><span>€{{ "%.2f"|format(total) }}</span></div>
+    <div><span>Subtotal</span><span>€230.00</span></div>
+    <div><span>VAT 19%</span><span>€43.70</span></div>
+    <div class="total"><span>TOTAL</span><span>€273.70</span></div>
   </div>
 
   <footer>
