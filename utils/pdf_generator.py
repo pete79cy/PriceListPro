@@ -1,5 +1,5 @@
 """
-PDF Generator for delivery notes and other documents
+PDF Generator for delivery notes, charge sheets and other documents
 Uses WeasyPrint to generate PDFs from HTML templates
 """
 import os
@@ -29,6 +29,53 @@ def generate_delivery_note_pdf(order, language='en'):
                           order=order,
                           translations=translations,
                           language=language,
+                          date=datetime.now().strftime('%Y-%m-%d'))
+    
+    # Generate PDF using WeasyPrint
+    pdf = HTML(string=html).write_pdf()
+    return pdf
+
+def generate_charge_sheet_pdf(order):
+    """
+    Generate a PDF initial charge sheet for an order
+    
+    Args:
+        order: The order object to generate the charge sheet for
+        
+    Returns:
+        bytes: The PDF file as bytes
+    """
+    # Calculate financial totals for the template
+    subtotal = 0
+    vat_dict = {}
+    
+    # Calculate subtotal and VAT by rate
+    for item in order.items:
+        item_total = item.get_total()
+        subtotal += item_total
+        
+        # Track VAT amounts by rate
+        vat_rate = item.vat_rate
+        vat_amount = item_total * (vat_rate / 100)
+        
+        if vat_rate in vat_dict:
+            vat_dict[vat_rate] += vat_amount
+        else:
+            vat_dict[vat_rate] = vat_amount
+    
+    # Convert to list for template sorting
+    vat_breakdown = [{'rate': rate, 'amount': amount} for rate, amount in vat_dict.items()]
+    vat_breakdown.sort(key=lambda x: x['rate'])
+    
+    # Calculate grand total
+    total = subtotal + sum(item['amount'] for item in vat_breakdown)
+    
+    # Render the HTML template with order details
+    html = render_template('pdfs/charge_sheet.html',
+                          order=order,
+                          subtotal=subtotal,
+                          vat_breakdown=vat_breakdown,
+                          total=total,
                           date=datetime.now().strftime('%Y-%m-%d'))
     
     # Generate PDF using WeasyPrint
