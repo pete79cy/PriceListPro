@@ -64,7 +64,7 @@
                 <tr>
                     <td>{{ loop.index }}</td>
                     <td>{{ item.description | default('') }}</td>
-                    <td class="text-right">{{ item.quantity | default(1) | int }}</td>
+                    <td class="text-right">{{ "%.0f"|format(item.quantity | default(1)) }}</td>
                     <td class="text-right">{{ "%.2f"|format(item.cost_price | default(0)) }}</td>
                     <td class="text-right">{{ "%.2f"|format((item.cost_price | default(0)) * (item.quantity | default(1))) }}</td>
                 </tr>
