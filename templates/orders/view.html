@@ -303,3 +303,69 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Product search functionality for the Add Item modal
+    const productSearch = document.getElementById('product_search');
+    const productSelect = document.getElementById('product_id');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    
+    if (productSearch && productSelect && clearSearchBtn) {
+        // Store all options for filtering
+        const allOptions = Array.from(productSelect.options).slice(1); // Skip the placeholder option
+        
+        // Function to filter products based on search input
+        function filterProducts(searchTerm) {
+            searchTerm = searchTerm.toLowerCase().trim();
+            
+            // Reset select to just the placeholder option
+            productSelect.innerHTML = '<option value="">Choose a product</option>';
+            
+            if (searchTerm === '') {
+                // If search is empty, show all options
+                allOptions.forEach(option => {
+                    productSelect.appendChild(option.cloneNode(true));
+                });
+                return;
+            }
+            
+            // Filter options based on search term
+            const filteredOptions = allOptions.filter(option => {
+                const optionText = option.textContent.toLowerCase();
+                return optionText.includes(searchTerm);
+            });
+            
+            // Add filtered options to select
+            filteredOptions.forEach(option => {
+                productSelect.appendChild(option.cloneNode(true));
+            });
+            
+            // Show message if no results
+            if (filteredOptions.length === 0) {
+                const noResults = document.createElement('option');
+                noResults.text = 'No products found matching your search';
+                noResults.disabled = true;
+                productSelect.appendChild(noResults);
+            } else if (filteredOptions.length === 1) {
+                // Auto-select if only one option is found
+                productSelect.selectedIndex = 1;
+            }
+        }
+        
+        // Add event listeners
+        productSearch.addEventListener('input', function() {
+            filterProducts(this.value);
+        });
+        
+        clearSearchBtn.addEventListener('click', function() {
+            productSearch.value = '';
+            filterProducts('');
+            productSearch.focus();
+        });
+    }
+});
+</script>
+{% endblock %}
