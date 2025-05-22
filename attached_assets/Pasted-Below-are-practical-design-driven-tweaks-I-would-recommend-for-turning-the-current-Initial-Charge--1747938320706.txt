@@ -1,0 +1,106 @@
+Below are practical, design-driven tweaks I would recommend for turning the current “Initial Charge Sheet” into a polished, brand-consistent document for **Andreas Pakkoutis & Sons Ltd**. I’ve grouped them from quick wins to deeper enhancements so you can tackle them in stages.&#x20;
+
+---
+
+### 1 · Brand & Header Area
+
+| Current                                                   | Suggested Upgrade                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generic “Initial Charge Sheet” title, no company identity | **Add a branded masthead**<br>• Company name set in a bold, modern sans-serif (e.g., **Montserrat ExtraBold 18 pt**) with a subtle botanical icon left of the text.<br>• Tagline or service descriptor beneath in smaller caps.<br>• Right-aligned block with Order No., Issue Date, & Delivery Date for easy scanning.<br>• Include primary contact details (phone, email, website) as 6 pt micro-text in the top-right margin; hyperlinks for the PDF version. |
+
+---
+
+### 2 · Typography & Readability
+
+* Pair fonts that support Greek and Latin characters out-of-the-box: **Noto Sans Greek** (body, 9–10 pt, 1.3 line-height) + **Montserrat** (headings, 13–14 pt).
+* Use true typographic hierarchy:
+
+  * H1: Document title (14 pt, bold, tracking +5).
+  * H2: Section labels like “Customer”, “Products” (11 pt, semibold, uppercase).
+  * Body: 9 pt regular.
+* Keep all numeric columns with tabular lining figures (OpenType “tnum”) so prices line up neatly.
+
+---
+
+### 3 · Layout & Grid
+
+* Establish a **12-column grid** with 8 mm gutters; snap every element to it.
+* Two-column header (Brand / Order info), single-column body, two-column footer (Notes / Totals).
+* Apply generous white space: at least **12 mm** margins and 6 mm padding inside any coloured box.
+
+---
+
+### 4 · Product Table
+
+| Issue                                          | Fix                                                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Description wraps inconsistently               | Consolidate into one cell:<br>**Plant name** (Bold)                                                                            |
+| Quantity, Unit Price, Total lack visual anchor | Right-align all numeric fields; add **thin divider lines** in 10% grey for every row.                                          |
+| Headers blend in                               | Use an accent background (10 % tint of brand green) and uppercase white text for “Plant / Product”, “Qty”, “Unit”, “Subtotal”. |
+| Row density                                    | Add 4 pt extra leading between rows; for >10 items alternate 5 % grey row shading for easier tracking.                         |
+
+*Show hierarchy within a product:*
+
+```
+Στρελίτσια Nicolai   (10 L)  
+```
+
+Greek common name (regular) · Latin cultivar (italic) · Size (smaller grey).
+
+---
+
+### 5 · Totals Block
+
+* Float a **right-justified summary panel** with a light tint background (#F4F8F4).
+* Separate Subtotal, VAT 19 % and **TOTAL** (bold 11 pt, accent color #1B7547).
+* Draw a skinny vertical rule to visually detach totals from the item list.
+
+---
+
+### 6 · Colour Palette (fresh, horticultural)
+
+| Swatch  | Usage                          |
+| ------- | ------------------------------ |
+| #1B7547 | Primary headings, total amount |
+| #4FA37F | Table header background        |
+| #F4F8F4 | Totals block background        |
+| #B0B0B0 | Divider lines, subtle icons    |
+
+Keep palette to 2 brand colours + neutral greys for a clean, modern feel.
+
+---
+
+### 7 · Micro-copy & Icons
+
+* Replace text labels (“Date”, “Delivery Date”) with **small outline icons** (calendar, truck) to improve at-a-glance comprehension.
+* Add a **payment terms** or “Thank you for your business” note in the footer; use muted grey 7 pt.
+* Display the VAT registration & company address for legal compliance (footer, 6 pt).
+
+---
+
+### 8 · Digital-first Details
+
+* Export to interactive PDF: enable clickable mailto: for [accounts@pakkoutis.com](mailto:accounts@pakkoutis.com); link your website.
+* Embed fonts so Greek characters render on any device.
+* Layer a 5 %-opacity watermark logo diagonally across the page for brand recognition without distraction.
+
+---
+
+### 9 · Advanced / Future Iterations
+
+* **Template system:** Build a locked-layout master in InDesign or Affinity Publisher; expose only the product table as an editable area for staff.
+* **Dynamic data-merge:** Connect to your order database (CSV / Excel) to auto-populate future charge sheets.
+* **Bilingual version:** Mirror-layout with English on the left, Greek on the right for international clients.
+* **Sustainability badge:** If eco-friendly, add a small “Plants locally sourced” emblem next to the logo.
+
+---
+
+### Quick Implementation Sequence
+
+1. Brand masthead + correct fonts.
+2. Grid & spacing tweaks.
+3. Table styling and totals panel.
+4. Footer legal / courtesy copy.
+5. Colour & iconography polish.
+
+Each step is incremental—finish any one and the document will already feel sharper and more professional, befitting **Andreas Pakkoutis & Sons Ltd**.
