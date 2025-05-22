@@ -2,16 +2,26 @@
 
 /* Ensure table dropdowns appear above other elements */
 .dropdown-menu {
-    z-index: 9999 !important;
+    z-index: 1050 !important;
     position: absolute !important;
 }
 
-/* Optionally enable this if dropdown menus still get cut off */
-.table-responsive {
-    overflow: visible !important;
+/* More targeted fix that won't affect modal dialogs */
+.table-responsive .dropdown {
+    position: static;
 }
 
-/* Ensure proper dropdown positioning */
-.dropdown {
+/* Fix for table overflow only when dropdown is opened */
+.table-responsive .dropdown.show {
+    overflow: visible !important;
     position: relative;
+}
+
+/* Fix for bootstrap modal dialogs */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal {
+    z-index: 1050 !important;
 }
