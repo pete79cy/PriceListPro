@@ -3,6 +3,7 @@ PDF Generator for delivery notes and other documents
 Uses WeasyPrint to generate PDFs from HTML templates
 """
 import os
+import base64
 from datetime import datetime
 from flask import render_template, current_app
 from weasyprint import HTML, CSS
@@ -112,3 +113,49 @@ def generate_supplier_catalog_pdf(supplier, categories=None):
                           categories=categories)
     pdf = HTML(string=html).write_pdf()
     return pdf
+
+def get_logo_data(company):
+    """
+    Get company logo data in base64 format for PDF documents
+    
+    Args:
+        company: The company settings object with logo_path
+        
+    Returns:
+        str: Base64 encoded logo data or empty string if no logo
+    """
+    if not company or not company.logo_path:
+        return ""
+        
+    try:
+        logo_path = company.logo_path
+        if logo_path and not os.path.isabs(logo_path):
+            # If relative path, make it absolute
+            static_folder = current_app.static_folder if current_app and hasattr(current_app, 'static_folder') else 'static'
+            logo_path = os.path.join(str(static_folder), str(logo_path))
+            
+        if logo_path and os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_data = f.read()
+            # Encode to base64 for inline HTML display
+            encoded_logo = base64.b64encode(logo_data).decode('utf-8')
+            # Determine MIME type based on file extension
+            extension = os.path.splitext(logo_path)[1].lower() if logo_path else '.png'
+            mime_type = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml'
+            }.get(extension, 'image/png')
+            # Return data URL
+            return f"data:{mime_type};base64,{encoded_logo}"
+    except Exception as e:
+        # Log the error but don't crash PDF generation because of a logo issue
+        if hasattr(current_app, 'logger'):
+            current_app.logger.error(f"Error loading company logo: {str(e)}")
+        else:
+            print(f"Error loading company logo: {str(e)}")
+    
+    # Return empty string if any issues occur
+    return ""

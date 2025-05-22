@@ -19,11 +19,56 @@ from utils.logger import logger
 def get_logo_data(company):
     """
     Helper function to get company logo data in base64 format.
-    Reuses the original implementation to maintain compatibility.
+    Implementation directly in this file to avoid circular imports.
     """
-    # Import the original function to maintain functionality
-    from utils.pdf_generator import get_logo_data as original_get_logo_data
-    return original_get_logo_data(company)
+    if not company or not hasattr(company, 'logo_path') or not company.logo_path:
+        return ""
+        
+    try:
+        import os
+        import base64
+        from flask import current_app
+        
+        logo_path = company.logo_path
+        
+        # Handle the path safely
+        if logo_path and not os.path.isabs(logo_path):
+            # If relative path, make it absolute
+            static_folder = 'static'
+            if current_app and hasattr(current_app, 'static_folder'):
+                static_folder = current_app.static_folder
+            
+            logo_path = os.path.join(str(static_folder), str(logo_path))
+        
+        # Check that the file exists
+        if logo_path and os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_data = f.read()
+                
+            # Encode to base64 for inline HTML display
+            encoded_logo = base64.b64encode(logo_data).decode('utf-8')
+            
+            # Determine MIME type based on file extension
+            extension = '.png'  # Default
+            if logo_path:
+                extension = os.path.splitext(logo_path)[1].lower() or '.png'
+                
+            mime_type = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml'
+            }.get(extension, 'image/png')
+            
+            # Return data URL
+            return f"data:{mime_type};base64,{encoded_logo}"
+    except Exception as e:
+        # If there's any error, log it but don't crash the PDF generation
+        logger.error(f"Error getting logo data: {str(e)}")
+    
+    # Return empty string if any issues occur
+    return ""
 
 def generate_enhanced_pdf(quotation, upload_folder, use_modern_template=False, debug=False):
     """
