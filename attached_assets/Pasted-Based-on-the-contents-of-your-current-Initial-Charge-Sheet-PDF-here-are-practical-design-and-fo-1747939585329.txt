@@ -1,0 +1,65 @@
+Based on the contents of your current **Initial Charge Sheet** PDF, here are practical design and formatting improvements to align it with your branding and the best practices you outlined earlier:
+
+---
+
+### 🔧 Structural & Design Improvements
+
+#### 1. **Header & Branding**
+
+* **Current:** The document title is duplicated and lacks visual hierarchy.
+* **Suggestion:** Use a branded masthead:
+
+  * **Logo icon** and company name on the left (Montserrat ExtraBold, 18pt).
+  * Tagline (“Wholesale Ornamental Plants”) beneath in smaller caps.
+  * **Right-aligned metadata** (Order No., Issue Date, Delivery Date) in a shaded box (#F4F8F4) with tiny icons for clarity.
+
+#### 2. **Typography**
+
+* **Current:** All text appears in default system fonts with minimal hierarchy.
+* **Suggestion:**
+
+  * Headings: Montserrat, 13–14pt.
+  * Body: Noto Sans Greek, 9–10pt with 1.3 line-height.
+  * Use OpenType tabular figures for price alignment.
+
+#### 3. **Product Table**
+
+* **Current:** Lacks visual anchors and alternation makes it harder to read.
+* **Suggestion:**
+
+  * Use accent header row (#4FA37F, white text, uppercase).
+  * Right-align all numeric fields.
+  * Add thin row dividers and alternate row background shading (5% grey).
+  * Combine plant name + size: `Στρελίτσια Nicolai (10L)` with Latin name in italic below.
+
+#### 4. **Totals Block**
+
+* **Current:** Totals are listed inline.
+* **Suggestion:**
+
+  * Float a totals block to the right, with:
+
+    * Light background (#F4F8F4)
+    * Subtotal, VAT, and Total split clearly.
+    * Highlight **TOTAL** in bold green (#1B7547).
+
+#### 5. **Footer & Legal**
+
+* **Current:** Footer includes location but is minimal.
+* **Suggestion:**
+
+  * Left: Company contact details (Griva Digeni 39, Avgorou 5510 · Tel · Email)
+  * Right: “Thank you for your business!” in italic
+  * Add page numbering and VAT registration clearly.
+
+#### 6. **Interactive Features**
+
+* **Export as interactive PDF:**
+
+  * Add mailto: link for `accounts@pakkoutis.com`.
+  * Embed fonts to ensure Greek characters display universally.
+  * Optional: Add semi-transparent watermark for brand recognition.
+
+---
+
+Would you like me to implement these changes in an updated HTML/PDF template?
