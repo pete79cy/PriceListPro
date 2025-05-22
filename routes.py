@@ -2369,8 +2369,9 @@ def register_routes(app):
         quotation = Quotation.query.get_or_404(quotation_id)
         
         try:
-            # Generate the PDF using modern template
-            pdf_path = generate_quotation_pdf(quotation, app.config['UPLOAD_FOLDER'], use_modern_template=True)
+            # Generate the PDF using enhanced generator for modern template
+            # Using the enhanced_pdf_generator which supports modern template
+            pdf_path = generate_enhanced_pdf(quotation, app.config['UPLOAD_FOLDER'], use_modern_template=True)
             
             # Update the quotation with the PDF path (we're not updating to avoid overwriting standard PDF path)
             # quotation.file_path = os.path.basename(pdf_path)
