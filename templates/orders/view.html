@@ -138,11 +138,6 @@
                                     <td class="text-end">{{ "%.2f"|format(item.price * item.quantity) }}</td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-secondary" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#editItemModal{{ item.id }}">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
                                             <button type="button" class="btn btn-outline-danger" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#deleteItemModal{{ item.id }}">
