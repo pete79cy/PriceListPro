@@ -1,0 +1,98 @@
+Thank you for the detailed feedback and screenshots. This kind of modal "jumping" or resizing is a classic frontend/Bootstrap issue—**especially when the modal’s height, focus, or scroll position changes as you interact with form elements**.
+
+---
+
+## **Why Does This Happen?**
+
+* The modal is **centered vertically** using Bootstrap's `modal-dialog-centered` class.
+* When the contents change height (for example, more fields appear, or the browser tries to scroll a focused field into view), Bootstrap recalculates and re-centers the modal, which looks like it’s "jumping."
+* If the modal’s content is taller than the viewport, Bootstrap or the browser will try to keep the focused input visible, resulting in the modal shifting up/down.
+
+---
+
+## **How to Fix (Robust Solution)**
+
+### 1. **Make the Modal Scrollable Internally**
+
+* **Do not let the whole page scroll!**
+* Set the modal body to `overflow-y: auto;` and restrict the maximum height.
+
+**Add this to your custom CSS:**
+
+```css
+.modal-content {
+    max-height: 90vh;     /* 90% of viewport height */
+    overflow: hidden;
+}
+.modal-body {
+    max-height: 60vh;     /* 60% of viewport height */
+    overflow-y: auto;
+}
+```
+
+### 2. **Remove `modal-dialog-centered`**
+
+* If the modal content is long, **do not use** `modal-dialog-centered`.
+* The modal will then always open near the top and won’t "jump" when height changes.
+
+**Change your modal HTML like this:**
+
+```html
+<div class="modal-dialog modal-lg">  <!-- remove modal-dialog-centered -->
+    <div class="modal-content">
+      <!-- ... -->
+    </div>
+</div>
+```
+
+### 3. **Prevent Auto-Focus Issues**
+
+* If you have `autofocus` on any input, try **removing it** to see if the problem is resolved. Sometimes, focusing a field causes the browser to scroll the page or modal.
+* Try setting focus only after the modal is fully shown, not during render.
+
+---
+
+## **Jinja2/HTML Template Example**
+
+```html
+<div class="modal fade" id="editItemModal{{ item.id }}" tabindex="-1" aria-labelledby="editItemModalLabel{{ item.id }}" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg"> <!-- remove modal-dialog-centered -->
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editItemModalLabel{{ item.id }}">Edit Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- FORM FIELDS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+**Then add the above CSS for `.modal-content` and `.modal-body`.**
+
+---
+
+## **Summary**
+
+* Remove `modal-dialog-centered`.
+* Restrict modal body height and enable internal scrolling.
+* Avoid autofocus on input fields.
+* If your modal content is dynamic (fields show/hide), always set a max height.
+
+---
+
+### **Try these steps:**
+
+1. **Remove** `modal-dialog-centered` from your modal.
+2. **Add** the custom CSS above.
+3. **Test again.**
+
+**If the problem persists, please share your current modal HTML template (the `edit item` modal section), and I’ll rewrite it directly for your scenario.**
+
+Would you like the exact code for your Jinja2 template with these changes?
