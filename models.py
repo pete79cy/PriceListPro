@@ -514,6 +514,7 @@ class OrderItem(db.Model):
     size = db.Column(db.String(50), nullable=True)  # Size/pot size
     quantity = db.Column(db.Integer, nullable=False, default=1)
     price = db.Column(db.Float, nullable=False)
+    vat_rate = db.Column(db.Float, nullable=False, default=19.0)  # Default VAT rate 19%
     updated_price_list = db.Column(db.Boolean, default=False)  # Flag if this order updated the price list
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -529,6 +530,10 @@ class OrderItem(db.Model):
     def get_total(self):
         """Calculate the total price for this item"""
         return self.quantity * self.price
+        
+    def get_vat_amount(self):
+        """Calculate the VAT amount for this item"""
+        return self.get_total() * (self.vat_rate / 100)
 
 class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
