@@ -82,7 +82,7 @@
     }
     
     .card {
-      background-color: #F4F8F4;
+      background-color: #F6F8F6;
       padding: 10px;
       margin: 15px 0;
       display: flex;
@@ -103,6 +103,7 @@
     
     .value {
       font-weight: bold;
+      font-size: 11pt;
     }
     
     .table {
@@ -125,6 +126,11 @@
       font-weight: 600;
       font-size: 9pt;
       text-transform: uppercase;
+      text-align: left;
+    }
+    
+    .table th.numeric {
+      text-align: right;
     }
     
     .table tr {
@@ -183,6 +189,12 @@
     
     .summary-table td {
       padding: 6px 4px;
+    }
+    
+    .summary-table td:nth-child(2) {
+      text-align: right;
+      padding-right: 5px;
+      width: 60px;
     }
     
     .summary-table td:last-child {
@@ -282,14 +294,14 @@
     </div>
   </div>
 
-  <div class="section-title">Products / Προϊόντα</div>
+  <div class="section-title">PRODUCTS / ΠΡΟΪΟΝΤΑ</div>
   <table class="table">
     <thead>
       <tr>
-        <th>Plant/Product</th>
-        <th class="numeric">Qty</th>
-        <th class="numeric">Unit Price</th>
-        <th class="numeric">Total</th>
+        <th>PLANT/PRODUCT</th>
+        <th class="numeric">QTY</th>
+        <th class="numeric">UNIT PRICE</th>
+        <th class="numeric">TOTAL</th>
       </tr>
     </thead>
     <tbody>
@@ -312,7 +324,7 @@
   <div class="summary-container">
     <div class="notes-section">
       {% if order.notes %}
-      <div class="section-title">Notes / Σημειώσεις</div>
+      <div class="section-title">NOTES / ΣΗΜΕΙΩΣΕΙΣ</div>
       <p>{{ order.notes }}</p>
       {% endif %}
     </div>
@@ -320,17 +332,20 @@
     <div class="summary-section">
       <table class="summary-table">
         <tr class="subtotal-row">
-          <td>Subtotal / Υποσύνολο:</td>
+          <td>Subtotal / Υποσύνολο</td>
+          <td>:</td>
           <td>{{ "%.2f"|format(subtotal) }}</td>
         </tr>
         {% for vat_info in vat_breakdown %}
         <tr class="vat-row">
-          <td>VAT / ΦΠΑ {{ "%.1f"|format(vat_info.rate) }}%:</td>
+          <td>VAT / ΦΠΑ</td>
+          <td>{{ "%.1f"|format(vat_info.rate) }}%:</td>
           <td>{{ "%.2f"|format(vat_info.amount) }}</td>
         </tr>
         {% endfor %}
         <tr class="total-row">
-          <td>TOTAL / ΣΥΝΟΛΟ:</td>
+          <td>TOTAL / ΣΥΝΟΛΟ</td>
+          <td>:</td>
           <td>{{ "%.2f"|format(total) }}</td>
         </tr>
       </table>
