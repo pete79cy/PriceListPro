@@ -1,356 +1,333 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Initial Charge Sheet - Andreas Pakkoutis & Sons Ltd</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
-        
-        :root {
-            --primary-color: #1B7547;
-            --secondary-color: #4FA37F;
-            --background-color: #F4F8F4;
-            --border-color: #B0B0B0;
-            --gray-light: #f5f5f5;
-            --gray-text: #666666;
-        }
-        
-        body {
-            font-family: 'Noto Sans', sans-serif;
-            margin: 0;
-            padding: 12mm;
-            font-size: 9pt;
-            line-height: 1.3;
-            color: #333;
-        }
-        
-        .document {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-        
-        .masthead {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15mm;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 5mm;
-        }
-        
-        .company-info {
-            width: 60%;
-        }
-        
-        .company-name {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            font-size: 18pt;
-            color: var(--primary-color);
-            letter-spacing: 0.5px;
-            margin: 0 0 2mm 0;
-        }
-        
-        .company-tagline {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 500;
-            font-size: 9pt;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--secondary-color);
-            margin: 0 0 4mm 0;
-        }
-        
-        .company-contact {
-            font-size: 6pt;
-            color: var(--gray-text);
-            margin-top: 2mm;
-        }
-        
-        .order-info {
-            width: 35%;
-            text-align: right;
-        }
-        
-        .document-title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 14pt;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--primary-color);
-            margin: 0 0 5mm 0;
-        }
-        
-        .order-details {
-            margin-bottom: 4mm;
-        }
-        
-        .order-details-item {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 1mm;
-        }
-        
-        .order-details-label {
-            font-weight: 600;
-            margin-right: 2mm;
-        }
-        
-        .section-label {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 600;
-            font-size: 11pt;
-            text-transform: uppercase;
-            margin: 0 0 3mm 0;
-        }
-        
-        .customer-info {
-            margin-bottom: 8mm;
-        }
-        
-        .product-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8mm;
-            page-break-inside: auto;
-        }
-        
-        .product-table th {
-            background-color: var(--secondary-color);
-            color: white;
-            text-transform: uppercase;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 600;
-            font-size: 9pt;
-            padding: 2mm 3mm;
-            text-align: left;
-        }
-        
-        .product-table th:nth-child(2),
-        .product-table th:nth-child(3),
-        .product-table th:nth-child(4) {
-            text-align: right;
-        }
-        
-        .product-table tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-            border-bottom: 1px solid rgba(176, 176, 176, 0.3);
-        }
-        
-        .product-table tr:nth-child(even) {
-            background-color: rgba(79, 163, 127, 0.05);
-        }
-        
-        .product-table td {
-            padding: 3mm;
-            vertical-align: top;
-        }
-        
-        .product-table td:nth-child(2),
-        .product-table td:nth-child(3),
-        .product-table td:nth-child(4) {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-        
-        .product-name {
-            font-weight: 700;
-        }
-        
-        .product-scientific {
-            font-style: italic;
-            margin-left: 1mm;
-        }
-        
-        .size-info {
-            color: var(--gray-text);
-            font-size: 8pt;
-            display: block;
-            margin-top: 1mm;
-        }
-        
-        .content-container {
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .notes-section {
-            width: 48%;
-        }
-        
-        .summary-section {
-            width: 48%;
-            background-color: var(--background-color);
-            padding: 4mm;
-            border-radius: 2mm;
-            align-self: flex-start;
-        }
-        
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .summary-table tr {
-            border-bottom: 1px solid rgba(176, 176, 176, 0.2);
-        }
-        
-        .summary-table tr:last-child {
-            border-bottom: none;
-        }
-        
-        .summary-table td {
-            padding: 2mm 1mm;
-        }
-        
-        .summary-table td:last-child {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-        
-        .subtotal-row {
-            font-weight: 600;
-        }
-        
-        .vat-row {
-            font-weight: 500;
-        }
-        
-        .total-row {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 11pt;
-            color: var(--primary-color);
-        }
-        
-        .footer {
-            margin-top: 15mm;
-            padding-top: 3mm;
-            border-top: 1px solid var(--border-color);
-            font-size: 7pt;
-            color: var(--gray-text);
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .footer-left {
-            width: 60%;
-        }
-        
-        .footer-right {
-            width: 35%;
-            text-align: right;
-        }
-        
-        .thankyou-note {
-            margin-bottom: 2mm;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Initial Charge Sheet - Andreas Pakkoutis & Sons Ltd</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Noto+Sans+Greek&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans Greek', sans-serif;
+      font-size: 9pt;
+      line-height: 1.3;
+      margin: 12mm;
+      color: #333;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #B0B0B0;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .logo {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 800;
+      font-size: 18pt;
+      color: #1B7547;
+    }
+    
+    .tagline {
+      font-size: 7pt;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    .metadata {
+      font-size: 7pt;
+      text-align: right;
+    }
+    
+    .metadata div {
+      margin-bottom: 3px;
+    }
+    
+    .document-title {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 14pt;
+      color: #1B7547;
+      margin-bottom: 10px;
+    }
+    
+    .metadata-label {
+      color: #888;
+      font-weight: normal;
+    }
+    
+    .metadata-value {
+      font-weight: bold;
+      font-size: 10pt;
+    }
+    
+    .card {
+      background-color: #F4F8F4;
+      padding: 10px;
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10pt;
+    }
+    
+    .card div {
+      width: 48%;
+    }
+    
+    .label {
+      text-transform: uppercase;
+      font-size: 7pt;
+      color: grey;
+    }
+    
+    .value {
+      font-weight: bold;
+    }
+    
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    
+    .table th, .table td {
+      border: 1px solid #B0B0B0;
+      padding: 6px;
+      text-align: left;
+    }
+    
+    .table th {
+      background-color: #4FA37F;
+      color: white;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 9pt;
+      text-transform: uppercase;
+    }
+    
+    .table tr:nth-child(even) {
+      background-color: rgba(79, 163, 127, 0.05);
+    }
+    
+    .numeric {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .product-name {
+      font-weight: bold;
+    }
+    
+    .size-info {
+      font-size: 8pt;
+      color: #666;
+    }
+    
+    .summary-container {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+    
+    .notes-section {
+      width: 48%;
+    }
+    
+    .summary-section {
+      width: 48%;
+      background-color: #F4F8F4;
+      padding: 10px;
+      align-self: flex-start;
+    }
+    
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .summary-table tr {
+      border-bottom: 1px solid rgba(176, 176, 176, 0.2);
+    }
+    
+    .summary-table tr:last-child {
+      border-bottom: none;
+    }
+    
+    .summary-table td {
+      padding: 6px 4px;
+    }
+    
+    .summary-table td:last-child {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .subtotal-row {
+      font-weight: 600;
+    }
+    
+    .vat-row {
+      font-weight: normal;
+    }
+    
+    .total-row {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 11pt;
+      color: #1B7547;
+    }
+    
+    .section-title {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 10pt;
+      text-transform: uppercase;
+      color: #1B7547;
+      margin: 15px 0 5px 0;
+    }
+    
+    footer {
+      font-size: 6pt;
+      color: grey;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+      border-top: 1px solid #B0B0B0;
+      padding-top: 10px;
+    }
+    
+    .footer-left, .footer-right {
+      width: 48%;
+    }
+    
+    .footer-right {
+      text-align: right;
+    }
+    
+    .signature {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    
+    .signature div {
+      width: 45%;
+    }
+    
+    .signature-line {
+      border-bottom: 0.5pt solid #333;
+      height: 20px;
+      margin-bottom: 4px;
+    }
+    
+    .signature-label {
+      font-size: 7pt;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-    <div class="document">
-        <div class="masthead">
-            <div class="company-info">
-                <h1 class="company-name">Andreas Pakkoutis & Sons Ltd</h1>
-                <div class="company-tagline">Premium Plant Suppliers Since 1985</div>
-                <div class="company-contact">
-                    Phone: +357 123 456 789 | Email: info@pakkoutis.com | www.pakkoutis.com
-                </div>
-            </div>
-            <div class="order-info">
-                <h1 class="document-title">Initial Charge Sheet</h1>
-                <div class="order-details">
-                    <div class="order-details-item">
-                        <span class="order-details-label">Order No:</span>
-                        <span>ORD-2025-DEMO</span>
-                    </div>
-                    <div class="order-details-item">
-                        <span class="order-details-label">Issue Date:</span>
-                        <span>2025-05-22</span>
-                    </div>
-                    <div class="order-details-item">
-                        <span class="order-details-label">Delivery Date:</span>
-                        <span>2025-05-29</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="customer-info">
-            <h2 class="section-label">Customer</h2>
-            <div>Demo Customer</div>
-            <div>123 Plant Street, Larnaca</div>
-            <div>Phone: +357 99 123456</div>
-            <div>Email: demo@example.com</div>
-        </div>
-        
-        <h2 class="section-label">Products</h2>
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Plant/Product</th>
-                    <th>Qty</th>
-                    <th>Unit Price</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <span class="product-name">Στρελίτσια Nicolai</span>
-                        <span class="size-info">(10L)</span>
-                    </td>
-                    <td>10</td>
-                    <td>10.00</td>
-                    <td>100.00</td>
-                </tr>
-                <tr>
-                    <td>
-                        <span class="product-name">Ευγενία Etna Fire</span>
-                        <span class="size-info">(5L)</span>
-                    </td>
-                    <td>5</td>
-                    <td>26.00</td>
-                    <td>130.00</td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <div class="content-container">
-            <div class="notes-section">
-                <h2 class="section-label">Notes</h2>
-                <p>This is a demonstration of the redesigned charge sheet based on the requested specifications.</p>
-            </div>
-            
-            <div class="summary-section">
-                <table class="summary-table">
-                    <tr class="subtotal-row">
-                        <td>Subtotal:</td>
-                        <td>230.00</td>
-                    </tr>
-                    <tr class="vat-row">
-                        <td>VAT 19.0%:</td>
-                        <td>43.70</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td>TOTAL:</td>
-                        <td>273.70</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <div class="footer-left">
-                <div class="thankyou-note">Thank you for your business!</div>
-                <div>Payment Terms: Within 30 days of invoice date.</div>
-            </div>
-            <div class="footer-right">
-                <div>VAT Registration No: CY12345678X</div>
-                <div>Andreas Pakkoutis & Sons Ltd | Larnaca, Cyprus</div>
-            </div>
-        </div>
+  <header>
+    <div>
+      <div class="logo">Andreas Pakkoutis & Sons Ltd</div>
+      <div class="tagline">Wholesale Ornamental Plants</div>
     </div>
+    <div class="metadata">
+      <div class="document-title">Initial Charge Sheet</div>
+      <div><span class="metadata-label">Order No.</span>: <span class="metadata-value">ORD-2025-DEMO</span></div>
+      <div><span class="metadata-label">Issue Date</span>: <span class="metadata-value">22/05/2025</span></div>
+      <div><span class="metadata-label">Delivery Date</span>: <span class="metadata-value">29/05/2025</span></div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div>
+      <div class="label">Order No. / Αριθμός Παραγγελίας</div>
+      <div class="value">ORD-2025-DEMO</div>
+    </div>
+    <div>
+      <div class="label">Customer / Πελάτης</div>
+      <div class="value">Demo Customer</div>
+    </div>
+  </div>
+
+  <div class="section-title">Products / Προϊόντα</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Plant/Product</th>
+        <th class="numeric">Qty</th>
+        <th class="numeric">Unit Price</th>
+        <th class="numeric">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <span class="product-name">Στρελίτσια Nicolai</span>
+          <span class="size-info"> (10L)</span>
+        </td>
+        <td class="numeric">10</td>
+        <td class="numeric">10.00</td>
+        <td class="numeric">100.00</td>
+      </tr>
+      <tr>
+        <td>
+          <span class="product-name">Ευγενία Etna Fire</span>
+          <span class="size-info"> (5L)</span>
+        </td>
+        <td class="numeric">5</td>
+        <td class="numeric">26.00</td>
+        <td class="numeric">130.00</td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div class="summary-container">
+    <div class="notes-section">
+      <div class="section-title">Notes / Σημειώσεις</div>
+      <p>This is a demonstration of the redesigned charge sheet that matches your company's delivery note style.</p>
+    </div>
+    
+    <div class="summary-section">
+      <table class="summary-table">
+        <tr class="subtotal-row">
+          <td>Subtotal / Υποσύνολο:</td>
+          <td>230.00</td>
+        </tr>
+        <tr class="vat-row">
+          <td>VAT / ΦΠΑ 19.0%:</td>
+          <td>43.70</td>
+        </tr>
+        <tr class="total-row">
+          <td>TOTAL / ΣΥΝΟΛΟ:</td>
+          <td>273.70</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  
+  <div class="signature">
+    <div>
+      <div class="signature-line"></div>
+      <div class="signature-label">Customer Signature / Υπογραφή Πελάτη</div>
+    </div>
+    <div>
+      <div class="signature-line"></div>
+      <div class="signature-label">Date / Ημερομηνία</div>
+    </div>
+  </div>
+  
+  <footer>
+    <div class="footer-left">
+      <div>Thank you for your business! / Ευχαριστούμε για τη συνεργασία!</div>
+      <div>Payment Terms: Within 30 days of invoice date.</div>
+    </div>
+    <div class="footer-right">
+      <div>VAT Registration No: CY12345678X</div>
+      <div>Andreas Pakkoutis & Sons Ltd | Larnaca, Cyprus</div>
+    </div>
+  </footer>
 </body>
 </html>
