@@ -58,25 +58,48 @@ def generate_quotation_pdf(quotation, items=None):
     pdf = HTML(string=html).write_pdf()
     return pdf
 
-def generate_supplier_pdf_report(supplier, items=None, title=None):
+def generate_supplier_pdf_report(quotation, supplier_name, upload_folder):
     """
-    Generate a PDF report for a supplier
+    Generate a PDF report for a specific supplier from a quotation
     
     Args:
-        supplier: The supplier object
-        items: Optional list of supplier products
-        title: Optional custom title for the report
+        quotation: The quotation object
+        supplier_name: Name of the supplier
+        upload_folder: Directory to save the PDF
         
     Returns:
-        bytes: The PDF file as bytes
+        str: Path to the generated PDF file
     """
-    # Basic implementation
+    # Get items for this supplier from the quotation
+    supplier_items = [item for item in quotation.items if item.supplier == supplier_name]
+    
+    if not supplier_items:
+        return None
+    
+    # Create a simple supplier object with the name
+    supplier = {'name': supplier_name}
+    
+    # Generate the report title
+    title = f"Supplier Report for {supplier_name} - Quotation {quotation.quotation_number}"
+    
+    # Render the template
     html = render_template('pdfs/supplier_report.html',
                           supplier=supplier,
-                          items=items,
-                          title=title or f"Supplier Report: {supplier.name}")
+                          items=supplier_items,
+                          title=title)
+    
+    # Generate PDF
     pdf = HTML(string=html).write_pdf()
-    return pdf
+    
+    # Save to file
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"supplier_{supplier_name}_{quotation.quotation_number}_{timestamp}.pdf"
+    pdf_path = os.path.join(upload_folder, filename)
+    
+    with open(pdf_path, 'wb') as f:
+        f.write(pdf)
+    
+    return pdf_path
 
 def generate_supplier_products_pdf(supplier, products=None):
     """

@@ -1,0 +1,67 @@
+Thanks for sharing the full template — it's clean and **doesn't contain any `hasattr()`** usage directly, so the error is likely caused elsewhere.
+
+### 🔍 Here's what's most likely happening:
+
+#### ✅ The template is **correct Jinja2**, but...
+
+* The error **`'hasattr' is undefined`** strongly indicates that **Jinja is trying to render something** with `hasattr()` somewhere — possibly from:
+
+  * A **custom filter or macro**
+  * A **value in `title`**, `supplier`, or `items` that's being evaluated with `hasattr` in the rendering logic
+  * A **bug in the PDF rendering function** where `hasattr` is incorrectly injected into the template context
+
+---
+
+### ✅ Immediate Debug Step
+
+Temporarily **comment out or simplify** parts of your template to isolate the issue.
+
+Try replacing this line:
+
+```jinja2
+<p><strong>Report Generated:</strong> {{ title }}</p>
+```
+
+With:
+
+```jinja2
+<p><strong>Report Generated:</strong> Report</p>
+```
+
+Then try rendering the report again.
+
+If the error disappears, the `title` variable being passed may be causing the issue — perhaps it's an object being incorrectly inspected by the template renderer using `hasattr()`.
+
+---
+
+### ✅ Also Check in Python View Code
+
+Look for something like this:
+
+```python
+render_template("supplier_report.html", title=some_object)
+```
+
+If `title` is an object and not a string, it might be triggering a `hasattr` internally when the template tries to access its value.
+
+---
+
+### 🔧 Recommended Fix
+
+1. **Ensure all context variables are basic types** (`str`, `int`, `float`, `list`, `dict`).
+2. **Avoid passing complex objects** unless absolutely necessary.
+3. If passing `title`, make sure it's a plain string.
+
+Example:
+
+```python
+context = {
+    "supplier": {"name": "ACME Ltd"},
+    "items": [...],
+    "title": "Supplier Cost Report - May 2025"
+}
+```
+
+---
+
+Would you like to share the Python function (e.g., `generate_supplier_pdf_report`) that renders this template? I can pinpoint exactly where the `hasattr` is being introduced.
