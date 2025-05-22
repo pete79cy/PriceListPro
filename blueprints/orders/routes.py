@@ -116,6 +116,9 @@ def index():
     # Get all customers for the filter dropdown
     customers = Customer.query.order_by(Customer.name).all()
     
+    # Get all products for adding items to orders
+    products = Product.query.order_by(Product.name).all()
+    
     return render_template(
         'orders/index.html',
         orders=orders_list,
@@ -123,7 +126,8 @@ def index():
         status_counts=status_counts,
         OrderStatus=OrderStatusEnum,
         ORDER_STATUS_COLORS=ORDER_STATUS_COLORS,
-        customers=customers
+        customers=customers,
+        products=products
     )
 
 @orders.route('/new', methods=['GET', 'POST'])
