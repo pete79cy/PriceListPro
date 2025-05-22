@@ -5,299 +5,80 @@
     <title>Supplier Report</title>
     <style>
         @page {
-            /* Switch to landscape orientation for better horizontal space */
             size: A4 landscape;
-            margin: 1.5cm;
-            @top-center {
-                content: "Supplier Report";
-                font-size: 9pt;
-                color: #666;
-            }
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 9pt;
-                color: #666;
-            }
+            margin: 2cm;
         }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9.5pt; /* Smaller font */
-            line-height: 1.3; /* Tighter line height */
-            color: #333;
-            margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
         }
-        /* Compact Header with branding elements */
-        .header {
-            width: 100%;
-            margin-bottom: 0.8cm; /* Reduced spacing */
-            padding-bottom: 0.3cm;
-            border-bottom: 1px solid #eee;
-            background-color: #f9f9f9; /* Light background for header */
-        }
-        .supplier-info {
-            float: left;
-            width: 60%;
-        }
-        .report-info {
-            float: right;
-            width: 40%;
-            text-align: right;
-        }
-        .clear {
-            clear: both;
-        }
-        
-        /* Typography Optimizations */
         h1 {
-            font-size: 16pt;
-            color: #224870;
-            margin-bottom: 0.2cm;
-            font-weight: 700;
+            color: #003366;
+            font-size: 18pt;
+            margin-bottom: 10pt;
         }
         h2 {
-            font-size: 13pt;
-            color: #224870;
-            margin-top: 0.6cm;
-            margin-bottom: 0.3cm;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.2cm;
+            color: #003366;
+            font-size: 14pt;
+            margin-top: 15pt;
+            margin-bottom: 10pt;
         }
-        
-        /* Compact Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0.4cm 0; /* Reduced margin */
-            table-layout: fixed;
+            margin: 15pt 0;
         }
-        
-        /* Ensure headers repeat on new pages */
-        thead {
-            display: table-header-group;
-        }
-        
         th {
             background-color: #e0e7f0;
-            padding: 0.15cm; /* Further reduced padding */
+            border: 1px solid #b0c4de;
+            padding: 6pt;
             text-align: left;
             font-weight: bold;
-            font-size: 8.5pt; /* Smaller header font */
-            border: 1px solid #b0c4de;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #224870;
         }
-        
-        /* Even more compact cell styling */
         td {
-            padding: 0.15cm; /* Further reduced padding */
             border: 1px solid #ddd;
-            font-size: 9pt; /* Smaller font */
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            vertical-align: top;
+            padding: 6pt;
         }
-        
-        /* Enhanced zebra striping */
-        tbody tr:nth-child(odd) {
-            background-color: #f9f9f9;
-        }
-        
-        /* Right-align all numeric data */
-        .numeric {
-            text-align: right;
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
-        }
-        
-        /* Text alignment helpers */
         .text-right {
             text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        
-        /* Enhanced Summary Block with consolidated styling */
-        .summary-block {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            page-break-before: auto;
-            break-before: auto;
-            page-break-after: avoid;
-            break-after: avoid;
-            width: 40%;
-            float: right;
-            margin-top: 0.5cm;
-            background-color: #f8f8f8;
-            padding: 10px;
-            border-top: 2px solid #000;
-            margin-top: 20px;
-            max-width: 300px;
-            position: relative;
-            display: block;
-        }
-        .summary-block table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .summary-block td {
-            padding: 5px;
-            text-align: right;
-            border: none;
-            border-bottom: 1px solid #e0e7f0;
-            font-weight: 600;
-            font-size: 10pt;
-        }
-        .summary-block .label {
-            font-weight: bold;
-            text-align: left;
-        }
-        .summary-block .amount {
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
-            text-align: right;
-        }
-        .summary-block .total-row {
-            border-top: 2px solid #000;
-        }
-        .summary-block .total {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        
-        /* Enhanced Footer */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            font-size: 8pt;
-            text-align: center;
-            color: #777;
-            border-top: 1px solid #eee;
-            padding-top: 0.2cm;
-            background-color: #f9f9f9;
-        }
-        
-        /* Supplier heading styling */
-        .supplier-heading {
-            background-color: #e0e7f0;
-            color: #224870;
-            padding: 0.2cm;
-            margin-top: 0.5cm;
-            margin-bottom: 0.3cm;
-            font-weight: bold;
-            border-radius: 4px;
-            border-left: 3px solid #224870;
-        }
-        
-        /* Ensure consistent print layout */
-        @media print {
-        .summary-block {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-            body {
-                font-size: 9pt;
-            }
-            table {
-                page-break-inside: auto;
-            }
-            tr {
-                page-break-inside: avoid;
-                page-break-after: auto;
-            }
-            thead {
-                display: table-header-group;
-            }
-            tfoot {
-                display: table-footer-group;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="supplier-info">
-            <h1>{{ supplier.name }}</h1>
-            <p>
-                Supplier Report
-                {% if supplier.address %} | {{ supplier.address }}{% endif %}
-                {% if supplier.phone %} | Phone: {{ supplier.phone }}{% endif %}
-            </p>
-        </div>
-        <div class="report-info">
-            <h1>SUPPLIER REPORT</h1>
-            <p>
-                <strong>Report:</strong> {{ title }}<br>
-                <strong>Date:</strong> {{ title.split(':')[-1] if title and ':' in title else '' }}
-            </p>
-        </div>
-        <div class="clear"></div>
-    </div>
-    
-    <h2>Products</h2>
+    <h1>Supplier Report: {{ supplier.name }}</h1>
     
     <table>
         <thead>
             <tr>
-                <th width="5%">#</th>
-                <th width="30%">Description</th>
-                <th width="10%">SKU</th>
-                <th width="10%">Category</th>
-                <th width="10%">Size</th>
-                <th width="7%" class="text-right">Qty</th>
-                <th width="10%" class="text-right">Unit Price</th>
-                <th width="10%" class="text-right">Total</th>
+                <th>#</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
             </tr>
         </thead>
         <tbody>
             {% if items %}
                 {% for item in items %}
                 <tr>
-                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ loop.index }}</td>
                     <td>{{ item.description|default('') }}</td>
-                    <td>{{ item.sku|default('') }}</td>
-                    <td>{{ item.category|default('') }}</td>
-                    <td>{{ item.size|default('') }}</td>
-                    <td class="numeric">{{ item.quantity|default(1) }}</td>
-                    <td class="numeric">{{ "%.2f"|format(item.cost_price|default(0.00)) }}</td>
-                    <td class="numeric">{{ "%.2f"|format((item.cost_price|default(0.00)) * (item.quantity|default(1))) }}</td>
+                    <td class="text-right">{{ item.quantity|default(1) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.cost_price|default(0)) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.cost_price|default(0) * item.quantity|default(1)) }}</td>
                 </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="8" class="text-center">No items available</td>
+                    <td colspan="5" style="text-align: center;">No items available</td>
                 </tr>
             {% endif %}
         </tbody>
     </table>
     
-    {% if items %}
-    <div class="summary-block">
-        <table>
-            <tr>
-                <td class="label">Total Items:</td>
-                <td class="amount">{{ items|length }}</td>
-            </tr>
-            <tr>
-                <td class="label">Total Quantity:</td>
-                <td class="amount">{{ items|length }}</td>
-            </tr>
-            <tr class="total-row">
-                <td class="label total">Total Amount:</td>
-                <td class="amount total">{{ "%.2f"|format(0) }}</td>
-            </tr>
-        </table>
-    </div>
-    {% endif %}
-    <div class="clear"></div>
-    
-    <div class="footer">
-        <p>{{ supplier.name }} | Supplier Report</p>
+    <div>
+        <p><strong>Report Generated:</strong> {{ title }}</p>
     </div>
 </body>
 </html>
