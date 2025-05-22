@@ -111,7 +111,7 @@
                     <p class="card-text-custom">Manage customer orders. Create orders, track status, and generate delivery notes from confirmed quotations.</p>
                     <div class="mt-auto d-flex justify-content-between align-items-end">
                         <span class="text-warning fw-bold fs-4">{{ stats.orders|default(0) }}</span>
-                        <a href="{{ url_for('quotations') }}" class="btn btn-warning">View Orders</a>
+                        <a href="{{ url_for('orders.index') }}" class="btn btn-warning">View Orders</a>
                     </div>
                 </div>
             </div>
