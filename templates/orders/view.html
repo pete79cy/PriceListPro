@@ -260,10 +260,18 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="product_id" class="form-label">Select Product</label>
-                        <select name="product_id" id="product_id" class="form-select" required>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="product_search" placeholder="Search for products..." autocomplete="off">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <select name="product_id" id="product_id" class="form-select" required style="width: 100%;">
                             <option value="">Choose a product</option>
                             {% for product in products %}
-                            <option value="{{ product.id }}">{{ product.name }} {% if product.pot %}({{ product.pot }}){% endif %}</option>
+                            <option value="{{ product.id }}" data-name="{{ product.name.lower() }}" data-pot="{{ product.pot|lower if product.pot else '' }}">
+                                {{ product.name }} {% if product.pot %}({{ product.pot }}){% endif %}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
