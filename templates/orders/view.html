@@ -270,17 +270,18 @@
                             </button>
                         </div>
                         <select name="product_id" id="product_id" class="form-select" required style="width: 100%;">
-                            <option value="">Choose a product</option>
+                            <option value="" disabled>Choose a product or search above</option>
                             {% for product in products %}
                             <option value="{{ product.id }}" 
                                 data-name="{{ product.name.lower() }}" 
                                 data-pot="{{ product.pot|lower if product.pot else '' }}"
-                                data-keywords="{{ product.keywords|lower if product.keywords else '' }}">
+                                data-code="{{ product.code|lower if product.code else '' }}"
+                                data-description="{{ product.description|lower if product.description else '' }}">
                                 {{ product.name }} {% if product.pot %}({{ product.pot }}){% endif %}
                             </option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted mt-1">Search by name, size or any part of the product description</small>
+                        <small class="text-muted mt-1">Search by name, size, code or any part of the product description</small>
                     </div>
                     
                     <div class="mb-3">
@@ -325,6 +326,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Store all options for filtering
         const allOptions = Array.from(productSelect.options).slice(1); // Skip the placeholder option
         
+        // Make the first option to be properly selectable (copy all options)
+        populateDropdown(allOptions);
+        
         // Smarter search function with weighted matching
         function smartSearch(options, searchTerm) {
             if (!searchTerm) return options;
@@ -338,7 +342,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const text = option.textContent.toLowerCase();
                     const name = option.dataset.name || '';
                     const pot = option.dataset.pot || '';
-                    const keywords = option.dataset.keywords || '';
+                    const code = option.dataset.code || '';
+                    const description = option.dataset.description || '';
                     
                     // Calculate score based on different factors
                     let score = 0;
@@ -346,6 +351,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Exact match is highest priority
                     if (name === searchTerm || text === searchTerm) {
                         score += 100;
+                    }
+                    
+                    // Check if code matches exactly
+                    if (code === searchTerm) {
+                        score += 90;
                     }
                     
                     // Check if name starts with search term
@@ -357,14 +367,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     for (const word of searchWords) {
                         if (word.length < 2) continue; // Skip very short words
                         
-                        // Check for word matches in various fields
+                        // Check for word matches in various fields with different weights
                         if (name.includes(word)) score += 20;
+                        if (code.includes(word)) score += 18;
                         if (pot.includes(word)) score += 15;
-                        if (keywords.includes(word)) score += 10;
+                        if (description.includes(word)) score += 10;
                         if (text.includes(word)) score += 5;
                         
-                        // Bonus for word at start of name or part
-                        if (name.startsWith(word)) score += 10;
+                        // Bonus for word at start of fields
+                        if (name.startsWith(word)) score += 15;
+                        if (code.startsWith(word)) score += 12;
+                        if (pot.startsWith(word)) score += 8;
                     }
                     
                     return { option, score };
@@ -374,36 +387,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 .map(item => item.option); // Return just the options in order
         }
         
+        // Function to populate dropdown with options
+        function populateDropdown(options) {
+            // Reset select to just the placeholder option
+            productSelect.innerHTML = '<option value="" disabled>Choose a product or search above</option>';
+            
+            // Add options to select
+            options.forEach(option => {
+                productSelect.appendChild(option.cloneNode(true));
+            });
+            
+            // Select first option if there are options
+            if (options.length > 0) {
+                productSelect.selectedIndex = 1;
+            }
+        }
+        
         // Function to filter products based on search input
         function filterProducts(searchTerm) {
-            // Reset select to just the placeholder option
-            productSelect.innerHTML = '<option value="">Choose a product</option>';
-            
-            if (!searchTerm.trim()) {
+            if (!searchTerm || !searchTerm.trim()) {
                 // If search is empty, show all options
-                allOptions.forEach(option => {
-                    productSelect.appendChild(option.cloneNode(true));
-                });
+                populateDropdown(allOptions);
                 return;
             }
             
             // Get smart search results
             const filteredOptions = smartSearch(allOptions, searchTerm);
             
-            // Add filtered options to select
-            filteredOptions.forEach(option => {
-                productSelect.appendChild(option.cloneNode(true));
-            });
+            // Reset select to just the placeholder option
+            productSelect.innerHTML = '<option value="" disabled>Choose a product or search above</option>';
             
-            // Show message if no results
-            if (filteredOptions.length === 0) {
+            // Add filtered options to select
+            if (filteredOptions.length > 0) {
+                filteredOptions.forEach(option => {
+                    productSelect.appendChild(option.cloneNode(true));
+                });
+                
+                // Auto-select the first result (after placeholder)
+                productSelect.selectedIndex = 1;
+            } else {
+                // Show message if no results
                 const noResults = document.createElement('option');
+                noResults.value = "";
                 noResults.text = 'No products found matching your search';
                 noResults.disabled = true;
                 productSelect.appendChild(noResults);
-            } else if (filteredOptions.length === 1) {
-                // Auto-select if only one option is found
-                productSelect.selectedIndex = 1;
             }
         }
         
@@ -413,7 +441,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Add event listeners
-        searchBtn.addEventListener('click', handleSearch);
+        searchBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent any form submission
+            handleSearch();
+        });
         
         // Enable search on Enter key
         productSearch.addEventListener('keypress', function(e) {
@@ -423,16 +454,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Also enable real-time search as you type (optional)
+        // Also enable real-time search as you type
         productSearch.addEventListener('input', function() {
             if (this.value.length >= 3 || this.value.length === 0) {
-                filterProducts(this.value);
+                handleSearch();
             }
         });
         
-        clearSearchBtn.addEventListener('click', function() {
+        clearSearchBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent any form submission
             productSearch.value = '';
-            filterProducts('');
+            populateDropdown(allOptions);
             productSearch.focus();
         });
     }
