@@ -167,12 +167,23 @@
                                                             
                                                             <div class="mb-3">
                                                                 <label for="item{{ item.id }}_quantity" class="form-label">Quantity</label>
-                                                                <input type="number" class="form-control" id="item{{ item.id }}_quantity" name="quantity" value="{{ item.quantity }}" min="1" required>
+                                                                <div class="input-group">
+                                                                    <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity('item{{ item.id }}_quantity')">
+                                                                        <i class="fas fa-minus"></i>
+                                                                    </button>
+                                                                    <input type="number" class="form-control text-center" id="item{{ item.id }}_quantity" name="quantity" value="{{ item.quantity }}" min="1" required>
+                                                                    <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity('item{{ item.id }}_quantity')">
+                                                                        <i class="fas fa-plus"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                             
                                                             <div class="mb-3">
                                                                 <label for="item{{ item.id }}_price" class="form-label">Unit Price</label>
-                                                                <input type="number" class="form-control" id="item{{ item.id }}_price" name="unit_price" value="{{ item.price }}" min="0" step="0.01" required>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-text">€</span>
+                                                                    <input type="number" class="form-control" id="item{{ item.id }}_price" name="unit_price" value="{{ item.price }}" min="0" step="0.01" required>
+                                                                </div>
                                                             </div>
                                                             
                                                             <div class="form-check">
@@ -383,6 +394,21 @@
 {% block scripts %}
 {{ super() }}
 <script>
+// Quantity increase/decrease functions for edit modals
+function increaseQuantity(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = Math.max(1, parseInt(input.value || 0) + 1);
+    }
+}
+
+function decreaseQuantity(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = Math.max(1, parseInt(input.value || 0) - 1);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Get all products data
     const products = [
