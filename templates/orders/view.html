@@ -262,6 +262,9 @@
                         <label for="product_id" class="form-label">Select Product</label>
                         <div class="input-group mb-2">
                             <input type="text" class="form-control" id="product_search" placeholder="Search for products..." autocomplete="off">
+                            <button class="btn btn-primary" type="button" id="searchBtn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
                             <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -269,11 +272,15 @@
                         <select name="product_id" id="product_id" class="form-select" required style="width: 100%;">
                             <option value="">Choose a product</option>
                             {% for product in products %}
-                            <option value="{{ product.id }}" data-name="{{ product.name.lower() }}" data-pot="{{ product.pot|lower if product.pot else '' }}">
+                            <option value="{{ product.id }}" 
+                                data-name="{{ product.name.lower() }}" 
+                                data-pot="{{ product.pot|lower if product.pot else '' }}"
+                                data-keywords="{{ product.keywords|lower if product.keywords else '' }}">
                                 {{ product.name }} {% if product.pot %}({{ product.pot }}){% endif %}
                             </option>
                             {% endfor %}
                         </select>
+                        <small class="text-muted mt-1">Search by name, size or any part of the product description</small>
                     </div>
                     
                     <div class="mb-3">
@@ -311,20 +318,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // Product search functionality for the Add Item modal
     const productSearch = document.getElementById('product_search');
     const productSelect = document.getElementById('product_id');
+    const searchBtn = document.getElementById('searchBtn');
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     
-    if (productSearch && productSelect && clearSearchBtn) {
+    if (productSearch && productSelect && clearSearchBtn && searchBtn) {
         // Store all options for filtering
         const allOptions = Array.from(productSelect.options).slice(1); // Skip the placeholder option
         
+        // Smarter search function with weighted matching
+        function smartSearch(options, searchTerm) {
+            if (!searchTerm) return options;
+            
+            searchTerm = searchTerm.toLowerCase().trim();
+            const searchWords = searchTerm.split(/\s+/);
+            
+            // Return results with scores for better matching
+            return options
+                .map(option => {
+                    const text = option.textContent.toLowerCase();
+                    const name = option.dataset.name || '';
+                    const pot = option.dataset.pot || '';
+                    const keywords = option.dataset.keywords || '';
+                    
+                    // Calculate score based on different factors
+                    let score = 0;
+                    
+                    // Exact match is highest priority
+                    if (name === searchTerm || text === searchTerm) {
+                        score += 100;
+                    }
+                    
+                    // Check if name starts with search term
+                    if (name.startsWith(searchTerm)) {
+                        score += 50;
+                    }
+                    
+                    // Check word by word
+                    for (const word of searchWords) {
+                        if (word.length < 2) continue; // Skip very short words
+                        
+                        // Check for word matches in various fields
+                        if (name.includes(word)) score += 20;
+                        if (pot.includes(word)) score += 15;
+                        if (keywords.includes(word)) score += 10;
+                        if (text.includes(word)) score += 5;
+                        
+                        // Bonus for word at start of name or part
+                        if (name.startsWith(word)) score += 10;
+                    }
+                    
+                    return { option, score };
+                })
+                .filter(item => item.score > 0) // Only keep matches
+                .sort((a, b) => b.score - a.score) // Sort by score descending
+                .map(item => item.option); // Return just the options in order
+        }
+        
         // Function to filter products based on search input
         function filterProducts(searchTerm) {
-            searchTerm = searchTerm.toLowerCase().trim();
-            
             // Reset select to just the placeholder option
             productSelect.innerHTML = '<option value="">Choose a product</option>';
             
-            if (searchTerm === '') {
+            if (!searchTerm.trim()) {
                 // If search is empty, show all options
                 allOptions.forEach(option => {
                     productSelect.appendChild(option.cloneNode(true));
@@ -332,11 +387,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Filter options based on search term
-            const filteredOptions = allOptions.filter(option => {
-                const optionText = option.textContent.toLowerCase();
-                return optionText.includes(searchTerm);
-            });
+            // Get smart search results
+            const filteredOptions = smartSearch(allOptions, searchTerm);
             
             // Add filtered options to select
             filteredOptions.forEach(option => {
@@ -355,9 +407,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
+        // Function to handle search when button is clicked
+        function handleSearch() {
+            filterProducts(productSearch.value);
+        }
+        
         // Add event listeners
+        searchBtn.addEventListener('click', handleSearch);
+        
+        // Enable search on Enter key
+        productSearch.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
+                handleSearch();
+            }
+        });
+        
+        // Also enable real-time search as you type (optional)
         productSearch.addEventListener('input', function() {
-            filterProducts(this.value);
+            if (this.value.length >= 3 || this.value.length === 0) {
+                filterProducts(this.value);
+            }
         });
         
         clearSearchBtn.addEventListener('click', function() {
