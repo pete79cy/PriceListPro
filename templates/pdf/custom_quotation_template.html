@@ -225,7 +225,7 @@
                     {% endif %}
                     
                     {% if item_fields.product_quantity %}
-                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.quantity|int }}</td>
                     {% endif %}
                     
                     {% if item_fields.product_price %}
