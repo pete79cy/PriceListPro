@@ -226,6 +226,7 @@ def add_item(order_id):
     product_id = request.form.get('product_id')
     quantity = request.form.get('quantity', type=int)
     unit_price = request.form.get('unit_price', type=float)
+    vat_rate = request.form.get('vat_rate', type=float, default=19.0)
     update_price_list = 'update_price_list' in request.form
     
     # Validate required fields
@@ -253,7 +254,8 @@ def add_item(order_id):
         plant_name=product.name,
         size=product.pot if product.pot else '',
         quantity=quantity,
-        price=unit_price
+        price=unit_price,
+        vat_rate=vat_rate
     )
     
     db.session.add(order_item)
@@ -277,6 +279,7 @@ def update_item(order_id, item_id):
     # Extract form data
     quantity = request.form.get('quantity', type=int)
     unit_price = request.form.get('unit_price', type=float)
+    vat_rate = request.form.get('vat_rate', type=float, default=19.0)
     update_price_list = 'update_price_list' in request.form
     
     # Validate required fields
@@ -287,6 +290,7 @@ def update_item(order_id, item_id):
     # Update item
     item.quantity = quantity
     item.price = unit_price
+    item.vat_rate = vat_rate
     
     # Update the customer's price list if requested and a product is linked
     if update_price_list and item.product_id:
