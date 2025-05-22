@@ -8,7 +8,7 @@ import uuid
 from . import orders
 from models import db, Customer, Product, PriceList, OrderStatusEnum, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_TRANSITIONS
 from models import Order, OrderItem
-from utils.pdf_generator import generate_delivery_note_pdf
+from utils.pdf_generator import generate_delivery_note_pdf, generate_charge_sheet_pdf
 from utils.translations import get_translations
 
 # Helper functions
@@ -339,6 +339,33 @@ def print_delivery_note(order_id):
     # Create a unique filename for the PDF
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"delivery_note_{order.order_number}_{timestamp}.pdf"
+    
+    # Save the PDF file
+    pdf_dir = os.path.join(current_app.static_folder, 'pdfs')
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_path = os.path.join(pdf_dir, filename)
+    
+    with open(pdf_path, 'wb') as f:
+        f.write(pdf_data)
+    
+    # Return a link to the generated PDF
+    return redirect(url_for('static', filename=f'pdfs/{filename}'))
+
+@orders.route('/<int:order_id>/charge_sheet')
+@login_required
+def generate_charge_sheet(order_id):
+    """Generate and display a PDF initial charge sheet"""
+    order = Order.query.get_or_404(order_id)
+    
+    # Generate PDF
+    pdf_data = generate_charge_sheet_pdf(order)
+    if not pdf_data:
+        flash('Error generating charge sheet', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
+    
+    # Create a unique filename for the PDF
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"charge_sheet_{order.order_number}_{timestamp}.pdf"
     
     # Save the PDF file
     pdf_dir = os.path.join(current_app.static_folder, 'pdfs')

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Initial Charge Sheet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12pt;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .order-info {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        th {
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .subtotal-row {
+            font-weight: bold;
+        }
+        .vat-row {
+            font-weight: bold;
+        }
+        .total-row {
+            font-weight: bold;
+            font-size: 14pt;
+        }
+        .summary {
+            width: 50%;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        .size-info {
+            color: #666;
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Initial Charge Sheet</h1>
+    </div>
+    
+    <div class="order-info">
+        <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+        <p><strong>Customer:</strong> {{ order.customer.name }}</p>
+        <p><strong>Date:</strong> {{ order.created_at.strftime('%Y-%m-%d') }}</p>
+        {% if order.delivery_date %}
+        <p><strong>Delivery Date:</strong> {{ order.delivery_date.strftime('%Y-%m-%d') }}</p>
+        {% endif %}
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Plant/Product</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+            <tr>
+                <td>
+                    {{ item.plant_name }}
+                    {% if item.size %}
+                    <div class="size-info">Size: {{ item.size }}</div>
+                    {% endif %}
+                </td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ "%.2f"|format(item.price) }}</td>
+                <td>{{ "%.2f"|format(item.get_total()) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="summary">
+        <table>
+            <tr class="subtotal-row">
+                <td>Subtotal:</td>
+                <td>{{ "%.2f"|format(subtotal) }}</td>
+            </tr>
+            {% for vat_info in vat_breakdown %}
+            <tr class="vat-row">
+                <td>VAT {{ "%.1f"|format(vat_info.rate) }}%:</td>
+                <td>{{ "%.2f"|format(vat_info.amount) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td>Total:</td>
+                <td>{{ "%.2f"|format(total) }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    {% if order.notes %}
+    <div class="notes">
+        <h3>Notes:</h3>
+        <p>{{ order.notes }}</p>
+    </div>
+    {% endif %}
+</body>
+</html>
