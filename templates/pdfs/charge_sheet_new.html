@@ -290,7 +290,7 @@
     </div>
     <div>
       <div class="label">Customer / Πελάτης</div>
-      <div class="value">{{ order.customer.name }}</div>
+      <div class="value">{% if order.customer %}{{ order.customer.name }}{% else %}{{ order.customer_name }}{% endif %}</div>
     </div>
   </div>
 
@@ -369,7 +369,7 @@
       <div>Payment Terms: Within 30 days of invoice date.</div>
     </div>
     <div class="footer-right">
-      <div>VAT Registration No: CY12345678X</div>
+      <div>VAT Registration No: 10034785 S</div>
       <div>Andreas Pakkoutis & Sons Ltd | Larnaca, Cyprus</div>
     </div>
   </footer>
