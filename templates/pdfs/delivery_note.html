@@ -383,7 +383,9 @@
     <!-- Enhanced Header with Logo, Title, Status Badge and QR Code -->
     <div class="document-header">
         <div class="header-left">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Company Logo" class="logo">
+            {% if url_for('static', filename='img/logo.png', _external=True) %}
+            <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Company Logo" class="logo">
+            {% endif %}
             <h1 class="document-title">{{ translations.delivery_note }}</h1>
             <div class="document-subtitle">Professional Delivery Documentation</div>
         </div>
@@ -554,7 +556,7 @@
     <!-- Professional Footer -->
     <div class="footer">
         <div class="page-info">Page 1 of 1</div>
-        <div class="contact-info">For questions contact: company@email.com | +1 (555) 123-4567</div>
+        <div class="contact-info">For questions contact: panayiotis@pakkoutis.com | 99564330 & 99684759</div>
     </div>
 </body>
 </html>
