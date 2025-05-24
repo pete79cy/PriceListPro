@@ -166,8 +166,8 @@
                                                     <strong>Description:</strong> {{ item.description or 'No description' }}
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <i class="fas fa-ruler text-muted"></i>
-                                                    <strong>Size:</strong> 
+                                                    <i class="fas fa-seedling text-muted"></i>
+                                                    <strong>Pot Size:</strong> 
                                                     {% if item.actual_size %}
                                                         {{ item.actual_size }}
                                                     {% elif item.size %}
@@ -175,7 +175,7 @@
                                                     {% elif item.dimensions %}
                                                         {{ item.dimensions }}
                                                     {% else %}
-                                                        <span class="text-muted">To be measured</span>
+                                                        <span class="text-muted">Pot size TBD</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
