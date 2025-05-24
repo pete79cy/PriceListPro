@@ -383,9 +383,7 @@
     <!-- Enhanced Header with Logo, Title, Status Badge and QR Code -->
     <div class="document-header">
         <div class="header-left">
-            {% if url_for('static', filename='img/logo.png', _external=True) %}
-            <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Company Logo" class="logo">
-            {% endif %}
+            <img src="{{ url_for('static', filename='img/logo.jpg', _external=True) }}" alt="Andreas Pakkoutis & Sons Ltd" class="logo">
             <h1 class="document-title">{{ translations.delivery_note }}</h1>
             <div class="document-subtitle">Professional Delivery Documentation</div>
         </div>
