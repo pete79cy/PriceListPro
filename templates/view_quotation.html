@@ -42,8 +42,11 @@
                     <li><a class="dropdown-item" href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}">
                         <i class="fas fa-file-contract me-2"></i> Custom Supplier Reports
                     </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('delivery_note_report', quotation_id=quotation.id) }}">
+                        <i class="fas fa-truck me-2"></i> Delivery Note Report
+                    </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('delivery_note_enhanced', quotation_id=quotation.id) }}">
-                        <i class="fas fa-truck me-2"></i> Delivery Note
+                        <i class="fas fa-qrcode me-2"></i> Enhanced Delivery Note (QR + Status)
                     </a></li>
                     <li><a class="dropdown-item" id="showAiInsightsButton" href="#">
                         <i class="fas fa-robot me-2"></i> AI Insights
