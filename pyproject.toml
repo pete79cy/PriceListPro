@@ -26,4 +26,7 @@ dependencies = [
     "markupsafe>=3.0.2",
     "flask-httpauth>=4.8.0",
     "slack-sdk>=3.35.0",
+    "pillow>=11.1.0",
+    "reportlab>=4.4.1",
+    "qrcode>=8.2",
 ]

@@ -2635,6 +2635,33 @@ def register_routes(app):
             'delivery_note_report.html',
             quotation=quotation
         )
+
+    @app.route('/quotation/<int:quotation_id>/delivery_note_enhanced')
+    @login_required
+    def delivery_note_enhanced(quotation_id):
+        """Generate enhanced delivery note with QR codes and status badges using ReportLab"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            from utils.pdf_generator import generate_enhanced_delivery_note_pdf
+            
+            # Generate the enhanced PDF
+            pdf_bytes = generate_enhanced_delivery_note_pdf(quotation, base_url=request.url_root.rstrip('/'))
+            
+            # Create filename
+            filename = f"delivery_note_enhanced_{quotation.quotation_number}.pdf"
+            
+            # Send the PDF as a download
+            response = make_response(pdf_bytes)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generating enhanced delivery note: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f"Error generating enhanced delivery note: {str(e)}", 'danger')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/delete')
     @login_required

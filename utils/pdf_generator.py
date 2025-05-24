@@ -1,12 +1,18 @@
 """
 PDF Generator for delivery notes, charge sheets and other documents
-Uses WeasyPrint to generate PDFs from HTML templates
+Uses WeasyPrint to generate PDFs from HTML templates and ReportLab for enhanced designs
 """
 import os
 import base64
 from datetime import datetime
 from flask import render_template, current_app
 from weasyprint import HTML, CSS
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+import qrcode
+import io
 import logging
 
 def generate_delivery_note_pdf(order, language='en'):
@@ -289,3 +295,152 @@ def get_logo_data(company):
     
     # Return empty string if any issues occur
     return ""
+
+
+def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.com"):
+    """
+    Generate an enhanced delivery note PDF using ReportLab with QR codes and status badges
+    
+    Args:
+        quotation: The quotation object to generate the delivery note for
+        base_url: Base URL for QR code generation
+        
+    Returns:
+        bytes: The PDF file as bytes
+    """
+    # Create a BytesIO buffer to store the PDF
+    buffer = io.BytesIO()
+    
+    # Create the PDF canvas
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    margin = 20 * mm
+
+    # Header
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(margin, height - 40, f"Delivery Note – {quotation.quotation_number}")
+
+    # Status Badge (based on quotation status if available)
+    status_text = "ACCEPTED"
+    status_color = colors.green
+    if hasattr(quotation, 'status'):
+        if quotation.status == 'draft':
+            status_text = "DRAFT"
+            status_color = colors.orange
+        elif quotation.status == 'sent':
+            status_text = "SENT"
+            status_color = colors.blue
+        elif quotation.status == 'accepted':
+            status_text = "ACCEPTED"
+            status_color = colors.green
+        elif quotation.status == 'rejected':
+            status_text = "REJECTED"
+            status_color = colors.red
+    
+    # Draw status badge
+    c.setFillColor(status_color)
+    c.roundRect(width - 100, height - 50, 80, 20, 5, fill=1)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(width - 60, height - 45, status_text)
+    c.setFillColor(colors.black)
+
+    # Generate QR Code
+    qr_url = f"{base_url}/quotations/{quotation.id}/view"
+    qr = qrcode.make(qr_url)
+    qr_buffer = io.BytesIO()
+    qr.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+    c.drawImage(qr_buffer, width - 60, height - 120, 40, 40)
+
+    # Sub-header with date and customer
+    c.setFont("Helvetica", 12)
+    c.drawString(margin, height - 60, f"Date: {quotation.quotation_date}")
+    if quotation.customer:
+        c.drawString(margin, height - 75, f"Customer: {quotation.customer.name}")
+
+    # Table Headers
+    headers = ["#", "Quantity", "Description", "Pot Size"]
+    header_x = [margin, 60, 120, 350]
+    header_y = height - 100
+    
+    c.setFont("Helvetica-Bold", 10)
+    for i, header in enumerate(headers):
+        c.drawString(header_x[i], header_y, header)
+    
+    # Draw header line
+    c.line(margin, header_y - 5, width - margin, header_y - 5)
+
+    # Table Data
+    y = header_y - 20
+    item_count = 0
+    total_quantity = 0
+    
+    # Sort items by position to maintain order
+    sorted_items = sorted(quotation.items, key=lambda x: x.position if x.position is not None else 0)
+    
+    for item in sorted_items:
+        item_count += 1
+        total_quantity += item.quantity
+        
+        # Check if we need a new page
+        if y < 100:  # Leave space for footer
+            c.showPage()
+            y = height - 50
+            
+            # Redraw headers on new page
+            c.setFont("Helvetica-Bold", 10)
+            for i, header in enumerate(headers):
+                c.drawString(header_x[i], y, header)
+            c.line(margin, y - 5, width - margin, y - 5)
+            y -= 20
+        
+        # Draw row data
+        c.setFont("Helvetica", 9)
+        row_data = [
+            str(item_count),
+            str(int(item.quantity)) if item.quantity == int(item.quantity) else str(item.quantity),
+            item.description[:40] + "..." if len(item.description) > 40 else item.description,
+            item.pot_size or "N/A"
+        ]
+        
+        for i, cell in enumerate(row_data):
+            c.drawString(header_x[i], y, str(cell))
+        
+        # Add supplier info if available
+        if item.supplier:
+            c.setFont("Helvetica", 7)
+            c.setFillColor(colors.grey)
+            c.drawString(header_x[2], y - 8, f"Supplier: {item.supplier}")
+            c.setFillColor(colors.black)
+        
+        y -= 20
+
+    # Summary section
+    y -= 20
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(margin, y, f"Total distinct SKUs: {item_count}")
+    c.drawString(margin + 150, y, f"Total units: {int(total_quantity)}")
+
+    # Footer with signatures
+    signature_y = 80
+    c.setFont("Helvetica", 10)
+    c.drawString(margin, signature_y, "Delivered By:")
+    c.line(margin, signature_y - 15, margin + 200, signature_y - 15)
+    c.drawString(margin, signature_y - 25, "Name: ________________")
+    c.drawString(margin, signature_y - 40, "Date: ________________")
+    
+    c.drawString(margin + 250, signature_y, "Received By:")
+    c.line(margin + 250, signature_y - 15, width - margin, signature_y - 15)
+    c.drawString(margin + 250, signature_y - 25, "Name: ________________")
+    c.drawString(margin + 250, signature_y - 40, "Date: ________________")
+
+    # Save the PDF
+    c.save()
+    
+    # Get the PDF bytes
+    buffer.seek(0)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    
+    return pdf_bytes
