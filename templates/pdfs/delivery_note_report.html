@@ -176,12 +176,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if item.actual_size %}
-                    {{ item.actual_size }}
-                    {% elif item.size %}
-                    {{ item.size }}
-                    {% elif item.dimensions %}
-                    {{ item.dimensions }}
+                    {% if item.pot_size %}
+                    {{ item.pot_size }}
                     {% else %}
                     <span style="color: #999;">Pot size TBD</span>
                     {% endif %}
