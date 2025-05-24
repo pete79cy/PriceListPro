@@ -1,0 +1,70 @@
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+import qrcode
+import io
+
+def generate_delivery_note(file_path="delivery_note_revised.pdf"):
+    c = canvas.Canvas(file_path, pagesize=A4)
+    width, height = A4
+    margin = 20 * mm
+
+    # Header
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(margin, height - 40, "Delivery Note – PAK-2025-002")
+
+    # Status Badge
+    c.setFillColor(colors.green)
+    c.roundRect(width - 100, height - 50, 80, 20, 5, fill=1)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(width - 60, height - 45, "ACCEPTED")
+    c.setFillColor(colors.black)
+
+    # QR Code
+    qr = qrcode.make("https://yourdomain.com/delivery/PAK-2025-002")
+    qr_buffer = io.BytesIO()
+    qr.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+    c.drawImage(qr_buffer, width - 60, height - 120, 40, 40)
+
+    # Sub-header
+    c.setFont("Helvetica", 12)
+    c.drawString(margin, height - 60, "Date: 2025-05-24")
+
+    # Table Headers
+    headers = ["#", "Quantity", "Description", "Pot Size"]
+    header_x = [margin, 60, 120, 350]
+    c.setFont("Helvetica-Bold", 10)
+    for i, h in enumerate(headers):
+        c.drawString(header_x[i], height - 90, h)
+
+    # Sample Table Data (extend as needed)
+    rows = [
+        (1, "30", "ΛΑΣΜΑΡΙ ΟΡΘΟΚΛΑΔΟ", "20cm"),
+        (2, "16", "Κονβολβουλος (Supplier: Moesis)", "2L"),
+        # Add all items...
+    ]
+
+    y = height - 110
+    for row in rows:
+        c.setFont("Helvetica", 9)
+        for i, cell in enumerate(row):
+            c.drawString(header_x[i], y, str(cell))
+        y -= 15
+
+    # Totals Summary
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(margin, y - 20, "Total distinct SKUs: 20")
+    c.drawString(margin + 150, y - 20, "Total units: 198")
+
+    # Signatures
+    c.drawString(margin, 80, "Delivered By")
+    c.line(margin, 70, margin + 200, 70)
+    c.drawString(margin + 210, 80, "Received By")
+    c.line(margin + 210, 70, width - margin, 70)
+
+    c.save()
+
+generate_delivery_note()
