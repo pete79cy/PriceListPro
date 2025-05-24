@@ -351,7 +351,11 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     qr_buffer = io.BytesIO()
     qr.save(qr_buffer, format="PNG")
     qr_buffer.seek(0)
-    c.drawImage(qr_buffer, width - 60, height - 120, 40, 40)
+    
+    # Use ImageReader for ReportLab compatibility
+    from reportlab.lib.utils import ImageReader
+    qr_image = ImageReader(qr_buffer)
+    c.drawImage(qr_image, width - 60, height - 120, 40, 40)
 
     # Sub-header with date and customer
     c.setFont("Helvetica", 12)
