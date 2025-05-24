@@ -64,12 +64,12 @@ def generate_delivery_note_pdf(order, language='en', base_url="https://yourdomai
     pdf = HTML(string=html).write_pdf()
     return pdf
 
-def generate_charge_sheet_pdf(order):
+def generate_pro_forma_invoice_pdf(order):
     """
-    Generate a PDF initial charge sheet for an order
+    Generate a PDF Pro Forma Invoice for an order
     
     Args:
-        order: The order object to generate the charge sheet for
+        order: The order object to generate the Pro Forma Invoice for
         
     Returns:
         bytes: The PDF file as bytes
@@ -99,12 +99,35 @@ def generate_charge_sheet_pdf(order):
     # Calculate grand total
     total = subtotal + sum(item['amount'] for item in vat_breakdown)
     
+    # Generate QR code for the Pro Forma Invoice
+    qr_code_base64 = None
+    try:
+        order_url = f"Pro Forma Invoice: {order.order_number}"
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(order_url)
+        qr.make(fit=True)
+        
+        # Create QR code image
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = io.BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        
+        # Convert to base64 for HTML embedding
+        qr_code_base64 = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
+    except Exception as e:
+        logging.warning(f"Could not generate QR code: {e}")
+        qr_code_base64 = ""
+    
     # Render the HTML template with order details
-    html = render_template('pdfs/charge_sheet_new.html',
+    html = render_template('pdfs/pro_forma_invoice.html',
                           order=order,
                           subtotal=subtotal,
                           vat_breakdown=vat_breakdown,
                           total=total,
+                          qr_code_base64=qr_code_base64,
+                          page_number=1,
+                          total_pages=1,
                           date=datetime.now().strftime('%Y-%m-%d'))
     
     # Generate PDF using WeasyPrint
@@ -112,6 +135,9 @@ def generate_charge_sheet_pdf(order):
     return pdf
 
 # For backward compatibility
+def generate_charge_sheet_pdf(order):
+    """Backward compatibility wrapper - redirects to Pro Forma Invoice"""
+    return generate_pro_forma_invoice_pdf(order)
 def generate_delivery_note(order, language='en'):
     """Alias for generate_delivery_note_pdf for backward compatibility"""
     return generate_delivery_note_pdf(order, language)

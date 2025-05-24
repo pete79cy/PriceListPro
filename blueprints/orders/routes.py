@@ -354,7 +354,7 @@ def print_delivery_note(order_id):
 @orders.route('/<int:order_id>/charge_sheet')
 @login_required
 def generate_charge_sheet(order_id):
-    """Generate and display a PDF initial charge sheet"""
+    """Generate and display a PDF Pro Forma Invoice"""
     order = Order.query.get_or_404(order_id)
     
     # Generate PDF
@@ -365,7 +365,7 @@ def generate_charge_sheet(order_id):
     
     # Create a unique filename for the PDF
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"charge_sheet_{order.order_number}_{timestamp}.pdf"
+    filename = f"pro_forma_invoice_{order.order_number}_{timestamp}.pdf"
     
     # Save the PDF file
     pdf_dir = os.path.join(current_app.static_folder, 'pdfs')
