@@ -168,12 +168,8 @@
                                                 <div class="col-md-4">
                                                     <i class="fas fa-seedling text-muted"></i>
                                                     <strong>Pot Size:</strong> 
-                                                    {% if item.actual_size %}
-                                                        {{ item.actual_size }}
-                                                    {% elif item.size %}
-                                                        {{ item.size }}
-                                                    {% elif item.dimensions %}
-                                                        {{ item.dimensions }}
+                                                    {% if item.pot_size %}
+                                                        {{ item.pot_size }}
                                                     {% else %}
                                                         <span class="text-muted">Pot size TBD</span>
                                                     {% endif %}
