@@ -11,6 +11,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import qrcode
 import io
 import logging
@@ -308,6 +310,20 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     Returns:
         bytes: The PDF file as bytes
     """
+    # Register Unicode font for Greek characters
+    try:
+        # Try to register DejaVu Sans font for proper Greek character support
+        pdfmetrics.registerFont(TTFont('DejaVuSans', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+        font_name = 'DejaVuSans'
+    except:
+        try:
+            # Fallback to Liberation Sans if available
+            pdfmetrics.registerFont(TTFont('LiberationSans', '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf'))
+            font_name = 'LiberationSans'
+        except:
+            # If no Unicode fonts available, use Helvetica but clean the text
+            font_name = 'Helvetica'
+    
     # Create a BytesIO buffer to store the PDF
     buffer = io.BytesIO()
     
@@ -317,7 +333,10 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     margin = 20 * mm
 
     # Header
-    c.setFont("Helvetica-Bold", 18)
+    try:
+        c.setFont(f"{font_name}-Bold", 18)
+    except:
+        c.setFont(font_name, 18)
     c.drawString(margin, height - 40, f"Delivery Note – {quotation.quotation_number}")
 
     # Status Badge (based on quotation status if available)
@@ -341,7 +360,10 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     c.setFillColor(status_color)
     c.roundRect(width - 100, height - 50, 80, 20, 5, fill=1)
     c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 10)
+    try:
+        c.setFont(f"{font_name}-Bold", 10)
+    except:
+        c.setFont(font_name, 10)
     c.drawCentredString(width - 60, height - 45, status_text)
     c.setFillColor(colors.black)
 
@@ -358,7 +380,7 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     c.drawImage(qr_image, width - 60, height - 120, 40, 40)
 
     # Sub-header with date and customer
-    c.setFont("Helvetica", 12)
+    c.setFont(font_name, 12)
     c.drawString(margin, height - 60, f"Date: {quotation.quotation_date}")
     if quotation.customer:
         c.drawString(margin, height - 75, f"Customer: {quotation.customer.name}")
@@ -368,7 +390,10 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     header_x = [margin, margin + 30, margin + 80, margin + 280]
     header_y = height - 100
     
-    c.setFont("Helvetica-Bold", 10)
+    try:
+        c.setFont(f"{font_name}-Bold", 10)
+    except:
+        c.setFont(font_name, 10)
     for i, header in enumerate(headers):
         c.drawString(header_x[i], header_y, header)
     
@@ -399,14 +424,11 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
             c.line(margin, y - 5, width - margin, y - 5)
             y -= 20
         
-        # Draw row data
-        c.setFont("Helvetica", 9)
+        # Draw row data with Unicode font for Greek characters
+        c.setFont(font_name, 9)
         
-        # Handle Greek characters properly
+        # Get clean description (no need to remove characters with Unicode font)
         description = item.description or ""
-        # Replace problematic characters that don't render well in Helvetica
-        description = description.replace("■", "")  # Remove black square character
-        description = description.replace("", "")   # Remove any other problematic chars
         
         row_data = [
             str(item_count),
