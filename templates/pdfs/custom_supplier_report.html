@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .date {
+            color: #666;
+            font-size: 10px;
+        }
+        .supplier-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .supplier-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .items-table th,
+        .items-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .items-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+        .summary-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .no-items {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">{{ title }}</div>
+        <div class="date">Generated on {{ date }}</div>
+    </div>
+
+    <div class="supplier-info">
+        <div class="supplier-name">{{ supplier.name or 'Unknown Supplier' }}</div>
+        {% if supplier.contact_info %}
+        <div><strong>Contact:</strong> {{ supplier.contact_info }}</div>
+        {% endif %}
+        {% if supplier.email %}
+        <div><strong>Email:</strong> {{ supplier.email }}</div>
+        {% endif %}
+        {% if supplier.phone %}
+        <div><strong>Phone:</strong> {{ supplier.phone }}</div>
+        {% endif %}
+    </div>
+
+    {% if items %}
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Total</th>
+                {% if report_params.show_categories %}
+                <th>Category</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product_name or item.name or 'N/A' }}</td>
+                <td>{{ item.description or '-' }}</td>
+                <td class="text-center">{{ item.quantity or 0 }}</td>
+                <td class="text-right">
+                    {% if item.unit_price %}
+                    €{{ "%.2f"|format(item.unit_price) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if item.total_price %}
+                    €{{ "%.2f"|format(item.total_price) }}
+                    {% elif item.unit_price and item.quantity %}
+                    €{{ "%.2f"|format(item.unit_price * item.quantity) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                {% if report_params.show_categories %}
+                <td>{{ item.category or '-' }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary">
+        <div class="summary-title">Report Summary</div>
+        <div><strong>Total Items:</strong> {{ items|length }}</div>
+        {% if report_params.total_value %}
+        <div><strong>Total Value:</strong> €{{ "%.2f"|format(report_params.total_value) }}</div>
+        {% endif %}
+        {% if report_params.notes %}
+        <div><strong>Notes:</strong> {{ report_params.notes }}</div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="no-items">
+        No items found for this supplier report.
+    </div>
+    {% endif %}
+</body>
+</html>
