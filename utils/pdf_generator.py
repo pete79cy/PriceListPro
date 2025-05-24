@@ -365,7 +365,7 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
 
     # Table Headers
     headers = ["#", "Quantity", "Description", "Pot Size"]
-    header_x = [margin, 60, 120, 350]
+    header_x = [margin, margin + 30, margin + 80, margin + 280]
     header_y = height - 100
     
     c.setFont("Helvetica-Bold", 10)
