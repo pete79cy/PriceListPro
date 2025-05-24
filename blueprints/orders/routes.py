@@ -301,6 +301,54 @@ def update_item(order_id, item_id):
     flash('Order item updated successfully', 'success')
     return redirect(url_for('orders.view_order', order_id=order.id))
 
+@orders.route('/<int:order_id>/item/<int:item_id>/update-inline', methods=['PUT'])
+@login_required
+def update_item_inline(order_id, item_id):
+    """Update an order item via AJAX for inline editing"""
+    from flask import jsonify
+    
+    order = Order.query.get_or_404(order_id)
+    item = OrderItem.query.filter_by(id=item_id, order_id=order_id).first_or_404()
+    
+    # Get JSON data from request
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    try:
+        # Update item fields
+        item.quantity = int(data.get('quantity', item.quantity))
+        item.price = float(data.get('unit_price', item.price))
+        item.vat_rate = float(data.get('vat_rate', item.vat_rate or 19.0))
+        item.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Calculate totals for the entire order
+        subtotal = sum(item.price * item.quantity for item in order.items)
+        vat_5 = sum((item.price * item.quantity) * 0.05 for item in order.items if item.vat_rate == 5.0)
+        vat_19 = sum((item.price * item.quantity) * 0.19 for item in order.items if item.vat_rate == 19.0)
+        total = subtotal + vat_5 + vat_19
+        
+        # Return updated data
+        return jsonify({
+            'id': item.id,
+            'quantity': item.quantity,
+            'unit_price': float(item.price),
+            'vat_rate': float(item.vat_rate),
+            'total': float(item.price * item.quantity),
+            'order_subtotal': float(subtotal),
+            'order_vat_5': float(vat_5),
+            'order_vat_19': float(vat_19),
+            'order_total': float(total)
+        })
+        
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': 'Invalid data format'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update item'}), 500
+
 @orders.route('/<int:order_id>/item/<int:item_id>/remove', methods=['POST'])
 @login_required
 def remove_item(order_id, item_id):
