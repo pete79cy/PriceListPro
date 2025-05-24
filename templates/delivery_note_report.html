@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Delivery Note Report - {{ quotation.quotation_number }}{% endblock %}
+
+{% block styles %}
+<style>
+    .report-card {
+        margin-bottom: 20px;
+        border-left: 3px solid #28a745;
+    }
+    .item-checkbox {
+        margin-right: 10px;
+    }
+    .item-row {
+        padding: 10px;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s;
+    }
+    .item-row:hover {
+        background-color: #f8f9fa;
+    }
+    .item-details {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+    .preview-btn {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+    }
+    .preview-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .section-title {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .item-row {
+            padding: 8px;
+        }
+        .preview-btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-truck"></i> Delivery Note Report</h1>
+        <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Quotation
+        </a>
+    </div>
+
+    <!-- Quotation Information -->
+    <div class="card report-card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-file-alt me-2"></i>
+                Quotation: {{ quotation.quotation_number }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    {% if quotation.customer %}
+                    <p><strong>Customer:</strong> {{ quotation.customer.name }}</p>
+                    {% endif %}
+                    <p><strong>Created:</strong> {{ quotation.created_at.strftime('%Y-%m-%d') if quotation.created_at else 'N/A' }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Total Items:</strong> {{ quotation.items|length }}</p>
+                    {% if quotation.status %}
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-info">{{ quotation.status }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Configuration Form -->
+    <form method="POST" id="deliveryNoteForm">
+        <!-- Report Options -->
+        <div class="form-section">
+            <h5 class="section-title">
+                <i class="fas fa-cog me-2"></i>Report Options
+            </h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="include_header" name="include_header" checked>
+                        <label class="form-check-label" for="include_header">
+                            Include quotation header information
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Enter any special delivery instructions or notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item Selection -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title mb-0">
+                    <i class="fas fa-boxes me-2"></i>Select Items for Delivery Note
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="selectAllItems()">
+                        <i class="fas fa-check-square"></i> Select All
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="deselectAllItems()">
+                        <i class="fas fa-square"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            {% if quotation.items %}
+            <div class="card">
+                <div class="card-body p-0">
+                    {% for item in quotation.items %}
+                    <div class="item-row">
+                        <div class="form-check">
+                            <input class="form-check-input item-checkbox" type="checkbox" 
+                                   id="item_{{ item.id }}" name="selected_items" 
+                                   value="{{ item.id }}" checked>
+                            <label class="form-check-label w-100" for="item_{{ item.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <strong>{{ item.product_name or item.name or 'Product' }}</strong>
+                                        <div class="item-details">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <i class="fas fa-hashtag text-muted"></i>
+                                                    <strong>Quantity:</strong> {{ item.quantity or '-' }}
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <i class="fas fa-info-circle text-muted"></i>
+                                                    <strong>Description:</strong> {{ item.description or 'No description' }}
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <i class="fas fa-ruler text-muted"></i>
+                                                    <strong>Size:</strong> 
+                                                    {% if item.actual_size %}
+                                                        {{ item.actual_size }}
+                                                    {% elif item.size %}
+                                                        {{ item.size }}
+                                                    {% elif item.dimensions %}
+                                                        {{ item.dimensions }}
+                                                    {% else %}
+                                                        <span class="text-muted">To be measured</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% if item.supplier %}
+                                            <div class="mt-2">
+                                                <i class="fas fa-truck text-muted"></i>
+                                                <strong>Supplier:</strong> {{ item.supplier }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No items found in this quotation.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Generate Button -->
+        <div class="text-center">
+            <button type="submit" class="preview-btn" id="generateBtn">
+                <i class="fas fa-file-pdf me-2"></i>
+                Generate Delivery Note PDF
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function selectAllItems() {
+        const checkboxes = document.querySelectorAll('input[name="selected_items"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+    }
+
+    function deselectAllItems() {
+        const checkboxes = document.querySelectorAll('input[name="selected_items"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    }
+
+    // Form validation
+    document.getElementById('deliveryNoteForm').addEventListener('submit', function(e) {
+        const checkedItems = document.querySelectorAll('input[name="selected_items"]:checked');
+        
+        if (checkedItems.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one item for the delivery note.');
+            return false;
+        }
+
+        // Show loading state
+        const generateBtn = document.getElementById('generateBtn');
+        const originalText = generateBtn.innerHTML;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating PDF...';
+        generateBtn.disabled = true;
+
+        // Reset button after 10 seconds (in case of error)
+        setTimeout(() => {
+            generateBtn.innerHTML = originalText;
+            generateBtn.disabled = false;
+        }, 10000);
+    });
+
+    // Highlight rows on hover
+    document.querySelectorAll('.item-row').forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .date {
+            color: #666;
+            font-size: 11px;
+        }
+        .quotation-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .quotation-details h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        .quotation-details p {
+            margin: 5px 0;
+            font-size: 11px;
+        }
+        .delivery-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .delivery-table th,
+        .delivery-table td {
+            border: 1px solid #333;
+            padding: 12px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .delivery-table th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .delivery-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .qty-col {
+            width: 15%;
+            text-align: center;
+        }
+        .desc-col {
+            width: 55%;
+        }
+        .size-col {
+            width: 30%;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 40%;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            text-align: center;
+            font-size: 10px;
+        }
+        .notes-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .notes-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .no-items {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+            .signature-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">{{ title }}</div>
+        <div class="date">Date: {{ date }}</div>
+    </div>
+
+    {% if include_header and quotation %}
+    <div class="quotation-info">
+        <div class="quotation-details">
+            <h3>Quotation Information</h3>
+            <p><strong>Quotation Number:</strong> {{ quotation.quotation_number }}</p>
+            {% if quotation.customer %}
+            <p><strong>Customer:</strong> {{ quotation.customer.name }}</p>
+            {% endif %}
+            {% if quotation.created_at %}
+            <p><strong>Created:</strong> {{ quotation.created_at.strftime('%Y-%m-%d') }}</p>
+            {% endif %}
+        </div>
+        <div class="quotation-details">
+            <h3>Delivery Details</h3>
+            <p><strong>Total Items:</strong> {{ items|length }}</p>
+            {% if quotation.status %}
+            <p><strong>Status:</strong> {{ quotation.status }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if items %}
+    <table class="delivery-table">
+        <thead>
+            <tr>
+                <th class="qty-col">Quantity</th>
+                <th class="desc-col">Description</th>
+                <th class="size-col">Actual Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">
+                    {% if item.quantity %}
+                    {{ item.quantity }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ item.product_name or item.name or 'Product' }}</strong>
+                    {% if item.description %}
+                    <br><span style="font-size: 10px; color: #666;">{{ item.description }}</span>
+                    {% endif %}
+                    {% if item.supplier %}
+                    <br><span style="font-size: 9px; color: #888;">Supplier: {{ item.supplier }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.actual_size %}
+                    {{ item.actual_size }}
+                    {% elif item.size %}
+                    {{ item.size }}
+                    {% elif item.dimensions %}
+                    {{ item.dimensions }}
+                    {% else %}
+                    <span style="color: #999;">To be measured</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-items">
+        No items found for this delivery note.
+    </div>
+    {% endif %}
+
+    {% if notes %}
+    <div class="notes-section">
+        <div class="notes-title">Notes:</div>
+        <div>{{ notes }}</div>
+    </div>
+    {% endif %}
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <div>Delivered By</div>
+            <div style="margin-top: 30px;">_________________________</div>
+            <div style="margin-top: 5px;">Signature & Date</div>
+        </div>
+        <div class="signature-box">
+            <div>Received By</div>
+            <div style="margin-top: 30px;">_________________________</div>
+            <div style="margin-top: 5px;">Signature & Date</div>
+        </div>
+    </div>
+</body>
+</html>

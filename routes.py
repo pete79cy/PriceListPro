@@ -2583,6 +2583,59 @@ def register_routes(app):
             available_fields=available_fields
         )
     
+    @app.route('/quotation/<int:quotation_id>/delivery-note-report', methods=['GET', 'POST'])
+    @login_required
+    def delivery_note_report(quotation_id):
+        """Generate a custom delivery note report with quantity, description, and actual size"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        if request.method == 'POST':
+            try:
+                # Get form data
+                include_header = bool(request.form.get('include_header'))
+                notes = request.form.get('notes', '').strip()
+                selected_items = request.form.getlist('selected_items')
+                
+                # Filter items if specific ones are selected
+                if selected_items:
+                    items = [item for item in quotation.items if str(item.id) in selected_items]
+                else:
+                    items = quotation.items
+                
+                if not items:
+                    flash('No items selected for the delivery note', 'warning')
+                    return redirect(url_for('delivery_note_report', quotation_id=quotation_id))
+                
+                # Generate the delivery note PDF
+                from utils.pdf_generator import generate_delivery_note_report
+                pdf_file = generate_delivery_note_report(
+                    quotation=quotation,
+                    items=items,
+                    include_header=include_header,
+                    notes=notes
+                )
+                
+                # Create filename
+                filename = f"delivery_note_{quotation.quotation_number}.pdf"
+                
+                # Send the PDF as a download
+                response = make_response(pdf_file)
+                response.headers['Content-Type'] = 'application/pdf'
+                response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+                return response
+                
+            except Exception as e:
+                logger.error(f"Error generating delivery note report: {str(e)}")
+                logger.error(traceback.format_exc())
+                flash(f"Error generating delivery note: {str(e)}", 'danger')
+                return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
+        # GET request - show the form
+        return render_template(
+            'delivery_note_report.html',
+            quotation=quotation
+        )
+    
     @app.route('/quotation/<int:quotation_id>/delete')
     @login_required
     def delete_quotation(quotation_id):
