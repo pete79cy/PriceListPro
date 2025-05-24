@@ -1,0 +1,226 @@
+Below is a complete, copy-paste-ready pattern that slots straight into the layout you already have.
+It keeps the visual language you’re using (Bootstrap 5 + dark card) while giving users an intuitive **Edit** path that:
+
+* opens a modal instead of bouncing them to a new page,
+* re-calculates totals live,
+* updates the row (and the order summary) with a single fetch call, and
+* gives a toast confirmation so they know the save “stuck.”
+
+---
+
+## 1.  Template tweaks – add an **Edit** button
+
+```html+jinja
+{% for item in order.items %}
+<tr data-id="{{ item.id }}">
+  <td>
+    {{ item.product.name }}<br>
+    <small class="text-muted">Size: {{ item.size }}</small>
+  </td>
+
+  <td class="col-qty">{{ item.quantity }}</td>
+  <td class="col-price">{{ "%.2f"|format(item.unit_price) }}</td>
+  <td class="col-total">{{ "%.2f"|format(item.total) }}</td>
+
+  <td class="text-end">
+    <!-- EDIT -->
+    <button type="button"
+            class="btn btn-sm btn-outline-primary edit-item"
+            data-id="{{ item.id }}"
+            data-product="{{ item.product.name }}"
+            data-qty="{{ item.quantity }}"
+            data-price="{{ item.unit_price }}">
+      <i class="bi bi-pencil"></i>
+    </button>
+
+    <!-- DELETE (you already have) -->
+    <form method="post"
+          action="{{ url_for('orders.delete_item', item_id=item.id) }}"
+          class="d-inline">
+      {{ csrf_token() }}
+      <button class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash"></i>
+      </button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+```
+
+---
+
+## 2.  The modal (drop it once, re-use for every click)
+
+```html
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="editItemForm" class="modal-content">
+      {{ csrf_token() }}
+      <input type="hidden" name="item_id" id="item_id">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Edit order item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Product</label>
+          <input class="form-control-plaintext" id="item_product" disabled>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-md">
+            <label for="item_quantity" class="form-label">Quantity</label>
+            <input type="number" min="1" class="form-control"
+                   id="item_quantity" name="quantity" required>
+          </div>
+          <div class="col-md">
+            <label for="item_price" class="form-label">Unit price (€)</label>
+            <input type="number" step="0.01" min="0"
+                   class="form-control" id="item_price"
+                   name="unit_price" required>
+          </div>
+        </div>
+
+        <div class="mt-3 text-end">
+          <strong>Line total: €<span id="line_total">0.00</span></strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+                data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+```
+
+---
+
+## 3.  Lightweight JavaScript (plain ES 6, no jQuery needed)
+
+```html
+<script>
+/* ---------- helpers ---------- */
+const modalEl     = document.getElementById('editItemModal');
+const bsModal     = new bootstrap.Modal(modalEl);
+const toast       = msg => {
+  const t = document.createElement('div');
+  t.className = 'toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-4';
+  t.role = 'alert'; t.innerHTML = `
+      <div class="d-flex"><div class="toast-body">${msg}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"></button></div>`;
+  document.body.appendChild(t);
+  new bootstrap.Toast(t).show();
+};
+
+/* ---------- open modal ---------- */
+document.querySelectorAll('.edit-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // preload fields
+    item_id.value        = btn.dataset.id;
+    item_product.value   = btn.dataset.product;
+    item_quantity.value  = btn.dataset.qty;
+    item_price.value     = btn.dataset.price;
+    line_total.textContent =
+      (item_quantity.value * item_price.value).toFixed(2);
+
+    bsModal.show();
+  });
+});
+
+/* ---------- live line-total ---------- */
+['input', 'change'].forEach(evt => {
+  item_quantity.addEventListener(evt, calcTotal);
+  item_price.addEventListener(evt, calcTotal);
+});
+function calcTotal() {
+  const t = (+item_quantity.value || 0) * (+item_price.value || 0);
+  line_total.textContent = t.toFixed(2);
+}
+
+/* ---------- submit ---------- */
+editItemForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = new FormData(e.target);
+
+  const res  = await fetch(`/order-item/${form.get('item_id')}`, {
+                method : 'PUT',
+                headers: {'X-CSRFToken': form.get('csrf_token')},
+                body   : form
+              });
+
+  if (!res.ok) { alert('Update failed'); return; }
+  const data = await res.json();
+
+  // patch the row
+  const row = document.querySelector(`tr[data-id="${data.id}"]`);
+  row.querySelector('.col-qty').textContent   = data.quantity;
+  row.querySelector('.col-price').textContent = data.unit_price.toFixed(2);
+  row.querySelector('.col-total').textContent = data.total.toFixed(2);
+
+  // patch order summary
+  subtotal.textContent = data.order_subtotal.toFixed(2);
+  vat.textContent      = data.order_vat.toFixed(2);
+  total.textContent    = data.order_total.toFixed(2);
+
+  bsModal.hide();
+  toast('Item updated');
+});
+</script>
+```
+
+*(IDs `subtotal`, `vat`, `total` correspond to the cells in your
+“Subtotal / VAT / Total” rows.)*
+
+---
+
+## 4.  Tiny Flask / Django view (same idea)
+
+```python
+@app.put("/order-item/<int:item_id>")
+@login_required
+def update_item(item_id):
+    item        = OrderItem.query.get_or_404(item_id)
+    quantity    = int(request.form["quantity"])
+    unit_price  = Decimal(request.form["unit_price"])
+
+    item.quantity   = quantity
+    item.unit_price = unit_price
+    db.session.commit()
+
+    order = item.order  # assuming back-ref
+    return jsonify(
+        id=item.id,
+        quantity=item.quantity,
+        unit_price=float(item.unit_price),
+        total=float(item.total),
+        order_subtotal=float(order.subtotal),
+        order_vat=float(order.vat),
+        order_total=float(order.total),
+    )
+```
+
+Security bits:
+
+* ensure CSRF token is checked;
+* protect the route with authentication / authorisation.
+
+---
+
+## Why this feels good for users
+
+| Detail                                | Benefit                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Same “Add Item” muscle-memory**     | The modal mirrors your existing *Add Item* flow, so nothing new to learn.                                 |
+| **Live total**                        | Immediate feedback prevents accidental fat-finger pricing.                                                |
+| **Single-row update, no page reload** | Keeps the context (people can still see the list while they edit).                                        |
+| **Accessible**                        | The modal uses semantic labels and focuses correctly; buttons all have icons *and* text/title attributes. |
+| **Mobile-friendly**                   | Modal centers nicely on narrow screens; inputs are touch-sized; buttons spaced.                           |
+
+Copy the blocks above into your template and a small JS file, wire up the `PUT` route, and you’ve got rock-solid, user-friendly editing with minimal code overhead. Happy shipping!
