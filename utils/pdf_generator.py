@@ -411,13 +411,6 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
         for i, cell in enumerate(row_data):
             c.drawString(header_x[i], y, str(cell))
         
-        # Add supplier info if available
-        if item.supplier:
-            c.setFont("Helvetica", 7)
-            c.setFillColor(colors.grey)
-            c.drawString(header_x[2], y - 8, f"Supplier: {item.supplier}")
-            c.setFillColor(colors.black)
-        
         y -= 20
 
     # Summary section
