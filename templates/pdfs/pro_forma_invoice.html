@@ -91,15 +91,14 @@
       font-feature-settings: 'tnum';
     }
     .totals {
-      display: flex;
-      flex-direction: column;
       width: 40%;
-      align-self: flex-end;
+      float: right;
       background-color: #F4F8F4;
       padding: 10px;
       margin-top: 20px;
-      margin-bottom: 100px;
+      margin-bottom: 150px;
       clear: both;
+      page-break-inside: avoid;
     }
     .totals div {
       display: flex;
@@ -114,19 +113,23 @@
       padding: 4px 8px;
     }
     .main-content {
-      display: flex;
-      flex-direction: column;
-      min-height: calc(100vh - 150px);
+      margin-bottom: 80px;
     }
     footer {
       font-size: 6pt;
       color: grey;
-      margin-top: 40px;
+      margin-top: 80px;
       border-top: 1px solid #B0B0B0;
       padding-top: 10px;
       display: flex;
       justify-content: space-between;
       page-break-inside: avoid;
+      clear: both;
+    }
+    
+    /* Ensure proper spacing between content and footer */
+    .totals + footer {
+      margin-top: 120px;
     }
   </style>
 </head>
