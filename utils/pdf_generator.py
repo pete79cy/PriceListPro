@@ -184,6 +184,37 @@ def generate_supplier_catalog_pdf(supplier, categories=None):
     pdf = HTML(string=html).write_pdf()
     return pdf
 
+def generate_custom_supplier_report(supplier_data, items_data, report_params=None):
+    """
+    Generate a custom supplier report PDF
+    
+    Args:
+        supplier_data: Dictionary containing supplier information
+        items_data: List of items/products for the supplier
+        report_params: Optional dictionary with report parameters
+        
+    Returns:
+        bytes: The PDF file as bytes
+    """
+    # Set default report parameters
+    if report_params is None:
+        report_params = {}
+    
+    # Generate report title
+    title = report_params.get('title', f"Custom Supplier Report - {supplier_data.get('name', 'Unknown Supplier')}")
+    
+    # Render the HTML template
+    html = render_template('pdfs/custom_supplier_report.html',
+                          supplier=supplier_data,
+                          items=items_data,
+                          title=title,
+                          report_params=report_params,
+                          date=datetime.now().strftime('%Y-%m-%d'))
+    
+    # Generate PDF using WeasyPrint
+    pdf = HTML(string=html).write_pdf()
+    return pdf
+
 def get_logo_data(company):
     """
     Get company logo data in base64 format for PDF documents
