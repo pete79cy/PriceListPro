@@ -215,6 +215,35 @@ def generate_custom_supplier_report(supplier_data, items_data, report_params=Non
     pdf = HTML(string=html).write_pdf()
     return pdf
 
+def generate_delivery_note_report(quotation, items, include_header=True, notes=None):
+    """
+    Generate a delivery note report PDF with Quantity, Description, and Actual Size fields
+    
+    Args:
+        quotation: The quotation object
+        items: List of quotation items to include
+        include_header: Whether to include quotation header information
+        notes: Optional notes to include in the report
+        
+    Returns:
+        bytes: The PDF file as bytes
+    """
+    # Generate report title
+    title = f"Delivery Note - {quotation.quotation_number}"
+    
+    # Render the HTML template
+    html = render_template('pdfs/delivery_note_report.html',
+                          quotation=quotation,
+                          items=items,
+                          title=title,
+                          include_header=include_header,
+                          notes=notes,
+                          date=datetime.now().strftime('%Y-%m-%d'))
+    
+    # Generate PDF using WeasyPrint
+    pdf = HTML(string=html).write_pdf()
+    return pdf
+
 def get_logo_data(company):
     """
     Get company logo data in base64 format for PDF documents
