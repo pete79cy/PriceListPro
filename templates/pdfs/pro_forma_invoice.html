@@ -91,12 +91,15 @@
       font-feature-settings: 'tnum';
     }
     .totals {
+      display: flex;
+      flex-direction: column;
       width: 40%;
-      float: right;
-      margin-top: 20px;
+      align-self: flex-end;
       background-color: #F4F8F4;
       padding: 10px;
-      margin-bottom: 60px;
+      margin-top: 20px;
+      margin-bottom: 100px;
+      clear: both;
     }
     .totals div {
       display: flex;
@@ -110,6 +113,11 @@
       background-color: #E8F7E5;
       padding: 4px 8px;
     }
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 150px);
+    }
     footer {
       font-size: 6pt;
       color: grey;
@@ -118,6 +126,7 @@
       padding-top: 10px;
       display: flex;
       justify-content: space-between;
+      page-break-inside: avoid;
     }
   </style>
 </head>
@@ -139,9 +148,10 @@
     </div>
   </header>
 
-  <h1>Pro Forma Invoice</h1>
+  <div class="main-content">
+    <h1>Pro Forma Invoice</h1>
 
-  <div class="info-block">
+    <div class="info-block">
     <div class="info-item">
       <div class="label">Bill To</div>
       <div class="value">{{ order.customer.name }}</div>
@@ -184,6 +194,7 @@
     {% endfor %}
     <div class="total"><span>GRAND TOTAL</span><span>€{{ "%.2f"|format(total) }}</span></div>
     <div style="margin-top: 10px; font-size: 8pt;">Payment Terms: Within 30 days • IBAN XX... • Swift YYYY</div>
+  </div>
   </div>
 
   <footer>
