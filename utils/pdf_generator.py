@@ -401,10 +401,17 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
         
         # Draw row data
         c.setFont("Helvetica", 9)
+        
+        # Handle Greek characters properly
+        description = item.description or ""
+        # Replace problematic characters that don't render well in Helvetica
+        description = description.replace("■", "")  # Remove black square character
+        description = description.replace("", "")   # Remove any other problematic chars
+        
         row_data = [
             str(item_count),
             str(int(item.quantity)) if item.quantity == int(item.quantity) else str(item.quantity),
-            item.description[:40] + "..." if len(item.description) > 40 else item.description,
+            description[:40] + "..." if len(description) > 40 else description,
             item.pot_size or "N/A"
         ]
         
