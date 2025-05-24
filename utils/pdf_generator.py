@@ -17,13 +17,14 @@ import qrcode
 import io
 import logging
 
-def generate_delivery_note_pdf(order, language='en'):
+def generate_delivery_note_pdf(order, language='en', base_url="https://yourdomain.com"):
     """
-    Generate a PDF delivery note for an order
+    Generate a PDF delivery note for an order with enhanced design and QR code
     
     Args:
         order: The order object to generate the delivery note for
         language (str): Language code for translations ('en', 'el', 'ar')
+        base_url (str): Base URL for QR code generation
         
     Returns:
         bytes: The PDF file as bytes
@@ -32,11 +33,31 @@ def generate_delivery_note_pdf(order, language='en'):
     from utils.translations import get_translations
     translations = get_translations(language)
     
+    # Generate QR code for the order
+    qr_code_data = None
+    try:
+        order_url = f"{base_url}/orders/{order.id}/view"
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(order_url)
+        qr.make(fit=True)
+        
+        # Create QR code image
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = io.BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        
+        # Convert to base64 for HTML embedding
+        qr_code_data = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
+    except Exception as e:
+        logging.warning(f"Could not generate QR code for order {order.id}: {str(e)}")
+    
     # Render the HTML template with order details and translations
     html = render_template('pdfs/delivery_note.html',
                           order=order,
                           translations=translations,
                           language=language,
+                          qr_code_data=qr_code_data,
                           date=datetime.now().strftime('%Y-%m-%d'))
     
     # Generate PDF using WeasyPrint
