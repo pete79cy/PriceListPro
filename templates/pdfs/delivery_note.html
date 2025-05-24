@@ -5,177 +5,556 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ translations.delivery_note }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            color: #333;
+            color: #1f2937;
+            line-height: 1.6;
             {% if language == 'ar' %}
             direction: rtl;
             {% endif %}
         }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo {
-            max-width: 200px;
-            max-height: 100px;
-        }
-        h1 {
-            color: #2c3e50;
-            margin: 10px 0;
-        }
-        .info-section {
+
+        /* Header Section - Clean and Professional */
+        .document-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
         }
-        .info-box {
-            width: 48%;
+        
+        .header-left {
+            flex: 1;
         }
-        .info-box h3 {
-            margin-top: 0;
-            color: #2c3e50;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+        
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
         }
+        
+        .logo {
+            max-width: 180px;
+            max-height: 80px;
+            margin-bottom: 10px;
+        }
+        
+        .document-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+        
+        .document-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+        
+        .status-accepted {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .status-sent {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        /* QR Code */
+        .qr-code {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        /* Metadata Strip */
+        .metadata-strip {
+            background-color: #f2f5f7;
+            padding: 12px 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .meta-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+        
+        .meta-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        /* Information Sections - Reordered Layout */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .info-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-card .icon {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
+        }
+        
+        .info-card p {
+            margin: 0 0 8px 0;
+            color: #4b5563;
+            font-size: 14px;
+        }
+        
+        .info-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Enhanced Table Design */
+        .table-container {
+            margin: 30px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 0;
         }
-        th, td {
-            padding: 10px;
+        
+        th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 16px 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e5e7eb;
         }
+        
         {% if language == 'ar' %}
         th, td {
             text-align: right;
         }
         {% endif %}
-        th {
-            background-color: #f8f9fa;
-            font-weight: bold;
+        
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            color: #374151;
         }
-        .total-section {
-            width: 40%;
-            margin-left: auto;
-            margin-top: 20px;
+        
+        tr:nth-child(even) {
+            background-color: #fafbfc;
         }
-        .total-row {
+        
+        tr:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .table-number {
+            font-weight: 600;
+            color: #6b7280;
+            text-align: center;
+            width: 50px;
+        }
+        
+        .table-sku {
+            font-weight: 500;
+            color: #111827;
+            min-width: 120px;
+        }
+        
+        .table-description {
+            color: #4b5563;
+        }
+        
+        .table-qty {
+            font-weight: 600;
+            text-align: center;
+            width: 80px;
+        }
+        
+        .table-uom {
+            color: #6b7280;
+            text-align: center;
+            width: 80px;
+        }
+
+        /* Summary Section */
+        .summary-section {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
+            align-items: center;
         }
-        .total-label {
-            font-weight: bold;
+        
+        .summary-item {
+            text-align: center;
         }
-        .grand-total {
-            font-weight: bold;
-            font-size: 1.2em;
-            border-top: 1px solid #333;
-            padding-top: 5px;
-            margin-top: 5px;
+        
+        .summary-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
         }
+        
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        /* Notes Section with Yellow Highlight */
         .notes-section {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
         }
+        
+        .notes-section h3 {
+            margin: 0 0 10px 0;
+            color: #92400e;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .notes-section p {
+            margin: 0;
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Enhanced Signature Section */
         .signature-section {
             margin-top: 50px;
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
         }
-        .signature-box {
-            width: 45%;
-        }
-        .signature-line {
-            border-top: 1px solid #333;
-            margin-top: 50px;
-            padding-top: 10px;
-        }
-        .footer {
-            margin-top: 40px;
+        
+        .signature-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 25px;
             text-align: center;
-            color: #777;
-            font-size: 0.9em;
+        }
+        
+        .signature-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 30px;
+        }
+        
+        .signature-line {
+            border-top: 2px solid #374151;
+            margin: 40px 0 15px 0;
+            position: relative;
+        }
+        
+        .signature-field {
+            margin: 10px 0;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .signature-field strong {
+            color: #374151;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        .page-info {
+            margin-bottom: 10px;
+        }
+        
+        .contact-info {
+            font-weight: 500;
+        }
+
+        /* Print Optimizations */
+        @media print {
+            body {
+                padding: 15px;
+            }
+            
+            .signature-section {
+                page-break-inside: avoid;
+            }
+            
+            .table-container {
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Company Logo" class="logo">
-        <h1>{{ translations.delivery_note }}</h1>
-    </div>
-    
-    <div class="info-section">
-        <div class="info-box">
-            <h3>{{ translations.order_number }}</h3>
-            <p>{{ order.order_number }}</p>
-            <p>{{ translations.date }}: {{ date }}</p>
+    <!-- Enhanced Header with Logo, Title, Status Badge and QR Code -->
+    <div class="document-header">
+        <div class="header-left">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Company Logo" class="logo">
+            <h1 class="document-title">{{ translations.delivery_note }}</h1>
+            <div class="document-subtitle">Professional Delivery Documentation</div>
         </div>
-        <div class="info-box">
-            <h3>{{ translations.customer }}</h3>
-            <p>{{ order.customer.name }}</p>
-            <p>{{ order.customer.address }}</p>
-            <p>{{ order.customer.phone }}</p>
+        <div class="header-right">
+            <!-- Status Badge -->
+            {% set status_class = 'status-pending' %}
+            {% if order.status == 'accepted' %}
+                {% set status_class = 'status-accepted' %}
+            {% elif order.status == 'sent' %}
+                {% set status_class = 'status-sent' %}
+            {% endif %}
+            <span class="status-badge {{ status_class }}">{{ order.status|upper if order.status else 'PENDING' }}</span>
+            
+            <!-- QR Code with Order URL -->
+            <div class="qr-code">
+                {% if qr_code_data %}
+                <img src="data:image/png;base64,{{ qr_code_data }}" alt="Order QR Code" style="width: 60px; height: 60px;">
+                {% else %}
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                    <rect x="0" y="0" width="60" height="60" fill="#f3f4f6" stroke="#e5e7eb"/>
+                    <text x="30" y="35" text-anchor="middle" font-size="8" fill="#6b7280">QR</text>
+                </svg>
+                {% endif %}
+            </div>
         </div>
     </div>
-    
-    <div class="info-section">
-        <div class="info-box">
-            <h3>{{ translations.delivery_address }}</h3>
-            <p>{{ order.delivery_address }}</p>
+
+    <!-- Metadata Strip with Order Info -->
+    <div class="metadata-strip">
+        <div class="meta-item">
+            <div class="meta-label">{{ translations.order_number }}</div>
+            <div class="meta-value">{{ order.order_number or 'N/A' }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">{{ translations.date }}</div>
+            <div class="meta-value">{{ date }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Status</div>
+            <div class="meta-value">{{ order.status|title if order.status else 'Pending' }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Total Items</div>
+            <div class="meta-value">{{ order.items|length }}</div>
         </div>
     </div>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>{{ translations.item }}</th>
-                <th>{{ translations.description }}</th>
-                <th>{{ translations.quantity }}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in order.items %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ item.product.code }}</td>
-                <td>{{ item.product.name }}</td>
-                <td>{{ item.quantity }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <!-- Price information removed as requested -->
-    
+
+    <!-- Reordered Information Sections: Delivery Address First -->
+    <div class="info-grid">
+        <!-- 1. Delivery Address (Priority) -->
+        <div class="info-card">
+            <h3>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <circle cx="12" cy="8" r="3"/>
+                </svg>
+                {{ translations.delivery_address }}
+            </h3>
+            <p><strong>{{ order.delivery_address or order.customer.address if order.customer else 'No delivery address specified' }}</strong></p>
+            {% if order.delivery_notes %}
+            <p style="color: #ef4444; font-weight: 500;">⚠️ {{ order.delivery_notes }}</p>
+            {% endif %}
+        </div>
+
+        <!-- 2. Customer Details -->
+        <div class="info-card">
+            <h3>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                {{ translations.customer }}
+            </h3>
+            {% if order.customer %}
+            <p><strong>{{ order.customer.name }}</strong></p>
+            <p>{{ order.customer.address if order.customer.address else 'No address on file' }}</p>
+            <p>📞 {{ order.customer.phone if order.customer.phone else 'No phone on file' }}</p>
+            <p>✉️ {{ order.customer.email if order.customer.email else 'No email on file' }}</p>
+            {% else %}
+            <p>No customer information available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Enhanced Table with Proper Headers and Styling -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="table-number">#</th>
+                    <th class="table-sku">SKU / Item</th>
+                    <th class="table-description">Description</th>
+                    <th class="table-qty">Qty</th>
+                    <th class="table-uom">UoM</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set total_qty = 0 %}
+                {% for item in order.items %}
+                {% set total_qty = total_qty + (item.quantity or 0) %}
+                <tr>
+                    <td class="table-number">{{ loop.index }}</td>
+                    <td class="table-sku">{{ item.product.code if item.product else 'N/A' }}</td>
+                    <td class="table-description">{{ item.product.name if item.product else item.description or 'No description' }}</td>
+                    <td class="table-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</td>
+                    <td class="table-uom">{{ item.unit_of_measure or 'pcs' }}</td>
+                </tr>
+                {% endfor %}
+                
+                <!-- Totals Row -->
+                <tr style="background-color: #f8fafc; font-weight: 600; border-top: 2px solid #e5e7eb;">
+                    <td class="table-number">Σ</td>
+                    <td class="table-sku" colspan="2"><strong>Total</strong></td>
+                    <td class="table-qty"><strong>{{ total_qty|int if total_qty == total_qty|int else total_qty }}</strong></td>
+                    <td class="table-uom">units</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Dashboard -->
+    <div class="summary-section">
+        <div class="summary-item">
+            <div class="summary-label">Distinct SKUs</div>
+            <div class="summary-value">{{ order.items|length }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Total Units</div>
+            <div class="summary-value">{{ total_qty|int if total_qty == total_qty|int else total_qty }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Order Status</div>
+            <div class="summary-value" style="font-size: 16px;">{{ order.status|title if order.status else 'Pending' }}</div>
+        </div>
+    </div>
+
+    <!-- Enhanced Notes Section with Yellow Highlight -->
     {% if order.notes %}
     <div class="notes-section">
-        <h3>{{ translations.notes }}</h3>
+        <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            {{ translations.notes }}
+        </h3>
         <p>{{ order.notes }}</p>
     </div>
     {% endif %}
-    
+
+    <!-- Professional Signature Section -->
     <div class="signature-section">
-        <div class="signature-box">
-            <div class="signature-line">{{ translations.signature }} ({{ translations.customer }})</div>
+        <div class="signature-card">
+            <div class="signature-title">Driver / Courier</div>
+            <div class="signature-line"></div>
+            <div class="signature-field"><strong>Name:</strong> _________________________</div>
+            <div class="signature-field"><strong>Signature:</strong> _____________________</div>
+            <div class="signature-field"><strong>Date & Time:</strong> ___________________</div>
         </div>
-        <div class="signature-box">
-            <div class="signature-line">{{ translations.signature }} ({{ translations.delivery_note }})</div>
+        
+        <div class="signature-card">
+            <div class="signature-title">Receiver</div>
+            <div class="signature-line"></div>
+            <div class="signature-field"><strong>Name:</strong> _________________________</div>
+            <div class="signature-field"><strong>Signature:</strong> _____________________</div>
+            <div class="signature-field"><strong>Date & Time:</strong> ___________________</div>
         </div>
     </div>
-    
+
+    <!-- Professional Footer -->
     <div class="footer">
-        <p>{{ translations.thank_you }}</p>
+        <div class="page-info">Page 1 of 1</div>
+        <div class="contact-info">For questions contact: company@email.com | +1 (555) 123-4567</div>
     </div>
 </body>
 </html>
