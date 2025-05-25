@@ -191,11 +191,15 @@
                                                         
                                                         {% elif quotation.status == 'SENT' %}
                                                             <option value="ACCEPTED" data-icon="fa-check-circle" data-color="#4CAF50">Accepted</option>
+                                                            <option value="REJECTED" data-icon="fa-times-circle" data-color="#DC3545">Rejected</option>
                                                             <option value="COMPLETED" data-icon="fa-clipboard-check" data-color="#8BC34A">Completed</option>
                                                             <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
                                                             
                                                         {% elif quotation.status == 'ACCEPTED' %}
                                                             <option value="COMPLETED" data-icon="fa-clipboard-check" data-color="#8BC34A">Completed</option>
+                                                            <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
+                                                            
+                                                        {% elif quotation.status == 'REJECTED' %}
                                                             <option value="DRAFT" data-icon="fa-undo" data-color="#B0B0B0">Back to Draft</option>
                                                             
                                                         {% elif quotation.status == 'COMPLETED' %}
