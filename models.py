@@ -207,6 +207,7 @@ class QuotationStatus:
     DRAFT = 'DRAFT'
     SENT = 'SENT'
     ACCEPTED = 'ACCEPTED'
+    REJECTED = 'REJECTED'
     COMPLETED = 'COMPLETED'
     CREATED = 'created'  # Odd casing exists in the database
     
@@ -215,6 +216,7 @@ class QuotationStatus:
         DRAFT: 'Draft',
         SENT: 'Sent',
         ACCEPTED: 'Accepted',
+        REJECTED: 'Rejected',
         COMPLETED: 'Completed',
         CREATED: 'Created'
     }
@@ -224,6 +226,7 @@ class QuotationStatus:
         DRAFT: '#B0B0B0',  # Grey
         SENT: '#1E90FF',   # Blue
         ACCEPTED: '#4CAF50',  # Green
+        REJECTED: '#DC3545',  # Red
         COMPLETED: '#8BC34A',  # Light Green
         CREATED: '#607D8B'  # Blue Grey
     }
@@ -231,8 +234,9 @@ class QuotationStatus:
     # Valid status transitions
     TRANSITIONS = {
         DRAFT: [SENT],
-        SENT: [ACCEPTED, COMPLETED, DRAFT],
+        SENT: [ACCEPTED, REJECTED, COMPLETED, DRAFT],
         ACCEPTED: [COMPLETED, DRAFT],
+        REJECTED: [DRAFT],
         COMPLETED: [DRAFT],
         CREATED: [SENT, DRAFT]
     }
