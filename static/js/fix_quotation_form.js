@@ -58,6 +58,10 @@ $(document).ready(function() {
                 
                 return false;
             }
+            
+            // For all other quotations, allow normal form submission
+            console.log('Normal quotation detected, allowing standard form submission');
+            return true;
         });
     }
 });
