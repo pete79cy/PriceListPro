@@ -2667,7 +2667,11 @@ def register_routes(app):
     @login_required
     def delete_quotation(quotation_id):
         """Delete a quotation and its related items"""
-        quotation = Quotation.query.get_or_404(quotation_id)
+        quotation = Quotation.query.get(quotation_id)
+        
+        if not quotation:
+            flash('Quotation not found or already deleted.', 'warning')
+            return redirect(url_for('quotations'))
         
         try:
             # Delete the quotation (cascade will delete items)
