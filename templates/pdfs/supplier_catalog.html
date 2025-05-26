@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ supplier.name }} - Product Catalog</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .header h2 {
+            margin: 5px 0;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .supplier-info {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .supplier-info h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .products-table th,
+        .products-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .products-table th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .products-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .products-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .price {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        .no-products {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Product Catalog</h1>
+        <h2>{{ supplier.name }}</h2>
+    </div>
+    
+    <div class="supplier-info">
+        <h3>Supplier Information</h3>
+        <p><strong>Name:</strong> {{ supplier.name }}</p>
+        {% if supplier.email %}
+        <p><strong>Email:</strong> {{ supplier.email }}</p>
+        {% endif %}
+        {% if supplier.phone %}
+        <p><strong>Phone:</strong> {{ supplier.phone }}</p>
+        {% endif %}
+        {% if supplier.address %}
+        <p><strong>Address:</strong> {{ supplier.address }}</p>
+        {% endif %}
+    </div>
+    
+    {% if products %}
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>Scientific Name</th>
+                <th>Height</th>
+                <th>Size</th>
+                <th>Price</th>
+                {% if products[0].cost_price %}
+                <th>Cost Price</th>
+                {% endif %}
+                <th>Last Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.product_name }}</td>
+                <td>{{ product.scientific_name or '-' }}</td>
+                <td>{{ product.height or '-' }}</td>
+                <td>{{ product.pot_size or '-' }}</td>
+                <td class="price">€{{ "%.2f"|format(product.price) }}</td>
+                {% if products[0].cost_price %}
+                <td class="price">
+                    {% if product.cost_price %}
+                    €{{ "%.2f"|format(product.cost_price) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                {% endif %}
+                <td>{{ product.last_detected.strftime('%Y-%m-%d') if product.last_detected else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-products">
+        <p>No products available for this supplier.</p>
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <p>Generated on {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+        <p>Total Products: {{ products|length if products else 0 }}</p>
+    </div>
+</body>
+</html>

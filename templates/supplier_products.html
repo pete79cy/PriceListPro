@@ -620,10 +620,15 @@
             customizeReportModal.hide();
         });
         
-        // Handle batch deletes
+        // Handle batch deletes (only if elements exist)
         const selectAllCheckbox = document.getElementById('select-all');
         const productCheckboxes = document.querySelectorAll('.product-checkbox');
         const batchDeleteBtn = document.getElementById('batch-delete-btn');
+        
+        // Only proceed if required elements exist
+        if (!selectAllCheckbox || productCheckboxes.length === 0 || !batchDeleteBtn) {
+            return;
+        }
         
         // Toggle all checkboxes
         selectAllCheckbox.addEventListener('change', function() {
