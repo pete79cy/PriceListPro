@@ -4,6 +4,9 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 import re
+from uuid import uuid4
+from sqlalchemy.dialects.postgresql import UUID
+from decimal import Decimal
 
 
 class OrderStatusEnum(str, Enum):
@@ -667,3 +670,83 @@ class CompanySettings(db.Model):
 
     def __repr__(self):
         return f'<CompanySettings {self.name}>'
+
+
+class InvoiceAddendum(db.Model):
+    """Invoice Addendum - supplementary sales document that can be attached to invoices"""
+    __tablename__ = "invoice_addenda"
+    
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    customer_id = db.Column(db.Integer, db.ForeignKey("customer.id"), nullable=False)
+    invoice_number = db.Column(db.String(30), nullable=False)  # Reference to the external invoice
+    period_from = db.Column(db.Date, nullable=False)
+    period_to = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, locked
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    customer = db.relationship("Customer", backref="invoice_addenda", lazy=True)
+    lines = db.relationship("InvoiceAddendumLine", back_populates="addendum",
+                          cascade="all, delete-orphan", order_by="InvoiceAddendumLine.sale_date")
+    
+    def __repr__(self):
+        return f'<InvoiceAddendum {self.invoice_number} - {self.customer.name if self.customer else "No Customer"}>'
+    
+    def get_total_amount(self):
+        """Calculate total amount for this addendum"""
+        total = Decimal('0.00')
+        for line in self.lines:
+            line_total = line.quantity * line.unit_price
+            total += line_total
+        return float(total)
+    
+    def get_total_vat(self):
+        """Calculate total VAT for this addendum"""
+        total_vat = Decimal('0.00')
+        for line in self.lines:
+            line_total = line.quantity * line.unit_price
+            vat_amount = line_total * (line.vat_rate / Decimal('100'))
+            total_vat += vat_amount
+        return float(total_vat)
+    
+    def get_grand_total(self):
+        """Calculate grand total including VAT"""
+        return self.get_total_amount() + self.get_total_vat()
+
+
+class InvoiceAddendumLine(db.Model):
+    """Individual line items in an invoice addendum"""
+    __tablename__ = "invoice_addendum_lines"
+    
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    addendum_id = db.Column(UUID(as_uuid=True), db.ForeignKey("invoice_addenda.id"), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    sale_date = db.Column(db.Date, nullable=False)
+    quantity = db.Column(db.Numeric(10, 2), nullable=False)
+    unit_price = db.Column(db.Numeric(10, 2), nullable=False)
+    vat_rate = db.Column(db.Numeric(4, 2), nullable=False, default=19.00)  # 5.00 or 19.00
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    addendum = db.relationship("InvoiceAddendum", back_populates="lines")
+    product = db.relationship("Product", backref="addendum_lines", lazy=True)
+    
+    def __repr__(self):
+        return f'<InvoiceAddendumLine {self.product.name if self.product else "No Product"} - {self.quantity}>'
+    
+    def get_line_total(self):
+        """Calculate total for this line (quantity * unit_price)"""
+        return float(self.quantity * self.unit_price)
+    
+    def get_vat_amount(self):
+        """Calculate VAT amount for this line"""
+        line_total = self.quantity * self.unit_price
+        vat_amount = line_total * (self.vat_rate / Decimal('100'))
+        return float(vat_amount)
+    
+    def get_total_with_vat(self):
+        """Calculate total including VAT for this line"""
+        return self.get_line_total() + self.get_vat_amount()
