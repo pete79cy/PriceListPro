@@ -44,9 +44,10 @@ def generate_delivery_note_pdf(order, language='en', base_url=None):
             except:
                 base_url = "https://trail-blazer-tracker-panayiotispakko.replit.app"
         
-        order_url = f"{base_url}/orders/{order.id}"
+        # QR code points to product catalog
+        catalog_url = "https://trail-blazer-tracker-panayiotispakko.replit.app/"
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(order_url)
+        qr.add_data(catalog_url)
         qr.make(fit=True)
         
         # Create QR code image
@@ -431,8 +432,9 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url=None):
         except:
             base_url = "https://trail-blazer-tracker-panayiotispakko.replit.app"
     
-    qr_url = f"{base_url}/quotation/{quotation.id}"
-    qr = qrcode.make(qr_url)
+    # QR code points to product catalog
+    catalog_url = "https://trail-blazer-tracker-panayiotispakko.replit.app/"
+    qr = qrcode.make(catalog_url)
     qr_buffer = io.BytesIO()
     qr.save(qr_buffer, format="PNG")
     qr_buffer.seek(0)
