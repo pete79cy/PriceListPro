@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Batch deletion functionality
+    // Batch deletion functionality - only if elements exist
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
     const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
     const batchDeleteBtn = document.getElementById('batch-delete-btn');
@@ -303,107 +303,120 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedCountSpan = document.getElementById('selected-count');
     const confirmBatchDeleteBtn = document.getElementById('confirm-batch-delete');
     
-    // Function to update the delete button state
-    function updateBatchDeleteButton() {
-        const selectedCount = document.querySelectorAll('.invoice-checkbox:checked').length;
-        batchDeleteBtn.disabled = selectedCount === 0;
-    }
-    
-    // Select all checkbox
-    selectAllCheckbox.addEventListener('change', function() {
-        const isChecked = this.checked;
-        invoiceCheckboxes.forEach(checkbox => {
-            checkbox.checked = isChecked;
-        });
-        updateBatchDeleteButton();
-    });
-    
-    // Individual checkboxes
-    invoiceCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+    // Only proceed with batch operations if the required elements exist
+    if (selectAllCheckbox && invoiceCheckboxes.length > 0 && batchDeleteBtn) {
+        // Function to update the delete button state
+        function updateBatchDeleteButton() {
+            const selectedCount = document.querySelectorAll('.invoice-checkbox:checked').length;
+            batchDeleteBtn.disabled = selectedCount === 0;
+        }
+        
+        // Select all checkbox
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            invoiceCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
             updateBatchDeleteButton();
-            
-            // Update select all checkbox
-            const allChecked = document.querySelectorAll('.invoice-checkbox:checked').length === invoiceCheckboxes.length;
-            selectAllCheckbox.checked = allChecked;
         });
-    });
     
-    // Select all button
-    selectAllBtn.addEventListener('click', function() {
+        // Individual checkboxes
         invoiceCheckboxes.forEach(checkbox => {
-            checkbox.checked = true;
-        });
-        selectAllCheckbox.checked = true;
-        updateBatchDeleteButton();
-    });
-    
-    // Deselect all button
-    deselectAllBtn.addEventListener('click', function() {
-        invoiceCheckboxes.forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        selectAllCheckbox.checked = false;
-        updateBatchDeleteButton();
-    });
-    
-    // Batch delete button
-    batchDeleteBtn.addEventListener('click', function() {
-        const selectedCount = document.querySelectorAll('.invoice-checkbox:checked').length;
-        selectedCountSpan.textContent = selectedCount;
-        
-        const modal = new bootstrap.Modal(batchDeleteModal);
-        modal.show();
-    });
-    
-    // Confirm batch delete
-    confirmBatchDeleteBtn.addEventListener('click', function() {
-        // Get all selected invoice IDs
-        const selectedIds = [];
-        document.querySelectorAll('.invoice-checkbox:checked').forEach(checkbox => {
-            selectedIds.push(parseInt(checkbox.dataset.id));
+            checkbox.addEventListener('change', function() {
+                updateBatchDeleteButton();
+                
+                // Update select all checkbox
+                const allChecked = document.querySelectorAll('.invoice-checkbox:checked').length === invoiceCheckboxes.length;
+                selectAllCheckbox.checked = allChecked;
+            });
         });
         
-        // Send batch delete request
-        fetch('/invoices/batch-delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                invoice_ids: selectedIds
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Show success message and reload page
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    ${data.message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                `;
-                document.querySelector('.card-body').prepend(alertDiv);
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(batchDeleteModal);
-                modal.hide();
-                
-                // Reload page after a delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                console.error('Error:', data.error);
-                alert('Error deleting invoices: ' + data.error);
+        // Select all button
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', function() {
+                invoiceCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                selectAllCheckbox.checked = true;
+                updateBatchDeleteButton();
+            });
+        }
+        
+        // Deselect all button
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', function() {
+                invoiceCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                selectAllCheckbox.checked = false;
+                updateBatchDeleteButton();
+            });
+        }
+        
+        // Batch delete button
+        batchDeleteBtn.addEventListener('click', function() {
+            const selectedCount = document.querySelectorAll('.invoice-checkbox:checked').length;
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = selectedCount;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred during batch deletion');
+            
+            if (batchDeleteModal) {
+                const modal = new bootstrap.Modal(batchDeleteModal);
+                modal.show();
+            }
         });
-    });
+        
+        // Confirm batch delete
+        if (confirmBatchDeleteBtn) {
+            confirmBatchDeleteBtn.addEventListener('click', function() {
+                // Get all selected invoice IDs
+                const selectedIds = [];
+                document.querySelectorAll('.invoice-checkbox:checked').forEach(checkbox => {
+                    selectedIds.push(parseInt(checkbox.dataset.id));
+                });
+                
+                // Send batch delete request
+                fetch('/invoices/batch-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        invoice_ids: selectedIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message and reload page
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        document.querySelector('.card-body').prepend(alertDiv);
+                        
+                        // Hide modal
+                        const modal = bootstrap.Modal.getInstance(batchDeleteModal);
+                        modal.hide();
+                        
+                        // Reload page after a delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        console.error('Error:', data.error);
+                        alert('Error deleting invoices: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred during batch deletion');
+                });
+            });
+        }
+    } // Close the batch operations if block
 });
 </script>
 {% endblock %}
