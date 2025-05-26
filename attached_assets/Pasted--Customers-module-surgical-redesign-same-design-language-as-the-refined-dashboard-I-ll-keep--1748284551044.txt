@@ -1,0 +1,152 @@
+### Customers module — surgical redesign (same design language as the refined dashboard)
+
+I’ll keep the DB/API exactly as-is and only touch markup/CSS/React props, so nothing breaks downstream.
+Below is a drop-in layout plan plus the small Tailwind (or Bootstrap) utilities you need.
+
+---
+
+## 1. Layout blueprint
+
+```
+┌──────────────────  Sub-header  ──────────────────────┐
+│  Customers (44)          |  🔍 Search box     +New ▼ │
+└──────────────────────────────────────────────────────┘
+
+┌─ Left rail (220-260 px) ─┐   ┌─ Data zone ──────────────────────┐
+│  • Quick Filters         │   │  Customer table (sticky head)   │
+│    – All (44)            │   │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │
+│    – With price lists    │   │  paginated or virtual scroll     │
+│    – With email missing  │   │                                   │
+│                          │   │  Bulk toolbar (appears on select)│
+│  • Bulk actions:         │   │                                   │
+│    – Export CSV          │   └───────────────────────────────────┘
+│    – Send mail merge     │
+└──────────────────────────┘
+```
+
+### Why this mirrors the dashboard look/feel
+
+| Dashboard motif                               | Customers analogue                  |
+| --------------------------------------------- | ----------------------------------- |
+| Left **Quick Actions** panel                  | Left **Quick Filters** rail         |
+| Summary mini-cards                            | `(44)` badge in sub-header          |
+| Wide working zone right                       | Full-width table with sticky tools  |
+| Consistent button radius, shadows, typography | reuse tokens you already introduced |
+
+---
+
+## 2. UI details & micro-interactions
+
+| Element                | Spec                                                                                                                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sub-header**         | `flex items-center justify-between py-3 px-4 bg-[#2b2e33] rounded-md mb-6`<br>Left: **Customers**  `text-lg font-semibold`  + small count pill.<br>Right: `<input class="w-60">` + **+New** split-button. |
+| **Quick Filters rail** | `hidden lg:block` (`flex-none w-60 mr-6`) inside a `rounded-md bg-surface p-4 space-y-2`. Each filter row: checkbox + label + count badge.                                                                |
+| **Table wrapper**      | `relative overflow-x-auto rounded-md bg-surface shadow-card`<br>`table-auto w-full text-sm`                                                                                                               |
+| **Sticky header**      | `thead th sticky top-0 bg-surface z-10` + darker bottom border.                                                                                                                                           |
+| **Row hover**          | `hover:bg-[#32363b] cursor-pointer transition-colors`                                                                                                                                                     |
+| **Action buttons**     | Combine **Edit** & **Delete** into a *kebab (⋮)* menu per row to cut visual noise (iOS Human-Interface-Guidelines: “reduce chrome”).                                                                      |
+| **Bulk toolbar**       | Appears when one or more rows selected; slides down from top of table: `transform translate-y-[-100%]` → `translate-y-0`. Contains *Export CSV*, *Delete*, *Send email*.                                  |
+| **Pagination**         | `page-size 20` by default; numbers + «prev/next» centred under table. On ≥1024 px screens show “Rows 1-20 of 44”. Mobile: infinite scroll.                                                                |
+
+---
+
+## 3. Tailwind snippet (core skeleton)
+
+```html
+<!-- SUB-HEADER -->
+<div class="flex flex-wrap items-center justify-between bg-[#2b2e33] rounded-md p-4 mb-6">
+  <h1 class="text-lg font-semibold text-white">
+    Customers <span class="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-xs">44</span>
+  </h1>
+
+  <div class="flex gap-2">
+    <input type="search" placeholder="Search…" class="w-56 rounded-md bg-[#1e2024] px-3 py-1.5 text-sm"/>
+    <div class="relative">
+      <button class="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium">+ New</button>
+      <!-- dropdown -->
+    </div>
+  </div>
+</div>
+
+<div class="flex flex-col lg:flex-row gap-6">
+  <!-- FILTER RAIL -->
+  <aside class="hidden lg:block w-60 flex-none space-y-3 rounded-md bg-[#2b2e33] p-4">
+    <h2 class="text-sm font-medium text-gray-300 mb-1">Quick Filters</h2>
+    <button class="filter-btn active">All <span class="badge">44</span></button>
+    <button class="filter-btn">With Price Lists <span class="badge">12</span></button>
+    <button class="filter-btn">Missing Email <span class="badge">4</span></button>
+  </aside>
+
+  <!-- TABLE -->
+  <section class="flex-1">
+    <div class="rounded-md bg-[#2b2e33] shadow-card overflow-x-auto">
+      <table class="w-full table-auto text-sm">
+        <thead>
+          <tr class="bg-[#303338] text-left text-gray-400 sticky top-0">
+            <th class="px-4 py-2 w-4"><input type="checkbox"/></th>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Phone</th>
+            <th class="px-4 py-2">Address</th>
+            <th class="px-4 py-2 text-right w-10"></th> <!-- kebab -->
+          </tr>
+        </thead>
+        <tbody>
+          <!-- loop rows -->
+          <tr class="border-t border-[#3a3d42] hover:bg-[#32363b]">
+            <td class="px-4 py-2"><input type="checkbox"/></td>
+            <td class="px-4 py-2">Greentouch</td>
+            <td class="px-4 py-2">info@...</td>
+            <td class="px-4 py-2">99332211</td>
+            <td class="px-4 py-2">Nicosia</td>
+            <td class="px-4 py-2 text-right">
+              <button class="kebab"><i class="i-lucide-more-vertical"></i></button>
+            </td>
+          </tr>
+          <!-- … -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="mt-4 flex items-center justify-center gap-2 text-sm">
+      <button class="pager-btn">&laquo;</button>
+      <button class="pager-btn active">1</button>
+      <button class="pager-btn">2</button>
+      <button class="pager-btn">&raquo;</button>
+    </div>
+  </section>
+</div>
+```
+
+*(Swap `i-lucide-*` for your icon font.  `filter-btn`, `badge`, `pager-btn` are tiny utility classes you can add once.)*
+
+---
+
+## 4. Accessibility & performance touches
+
+* **Keyboard nav** – `tabindex="0"` on each row; **Enter** opens detail drawer.
+* **ARIA live** region announces “4 rows selected” when bulk-select checkboxes toggle.
+* **Virtualisation** (optional) – if dataset may explode to >2 k rows, plug in `react-window` while keeping sticky header.
+* **Debounced search** 250 ms to avoid hammering DB.
+
+---
+
+## 5. Roll-out checklist
+
+1. **Create new component** `CustomersTable2` behind feature flag `newCustomersUI`.
+2. QA in staging:
+
+   * 1280 × 720 laptop, 768 px tablet portrait, 375 px mobile.
+   * Bulk delete & CSV export end-to-end.
+3. Flip flag for admin role only → gather feedback → full GA.
+
+---
+
+### Need anything else?
+
+* Full React component with hooks & API calls
+* CSS patch diff for your current Flask-Jinja templates
+* Quick Figma frame for dev hand-off
+
+Tell me which artifact would help you most and I’ll whip it up.
