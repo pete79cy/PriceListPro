@@ -44,7 +44,7 @@ def generate_delivery_note_pdf(order, language='en', base_url=None):
             except:
                 base_url = "https://trail-blazer-tracker-panayiotispakko.replit.app"
         
-        order_url = f"{base_url}/orders/{order.id}/view"
+        order_url = f"{base_url}/orders/{order.id}"
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(order_url)
         qr.make(fit=True)
@@ -431,7 +431,7 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url=None):
         except:
             base_url = "https://trail-blazer-tracker-panayiotispakko.replit.app"
     
-    qr_url = f"{base_url}/quotations/{quotation.id}/view"
+    qr_url = f"{base_url}/quotation/{quotation.id}"
     qr = qrcode.make(qr_url)
     qr_buffer = io.BytesIO()
     qr.save(qr_buffer, format="PNG")
