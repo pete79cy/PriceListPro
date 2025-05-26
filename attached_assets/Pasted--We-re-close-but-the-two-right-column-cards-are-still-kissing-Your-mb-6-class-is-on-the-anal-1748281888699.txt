@@ -1,0 +1,36 @@
+**We’re close—but the two right-column cards are still kissing.**
+Your `mb-6` class *is* on the analytics wrapper, yet the **System Status** panel is visually collapsing upward. That means one of two things is happening in the CSS cascade:
+
+| Culprit                                                                                                                 | Symptom on screen                                                                            | How to fix                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Overflow context** – the analytics card (or its parent) has `overflow:hidden`, so its own margin is being clipped. | You see the status card sliding *over* the chart border instead of leaving background space. | Ensure the wrapper that sits around both cards isn’t clipping margins. Add `overflow-visible` (or just remove `overflow:hidden`) on `.analytics` **and** the grid column. |
+| **2. Margin-collapsing inside a column-flex layout**                                                                    | The `mb-6` simply gets swallowed; the status card treats it as its own margin.               | Put the pair in a grid with explicit row-gap: <br>`<div class="grid gap-6">…analytics…status…</div>` <br>This forces a true 24 px row gutter that can’t collapse.         |
+
+---
+
+### Quick win (Tailwind, no markup move)
+
+```html
+<!-- Right-column stack -->
+<section class="grid gap-6">      <!-- 👈 guarantees 24-px gutter -->
+  <div class="rounded-md bg-[#2b2e33] p-4 analytics">
+    …chart…
+  </div>
+
+  <div class="rounded-md bg-[#2b2e33] p-4 system-status">
+    …status…
+  </div>
+</section>
+```
+
+You can drop the `mb-6` modifier now; the grid’s `gap-6` handles vertical rhythm for every child.
+
+---
+
+### Sanity checks after the tweak
+
+1. **Scroll test** – the background strip remains visible even while scrolling quickly.
+2. **Dev-tools** – inspect `.analytics`; its computed `margin-bottom` should be `0`, while the parent grid shows `row-gap: 24px`.
+3. **Shadow clear** – hover near the card edge; both shadows should render unobstructed (no clipping).
+
+Apply that grid gap and you’ll finally see the breathing room we’ve been after. Ping me once you refresh—happy to double-check the final look!
