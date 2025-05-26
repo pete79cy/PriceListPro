@@ -426,6 +426,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Customer page loaded successfully');
     
+    // Safe reference to newCustomerBtn to prevent null errors
+    const newCustomerBtn = document.getElementById('newCustomerBtn');
+    if (newCustomerBtn) {
+        // Button exists, no additional action needed since it's already wired via Bootstrap
+        console.log('New customer button found');
+    }
+    
     // Initialize filter counts
     updateFilterCounts();
     
