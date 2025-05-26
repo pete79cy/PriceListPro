@@ -316,7 +316,7 @@
 
 <!-- Add Item Modal -->
 <div class="modal fade" id="addItemModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add Item to Order</h5>
@@ -324,64 +324,154 @@
             </div>
             <form method="POST" action="{{ url_for('orders.add_item', order_id=order.id) }}">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="product_id" class="form-label">Select Product</label>
-                        <div class="product-search-container position-relative">
-                            <!-- Hidden input for form submission -->
-                            <input type="hidden" name="product_id" id="product_id" required>
-                            
-                            <!-- Visible search input -->
-                            <div class="input-group">
-                                <input type="text" 
-                                    class="form-control" 
-                                    id="product_search" 
-                                    placeholder="Type to search for products..." 
-                                    autocomplete="off">
-                                <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                    <!-- Product Selection Tabs -->
+                    <ul class="nav nav-tabs mb-3" id="productTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="existing-product-tab" data-bs-toggle="tab" data-bs-target="#existing-product" type="button" role="tab">
+                                <i class="fas fa-search"></i> Select Existing Product
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="new-product-tab" data-bs-toggle="tab" data-bs-target="#new-product" type="button" role="tab">
+                                <i class="fas fa-plus"></i> Add New Product
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="productTabContent">
+                        <!-- Existing Product Tab -->
+                        <div class="tab-pane fade show active" id="existing-product" role="tabpanel">
+                            <div class="mb-3">
+                                <label for="product_id" class="form-label">Select Product</label>
+                                <div class="product-search-container position-relative">
+                                    <!-- Hidden input for form submission -->
+                                    <input type="hidden" name="product_id" id="product_id">
+                                    
+                                    <!-- Visible search input -->
+                                    <div class="input-group">
+                                        <input type="text" 
+                                            class="form-control" 
+                                            id="product_search" 
+                                            placeholder="Type to search for products..." 
+                                            autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Product dropdown results -->
+                                    <div id="search_results" class="product-search-results shadow-sm d-none">
+                                        <div class="list-group list-group-flush" id="product_results_list">
+                                            <!-- Results will be dynamically populated here -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Selected product display -->
+                                    <div id="selected_product_display" class="mt-2 p-2 border rounded bg-light d-none">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <span class="fw-bold" id="selected_product_name"></span>
+                                                <small class="text-muted d-block" id="selected_product_details"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link text-danger" id="clear_product_btn">
+                                                <i class="fas fa-times"></i> Change
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-1">Search by name, size, code or any part of the description</small>
+                            </div>
+                        </div>
+                        
+                        <!-- New Product Tab -->
+                        <div class="tab-pane fade" id="new-product" role="tabpanel">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Create a new product that doesn't exist in your database yet
                             </div>
                             
-                            <!-- Product dropdown results -->
-                            <div id="search_results" class="product-search-results shadow-sm d-none">
-                                <div class="list-group list-group-flush" id="product_results_list">
-                                    <!-- Results will be dynamically populated here -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_product_name" class="form-label">Product Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="new_product_name" name="new_product_name" placeholder="e.g., Rosa gallica">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_product_category" class="form-label">Category</label>
+                                        <input type="text" class="form-control" id="new_product_category" name="new_product_category" placeholder="e.g., Roses, Shrubs">
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- Selected product display -->
-                            <div id="selected_product_display" class="mt-2 p-2 border rounded bg-light d-none">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="fw-bold" id="selected_product_name"></span>
-                                        <small class="text-muted d-block" id="selected_product_details"></small>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_product_scientific_name" class="form-label">Scientific Name</label>
+                                        <input type="text" class="form-control" id="new_product_scientific_name" name="new_product_scientific_name" placeholder="e.g., Rosa gallica officinalis">
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-link text-danger" id="clear_product_btn">
-                                        <i class="fas fa-times"></i> Change
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_product_pot" class="form-label">Pot Size</label>
+                                        <input type="text" class="form-control" id="new_product_pot" name="new_product_pot" placeholder="e.g., 3L, 10cm">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_product_sku" class="form-label">SKU/Code</label>
+                                        <input type="text" class="form-control" id="new_product_sku" name="new_product_sku" placeholder="Product code or SKU">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_product_description" class="form-label">Description</label>
+                                        <textarea class="form-control" id="new_product_description" name="new_product_description" rows="2" placeholder="Additional product details"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common fields for both tabs -->
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity('quantity')">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" class="form-control text-center" id="quantity" name="quantity" value="1" min="1" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity('quantity')">
+                                        <i class="fas fa-plus"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <small class="text-muted mt-1">Search by name, size, code or any part of the description</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="quantity" class="form-label">Quantity</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="unit_price" class="form-label">Unit Price</label>
-                        <input type="number" class="form-control" id="unit_price" name="unit_price" min="0" step="0.01" placeholder="Will use customer's price list if empty">
-                        <small class="text-muted">Leave empty to use the customer's current price list</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="vat_rate" class="form-label">VAT Rate</label>
-                        <select class="form-select" id="vat_rate" name="vat_rate">
-                            <option value="19.0" selected>19%</option>
-                            <option value="5.0">5%</option>
-                        </select>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="unit_price" class="form-label">Unit Price <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input type="number" class="form-control" id="unit_price" name="unit_price" min="0" step="0.01" placeholder="0.00">
+                                </div>
+                                <small class="text-muted">For existing products, leave empty to use customer's price list</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="vat_rate" class="form-label">VAT Rate</label>
+                                <select class="form-select" id="vat_rate" name="vat_rate">
+                                    <option value="19.0" selected>19%</option>
+                                    <option value="5.0">5%</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-check">
@@ -480,7 +570,9 @@ document.addEventListener('DOMContentLoaded', function() {
             id: "{{ product.id }}",
             name: "{{ product.name }}",
             pot: "{{ product.pot if product.pot else '' }}",
-            code: "{{ product.code if product.code else '' }}",
+            sku: "{{ product.sku if product.sku else '' }}",
+            category: "{{ product.category if product.category else '' }}",
+            scientific_name: "{{ product.scientific_name if product.scientific_name else '' }}",
             description: "{{ product.description if product.description else '' }}"
         },
         {% endfor %}
@@ -497,11 +589,85 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const clearProductBtn = document.getElementById('clear_product_btn');
     
+    // Tab and form elements
+    const existingProductTab = document.getElementById('existing-product-tab');
+    const newProductTab = document.getElementById('new-product-tab');
+    const newProductNameInput = document.getElementById('new_product_name');
+    const unitPriceInput = document.getElementById('unit_price');
+    const addItemForm = document.querySelector('#addItemModal form');
+    
     // Initialize - hide selected product display initially
     selectedProductDisplay.classList.add('d-none');
     
     // Track currently active list item
     let activeItemIndex = -1;
+    
+    // Form validation and submission handling
+    addItemForm.addEventListener('submit', function(e) {
+        const activeTab = document.querySelector('.tab-pane.active');
+        const isNewProductTab = activeTab && activeTab.id === 'new-product';
+        
+        if (isNewProductTab) {
+            // Validate new product form
+            const productName = newProductNameInput.value.trim();
+            const unitPrice = unitPriceInput.value;
+            
+            if (!productName) {
+                e.preventDefault();
+                alert('Please enter a product name for the new product.');
+                newProductNameInput.focus();
+                return;
+            }
+            
+            if (!unitPrice || parseFloat(unitPrice) <= 0) {
+                e.preventDefault();
+                alert('Please enter a valid price for the new product.');
+                unitPriceInput.focus();
+                return;
+            }
+            
+            // Clear product_id for new products
+            productIdInput.value = '';
+        } else {
+            // Validate existing product selection
+            if (!productIdInput.value) {
+                e.preventDefault();
+                alert('Please select a product from the list.');
+                productSearch.focus();
+                return;
+            }
+            
+            // Clear new product fields
+            clearNewProductFields();
+        }
+    });
+    
+    // Clear new product fields function
+    function clearNewProductFields() {
+        document.getElementById('new_product_name').value = '';
+        document.getElementById('new_product_category').value = '';
+        document.getElementById('new_product_scientific_name').value = '';
+        document.getElementById('new_product_pot').value = '';
+        document.getElementById('new_product_sku').value = '';
+        document.getElementById('new_product_description').value = '';
+    }
+    
+    // Tab change handlers
+    existingProductTab.addEventListener('click', function() {
+        clearNewProductFields();
+        // Make unit price optional for existing products
+        unitPriceInput.removeAttribute('required');
+    });
+    
+    newProductTab.addEventListener('click', function() {
+        // Clear existing product selection
+        productIdInput.value = '';
+        productSearch.value = '';
+        selectedProductDisplay.classList.add('d-none');
+        searchResults.classList.add('d-none');
+        // Make unit price required for new products
+        unitPriceInput.setAttribute('required', 'required');
+    });
     
     // Smart search function
     function smartSearch(query) {
