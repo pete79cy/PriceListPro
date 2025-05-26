@@ -1,0 +1,134 @@
+### Redesigned “Main Dashboard” — functional-first, zero-side-effects
+
+Below is a **surgical** refresh of the *single* page you showed.
+All changes are UI-layer only—HTML/CSS/Tailwind (or Bootstrap classes if that’s what you’re using). Nothing touches routing, DB calls, or business logic.
+
+---
+
+## 1. Layout at a glance
+
+```
+┌──────────────────  Top Navigation  ──────────────────┐
+│  Logo │ Search… │ +New ▼ │ Modules │ Alerts │ User  │
+└──────────────────────────────────────────────────────┘
+
+┌───────────── Summary Row ────────────────┐
+│  Customers   |  Quotations |  Orders     │  ← mini cards
+│  34          |  0          |  0          │
+└──────────────────────────────────────────┘
+
+┌────────────────── 2-Column Grid ────────────────────┐
+│  A. Quick Actions (Tall)    │  B. Analytics Chart  │
+│  • View Customers           │  (Height 220 px)     │
+│  • View Quotations          │                      │
+│  • View Suppliers           │                      │
+│  • Upload Files             │                      │
+├─────────────────────────────┤──────────────────────┤
+│  C. System Status           │  D. Docs / Help Box  │
+└─────────────────────────────┴──────────────────────┘
+
+Footer © 2025
+```
+
+### Why this structure?
+
+| Original pain-point                            | Change                                                     | Benefit                           |
+| ---------------------------------------------- | ---------------------------------------------------------- | --------------------------------- |
+| Grid of six large cards required scrolling.    | Compress to **summary bar + 2-column “working zone.”**     | Key stats visible without scroll. |
+| Mixed-priority information (counts vs. links). | Split into *Numeric summary* (counts) vs. *Action panels*. | Clear visual hierarchy.           |
+| Secondary tools buried far down the page.      | “Quick Actions” tall card (left column).                   | Faster muscle-memory access.      |
+| Analytics chart tiny, low contrast.            | Dedicated right-column card, larger canvas.                | Readable trends at a glance.      |
+| System info mixed with tools.                  | Status card anchored bottom-left of grid.                  | Ops data grouped, easier scan.    |
+
+---
+
+## 2. Detailed component spec
+
+| Component              | Spec                                                                                                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Top Nav**            | *Add* `+ New` primary button with dropdown (Quotation, Order, Customer). Replace scattered upload/search buttons with a universal **⌘ K / Ctrl K command palette** icon.                 |
+| **Summary Mini-Cards** | 3 cards (Customers, Quotations, Orders)  – 128 × 96 px, dark surface `bg-[#2b2e33]`, subtle inset shadow, metric in **32 px Semibold**, label 12 px Medium. Cards clickable entire area. |
+| **Quick Actions**      | Vertical list, each row = icon (24 px) + label. Hover = `bg-[#3a3d42]`, active = brand blue. Primary/secondary color tokens inherited from existing theme.                               |
+| **Analytics**          | 100 % width bar chart, `height: 220px`, 6 statuses. Use your existing JS chart lib; add tooltip on hover with absolute value + pct share.                                                |
+| **System Status**      | Table-style list: ✔ Database (Connected), 🔄 Version, ⏰ Last Login. Use accent pill (`Connected`, `Offline`) right-aligned.                                                              |
+| **Docs / Help**        | Light-tone surface to distinguish from dark UI. Include single “View Docs” button + small caption “Need help? Ask the assistant”.                                                        |
+
+---
+
+## 3. Visual polish guidelines
+
+1. **Color contrast** Cards `#26292d`, page background `#1c1e22` → WCAG AA on text.
+2. **Spacing scale** Use 8-pt grid: mini-cards `gap-4`, grid columns `gap-6`.
+3. **Radius** Unify at `0.5 rem` (8 px) — nav button, cards, pills.
+4. **Motion** 0.18 s ease-out for card hover elevate (`translate-y-1 scale-[1.01]`).
+5. **Typography** Inter / SF Pro; weights 600 for headings, 500 for labels, 400 body.
+
+---
+
+## 4. Responsive breakpoints
+
+| Width                  | Behaviour                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `≥ 1024 px` (desktop)  | 2-column grid as shown.                                                                      |
+| `768-1023 px` (tablet) | Collapse to **single column**, Quick Actions becomes horizontal scroll list.                 |
+| `< 768 px` (mobile)    | Summary mini-cards snap to 2-up grid, analytics collapses into swipe-carousel, footer hides. |
+
+---
+
+## 5. Implementation cheat-sheet (Tailwind)
+
+```html
+<!-- Summary mini-card -->
+<a href="/customers"
+   class="flex flex-col justify-between rounded-md bg-[#2b2e33] p-4 hover:bg-[#3a3d42] transition">
+  <span class="text-sm font-medium text-gray-400">Customers</span>
+  <span class="text-3xl font-semibold text-white">34</span>
+</a>
+
+<!-- Two-column grid wrapper -->
+<div class="grid gap-6 lg:grid-cols-2">
+  <!-- Quick Actions -->
+  <div class="space-y-2 rounded-md bg-[#2b2e33] p-4">
+    <h2 class="mb-2 text-lg font-semibold text-white">Quick Actions</h2>
+    <button class="flex w-full items-center gap-3 rounded-md p-2 hover:bg-[#3a3d42]">
+      <i class="fa-solid fa-users"></i> View Customers
+    </button>
+    <!-- …others -->
+  </div>
+
+  <!-- Analytics -->
+  <div class="rounded-md bg-[#2b2e33] p-4">
+    <h2 class="mb-2 text-lg font-semibold text-white">Quotation Analytics</h2>
+    <canvas id="quotationChart" class="h-[220px] w-full"></canvas>
+  </div>
+
+  <!-- System Status -->
+  <div class="rounded-md bg-[#2b2e33] p-4">
+    <h2 class="mb-2 text-lg font-semibold text-white">System Status</h2>
+    <ul class="space-y-1 text-sm">
+      <li class="flex justify-between"><span>Database</span><span class="rounded bg-green-600 px-2">Connected</span></li>
+      <!-- … -->
+    </ul>
+  </div>
+
+  <!-- Docs / Help -->
+  <div class="rounded-md bg-[#f5f7fa] p-4 text-gray-800 dark:bg-[#32343a] dark:text-gray-200">
+    <h2 class="mb-1 text-lg font-semibold">Need Help?</h2>
+    <p class="mb-3 text-sm">Have questions about using the system?</p>
+    <a href="/docs" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white">View Documentation</a>
+  </div>
+</div>
+```
+
+*(Swap Tailwind classes for your framework if different; the semantics remain.)*
+
+---
+
+## 6. Next steps
+
+1. **Copy the markup** above into your dashboard template.
+2. **Refactor existing metrics** to feed the mini-cards and chart.
+3. **QA** on tablet/mobile breakpoints.
+4. Ship behind a feature-flag (“newDashboard”) so you can roll back instantly if needed.
+
+Let me know if you’d like the full React component or Figma frames—happy to drop them in!
