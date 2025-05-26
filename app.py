@@ -141,12 +141,14 @@ with app.app_context():
         
     # Register blueprints
     try:
+        from blueprints.customer import customer_bp
         from blueprints.quotation import quotation_bp
         from blueprints.orders import orders
         
+        app.register_blueprint(customer_bp)
         app.register_blueprint(quotation_bp)
         app.register_blueprint(orders)
-        logger.info("Quotation and Orders blueprints registered successfully")
+        logger.info("Customer, Quotation, and Orders blueprints registered successfully")
         
         # Register Invoice Addenda blueprint
         try:
