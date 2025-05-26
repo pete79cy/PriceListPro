@@ -230,23 +230,42 @@ def generate_supplier_products_pdf(supplier, products=None):
     pdf = HTML(string=html).write_pdf()
     return pdf
 
-def generate_supplier_catalog_pdf(supplier, categories=None):
+def generate_supplier_catalog_pdf(supplier, products):
     """
     Generate a product catalog PDF for a supplier
     
     Args:
         supplier: The supplier object
-        categories: Optional list of product categories
+        products: List of products for this supplier
         
     Returns:
-        bytes: The PDF file as bytes
+        tuple: (pdf_bytes, filename)
     """
-    # Basic implementation
-    html = render_template('pdfs/supplier_catalog.html',
-                          supplier=supplier,
-                          categories=categories)
-    pdf = HTML(string=html).write_pdf()
-    return pdf
+    try:
+        from weasyprint import HTML
+        from flask import render_template
+        
+        # Create filename
+        safe_supplier_name = "".join(c for c in supplier.name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        filename = f"catalog_{safe_supplier_name.replace(' ', '_')}.pdf"
+        
+        # Generate HTML from template
+        html = render_template('pdfs/supplier_catalog.html',
+                              supplier=supplier,
+                              products=products)
+        
+        # Generate PDF
+        pdf_bytes = HTML(string=html).write_pdf()
+        
+        return pdf_bytes, filename
+        
+    except Exception as e:
+        # Log the error with more detail
+        import traceback
+        from utils.logger import logger
+        logger.error(f"Error in generate_supplier_catalog_pdf: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 def generate_custom_supplier_report(supplier_data, items_data, report_params=None):
     """
