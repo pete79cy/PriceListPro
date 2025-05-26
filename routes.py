@@ -483,8 +483,8 @@ def register_routes(app):
             # Log error but continue with default values
             logger.error(f"Error getting quotation status counts: {str(e)}")
         
-        # Use the new card-based dashboard template
-        return render_template('dashboard_card_based.html', 
+        # Use the redesigned modern dashboard template
+        return render_template('dashboard_redesigned.html', 
                               stats=stats,
                               card_classes=card_classes,
                               pending_update_count=pending_update_count,
