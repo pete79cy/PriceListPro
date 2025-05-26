@@ -33,32 +33,8 @@ def generate_delivery_note_pdf(order, language='en', base_url=None):
     from utils.translations import get_translations
     translations = get_translations(language)
     
-    # Generate QR code for the order
+    # QR code functionality removed
     qr_code_data = None
-    try:
-        # Use a proper base URL or fall back to localhost
-        if not base_url:
-            from flask import request
-            try:
-                base_url = request.url_root.rstrip('/')
-            except:
-                base_url = "http://localhost:5000"
-        
-        order_url = f"{base_url}/orders/{order.id}/view"
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(order_url)
-        qr.make(fit=True)
-        
-        # Create QR code image
-        qr_img = qr.make_image(fill_color="black", back_color="white")
-        qr_buffer = io.BytesIO()
-        qr_img.save(qr_buffer, format='PNG')
-        qr_buffer.seek(0)
-        
-        # Convert to base64 for HTML embedding
-        qr_code_data = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
-    except Exception as e:
-        logging.warning(f"Could not generate QR code for order {order.id}: {str(e)}")
     
     # Render the HTML template with order details and translations
     html = render_template('pdfs/delivery_note.html',
@@ -107,25 +83,8 @@ def generate_pro_forma_invoice_pdf(order):
     # Calculate grand total
     total = subtotal + sum(item['amount'] for item in vat_breakdown)
     
-    # Generate QR code for the Pro Forma Invoice
-    qr_code_base64 = None
-    try:
-        order_url = f"Pro Forma Invoice: {order.order_number}"
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(order_url)
-        qr.make(fit=True)
-        
-        # Create QR code image
-        qr_img = qr.make_image(fill_color="black", back_color="white")
-        qr_buffer = io.BytesIO()
-        qr_img.save(qr_buffer, format='PNG')
-        qr_buffer.seek(0)
-        
-        # Convert to base64 for HTML embedding
-        qr_code_base64 = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
-    except Exception as e:
-        logging.warning(f"Could not generate QR code: {e}")
-        qr_code_base64 = ""
+    # QR code functionality removed
+    qr_code_base64 = ""
     
     # Render the HTML template with order details
     html = render_template('pdfs/pro_forma_invoice.html',
@@ -422,25 +381,7 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url=None):
     c.drawCentredString(width - 60, height - 45, status_text)
     c.setFillColor(colors.black)
 
-    # Generate QR Code
-    # Use a proper base URL or fall back to localhost
-    if not base_url:
-        from flask import request
-        try:
-            base_url = request.url_root.rstrip('/')
-        except:
-            base_url = "http://localhost:5000"
-    
-    qr_url = f"{base_url}/quotations/{quotation.id}/view"
-    qr = qrcode.make(qr_url)
-    qr_buffer = io.BytesIO()
-    qr.save(qr_buffer, format="PNG")
-    qr_buffer.seek(0)
-    
-    # Use ImageReader for ReportLab compatibility
-    from reportlab.lib.utils import ImageReader
-    qr_image = ImageReader(qr_buffer)
-    c.drawImage(qr_image, width - 60, height - 120, 40, 40)
+    # QR code functionality removed for enhanced delivery notes
 
     # Sub-header with date and customer
     c.setFont(font_name, 12)
