@@ -556,15 +556,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Reset modal when adding a new customer
-    document.querySelector('[data-bs-target="#customerModal"]').addEventListener('click', function() {
-        document.getElementById('customerModalLabel').textContent = 'Add Customer';
-        document.getElementById('customer_id').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('email').value = '';
-        document.getElementById('phone').value = '';
-        document.getElementById('address').value = '';
-        document.getElementById('category_id').value = '';
-    });
+    const newCustomerLink = document.querySelector('[data-bs-target="#customerModal"]');
+    if (newCustomerLink) {
+        newCustomerLink.addEventListener('click', function() {
+            document.getElementById('customerModalLabel').textContent = 'Add Customer';
+            document.getElementById('customer_id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('address').value = '';
+            document.getElementById('category_id').value = '';
+        });
+    }
 
     // Handle delete modal
     document.getElementById('deleteModal').addEventListener('show.bs.modal', function(event) {
