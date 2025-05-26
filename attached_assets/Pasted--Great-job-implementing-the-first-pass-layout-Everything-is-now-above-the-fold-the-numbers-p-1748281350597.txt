@@ -1,0 +1,106 @@
+💡 **Great job implementing the first-pass layout!**
+Everything is now above the fold, the numbers pop, and the page feels much lighter. Below are a handful of *micro-tweaks* that will make the new dashboard feel as deliberate as a native iOS home-screen—without touching routes, data flows, or component APIs.
+
+---
+
+## 1 — Kill the “double header”
+
+| Problem                                                                                                                                                       | Fix                                                       | How                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| You now have **two horizontal bars** (blue top-nav + dark sub-header with logo/search/+New). That’s \~128 px of vertical real-estate pushed off every screen. | Fold the *sub-header content* into the existing blue nav. | <ul><li>• Move the `+ New` dropdown next to <kbd>Price Lists</kbd>.</li><li>• Swap the 🔍 icon for a full-width command-palette search (<kbd>⌘ K</kbd>) that expands over nav when focused.</li><li>• Keep the bell icon & user menu right-aligned, ditching the duplicate logo.</li></ul> |
+
+*Result:* 92 px of vertical space reclaimed, scroll bar disappears on most laptops.
+
+---
+
+## 2 — Mini-cards: give them breathing room
+
+| Issue                                                                          | Change                                                                                                              |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Cards are flush left/right, making the grid feel cramped.                      | Add `gap-4 lg:gap-6` between the three metric cards and `px-2 lg:px-4` side padding on their parent flex container. |
+| Type hierarchy: labels (“Customers”) and numbers are close in weight and size. | Label → `text-xs font-medium text-gray-400`  •  Number → `text-4xl font-semibold text-white`.                       |
+
+---
+
+## 3 — Quick-Actions column
+
+1. **Scrollbar avoidance:** A 720 px tall card is fine on 1440 × 900 screens, but will scroll on 768 px laptops.
+   *Fix:* make it `max-h-[calc(100vh-280px)] overflow-auto`.
+2. **Hover affordance:** add `transition-all duration-150 translate-x-1` on hover so each row nudges right a tad—instant “this is clickable” cue.
+3. **Groupings:** add a faint divider (`border-t border-gray-700 my-2`) between navigation shortcuts and file utilities.
+
+---
+
+## 4 — Analytics & System Status alignment
+
+Right now the *System Status* card is visually glued to the chart because both refresh at the same z-index.
+
+*Quick CSS patch*
+
+```css
+/* tailwind.config.js (extend) */
+boxShadow: {
+  card: '0 1px 3px rgba(0,0,0,0.3)',
+}
+
+.analytics,
+.system-status {
+  @apply shadow-card;
+}
+.analytics { margin-bottom: 1.5rem; }   /* forces gap */
+```
+
+---
+
+## 5 — Need-Help panel
+
+* Light background is perfect for contrast, but give it a **subtle stroke** (`border border-gray-600/40`) so it doesn’t float in dark space.
+* Optional: turn the whole card into a link (`hover:bg-blue-50/5`) not just the button; easier Fitts’ Law target.
+
+---
+
+## 6 — Accessibility & keyboard ninja polish
+
+1. **Tab order**:
+   `nav → +New → Search → Mini-card 1-3 → Quick-Actions list (loop) → Analytics canvas → Status → Help`.
+   Use `tabindex="0"` on cards so power-users can open them with **Enter**.
+2. **High-contrast theme switch**: re-use your Tailwind `dark` class but expose a toggle in the user menu; system status pills need 4.5:1 contrast in both modes.
+3. **ARIA live region** for the real-time quotation chart so screen-readers announce, *“Chart updated: Approved quotations up 12 %”* after WebSocket push.
+
+---
+
+## 7 — CSS grid snippet (drop-in)
+
+```html
+<!-- Dashboard wrapper -->
+<div class="grid gap-6 lg:grid-cols-[minmax(260px,340px)_1fr]">
+  <!-- Quick Actions -->
+  <aside class="space-y-2 rounded-md bg-surface p-4 overflow-auto">
+    …
+  </aside>
+
+  <!-- Right column stack -->
+  <section class="grid gap-6">
+    <div class="grid grid-cols-3 gap-4" id="metrics">
+      … <!-- three mini-cards -->
+    </div>
+
+    <div class="rounded-md bg-surface p-4 analytics">
+      … <!-- chart -->
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <div class="rounded-md bg-surface p-4 system-status">…</div>
+      <div class="rounded-md bg-panel-light dark:bg-panel-dark p-4">…Help…</div>
+    </div>
+  </section>
+</div>
+```
+
+No JS changes, just CSS classes—so it’s safe under the “don’t touch anything else” rule. ✨
+
+---
+
+### Ready to iterate?
+
+If you’d like me to drop the exact Tailwind class list or hand you a small PR diff, just say the word. Otherwise, apply the tweaks above and the page should feel as tight as a first-party macOS utility.
