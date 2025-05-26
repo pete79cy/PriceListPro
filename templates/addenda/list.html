@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Invoice Addenda{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Invoice Addenda</h1>
+        <a href="{{ url_for('addenda.new_addendum') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Addendum
+        </a>
+    </div>
+
+    {% if addenda.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Invoice Number</th>
+                            <th>Customer</th>
+                            <th>Period</th>
+                            <th>Status</th>
+                            <th>Total Amount</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for addendum in addenda.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ addendum.invoice_number }}</strong>
+                            </td>
+                            <td>{{ addendum.customer.name }}</td>
+                            <td>
+                                {{ addendum.period_from.strftime('%Y-%m-%d') }} - 
+                                {{ addendum.period_to.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td>
+                                <span class="badge {% if addendum.status == 'draft' %}badge-warning{% else %}badge-success{% endif %}">
+                                    {{ addendum.status.title() }}
+                                </span>
+                            </td>
+                            <td>€{{ "%.2f"|format(addendum.get_grand_total()) }}</td>
+                            <td>{{ addendum.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('addenda.view_addendum', addendum_id=addendum.id) }}" 
+                                       class="btn btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('addenda.export_pdf', addendum_id=addendum.id) }}" 
+                                       class="btn btn-outline-danger" title="Export PDF">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if addenda.pages > 1 %}
+    <nav aria-label="Addenda pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if addenda.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('addenda.list_addenda', page=addenda.prev_num) }}">Previous</a>
+            </li>
+            {% endif %}
+
+            {% for page_num in addenda.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != addenda.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('addenda.list_addenda', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if addenda.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('addenda.list_addenda', page=addenda.next_num) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="fas fa-file-invoice fa-4x text-muted"></i>
+        </div>
+        <h3 class="text-muted">No Invoice Addenda</h3>
+        <p class="text-muted">Create your first invoice addendum to get started.</p>
+        <a href="{{ url_for('addenda.new_addendum') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Addendum
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
