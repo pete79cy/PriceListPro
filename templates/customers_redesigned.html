@@ -423,18 +423,22 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Customer page loaded successfully');
+    
     // Initialize filter counts
     updateFilterCounts();
     
     // Search functionality with debouncing
     let searchTimeout;
     const searchInput = document.getElementById('customer-search');
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            filterCustomers();
-        }, 250);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterCustomers();
+            }, 250);
+        });
+    }
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
@@ -450,38 +454,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Chip filter functionality - instant client-side filtering
     const chips = document.querySelectorAll('[data-chip]');
     const rows = document.querySelectorAll('.customer-row');
+    
+    console.log('Found chips:', chips.length, 'Found rows:', rows.length);
 
-    chips.forEach(chip => chip.addEventListener('click', e => {
-        // Remove active class from all chips
-        chips.forEach(c => c.classList.remove('chip-active'));
-        // Add active class to clicked chip
-        e.currentTarget.classList.add('chip-active');
+    chips.forEach(chip => {
+        chip.addEventListener('click', function(e) {
+            console.log('Chip clicked:', this.dataset.chip);
+            
+            // Remove active class from all chips
+            chips.forEach(c => c.classList.remove('chip-active'));
+            // Add active class to clicked chip
+            this.classList.add('chip-active');
 
-        const mode = e.currentTarget.dataset.chip;
-        const categoryId = e.currentTarget.dataset.categoryId;
-        
-        rows.forEach(r => {
-            let shouldShow = true;
+            const mode = this.dataset.chip;
+            const categoryId = this.dataset.categoryId;
             
-            if (mode === 'all') {
-                shouldShow = true;
-            } else if (mode === 'price-lists') {
-                shouldShow = r.dataset.hasPriceLists === 'True';
-            } else if (mode === 'missing-email') {
-                shouldShow = r.dataset.hasEmail === 'False';
-            } else if (mode === 'recent') {
-                // Add your recent activity logic here
-                shouldShow = true;
-            } else if (mode === 'category') {
-                shouldShow = r.dataset.categoryId === categoryId;
-            }
+            rows.forEach(r => {
+                let shouldShow = true;
+                
+                if (mode === 'all') {
+                    shouldShow = true;
+                } else if (mode === 'price-lists') {
+                    shouldShow = r.dataset.hasPriceLists === 'True';
+                } else if (mode === 'missing-email') {
+                    shouldShow = r.dataset.hasEmail === 'False';
+                } else if (mode === 'recent') {
+                    // Add your recent activity logic here
+                    shouldShow = true;
+                } else if (mode === 'category') {
+                    shouldShow = r.dataset.categoryId === categoryId;
+                }
+                
+                r.style.display = shouldShow ? '' : 'none';
+            });
             
-            r.hidden = !shouldShow;
+            console.log('Filter applied for mode:', mode);
         });
-        
-        // Apply search filter on top of category filter
-        filterCustomers();
-    }));
+    });
 
     // Select all functionality
     const selectAllCheckbox = document.getElementById('select-all');
