@@ -82,28 +82,43 @@ document.addEventListener('DOMContentLoaded', function() {
     html += '<div class="row">';
 
     data.results.forEach(result => {
-      // Format currency -  This needs to be changed to EUR as well.
-      const formattedPrice = new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(result.current_price);
+      // Handle pricing display for different search types
+      let priceDisplay = '';
+      if (result.current_price !== null && result.current_price !== undefined) {
+        const formattedPrice = new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: 'EUR'
+        }).format(result.current_price);
+        
+        priceDisplay = `
+          <div class="text-center mb-3">
+            <span class="display-6">${formattedPrice}</span>
+            <div class="text-muted small">${result.customer_specific ? 'Customer Price' : 'General Price'}</div>
+            ${result.price_note ? `<div class="text-info small">${result.price_note}</div>` : ''}
+          </div>
+        `;
+      } else {
+        priceDisplay = `
+          <div class="text-center mb-3">
+            <span class="text-muted">No Price Available</span>
+            <div class="text-muted small">Select a customer for pricing</div>
+          </div>
+        `;
+      }
 
       html += `
         <div class="col-md-6 col-lg-4 mb-4">
           <div class="card h-100">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header ${result.customer_specific ? 'bg-primary' : 'bg-secondary'} text-white">
               <h5 class="mb-0">${result.product_name}</h5>
             </div>
             <div class="card-body">
               ${result.sku ? `<p class="mb-2"><strong>SKU:</strong> ${result.sku}</p>` : ''}
               ${result.description ? `<p class="mb-3"><strong>Description:</strong> ${result.description}</p>` : ''}
 
-              <div class="text-center mb-3">
-                <span class="display-6">${formattedPrice}</span>
-                <div class="text-muted small">Current Price</div>
-              </div>
+              ${priceDisplay}
 
-              ${result.price_history.length > 1 ? `
+              ${result.price_history && result.price_history.length > 1 ? `
                 <div class="accordion" id="priceHistory${result.product_id}">
                   <div class="accordion-item">
                     <h2 class="accordion-header">
