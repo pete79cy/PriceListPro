@@ -36,13 +36,13 @@ def generate_delivery_note_pdf(order, language='en', base_url=None):
     # Generate QR code for the order
     qr_code_data = None
     try:
-        # Use a proper base URL or fall back to localhost
+        # Use a proper base URL or fall back to your actual application
         if not base_url:
             from flask import request
             try:
                 base_url = request.url_root.rstrip('/')
             except:
-                base_url = "http://localhost:5000"
+                base_url = "https://trail-blazer-tracker-panayiotispakko.replit.app"
         
         order_url = f"{base_url}/orders/{order.id}/view"
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -423,13 +423,13 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url=None):
     c.setFillColor(colors.black)
 
     # Generate QR Code
-    # Use a proper base URL or fall back to localhost
+    # Use a proper base URL or fall back to your actual application
     if not base_url:
         from flask import request
         try:
             base_url = request.url_root.rstrip('/')
         except:
-            base_url = "http://localhost:5000"
+            base_url = "https://trail-blazer-tracker-panayiotispakko.replit.app"
     
     qr_url = f"{base_url}/quotations/{quotation.id}/view"
     qr = qrcode.make(qr_url)
