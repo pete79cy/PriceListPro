@@ -866,9 +866,6 @@ def register_routes(app):
     @app.route('/customers', methods=['GET', 'POST'])
     @login_required
     def customers():
-        # Check if user wants the redesigned interface
-        use_redesigned = request.args.get('redesigned', 'false').lower() == 'true'
-        
         if request.method == 'POST':
             # Add or update a customer
             customer_id = request.form.get('customer_id')
@@ -885,8 +882,7 @@ def register_routes(app):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers = Customer.query.all()
                 categories = CustomerCategory.query.all()
-                template = 'customers_redesigned.html' if use_redesigned else 'customers.html'
-                return render_template(template, customers=customers, categories=categories)
+                return render_template('customers_redesigned.html', customers=customers, categories=categories)
             
             if customer_id:  # Update existing
                 customer = Customer.query.get_or_404(customer_id)
@@ -903,22 +899,12 @@ def register_routes(app):
                 flash(f'Customer {name} added successfully!', 'success')
             
             db.session.commit()
-            redirect_url = url_for('customers', redesigned='true') if use_redesigned else url_for('customers')
-            return redirect(redirect_url)
+            return redirect(url_for('customers'))
         
-        # GET request - show customers
+        # GET request - show customers with redesigned interface
         customers_list = Customer.query.all()
         categories = CustomerCategory.query.all()
-        
-        # Choose template based on interface preference
-        template = 'customers_redesigned.html' if use_redesigned else 'customers.html'
-        return render_template(template, customers=customers_list, categories=categories)
-    
-    @app.route('/customers/redesigned')
-    @login_required
-    def customers_redesigned():
-        """Redirect to the redesigned customers interface"""
-        return redirect(url_for('customers', redesigned='true'))
+        return render_template('customers_redesigned.html', customers=customers_list, categories=categories)
     
     @app.route('/customers/<int:customer_id>', methods=['GET'])
     @login_required
