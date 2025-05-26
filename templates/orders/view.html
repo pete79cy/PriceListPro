@@ -947,18 +947,6 @@ document.addEventListener('DOMContentLoaded', function() {
         unitPriceInput.removeAttribute('required');
     });
 });
-    // Form validation - ensure a product is selected
-    const orderForm = productIdInput.closest('form');
-    if (orderForm) {
-        orderForm.addEventListener('submit', function(e) {
-            if (!productIdInput.value) {
-                e.preventDefault();
-                alert('Please select a product before adding to order');
-                clearSelectedProduct(); // Show search input again
-            }
-        });
-    }
-});
 </script>
 
 <!-- Edit Item Modal (Single Reusable Modal) -->
