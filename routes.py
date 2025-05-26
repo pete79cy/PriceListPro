@@ -1157,9 +1157,8 @@ def register_routes(app):
         if not query:
             return jsonify({'error': 'No search query provided'}), 400
         
-        if not customer_id:
-            return jsonify({'error': 'No customer selected'}), 400
-        
+        # If customer_id is provided, search with customer-specific pricing
+        # If not, search all products with general pricing
         results = search_price_list(query, customer_id)
         return jsonify(results)
     

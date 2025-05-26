@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const query = searchQuery.value.trim();
     const customerId = customerSelect.value;
 
-    if (!query || !customerId) {
+    if (!query) {
       return;
     }
 
@@ -67,13 +67,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to render search results
   function renderSearchResults(data) {
     // Get customer name
-    const customerName = customerSelect.options[customerSelect.selectedIndex].text;
+    const customerName = customerSelect.value ? customerSelect.options[customerSelect.selectedIndex].text : 'All Customers';
+    const isGeneralSearch = !customerSelect.value;
 
     // Create header
     let html = `
       <div class="alert alert-success mb-4">
         <i class="fas fa-check-circle me-2"></i>
-        Found ${data.results.length} matching products for <strong>${customerName}</strong>
+        Found ${data.results.length} matching products${isGeneralSearch ? ' (general search)' : ' for <strong>' + customerName + '</strong>'}
       </div>
     `;
 
