@@ -196,6 +196,46 @@
         background-color: var(--bg-panel-dark);
     }
 
+    /* Accessibility and Keyboard Navigation */
+    .metric-card:focus,
+    .quick-action-item:focus,
+    .help-panel:focus {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+
+    /* ARIA live region for chart updates */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* Responsive grid utilities */
+    .space-y-6 > * + * {
+        margin-top: 1.5rem;
+    }
+
+    .grid {
+        display: grid;
+    }
+
+    .gap-6 {
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+        .lg\\:grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     .nav-search input:focus {
         outline: none;
         border-color: #3b82f6;
@@ -595,7 +635,9 @@
             <!-- Analytics Chart -->
             <div class="analytics-card">
                 <h2 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">Quotation Analytics</h2>
-                <canvas id="quotationChart" width="100%" height="220"></canvas>
+                <canvas id="quotationChart" width="100%" height="220" aria-label="Quotation analytics chart showing status distribution"></canvas>
+                <!-- ARIA live region for chart updates -->
+                <div id="chart-updates" class="sr-only" aria-live="polite" aria-atomic="true"></div>
             </div>
 
             <!-- Bottom Row: System Status and Help Panel -->
@@ -748,8 +790,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Command palette search functionality
+    // Enhanced Command palette search functionality
     const dashboardSearch = document.querySelector('#dashboard-search');
+    
+    // Expand search on focus
+    dashboardSearch.addEventListener('focus', function() {
+        this.style.transform = 'scale(1.02)';
+        this.style.transition = 'transform 0.15s ease';
+    });
+    
+    dashboardSearch.addEventListener('blur', function() {
+        this.style.transform = 'scale(1)';
+    });
     
     dashboardSearch.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -768,13 +820,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Global command palette
+    // Global command palette (Cmd/Ctrl + K)
     document.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
-            document.querySelector('.nav-search input').focus();
+            const searchInput = document.querySelector('.nav-search input');
+            searchInput.focus();
+            searchInput.select();
         }
     });
+
+    // Enhanced accessibility for metric cards
+    document.querySelectorAll('.metric-card').forEach(card => {
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+    });
+
+    // Chart update announcements for screen readers
+    function announceChartUpdate(message) {
+        const liveRegion = document.getElementById('chart-updates');
+        if (liveRegion) {
+            liveRegion.textContent = message;
+            // Clear after announcement
+            setTimeout(() => {
+                liveRegion.textContent = '';
+            }, 1000);
+        }
+    }
 });
 </script>
 {% endblock %}
