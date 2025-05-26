@@ -219,7 +219,7 @@ def update_status(order_id):
 @orders.route('/<int:order_id>/add_item', methods=['POST'])
 @login_required
 def add_item(order_id):
-    """Add an item to an order"""
+    """Add an item to an order - supports both existing products and creating new ones"""
     order = Order.query.get_or_404(order_id)
     
     # Extract form data
@@ -229,30 +229,79 @@ def add_item(order_id):
     vat_rate = request.form.get('vat_rate', type=float, default=19.0)
     update_price_list = 'update_price_list' in request.form
     
+    # New product fields (for products that don't exist)
+    new_product_name = request.form.get('new_product_name', '').strip()
+    new_product_category = request.form.get('new_product_category', '').strip()
+    new_product_scientific_name = request.form.get('new_product_scientific_name', '').strip()
+    new_product_pot = request.form.get('new_product_pot', '').strip()
+    new_product_sku = request.form.get('new_product_sku', '').strip()
+    new_product_description = request.form.get('new_product_description', '').strip()
+    
     # Validate required fields
-    if not product_id or not quantity:
-        flash('Product and quantity are required', 'danger')
+    if not quantity:
+        flash('Quantity is required', 'danger')
         return redirect(url_for('orders.view_order', order_id=order.id))
     
-    # Get the product
-    product = Product.query.get(product_id)
-    if not product:
-        flash('Invalid product selected', 'danger')
-        return redirect(url_for('orders.view_order', order_id=order.id))
+    product = None
     
-    # If unit price not provided, get from customer's price list
-    if not unit_price:
-        unit_price = get_customer_price(order.customer_id, product_id)
+    # Check if we're adding a new product or using an existing one
+    if new_product_name:
+        # Creating a new product
         if not unit_price:
-            flash('No price found for this product. Please enter a price.', 'warning')
+            flash('Price is required when adding a new product', 'danger')
             return redirect(url_for('orders.view_order', order_id=order.id))
+        
+        # Check if a similar product already exists
+        existing_product = Product.query.filter_by(name=new_product_name).first()
+        if existing_product:
+            flash(f'A product with the name "{new_product_name}" already exists. Please use the existing product or choose a different name.', 'warning')
+            return redirect(url_for('orders.view_order', order_id=order.id))
+        
+        # Create new product
+        product = Product(
+            name=new_product_name,
+            category=new_product_category if new_product_category else None,
+            scientific_name=new_product_scientific_name if new_product_scientific_name else None,
+            pot=new_product_pot if new_product_pot else None,
+            sku=new_product_sku if new_product_sku else None,
+            description=new_product_description if new_product_description else None
+        )
+        db.session.add(product)
+        db.session.flush()  # Flush to get the ID
+        
+        product_id = product.id
+        plant_name = product.name
+        size = product.pot if product.pot else ''
+        
+        flash(f'Created new product: {new_product_name}', 'info')
+        
+    elif product_id:
+        # Using existing product
+        product = Product.query.get(product_id)
+        if not product:
+            flash('Invalid product selected', 'danger')
+            return redirect(url_for('orders.view_order', order_id=order.id))
+        
+        # If unit price not provided, get from customer's price list
+        if not unit_price:
+            unit_price = get_customer_price(order.customer_id, product_id)
+            if not unit_price:
+                flash('No price found for this product. Please enter a price.', 'warning')
+                return redirect(url_for('orders.view_order', order_id=order.id))
+        
+        plant_name = product.name
+        size = product.pot if product.pot else ''
+        
+    else:
+        flash('Please select an existing product or enter details for a new product', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
     
     # Create new order item
     order_item = OrderItem(
         order_id=order.id,
         product_id=product_id,
-        plant_name=product.name,
-        size=product.pot if product.pot else '',
+        plant_name=plant_name,
+        size=size,
         quantity=quantity,
         price=unit_price,
         vat_rate=vat_rate
@@ -261,12 +310,12 @@ def add_item(order_id):
     db.session.add(order_item)
     
     # Update the customer's price list if requested
-    if update_price_list:
+    if update_price_list and product_id:
         update_customer_price_list(order.customer_id, product_id, unit_price)
     
     db.session.commit()
     
-    flash(f'Added {quantity} x {product.name} to the order', 'success')
+    flash(f'Added {quantity} x {plant_name} to the order', 'success')
     return redirect(url_for('orders.view_order', order_id=order.id))
 
 @orders.route('/<int:order_id>/item/<int:item_id>/update', methods=['POST'])
