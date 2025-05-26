@@ -17,7 +17,7 @@ import qrcode
 import io
 import logging
 
-def generate_delivery_note_pdf(order, language='en', base_url="https://yourdomain.com"):
+def generate_delivery_note_pdf(order, language='en', base_url=None):
     """
     Generate a PDF delivery note for an order with enhanced design and QR code
     
@@ -36,6 +36,14 @@ def generate_delivery_note_pdf(order, language='en', base_url="https://yourdomai
     # Generate QR code for the order
     qr_code_data = None
     try:
+        # Use a proper base URL or fall back to localhost
+        if not base_url:
+            from flask import request
+            try:
+                base_url = request.url_root.rstrip('/')
+            except:
+                base_url = "http://localhost:5000"
+        
         order_url = f"{base_url}/orders/{order.id}/view"
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(order_url)
@@ -346,7 +354,7 @@ def get_logo_data(company):
     return ""
 
 
-def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.com"):
+def generate_enhanced_delivery_note_pdf(quotation, base_url=None):
     """
     Generate an enhanced delivery note PDF using ReportLab with QR codes and status badges
     
@@ -415,6 +423,14 @@ def generate_enhanced_delivery_note_pdf(quotation, base_url="https://yourdomain.
     c.setFillColor(colors.black)
 
     # Generate QR Code
+    # Use a proper base URL or fall back to localhost
+    if not base_url:
+        from flask import request
+        try:
+            base_url = request.url_root.rstrip('/')
+        except:
+            base_url = "http://localhost:5000"
+    
     qr_url = f"{base_url}/quotations/{quotation.id}/view"
     qr = qrcode.make(qr_url)
     qr_buffer = io.BytesIO()
