@@ -1,0 +1,138 @@
+## Πρόταση υλοποίησης
+
+**Έντυπο Παραρτήματος Πωλήσεων** (ανα-πελάτη & περίοδο τιμολόγησης)
+
+> ✔ Δεν πειράζουμε τη λογική τιμολογίων που «τρέχει» αλλού – φτιάχνουμε ένα αυτόνομο module μέσα στο Plant Pricing System το οποίο απλώς εκτυπώνει/εξάγει PDF και μπορεί να σταλεί μαζί με το τιμολόγιο.
+
+---
+
+### 1.  Δομή δεδομένων (SQLAlchemy)
+
+```python
+class InvoiceAddendum(db.Model):            # header
+    __tablename__ = "invoice_addenda"
+    id              = db.Column(UUID, primary_key=True, default=uuid4)
+    customer_id     = db.Column(UUID, db.ForeignKey("customers.id"), nullable=False)
+    invoice_number  = db.Column(String(30), nullable=False)          # το ref στο «ξένο» τιμολόγιο
+    period_from     = db.Column(Date, nullable=False)
+    period_to       = db.Column(Date, nullable=False)
+    created_at      = db.Column(DateTime, default=datetime.utcnow)
+    lines           = db.relationship("InvoiceAddendumLine", back_populates="addendum",
+                                      cascade="all, delete-orphan")
+
+class InvoiceAddendumLine(db.Model):       # detail rows
+    __tablename__ = "invoice_addendum_lines"
+    id          = db.Column(UUID, primary_key=True, default=uuid4)
+    addendum_id = db.Column(UUID, db.ForeignKey("invoice_addenda.id"), nullable=False)
+    product_id  = db.Column(UUID, db.ForeignKey("products.id"), nullable=False)
+    sale_date   = db.Column(Date, nullable=False)
+    quantity    = db.Column(Numeric(10, 2), nullable=False)
+    unit_price  = db.Column(Numeric(10, 2), nullable=False)
+    vat_rate    = db.Column(Numeric(4, 2), nullable=False)  # 5.00 ή 19.00
+    addendum    = db.relationship("InvoiceAddendum", back_populates="lines")
+```
+
+---
+
+### 2.  Ροή χρήσης στο UI
+
+| Βήμα | Οθόνη / Στοιχείο                               | Περιγραφή                                                                                                |
+| ---- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 1    | **+ New → Addendum** (dropdown που ήδη έβαλες) | Μικρό modal ζητά: πελάτη, περίοδο From–To, αριθμό τιμολογίου.                                            |
+| 2    | Μεταφέρεται σε **/addenda/\<id>**              | Εμφανίζεται κενός πίνακας «Γραμμές Πώλησης».                                                             |
+| 3    | **Add Line** button ή inline autocomplete      | Επιλογή προϊόντος (search-as-you-type), ημερομηνία, ποσότητα, τιμή -> default VAT 19 % με toggle σε 5 %. |
+| 4    | **Save** (auto-save row)                       | Γραμμή καταχωρείται.                                                                                     |
+| 5    | **Export PDF** (πάνω δεξιά)                    | Κλήση σε `/addenda/<id>/pdf` → ανοίγει/κατεβάζει τυποποιημένο παράρτημα.                                 |
+
+*Quick-access* – πρόσθεσε link “Addenda” κάτω από **Quick Actions** για διαχείριση προηγουμένων παραρτημάτων (λίστα με status drafts/locked).
+
+---
+
+### 3.  Γεννήτρια PDF (Flask route)
+
+```python
+from weasyprint import HTML
+from jinja2 import Environment, FileSystemLoader
+
+@app.route("/addenda/<uuid:add_id>/pdf")
+def addendum_pdf(add_id):
+    addendum = InvoiceAddendum.query.get_or_404(add_id)
+    html = render_template("pdf/addendum.html", a=addendum)
+    pdf  = HTML(string=html, base_url=request.base_url).write_pdf()
+    return Response(pdf,
+        headers={"Content-Type": "application/pdf",
+                 "Content-Disposition": f"attachment; filename=Addendum_{addendum.invoice_number}.pdf"})
+```
+
+**Template (Jinja2)** – βασική δομή:
+
+```
+Πελάτης: {{ a.customer.name }}          Ημ/νία έκδοσης: {{ a.created_at|date }}
+Τιμολόγιο #: {{ a.invoice_number }}      Περίοδος: {{ a.period_from }} – {{ a.period_to }}
+
+┌───┬────────┬───────┬─────────┬───────┬────────┐
+│ # │ Ημερ.  │ Προϊόν│ Ποσ.    │ Τιμή  │ ΦΠΑ %  │
+├───┼────────┼───────┼─────────┼───────┼────────┤
+{% for i,l in enumerate(a.lines,1) -%}
+│ {{ i }} │ {{ l.sale_date }} │ {{ l.product.name }} │
+│ {{ l.quantity }} │ {{ l.unit_price|money }} │ {{ l.vat_rate }} │
+{% endfor %}
+└───┴────────┴───────┴─────────┴───────┴────────┘
+```
+
+> *Μπορείς να χρησιμοποιήσεις CSS `@page` για υπογραφές/σφραγίδες στο footer.*
+
+---
+
+### 4.  API end-points (Flask Blueprint `addenda.py`)
+
+| Μέθοδος | Route                               | Περιγραφή                          |
+| ------- | ----------------------------------- | ---------------------------------- |
+| POST    | `/api/addenda`                      | Δημιουργεί νέο header.             |
+| POST    | `/api/addenda/<id>/lines`           | Προσθέτει γραμμή.                  |
+| GET     | `/api/addenda/<id>`                 | Επιστρέφει JSON (για React table). |
+| DELETE  | `/api/addenda/<id>/lines/<line_id>` | Διαγραφή γραμμής.                  |
+| GET     | `/addenda/<id>/pdf`                 | Απόδοση PDF (όπως πάνω).           |
+
+JWT / session auth όπως σε υπόλοιπο σύστημα.
+
+---
+
+### 5.  Σημειώσεις VAT
+
+* Στο UI dropdown “VAT %” με δύο επιλογές (5, 19).
+* Αν θες future-proof, κρατάς πίνακα `vat_rates` στο DB.
+
+---
+
+### 6.  Ελάχιστο React component (pseudo-structure)
+
+```jsx
+export default function AddendumPage() {
+  const { id } = useParams();
+  const { data: addendum } = useQuery(["addendum", id], fetchAddendum);
+
+  return (
+    <div className="space-y-6">
+      <Header addendum={addendum}/>
+      <SaleLineTable addendumId={id}/>
+      <Button href={`/addenda/${id}/pdf`} variant="outline">
+        Download PDF
+      </Button>
+    </div>
+  );
+}
+```
+
+---
+
+### 7.  Migration & Roll-out
+
+1. **Alembic migration** για τους δύο πίνακες.
+2. Προσθήκη δικαιώματος role `manage_addenda`.
+3. Feature flag “addenda\_module” -> enable μόνο σε staging, QA με 2-3 πελάτες.
+4. Όταν σταθεροποιηθεί η εκτύπωση, το δίνεις στην παραγωγή.
+
+---
+
+*Έτοιμος/η να προχωρήσουμε σε πιο λεπτομερές code snippet ή mock-up PDF; Πες μου ποιο βήμα θέλεις πρώτο!*
