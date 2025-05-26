@@ -1,0 +1,629 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard - Plant Pricing System{% endblock %}
+
+{% block head %}
+<style>
+    /* Modern Dashboard Styles */
+    :root {
+        --bg-primary: #1c1e22;
+        --bg-secondary: #26292d;
+        --bg-card: #2b2e33;
+        --bg-card-hover: #3a3d42;
+        --text-primary: #ffffff;
+        --text-secondary: #9ca3af;
+        --border-radius: 0.5rem;
+        --transition: 0.18s ease-out;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .dashboard-container {
+        background-color: var(--bg-primary);
+        min-height: 100vh;
+        padding: 1.5rem;
+    }
+
+    /* Top Navigation Enhancement */
+    .top-nav {
+        background-color: var(--bg-secondary);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: between;
+        gap: 1rem;
+    }
+
+    .nav-brand {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .nav-search {
+        flex: 1;
+        max-width: 300px;
+    }
+
+    .nav-search input {
+        background-color: var(--bg-card);
+        border: 1px solid var(--bg-card-hover);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        padding: 0.5rem 1rem;
+        width: 100%;
+    }
+
+    .nav-search input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-new {
+        background-color: #3b82f6;
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .btn-new:hover {
+        background-color: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    /* Summary Mini Cards */
+    .summary-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .mini-card {
+        background-color: var(--bg-card);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 96px;
+        transition: var(--transition);
+        text-decoration: none;
+        color: inherit;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .mini-card:hover {
+        background-color: var(--bg-card-hover);
+        transform: translateY(-1px) scale(1.01);
+        text-decoration: none;
+        color: inherit;
+        box-shadow: var(--shadow-md);
+    }
+
+    .mini-card-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .mini-card-value {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* Two Column Grid */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .grid-card {
+        background-color: var(--bg-card);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .grid-card h2 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        grid-row: span 2;
+    }
+
+    .action-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: var(--transition);
+        margin-bottom: 0.5rem;
+    }
+
+    .action-item:hover {
+        background-color: var(--bg-card-hover);
+        color: var(--text-primary);
+        text-decoration: none;
+    }
+
+    .action-item i {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Analytics Chart */
+    .analytics-card {
+        height: 220px;
+    }
+
+    .analytics-card canvas {
+        height: 220px !important;
+    }
+
+    /* System Status */
+    .status-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--bg-card-hover);
+    }
+
+    .status-item:last-child {
+        border-bottom: none;
+    }
+
+    .status-badge {
+        background-color: #10b981;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-badge.offline {
+        background-color: #ef4444;
+    }
+
+    /* Help/Docs Card */
+    .help-card {
+        background-color: #f5f7fa;
+        color: #374151;
+    }
+
+    .dark .help-card {
+        background-color: #32343a;
+        color: #d1d5db;
+    }
+
+    .help-card h2 {
+        color: #111827;
+        font-size: 1.125rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .dark .help-card h2 {
+        color: #f9fafb;
+    }
+
+    .help-card p {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.75rem;
+    }
+
+    .help-card .btn {
+        background-color: #3b82f6;
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .quick-actions {
+            grid-row: span 1;
+        }
+        
+        .action-item {
+            display: inline-flex;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .summary-row {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .dashboard-container {
+            padding: 1rem;
+        }
+        
+        .top-nav {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .nav-search {
+            max-width: none;
+        }
+    }
+
+    /* Pending Updates Alert */
+    .alert-card {
+        background-color: #dc2626;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: white;
+    }
+
+    .alert-card h3 {
+        margin-bottom: 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .alert-card .btn {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--transition);
+    }
+
+    .alert-card .btn:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-seedling me-2"></i>
+            Plant Pricing System
+        </div>
+        
+        <div class="nav-search">
+            <input type="text" placeholder="Search... (⌘K)" class="form-control">
+        </div>
+        
+        <div class="dropdown">
+            <button class="btn btn-new dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-plus me-1"></i> New
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                <li><a class="dropdown-item" href="{{ url_for('quotations') }}?action=new">
+                    <i class="fas fa-file-text me-2"></i> Quotation
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('orders.new') }}">
+                    <i class="fas fa-shopping-cart me-2"></i> Order
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('customers') }}?action=new">
+                    <i class="fas fa-user-plus me-2"></i> Customer
+                </a></li>
+            </ul>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <i class="fas fa-bell text-secondary"></i>
+            <div class="dropdown">
+                <button class="btn btn-link text-white dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-user-circle me-1"></i> {{ current_user.username }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
+                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Pending Updates Alert -->
+    {% if stats.pending_updates > 0 %}
+    <div class="alert-card">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h3><i class="fas fa-exclamation-triangle me-2"></i>Pending Price Updates</h3>
+                <p class="mb-0">You have {{ stats.pending_updates }} pending price update{% if stats.pending_updates != 1 %}s{% endif %} requiring review</p>
+            </div>
+            <a href="{{ url_for('pending_updates') }}" class="btn">
+                <i class="fas fa-tasks"></i> Review Updates
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Summary Mini Cards -->
+    <div class="summary-row">
+        <a href="{{ url_for('customers') }}" class="mini-card">
+            <span class="mini-card-label">Customers</span>
+            <span class="mini-card-value">{{ stats.customers }}</span>
+        </a>
+        
+        <a href="{{ url_for('quotations') }}" class="mini-card">
+            <span class="mini-card-label">Quotations</span>
+            <span class="mini-card-value">{{ stats.quotations|default(0) }}</span>
+        </a>
+        
+        <a href="{{ url_for('orders.index') }}" class="mini-card">
+            <span class="mini-card-label">Orders</span>
+            <span class="mini-card-value">{{ stats.orders|default(0) }}</span>
+        </a>
+    </div>
+
+    <!-- Main Two-Column Grid -->
+    <div class="main-grid">
+        <!-- Quick Actions (Left Column, Tall) -->
+        <div class="grid-card quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="actions-list">
+                <a href="{{ url_for('customers') }}" class="action-item">
+                    <i class="fas fa-users"></i>
+                    <span>View Customers</span>
+                </a>
+                <a href="{{ url_for('quotations') }}" class="action-item">
+                    <i class="fas fa-file-text"></i>
+                    <span>View Quotations</span>
+                </a>
+                <a href="{{ url_for('suppliers') }}" class="action-item">
+                    <i class="fas fa-truck"></i>
+                    <span>View Suppliers</span>
+                </a>
+                <a href="{{ url_for('uploads') }}" class="action-item">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload Files</span>
+                </a>
+                <a href="{{ url_for('search') }}" class="action-item">
+                    <i class="fas fa-search"></i>
+                    <span>Search Products</span>
+                </a>
+                <a href="{{ url_for('price_lists') }}" class="action-item">
+                    <i class="fas fa-list"></i>
+                    <span>Price Lists</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Analytics Chart (Right Column, Top) -->
+        <div class="grid-card analytics-card">
+            <h2>Quotation Analytics</h2>
+            <canvas id="quotationChart" width="100%" height="220"></canvas>
+        </div>
+
+        <!-- System Status (Right Column, Bottom) -->
+        <div class="grid-card">
+            <h2>System Status</h2>
+            <ul class="status-list">
+                <li class="status-item">
+                    <span><i class="fas fa-database me-2 text-success"></i>Database</span>
+                    <span class="status-badge">Connected</span>
+                </li>
+                <li class="status-item">
+                    <span><i class="fas fa-code-branch me-2 text-secondary"></i>Version</span>
+                    <span>1.0.0</span>
+                </li>
+                <li class="status-item">
+                    <span><i class="fas fa-clock me-2 text-primary"></i>Last Login</span>
+                    <span>
+                        {% if current_user.last_login %}
+                            {{ current_user.last_login.strftime('%m/%d %H:%M') }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Help/Docs Card (Right Column, Bottom) -->
+        <div class="grid-card help-card">
+            <h2>Need Help?</h2>
+            <p>Have questions about using the system?</p>
+            <button class="btn" data-bs-toggle="modal" data-bs-target="#helpModal">
+                <i class="fas fa-book me-1"></i> View Documentation
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">System Documentation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Getting Started</h6>
+                <ul>
+                    <li>Create customers in the Customers section</li>
+                    <li>Upload price lists for your suppliers</li>
+                    <li>Create quotations for customers</li>
+                    <li>Convert approved quotations to orders</li>
+                </ul>
+                
+                <h6 class="mt-3">Need More Help?</h6>
+                <p>Contact your system administrator for additional support.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the quotation analytics chart
+    const ctx = document.getElementById('quotationChart').getContext('2d');
+    
+    const quotationChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Pending', 'Approved', 'Sent', 'Confirmed', 'Completed', 'Cancelled'],
+            datasets: [{
+                label: 'Quotations',
+                data: [
+                    {{ stats.quotation_pending|default(3) }}, 
+                    {{ stats.quotation_approved|default(5) }}, 
+                    {{ stats.quotation_sent|default(8) }}, 
+                    {{ stats.quotation_confirmed|default(4) }}, 
+                    {{ stats.quotation_completed|default(2) }},
+                    {{ stats.quotation_cancelled|default(1) }}
+                ],
+                backgroundColor: [
+                    '#f59e0b', // amber
+                    '#3b82f6', // blue
+                    '#10b981', // emerald
+                    '#8b5cf6', // violet
+                    '#059669', // emerald-600
+                    '#ef4444'  // red
+                ],
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#374151',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((context.parsed.y / total) * 100).toFixed(1) : 0;
+                            return `${context.parsed.y} quotations (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(156, 163, 175, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        precision: 0,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Command palette search functionality
+    document.querySelector('.nav-search input').addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            this.focus();
+        }
+    });
+    
+    // Global command palette
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            document.querySelector('.nav-search input').focus();
+        }
+    });
+});
+</script>
+{% endblock %}
