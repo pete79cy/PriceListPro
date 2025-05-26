@@ -7,10 +7,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const resultsContainer = document.getElementById('results-container');
   const noResults = document.getElementById('no-results');
 
-  // Handle the search form submission
-  searchForm.addEventListener('submit', function(e) {
-    e.preventDefault();
+  // Check if there's a query parameter in the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+  
+  if (queryParam) {
+    searchQuery.value = queryParam;
+    // Automatically perform the search
+    performSearch();
+  }
 
+  // Function to perform search
+  function performSearch() {
     const query = searchQuery.value.trim();
     const customerId = customerSelect.value;
 
@@ -26,16 +34,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make AJAX request to search API
     fetch(`/api/search?q=${encodeURIComponent(query)}&customer_id=${customerId}`)
       .then(response => {
-    return response.text().then(text => {
-        try {
+        return response.text().then(text => {
+          try {
             return JSON.parse(text);
-        } catch (err) {
+          } catch (err) {
             console.error("Error parsing JSON:", err);
             console.log("Raw response:", text);
             throw new Error("Error parsing server response. Please try again.");
-        }
-    });
-})
+          }
+        });
+      })
       .then(data => {
         // Hide spinner
         searchSpinner.classList.add('d-none');
@@ -62,6 +70,12 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         searchResults.classList.remove('d-none');
       });
+  }
+
+  // Handle the search form submission
+  searchForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    performSearch();
   });
 
   // Function to render search results

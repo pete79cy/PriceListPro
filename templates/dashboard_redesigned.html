@@ -341,7 +341,7 @@
         </div>
         
         <div class="nav-search">
-            <input type="text" placeholder="Search... (⌘K)" class="form-control">
+            <input type="text" id="dashboard-search" placeholder="Search... (⌘K)" class="form-control">
         </div>
         
         <div class="dropdown">
@@ -610,10 +610,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Command palette search functionality
-    document.querySelector('.nav-search input').addEventListener('keydown', function(e) {
+    const dashboardSearch = document.querySelector('#dashboard-search');
+    
+    dashboardSearch.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
             this.focus();
+        }
+        
+        // Handle Enter key to perform search
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = this.value.trim();
+            if (query) {
+                // Redirect to search page with query
+                window.location.href = `/search?q=${encodeURIComponent(query)}`;
+            }
         }
     });
     
