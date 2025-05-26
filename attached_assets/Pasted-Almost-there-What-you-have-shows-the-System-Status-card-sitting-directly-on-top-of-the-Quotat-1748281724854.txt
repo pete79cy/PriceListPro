@@ -1,0 +1,29 @@
+Almost there! What you have shows the **System Status** card sitting directly on top of the **Quotation Analytics** card—there’s no breathing room, so it feels like an accidental overlap rather than an intentional stack.
+
+### What “correct” should look/feel like
+
+| Attribute              | Goal                                                                            | Quick Check                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Separation**         | 16 – 24 px vertical gap (matches the horizontal gap you use in the grid)        | You should see the page background between the two cards, not card-on-card.                                              |
+| **Shadow / Elevation** | Both cards share the same shadow depth (or the lower card very slightly deeper) | If the upper card’s shadow is hidden by the lower card, they look fused.                                                 |
+| **Z-index**            | Default is fine as long as spacing exists; no explicit z-index should be needed | If you *must* use z-index to keep shadows visible, the chart card should be lower (`z-10`), status card higher (`z-20`). |
+
+### One-line Tailwind fix
+
+Add a bottom margin (or grid gap) to the analytics card:
+
+```html
+<div class="rounded-md bg-[#2b2e33] p-4 analytics mb-6"> <!-- mb-6 gives 24 px -->
+  …
+</div>
+```
+
+*(If you’re using a CSS Grid wrapper, simply set `gap-6` on that row instead.)*
+
+### Visual cues to confirm
+
+* Scroll the page: both cards should scroll independently—no “sticky” illusion.
+* Hover the top edge of **System Status**; you should see the background color, not the chart, beneath your cursor.
+* In dark mode, the thin slice of background should be visibly darker than both cards.
+
+Once that little gap is in place the stack will read as **two distinct, purpose-aligned panels** rather than a single oddly-layered block. Everything else in your shot—typography, pill badge, bar colors—already looks polished. 🎉
