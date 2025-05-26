@@ -583,13 +583,20 @@ function updateFilterCounts() {
         // For recent activity, you might want to add more logic based on your data
     });
 
-    document.getElementById('price-lists-count').textContent = priceListsCount;
-    document.getElementById('missing-email-count').textContent = missingEmailCount;
-    document.getElementById('recent-count').textContent = recentCount;
+    const priceListsCountEl = document.getElementById('price-lists-count');
+    const missingEmailCountEl = document.getElementById('missing-email-count');
+    const recentCountEl = document.getElementById('recent-count');
+    
+    if (priceListsCountEl) priceListsCountEl.textContent = priceListsCount;
+    if (missingEmailCountEl) missingEmailCountEl.textContent = missingEmailCount;
+    if (recentCountEl) recentCountEl.textContent = recentCount;
 }
 
 function filterCustomers() {
-    const searchTerm = document.getElementById('customer-search').value.toLowerCase();
+    const searchInput = document.getElementById('customer-search');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
     const rows = document.querySelectorAll('.customer-row');
     
     rows.forEach(row => {
@@ -743,16 +750,20 @@ function sortTable(column) {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
+    const searchInput = document.getElementById('customer-search');
+    
     // Ctrl/Cmd + K for search
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        document.getElementById('customer-search').focus();
+        if (searchInput) searchInput.focus();
     }
     
     // Escape to clear search
     if (e.key === 'Escape') {
-        document.getElementById('customer-search').value = '';
-        filterCustomers();
+        if (searchInput) {
+            searchInput.value = '';
+            filterCustomers();
+        }
     }
 });
 </script>

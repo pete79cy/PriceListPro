@@ -1,0 +1,64 @@
+### We found the blocker — `newCustomerBtn` is **null** and the uncaught TypeError aborts the rest of your script
+
+The error you see at **customers:3043**
+
+```
+Uncaught TypeError: newCustomerBtn is null
+```
+
+means the code is doing something like
+
+```js
+const newCustomerBtn = document.getElementById('newCustomerBtn');
+newCustomerBtn.addEventListener('click', …);   // ← crashes if null
+```
+
+When this line throws, **no code after it runs**—including the filter-chip listeners we just added.
+Fix (or guard) this single reference and the chips will immediately start working.
+
+---
+
+## Fastest patch (2 lines)
+
+```js
+const newCustomerBtn = document.getElementById('newCustomerBtn');
+if (newCustomerBtn) {                         // ← guard!
+  newCustomerBtn.addEventListener('click', openNewCustomerModal);
+}
+```
+
+*or* if you removed the old button entirely, just delete the two lines that query and attach to it.
+
+---
+
+## Where to apply
+
+1. Open **customers.js** (or whatever file line 3043 belongs to).
+2. Find the block that attaches the click handler to `newCustomerBtn`.
+3. **Wrap it in the null-check above or delete it**.
+4. Hard-refresh (Ctrl + Shift + R) to clear the cached JS.
+5. Re-test: the console should now be clean and the left-rail chips should filter instantly.
+
+---
+
+### Why this happens
+
+* The redesigned UI no longer renders a button with `id="newCustomerBtn"`.
+* The original JS still expects it, so `querySelector` returns `null`.
+* Any uncaught JS error stops further execution—your filter code never gets a chance.
+
+---
+
+## Quick verification steps
+
+| Step                           | Expectation                       |
+| ------------------------------ | --------------------------------- |
+| Reload page, open Console      | **No red errors**.                |
+| Run `$$('[data-chip]').length` | Returns the number of chips (≥1). |
+| Click **Missing Email** chip   | Table rows hide/show immediately. |
+| Click **All 34** chip          | Entire list returns.              |
+
+If everything above checks out, 🎉 you’re done.
+Should another error appear, repeat the guard pattern (but normally one stray element causes the cascade).
+
+Let me know if you need a hand locating the exact code block—I can point to it if you paste 10 lines around line 3043.
