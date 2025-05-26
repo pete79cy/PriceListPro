@@ -372,6 +372,7 @@ def register_routes(app):
         invoice_count = Invoice.query.count()
         supplier_count = Supplier.query.count()
         quotation_count = Quotation.query.count()
+        order_count = Order.query.count()
         
         # Build stats dictionary
         stats = {
@@ -382,7 +383,7 @@ def register_routes(app):
             'pending_updates': pending_update_count,
             'suppliers': supplier_count,
             'quotations': quotation_count,
-            'orders': 0  # Placeholder for future order functionality
+            'orders': order_count
         }
         
         # Dynamic card coloring based on thresholds (keeping for compatibility)
