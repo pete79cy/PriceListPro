@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return products
             .map(product => {
                 const name = product.name.toLowerCase();
-                const code = product.code.toLowerCase();
+                const sku = product.sku.toLowerCase();
                 const pot = product.pot.toLowerCase();
                 const description = product.description.toLowerCase();
                 
@@ -688,15 +688,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Exact matches (highest priority)
                 if (name === query) score += 100;
-                if (code === query) score += 95;
+                if (sku === query) score += 95;
                 
                 // Starts with query (high priority)
                 if (name.startsWith(query)) score += 80;
-                if (code.startsWith(query)) score += 75;
+                if (sku.startsWith(query)) score += 75;
                 
                 // Contains query (medium priority)
                 if (name.includes(query)) score += 60;
-                if (code.includes(query)) score += 55;
+                if (sku.includes(query)) score += 55;
                 if (pot.includes(query)) score += 40;
                 if (description.includes(query)) score += 30;
                 
@@ -706,13 +706,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Term matches (various weights)
                     if (name.includes(term)) score += 20;
-                    if (code.includes(term)) score += 15;
+                    if (sku.includes(term)) score += 15;
                     if (pot.includes(term)) score += 10;
                     if (description.includes(term)) score += 5;
                     
                     // Bonus for term at start
                     if (name.startsWith(term)) score += 10;
-                    if (code.startsWith(term)) score += 8;
+                    if (sku.startsWith(term)) score += 8;
                 });
                 
                 return { product, score };
@@ -790,8 +790,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Create inner content with highlighted matches
                 item.innerHTML = `
                     <div class="product-name">${highlightMatch(nameWithSize, query)}</div>
-                    ${product.code ? 
-                        `<div class="product-details">Code: ${highlightMatch(product.code, query)}</div>` : 
+                    ${product.sku ? 
+                        `<div class="product-details">Code: ${highlightMatch(product.sku, query)}</div>` : 
                         ''}
                     ${product.description ? 
                         `<div class="product-details">${highlightMatch(product.description.substr(0, 60) + (product.description.length > 60 ? '...' : ''), query)}</div>` : 
@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Build details text with available info
         let details = [];
         if (product.pot) details.push(`Size: ${product.pot}`);
-        if (product.code) details.push(`Code: ${product.code}`);
+        if (product.sku) details.push(`Code: ${product.sku}`);
         selectedProductDetails.textContent = details.join(' • ');
         
         // Show selected product display, hide results
@@ -919,13 +919,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Close results when clicking outside
     document.addEventListener('click', function(e) {
-        if (!productSearch.contains(e.target) && 
-            !searchResults.contains(e.target) && 
-            !clearSearchBtn.contains(e.target)) {
+        if (!productSearch.closest('.product-search-container').contains(e.target)) {
             searchResults.classList.add('d-none');
         }
     });
     
+    // Reset modal when it opens
+    document.getElementById('addItemModal').addEventListener('show.bs.modal', function() {
+        // Reset form
+        addItemForm.reset();
+        
+        // Clear selections
+        productIdInput.value = '';
+        selectedProductDisplay.classList.add('d-none');
+        searchResults.classList.add('d-none');
+        productSearch.closest('.input-group').classList.remove('d-none');
+        
+        // Clear new product fields
+        clearNewProductFields();
+        
+        // Reset to first tab
+        existingProductTab.click();
+        
+        // Set default values
+        document.getElementById('quantity').value = '1';
+        document.getElementById('vat_rate').value = '19.0';
+        unitPriceInput.removeAttribute('required');
+    });
+});
     // Form validation - ensure a product is selected
     const orderForm = productIdInput.closest('form');
     if (orderForm) {
