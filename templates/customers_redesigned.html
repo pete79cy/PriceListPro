@@ -40,14 +40,14 @@
         <!-- Quick Filters -->
         <div class="card border-0 mb-3" style="background-color: #2b2e33;">
             <div class="card-body p-3">
-                <div class="d-flex flex-wrap gap-2">
-                    <button class="chip chip-active" data-chip="all">
+                <div class="d-flex flex-wrap gap-2" id="chipRail">
+                    <button class="chip active" data-chip="all">
                         All {{ customers|length if customers else 0 }}
                     </button>
-                    <button class="chip" data-chip="price-lists">
+                    <button class="chip" data-chip="price">
                         With Price Lists <span id="price-lists-count">0</span>
                     </button>
-                    <button class="chip" data-chip="missing-email">
+                    <button class="chip" data-chip="missing">
                         Missing Email <span id="missing-email-count">0</span>
                     </button>
                     <button class="chip" data-chip="recent">
@@ -387,7 +387,8 @@
     color: #ffffff;
 }
 
-.chip-active {
+.chip-active,
+.chip.active {
     background-color: #2563eb;
     color: #ffffff;
 }
@@ -421,12 +422,43 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script defer>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Customer page loaded successfully');
     
     // Initialize filter counts
     updateFilterCounts();
+    
+    // Bulletproof event delegation for filter chips
+    const rows = document.querySelectorAll('.customer-row');
+    const chipRail = document.getElementById('chipRail');
+    
+    if (chipRail) {
+        chipRail.addEventListener('click', function(e) {
+            const chip = e.target.closest('[data-chip]');
+            if (!chip) return;
+            
+            console.log('Chip clicked:', chip.dataset.chip);
+            
+            // Visual state - toggle active class
+            document.querySelectorAll('#chipRail .chip')
+                    .forEach(c => c.classList.toggle('active', c === chip));
+            
+            // Filtering logic
+            const mode = chip.dataset.chip;
+            rows.forEach(r => {
+                const show = 
+                    mode === 'all' ? true :
+                    mode === 'price' ? r.dataset.hasPriceLists === 'True' :
+                    mode === 'missing' ? r.dataset.hasEmail === 'False' :
+                    mode === 'recent' ? true : // Add recent logic later
+                    true;
+                r.hidden = !show;
+            });
+            
+            console.log('Filter applied for mode:', mode);
+        });
+    }
     
     // Search functionality with debouncing
     let searchTimeout;
@@ -449,47 +481,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 menu.classList.add('d-none');
             });
         }
-    });
-
-    // Chip filter functionality - instant client-side filtering
-    const chips = document.querySelectorAll('[data-chip]');
-    const rows = document.querySelectorAll('.customer-row');
-    
-    console.log('Found chips:', chips.length, 'Found rows:', rows.length);
-
-    chips.forEach(chip => {
-        chip.addEventListener('click', function(e) {
-            console.log('Chip clicked:', this.dataset.chip);
-            
-            // Remove active class from all chips
-            chips.forEach(c => c.classList.remove('chip-active'));
-            // Add active class to clicked chip
-            this.classList.add('chip-active');
-
-            const mode = this.dataset.chip;
-            const categoryId = this.dataset.categoryId;
-            
-            rows.forEach(r => {
-                let shouldShow = true;
-                
-                if (mode === 'all') {
-                    shouldShow = true;
-                } else if (mode === 'price-lists') {
-                    shouldShow = r.dataset.hasPriceLists === 'True';
-                } else if (mode === 'missing-email') {
-                    shouldShow = r.dataset.hasEmail === 'False';
-                } else if (mode === 'recent') {
-                    // Add your recent activity logic here
-                    shouldShow = true;
-                } else if (mode === 'category') {
-                    shouldShow = r.dataset.categoryId === categoryId;
-                }
-                
-                r.style.display = shouldShow ? '' : 'none';
-            });
-            
-            console.log('Filter applied for mode:', mode);
-        });
     });
 
     // Select all functionality

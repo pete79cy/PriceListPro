@@ -1,0 +1,61 @@
+Below is a **quick-but-bullet-proof checklist** to get the filter chips (and any other buttons that are still silent) firing again. You can run through it in 5-10 minutes; most teams I’ve helped debug this hit the fix by step 3.
+
+| #     | Common Pitfall                                                                         | 60-second Fix                                                                                                                                                                                                           | How to verify                                                                                           |
+| ----- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **1** | **Script executed before the chips exist** (listeners attach to `null`)                | Move your `<script src="customers.js" defer>` **OR** place the inline `<script>` block **right before `</body>`**.<br>*(defer guarantees the DOM is parsed before the code runs)*                                       | In DevTools Console, run `$$('[data-chip]').length` → should print **> 0** *before* you click anything. |
+| **2** | **Multiple identical IDs / old markup cached**                                         | Hard-refresh (Ctrl + F5). Make sure every chip uses<br>`<button data-chip="price" …>` **NOT** `id="price"` repeated.                                                                                                    | Elements tab → search for `id="With Price Lists"` → should return 0.                                    |
+| **3** | **Event listeners added to each chip once, but chips injected later via Jinja/Alpine** | Swap to **event delegation**: attach one listener to the parent rail. `js document.querySelector('#chipRail').addEventListener('click', e => { const chip = e.target.closest('[data-chip]'); if (!chip) return; … }); ` | Click anywhere inside a chip, Console `chip.dataset.chip` logs the correct value.                       |
+| **4** | **Global JS error aborts subsequent code**                                             | In the Console look at the very first red stack-trace. *Any* uncaught error stops all later `addEventListener` calls. Comment/`try…catch` it out.                                                                       | Console is clear (no red) after reload.                                                                 |
+| **5** | **Rows missing the data-attributes JS expects**                                        | Row markup should look like: `<tr data-price="yes" data-email="no" …>` Double-check the server template actually emits those attrs.                                                                                     | Inspect > one `<tr>` → Attributes pane shows both `data-price` **and** `data-email`.                    |
+| **6** | **CSS overlay blocking pointer events** (rare)                                         | Inspect chip → Styles → uncheck any `pointer-events:none;` or large invisible element above it.                                                                                                                         | Hover chip in Elements → highlight outline matches only the pill, not a giant div.                      |
+
+---
+
+### Drop-in reference code (vanilla JS, event delegation, zero globals)
+
+```html
+<!-- rail container -->
+<div id="chipRail">
+  <button class="chip active" data-chip="all">All {{ total }}</button>
+  <button class="chip" data-chip="price">With Price Lists {{ with_price }}</button>
+  <button class="chip" data-chip="missing">Missing Email {{ missing_email }}</button>
+  …
+</div>
+
+<script defer>
+document.addEventListener('DOMContentLoaded', () => {
+  const rows = document.querySelectorAll('#custBody .row');
+
+  document.getElementById('chipRail').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-chip]');
+    if (!chip) return;
+
+    /* visual state */
+    document.querySelectorAll('#chipRail .chip')
+            .forEach(c => c.classList.toggle('active', c === chip));
+
+    /* filtering logic */
+    const mode = chip.dataset.chip;          // all | price | missing
+    rows.forEach(r => {
+      const show =
+        mode === 'all' ? true :
+        mode === 'price'   ? r.dataset.price === 'yes' :
+        mode === 'missing' ? r.dataset.email === 'no' : true;
+      r.hidden = !show;
+    });
+  });
+});
+</script>
+```
+
+> **Tip:** keep the `defer` (or put the `<script>` just before `</body>`) so `document.querySelectorAll` never races the DOM.
+
+---
+
+### Still stuck after running the checklist?
+
+* Open DevTools → **Console** → run `filterState()` (make a helper that prints current chip + visible rows).
+* Paste me the very first red error (line #, message).
+* Tell me whether the console shows `"chip clicked => missing"` when you click “Missing Email”.
+
+With that info I can zero-in on the exact culprit in one shot.
