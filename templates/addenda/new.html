@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}New Invoice Addendum{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Create New Invoice Addendum</h1>
+        <a href="{{ url_for('addenda.list_addenda') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Addendum Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="customer_id" class="form-label">Customer *</label>
+                                    <select class="form-control" id="customer_id" name="customer_id" required>
+                                        <option value="">Select a customer...</option>
+                                        {% for customer in customers %}
+                                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="invoice_number" class="form-label">Invoice Number *</label>
+                                    <input type="text" class="form-control" id="invoice_number" name="invoice_number" 
+                                           placeholder="e.g., INV-2025-001" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="period_from" class="form-label">Period From *</label>
+                                    <input type="date" class="form-control" id="period_from" name="period_from" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="period_to" class="form-label">Period To *</label>
+                                    <input type="date" class="form-control" id="period_to" name="period_to" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Optional notes about this addendum..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Addendum
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Help</h6>
+                </div>
+                <div class="card-body">
+                    <h6>What is an Invoice Addendum?</h6>
+                    <p class="small text-muted">
+                        An invoice addendum is a supplementary document that lists detailed sales transactions 
+                        for a specific customer during a billing period. It can be attached to the main invoice 
+                        to provide additional breakdown of sales.
+                    </p>
+                    
+                    <h6>Required Information:</h6>
+                    <ul class="small text-muted">
+                        <li>Customer who will receive the addendum</li>
+                        <li>Invoice number it will be attached to</li>
+                        <li>Date range for the sales period</li>
+                    </ul>
+
+                    <h6>Next Steps:</h6>
+                    <p class="small text-muted">
+                        After creating the addendum, you'll be able to add individual sale line items 
+                        with products, quantities, prices, and VAT rates.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default dates (current month)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    document.getElementById('period_from').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('period_to').value = lastDay.toISOString().split('T')[0];
+});
+
+// Validate date range
+document.getElementById('period_to').addEventListener('change', function() {
+    const fromDate = document.getElementById('period_from').value;
+    const toDate = this.value;
+    
+    if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
+        alert('End date cannot be before start date');
+        this.value = '';
+    }
+});
+</script>
+{% endblock %}

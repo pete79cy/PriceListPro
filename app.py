@@ -150,6 +150,14 @@ with app.app_context():
         app.register_blueprint(orders)
         logger.info("Customer, Quotation, and Orders blueprints registered successfully")
         
+        # Register Invoice Addenda blueprint
+        try:
+            from addenda import addenda_bp
+            app.register_blueprint(addenda_bp)
+            logger.info("Invoice Addenda blueprint registered successfully")
+        except (ImportError, Exception) as e:
+            logger.warning(f"Invoice Addenda blueprint could not be registered: {str(e)}")
+        
         # Register backup blueprint
         try:
             from blueprints.backup import backup_bp

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice Addendum - {{ addendum.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+        }
+        
+        .company-info {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        
+        .company-info h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #007bff;
+        }
+        
+        .document-title {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .document-title h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        
+        .info-box {
+            width: 48%;
+        }
+        
+        .info-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 12px;
+            color: #007bff;
+            border-bottom: 1px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            font-size: 10px;
+        }
+        
+        .sales-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .sales-table th,
+        .sales-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 9px;
+        }
+        
+        .sales-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .sales-table td.number {
+            text-align: right;
+        }
+        
+        .sales-table td.center {
+            text-align: center;
+        }
+        
+        .summary-section {
+            margin-top: 30px;
+            text-align: right;
+        }
+        
+        .summary-table {
+            margin-left: auto;
+            width: 300px;
+            border-collapse: collapse;
+        }
+        
+        .summary-table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-table .total-row {
+            border-top: 2px solid #007bff;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .notes {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        
+        .notes h4 {
+            margin: 0 0 10px 0;
+            font-size: 11px;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            <h1>Your Company Name</h1>
+            <p>Address Line 1<br>
+            Address Line 2<br>
+            Phone: +49 123 456789<br>
+            Email: info@example.com</p>
+        </div>
+    </div>
+    
+    <div class="document-title">
+        <h2>Invoice Sales Addendum</h2>
+        <p>Παράρτημα Πωλήσεων Τιμολογίου</p>
+    </div>
+    
+    <div class="info-section">
+        <div class="info-box">
+            <h3>Customer Information</h3>
+            <p><strong>Customer:</strong> {{ addendum.customer.name }}</p>
+            {% if addendum.customer.email %}
+            <p><strong>Email:</strong> {{ addendum.customer.email }}</p>
+            {% endif %}
+            {% if addendum.customer.phone %}
+            <p><strong>Phone:</strong> {{ addendum.customer.phone }}</p>
+            {% endif %}
+            {% if addendum.customer.address %}
+            <p><strong>Address:</strong> {{ addendum.customer.address }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="info-box">
+            <h3>Document Details</h3>
+            <p><strong>Invoice Number:</strong> {{ addendum.invoice_number }}</p>
+            <p><strong>Period:</strong> {{ addendum.period_from.strftime('%d/%m/%Y') }} - {{ addendum.period_to.strftime('%d/%m/%Y') }}</p>
+            <p><strong>Issue Date:</strong> {{ addendum.created_at.strftime('%d/%m/%Y') }}</p>
+            <p><strong>Status:</strong> {{ addendum.status.title() }}</p>
+        </div>
+    </div>
+    
+    {% if addendum.lines %}
+    <table class="sales-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 10%;">Date</th>
+                <th style="width: 35%;">Product</th>
+                <th style="width: 10%;">Qty</th>
+                <th style="width: 12%;">Unit Price</th>
+                <th style="width: 8%;">VAT %</th>
+                <th style="width: 12%;">Subtotal</th>
+                <th style="width: 8%;">VAT Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in addendum.lines %}
+            <tr>
+                <td class="center">{{ loop.index }}</td>
+                <td class="center">{{ line.sale_date.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    <strong>{{ line.product.name }}</strong>
+                    {% if line.product.scientific_name %}
+                    <br><em>{{ line.product.scientific_name }}</em>
+                    {% endif %}
+                    {% if line.product.pot %}
+                    <br>Pot: {{ line.product.pot }}
+                    {% endif %}
+                    {% if line.notes %}
+                    <br><small>{{ line.notes }}</small>
+                    {% endif %}
+                </td>
+                <td class="number">{{ line.quantity }}</td>
+                <td class="number">€{{ "%.2f"|format(line.unit_price) }}</td>
+                <td class="center">{{ line.vat_rate }}%</td>
+                <td class="number">€{{ "%.2f"|format(line.get_line_total()) }}</td>
+                <td class="number">€{{ "%.2f"|format(line.get_vat_amount()) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="summary-section">
+        <table class="summary-table">
+            <tr>
+                <td>Subtotal:</td>
+                <td class="number">€{{ "%.2f"|format(addendum.get_total_amount()) }}</td>
+            </tr>
+            <tr>
+                <td>Total VAT:</td>
+                <td class="number">€{{ "%.2f"|format(addendum.get_total_vat()) }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>Grand Total:</td>
+                <td class="number">€{{ "%.2f"|format(addendum.get_grand_total()) }}</td>
+            </tr>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 50px; color: #666;">
+        <p>No sales lines found for this period.</p>
+    </div>
+    {% endif %}
+    
+    {% if addendum.notes %}
+    <div class="notes">
+        <h4>Notes</h4>
+        <p>{{ addendum.notes|nl2br|safe }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <p>This document serves as a detailed breakdown of sales transactions for the specified period and should be attached to the corresponding invoice.</p>
+        <p>Generated on {{ addendum.created_at.strftime('%d/%m/%Y at %H:%M') }} | Document ID: {{ addendum.id }}</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Invoice Addendum - {{ addendum.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Invoice Addendum</h1>
+            <p class="text-muted mb-0">{{ addendum.invoice_number }} - {{ addendum.customer.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('addenda.list_addenda') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+            <a href="{{ url_for('addenda.export_pdf', addendum_id=addendum.id) }}" class="btn btn-danger">
+                <i class="fas fa-file-pdf"></i> Export PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Addendum Info -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Addendum Details</h5>
+                    <div>
+                        <span class="badge {% if addendum.status == 'draft' %}badge-warning{% else %}badge-success{% endif %} me-2">
+                            {{ addendum.status.title() }}
+                        </span>
+                        {% if addendum.status == 'draft' %}
+                        <form method="POST" action="{{ url_for('addenda.lock_addendum', addendum_id=addendum.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Lock this addendum to prevent further changes?')">
+                                <i class="fas fa-lock"></i> Lock
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('addenda.unlock_addendum', addendum_id=addendum.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Unlock this addendum to allow changes?')">
+                                <i class="fas fa-unlock"></i> Unlock
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Customer:</strong> {{ addendum.customer.name }}</p>
+                            <p><strong>Invoice Number:</strong> {{ addendum.invoice_number }}</p>
+                            <p><strong>Period:</strong> {{ addendum.period_from.strftime('%Y-%m-%d') }} to {{ addendum.period_to.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> {{ addendum.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Last Updated:</strong> {{ addendum.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% if addendum.notes %}
+                            <p><strong>Notes:</strong> {{ addendum.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span>Subtotal:</span>
+                        <span>€{{ "%.2f"|format(addendum.get_total_amount()) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>VAT:</span>
+                        <span>€{{ "%.2f"|format(addendum.get_total_vat()) }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total:</strong>
+                        <strong>€{{ "%.2f"|format(addendum.get_grand_total()) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Lines -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Sales Lines ({{ addendum.lines|length }})</h5>
+            {% if addendum.status == 'draft' %}
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLineModal">
+                <i class="fas fa-plus"></i> Add Line
+            </button>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if addendum.lines %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>VAT %</th>
+                            <th>Subtotal</th>
+                            <th>VAT Amount</th>
+                            <th>Total</th>
+                            {% if addendum.status == 'draft' %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in addendum.lines %}
+                        <tr>
+                            <td>{{ line.sale_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <strong>{{ line.product.name }}</strong>
+                                {% if line.product.scientific_name %}
+                                <br><small class="text-muted">{{ line.product.scientific_name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ line.quantity }}</td>
+                            <td>€{{ "%.2f"|format(line.unit_price) }}</td>
+                            <td>{{ line.vat_rate }}%</td>
+                            <td>€{{ "%.2f"|format(line.get_line_total()) }}</td>
+                            <td>€{{ "%.2f"|format(line.get_vat_amount()) }}</td>
+                            <td>€{{ "%.2f"|format(line.get_total_with_vat()) }}</td>
+                            {% if addendum.status == 'draft' %}
+                            <td>
+                                <form method="POST" action="{{ url_for('addenda.delete_line', addendum_id=addendum.id, line_id=line.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Delete this line?')" title="Delete line">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Sales Lines</h5>
+                <p class="text-muted">Add sales lines to this addendum to track individual transactions.</p>
+                {% if addendum.status == 'draft' %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLineModal">
+                    <i class="fas fa-plus"></i> Add First Line
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Line Modal -->
+{% if addendum.status == 'draft' %}
+<div class="modal fade" id="addLineModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Sales Line</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('addenda.add_line', addendum_id=addendum.id) }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="product_id" class="form-label">Product *</label>
+                                <select class="form-control" id="product_id" name="product_id" required>
+                                    <option value="">Select a product...</option>
+                                    {% for product in products %}
+                                    <option value="{{ product.id }}">
+                                        {{ product.name }}{% if product.scientific_name %} ({{ product.scientific_name }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="sale_date" class="form-label">Sale Date *</label>
+                                <input type="date" class="form-control" id="sale_date" name="sale_date" 
+                                       min="{{ addendum.period_from.strftime('%Y-%m-%d') }}" 
+                                       max="{{ addendum.period_to.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group mb-3">
+                                <label for="quantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-3">
+                                <label for="unit_price" class="form-label">Unit Price (€) *</label>
+                                <input type="number" class="form-control" id="unit_price" name="unit_price" 
+                                       min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-3">
+                                <label for="vat_rate" class="form-label">VAT Rate (%) *</label>
+                                <select class="form-control" id="vat_rate" name="vat_rate" required>
+                                    <option value="19">19% (Standard)</option>
+                                    <option value="5">5% (Reduced)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                  placeholder="Optional notes for this line..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Line</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Set default sale date to today (if within period)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const periodFrom = '{{ addendum.period_from.strftime('%Y-%m-%d') }}';
+    const periodTo = '{{ addendum.period_to.strftime('%Y-%m-%d') }}';
+    
+    if (today >= periodFrom && today <= periodTo) {
+        document.getElementById('sale_date').value = today;
+    } else {
+        document.getElementById('sale_date').value = periodFrom;
+    }
+});
+</script>
+{% endblock %}
