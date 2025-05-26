@@ -866,6 +866,9 @@ def register_routes(app):
     @app.route('/customers', methods=['GET', 'POST'])
     @login_required
     def customers():
+        # Check if user wants the redesigned interface
+        use_redesigned = request.args.get('redesigned', 'false').lower() == 'true'
+        
         if request.method == 'POST':
             # Add or update a customer
             customer_id = request.form.get('customer_id')
@@ -882,7 +885,8 @@ def register_routes(app):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers = Customer.query.all()
                 categories = CustomerCategory.query.all()
-                return render_template('customers.html', customers=customers, categories=categories)
+                template = 'customers_redesigned.html' if use_redesigned else 'customers.html'
+                return render_template(template, customers=customers, categories=categories)
             
             if customer_id:  # Update existing
                 customer = Customer.query.get_or_404(customer_id)
@@ -899,12 +903,22 @@ def register_routes(app):
                 flash(f'Customer {name} added successfully!', 'success')
             
             db.session.commit()
-            return redirect(url_for('customers'))
+            redirect_url = url_for('customers', redesigned='true') if use_redesigned else url_for('customers')
+            return redirect(redirect_url)
         
         # GET request - show customers
         customers_list = Customer.query.all()
         categories = CustomerCategory.query.all()
-        return render_template('customers.html', customers=customers_list, categories=categories)
+        
+        # Choose template based on interface preference
+        template = 'customers_redesigned.html' if use_redesigned else 'customers.html'
+        return render_template(template, customers=customers_list, categories=categories)
+    
+    @app.route('/customers/redesigned')
+    @login_required
+    def customers_redesigned():
+        """Redirect to the redesigned customers interface"""
+        return redirect(url_for('customers', redesigned='true'))
     
     @app.route('/customers/<int:customer_id>', methods=['GET'])
     @login_required
@@ -999,10 +1013,72 @@ def register_routes(app):
     @login_required
     def delete_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
-        db.session.delete(customer)
-        db.session.commit()
-        flash(f'Customer {customer.name} deleted successfully!', 'success')
-        return redirect(url_for('customers'))
+        customer_name = customer.name
+        
+        try:
+            db.session.delete(customer)
+            db.session.commit()
+            flash(f'Customer {customer_name} deleted successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting customer: {str(e)}', 'danger')
+        
+        # Check if user was using redesigned interface
+        use_redesigned = request.referrer and 'redesigned=true' in request.referrer
+        redirect_url = url_for('customers', redesigned='true') if use_redesigned else url_for('customers')
+        return redirect(redirect_url)
+    
+    @app.route('/customers/export', methods=['GET', 'POST'])
+    @login_required
+    def export_customers():
+        """Export customers to CSV format"""
+        import csv
+        from io import StringIO
+        
+        # Get customer IDs if this is a POST request (bulk export)
+        customer_ids = []
+        if request.method == 'POST':
+            customer_ids = request.form.getlist('customer_ids')
+        
+        # Query customers
+        if customer_ids:
+            customers_query = Customer.query.filter(Customer.id.in_(customer_ids))
+        else:
+            customers_query = Customer.query
+        
+        customers = customers_query.all()
+        
+        # Create CSV content
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'Name', 'Email', 'Phone', 'Address', 'Category', 
+            'Price Lists', 'Total Invoices', 'Total Spent', 'Created Date'
+        ])
+        
+        # Write customer data
+        for customer in customers:
+            writer.writerow([
+                customer.id,
+                customer.name,
+                customer.email or '',
+                customer.phone or '',
+                customer.address or '',
+                customer.category.name if customer.category else '',
+                len(customer.price_lists),
+                len(customer.invoices),
+                sum(invoice.total_amount or 0 for invoice in customer.invoices),
+                customer.created_at.strftime('%Y-%m-%d') if customer.created_at else ''
+            ])
+        
+        # Create response
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = 'attachment; filename=customers_export.csv'
+        
+        return response
     
     @app.route('/customer_categories', methods=['GET', 'POST'])
     @login_required
