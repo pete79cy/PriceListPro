@@ -10,12 +10,16 @@
         --bg-secondary: #26292d;
         --bg-card: #2b2e33;
         --bg-card-hover: #3a3d42;
+        --bg-panel-light: #f8fafc;
+        --bg-panel-dark: #2b2e33;
         --text-primary: #ffffff;
         --text-secondary: #9ca3af;
+        --text-muted: #6b7280;
         --border-radius: 0.5rem;
         --transition: 0.18s ease-out;
         --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
     }
 
     body {
@@ -30,7 +34,7 @@
         padding: 1.5rem;
     }
 
-    /* Top Navigation Enhancement */
+    /* Consolidated Top Navigation */
     .top-nav {
         background-color: var(--bg-secondary);
         border-radius: var(--border-radius);
@@ -38,8 +42,22 @@
         margin-bottom: 1.5rem;
         display: flex;
         align-items: center;
-        justify-content: between;
+        justify-content: space-between;
         gap: 1rem;
+        box-shadow: var(--shadow-card);
+    }
+
+    /* Dashboard Grid Layout */
+    .dashboard-grid {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: minmax(260px, 340px) 1fr;
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     .nav-brand {
@@ -60,6 +78,122 @@
         color: var(--text-primary);
         padding: 0.5rem 1rem;
         width: 100%;
+    }
+
+    .nav-search input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Enhanced Metric Cards */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 0 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .metrics-grid {
+            grid-template-columns: 1fr;
+            padding: 0 0.5rem;
+        }
+    }
+
+    .metric-card {
+        background-color: var(--bg-card);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-card);
+        transition: all var(--transition);
+    }
+
+    .metric-card:hover {
+        background-color: var(--bg-card-hover);
+        transform: translateY(-2px);
+    }
+
+    .metric-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-number {
+        font-size: 2.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+
+    /* Quick Actions Enhancement */
+    .quick-actions {
+        background-color: var(--bg-card);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        max-height: calc(100vh - 280px);
+        overflow-y: auto;
+        box-shadow: var(--shadow-card);
+    }
+
+    .quick-action-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: var(--border-radius);
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all 0.15s ease;
+        margin-bottom: 0.25rem;
+    }
+
+    .quick-action-item:hover {
+        background-color: var(--bg-card-hover);
+        color: var(--text-primary);
+        transform: translateX(4px);
+        text-decoration: none;
+    }
+
+    .quick-action-divider {
+        border-top: 1px solid rgba(156, 163, 175, 0.2);
+        margin: 0.5rem 0;
+    }
+
+    /* Analytics and System Status */
+    .analytics-card {
+        background-color: var(--bg-card);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: var(--shadow-card);
+        margin-bottom: 1.5rem;
+    }
+
+    .system-status-card {
+        background-color: var(--bg-card);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: var(--shadow-card);
+    }
+
+    .help-panel {
+        background-color: var(--bg-panel-light);
+        border: 1px solid rgba(156, 163, 175, 0.4);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        transition: all var(--transition);
+    }
+
+    .help-panel:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .dark .help-panel {
+        background-color: var(--bg-panel-dark);
     }
 
     .nav-search input:focus {
@@ -403,66 +537,71 @@
     </div>
     {% endif %}
 
-    <!-- Summary Mini Cards -->
-    <div class="summary-row">
-        <a href="{{ url_for('customers') }}" class="mini-card">
-            <span class="mini-card-label">Customers</span>
-            <span class="mini-card-value">{{ stats.customers }}</span>
-        </a>
-        
-        <a href="{{ url_for('quotations') }}" class="mini-card">
-            <span class="mini-card-label">Quotations</span>
-            <span class="mini-card-value">{{ stats.quotations|default(0) }}</span>
-        </a>
-        
-        <a href="{{ url_for('orders.index') }}" class="mini-card">
-            <span class="mini-card-label">Orders</span>
-            <span class="mini-card-value">{{ stats.orders|default(0) }}</span>
-        </a>
-    </div>
+    <!-- Dashboard Grid Layout -->
+    <div class="dashboard-grid">
+        <!-- Quick Actions Sidebar -->
+        <aside class="quick-actions">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">Quick Actions</h3>
+            
+            <!-- Navigation shortcuts -->
+            <a href="{{ url_for('customers') }}" class="quick-action-item" tabindex="0">
+                <i class="fas fa-users me-2"></i>
+                <span>Manage Customers</span>
+            </a>
+            <a href="{{ url_for('products') }}" class="quick-action-item" tabindex="0">
+                <i class="fas fa-seedling me-2"></i>
+                <span>View Products</span>
+            </a>
+            <a href="{{ url_for('price_lists') }}" class="quick-action-item" tabindex="0">
+                <i class="fas fa-list-alt me-2"></i>
+                <span>Price Lists</span>
+            </a>
+            <a href="{{ url_for('quotations') }}" class="quick-action-item" tabindex="0">
+                <i class="fas fa-file-text me-2"></i>
+                <span>Quotations</span>
+            </a>
+            
+            <div class="quick-action-divider"></div>
+            
+            <!-- File utilities -->
+            <a href="{{ url_for('backup.index') }}" class="quick-action-item" tabindex="0">
+                <i class="fas fa-download me-2"></i>
+                <span>Database Backup</span>
+            </a>
+            <a href="{{ url_for('feedback_routes.feedback_dashboard') }}" class="quick-action-item" tabindex="0">
+                <i class="fas fa-chart-bar me-2"></i>
+                <span>AI Insights</span>
+            </a>
+        </aside>
 
-    <!-- Main Two-Column Grid -->
-    <div class="main-grid">
-        <!-- Quick Actions (Left Column, Tall) -->
-        <div class="grid-card quick-actions">
-            <h2>Quick Actions</h2>
-            <div class="actions-list">
-                <a href="{{ url_for('customers') }}" class="action-item">
-                    <i class="fas fa-users"></i>
-                    <span>View Customers</span>
-                </a>
-                <a href="{{ url_for('quotations') }}" class="action-item">
-                    <i class="fas fa-file-text"></i>
-                    <span>View Quotations</span>
-                </a>
-                <a href="{{ url_for('suppliers') }}" class="action-item">
-                    <i class="fas fa-truck"></i>
-                    <span>View Suppliers</span>
-                </a>
-                <a href="{{ url_for('uploads') }}" class="action-item">
-                    <i class="fas fa-upload"></i>
-                    <span>Upload Files</span>
-                </a>
-                <a href="{{ url_for('search') }}" class="action-item">
-                    <i class="fas fa-search"></i>
-                    <span>Search Products</span>
-                </a>
-                <a href="{{ url_for('price_lists') }}" class="action-item">
-                    <i class="fas fa-list"></i>
-                    <span>Price Lists</span>
-                </a>
+        <!-- Main Content Column -->
+        <section class="space-y-6">
+            <!-- Enhanced Metric Cards -->
+            <div class="metrics-grid">
+                <div class="metric-card" tabindex="0" role="button" onclick="window.location.href='{{ url_for('customers') }}'">
+                    <div class="metric-label">Customers</div>
+                    <div class="metric-number">{{ stats.customers }}</div>
+                </div>
+                <div class="metric-card" tabindex="0" role="button" onclick="window.location.href='{{ url_for('quotations') }}'">
+                    <div class="metric-label">Quotations</div>
+                    <div class="metric-number">{{ stats.quotations|default(0) }}</div>
+                </div>
+                <div class="metric-card" tabindex="0" role="button" onclick="window.location.href='{{ url_for('orders.index') }}'">
+                    <div class="metric-label">Orders</div>
+                    <div class="metric-number">{{ stats.orders|default(0) }}</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Analytics Chart (Right Column, Top) -->
-        <div class="grid-card analytics-card">
-            <h2>Quotation Analytics</h2>
-            <canvas id="quotationChart" width="100%" height="220"></canvas>
-        </div>
+            <!-- Analytics Chart -->
+            <div class="analytics-card">
+                <h2 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">Quotation Analytics</h2>
+                <canvas id="quotationChart" width="100%" height="220"></canvas>
+            </div>
 
-        <!-- System Status (Right Column, Bottom) -->
-        <div class="grid-card">
-            <h2>System Status</h2>
+            <!-- Bottom Row: System Status and Help Panel -->
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="system-status-card">
+                    <h2 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">System Status</h2>
             <ul class="status-list">
                 <li class="status-item">
                     <span><i class="fas fa-database me-2 text-success"></i>Database</span>
