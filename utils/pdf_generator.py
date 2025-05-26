@@ -250,9 +250,13 @@ def generate_supplier_catalog_pdf(supplier, products):
         filename = f"catalog_{safe_supplier_name.replace(' ', '_')}.pdf"
         
         # Generate HTML from template
+        from datetime import datetime
+        current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         html = render_template('pdfs/supplier_catalog.html',
                               supplier=supplier,
-                              products=products)
+                              products=products,
+                              current_date=current_date)
         
         # Generate PDF
         pdf_bytes = HTML(string=html).write_pdf()

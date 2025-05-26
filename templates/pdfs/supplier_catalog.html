@@ -160,7 +160,7 @@
     {% endif %}
     
     <div class="footer">
-        <p>Generated on {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+        <p>Generated on {{ current_date }}</p>
         <p>Total Products: {{ products|length if products else 0 }}</p>
     </div>
 </body>
