@@ -2,126 +2,124 @@
 
 {% block content %}
 <!-- Sub-header -->
-<div class="flex flex-wrap items-center justify-between bg-[#2b2e33] rounded-md p-4 mb-6">
-    <h1 class="text-lg font-semibold text-white">
-        Customers 
-        <span class="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-xs">{{ customers|length if customers else 0 }}</span>
-    </h1>
+<div class="card bg-dark mb-4">
+    <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center">
+        <h1 class="h4 mb-0 text-white">
+            Customers 
+            <span class="badge bg-primary ms-2">{{ customers|length if customers else 0 }}</span>
+        </h1>
 
-    <div class="flex gap-2">
-        <div class="relative">
-            <input type="search" 
-                   id="customer-search" 
-                   placeholder="Search customers..." 
-                   class="w-56 rounded-md bg-[#1e2024] border border-[#3a3d42] px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"/>
-            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <i class="fas fa-search text-gray-400 text-xs"></i>
+        <div class="d-flex gap-2">
+            <div class="position-relative">
+                <input type="search" 
+                       id="customer-search" 
+                       placeholder="Search customers..." 
+                       class="form-control form-control-sm bg-dark border-secondary text-white"
+                       style="width: 250px;"/>
+                <i class="fas fa-search position-absolute text-muted" style="right: 10px; top: 50%; transform: translateY(-50%);"></i>
             </div>
-        </div>
-        <div class="relative">
-            <button id="new-customer-btn" class="rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-1.5 text-sm font-medium text-white transition-colors">
-                <i class="fas fa-plus mr-1"></i> New
-            </button>
-            <!-- Dropdown menu -->
-            <div id="new-customer-dropdown" class="absolute right-0 mt-1 w-48 hidden bg-[#2b2e33] rounded-md shadow-lg border border-[#3a3d42] z-50">
-                <div class="py-1">
-                    <a href="{{ url_for('customer_form.create_customer') }}" class="block px-4 py-2 text-sm text-white hover:bg-[#32363b] transition-colors">
-                        <i class="fas fa-user-plus mr-2"></i> New Customer (Form)
-                    </a>
-                    <button class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#32363b] transition-colors" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#customerModal">
-                        <i class="fas fa-plus mr-2"></i> Quick Add
-                    </button>
-                    <button class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#32363b] transition-colors" 
-                            onclick="exportCustomers()">
-                        <i class="fas fa-download mr-2"></i> Export CSV
-                    </button>
-                </div>
+            <div class="dropdown">
+                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-plus me-1"></i> New
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a class="dropdown-item" href="{{ url_for('customer_form.create_customer') }}">
+                        <i class="fas fa-user-plus me-2"></i> New Customer (Form)
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customerModal">
+                        <i class="fas fa-plus me-2"></i> Quick Add
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportCustomers()">
+                        <i class="fas fa-download me-2"></i> Export CSV
+                    </a></li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
-<div class="flex flex-col lg:flex-row gap-6">
+<div class="row">
     <!-- Filter Rail -->
-    <aside class="hidden lg:block w-60 flex-none space-y-3 rounded-md bg-[#2b2e33] p-4">
-        <h2 class="text-sm font-medium text-gray-300 mb-3">Quick Filters</h2>
-        
-        <div class="space-y-2">
-            <button class="filter-btn active w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors bg-blue-600 text-white" 
-                    data-filter="all">
-                All Customers 
-                <span class="float-right badge bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">{{ customers|length if customers else 0 }}</span>
-            </button>
-            
-            <button class="filter-btn w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-300 hover:bg-[#32363b] hover:text-white" 
-                    data-filter="with-price-lists">
-                With Price Lists 
-                <span class="float-right badge bg-gray-600 text-white px-2 py-0.5 rounded-full text-xs" id="price-lists-count">0</span>
-            </button>
-            
-            <button class="filter-btn w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-300 hover:bg-[#32363b] hover:text-white" 
-                    data-filter="missing-email">
-                Missing Email 
-                <span class="float-right badge bg-yellow-600 text-white px-2 py-0.5 rounded-full text-xs" id="missing-email-count">0</span>
-            </button>
-            
-            <button class="filter-btn w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-300 hover:bg-[#32363b] hover:text-white" 
-                    data-filter="recent">
-                Recent Activity 
-                <span class="float-right badge bg-green-600 text-white px-2 py-0.5 rounded-full text-xs" id="recent-count">0</span>
-            </button>
+    <div class="col-lg-3 d-none d-lg-block mb-4">
+        <div class="card bg-dark">
+            <div class="card-header bg-dark border-secondary">
+                <h5 class="card-title text-light mb-0">Quick Filters</h5>
+            </div>
+            <div class="card-body bg-dark">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary btn-sm text-start filter-btn active" data-filter="all">
+                        All Customers 
+                        <span class="badge bg-light text-dark float-end">{{ customers|length if customers else 0 }}</span>
+                    </button>
+                    
+                    <button class="btn btn-outline-secondary btn-sm text-start filter-btn" data-filter="with-price-lists">
+                        With Price Lists 
+                        <span class="badge bg-secondary float-end" id="price-lists-count">0</span>
+                    </button>
+                    
+                    <button class="btn btn-outline-secondary btn-sm text-start filter-btn" data-filter="missing-email">
+                        Missing Email 
+                        <span class="badge bg-warning float-end" id="missing-email-count">0</span>
+                    </button>
+                    
+                    <button class="btn btn-outline-secondary btn-sm text-start filter-btn" data-filter="recent">
+                        Recent Activity 
+                        <span class="badge bg-success float-end" id="recent-count">0</span>
+                    </button>
+                </div>
+
+                <hr class="border-secondary my-3">
+
+                <div class="mb-3">
+                    <h6 class="text-muted text-uppercase small mb-2">Categories</h6>
+                    <div class="d-grid gap-1">
+                        {% if categories %}
+                            {% for category in categories %}
+                            <button class="btn btn-outline-secondary btn-sm text-start filter-btn" 
+                                    data-filter="category" 
+                                    data-category-id="{{ category.id }}">
+                                {{ category.name }}
+                                <span class="badge bg-secondary float-end">{{ category.customers|length }}</span>
+                            </button>
+                            {% endfor %}
+                        {% else %}
+                            <small class="text-muted">No categories yet</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="border-secondary my-3">
+
+                <div>
+                    <h6 class="text-muted text-uppercase small mb-2">Bulk Actions</h6>
+                    <div class="d-grid gap-1">
+                        <button id="bulk-export" class="btn btn-outline-secondary btn-sm text-start" disabled>
+                            <i class="fas fa-download me-2"></i> Export Selected
+                        </button>
+                        <button id="bulk-email" class="btn btn-outline-secondary btn-sm text-start" disabled>
+                            <i class="fas fa-envelope me-2"></i> Send Email
+                        </button>
+                        <button id="bulk-delete" class="btn btn-outline-danger btn-sm text-start" disabled>
+                            <i class="fas fa-trash me-2"></i> Delete Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <hr class="border-[#3a3d42] my-4">
-
-        <div class="space-y-2">
-            <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wide">Categories</h3>
-            {% if categories %}
-                {% for category in categories %}
-                <button class="filter-btn w-full text-left px-3 py-2 rounded-md text-sm transition-colors text-gray-300 hover:bg-[#32363b] hover:text-white" 
-                        data-filter="category" 
-                        data-category-id="{{ category.id }}">
-                    {{ category.name }}
-                    <span class="float-right badge bg-gray-600 text-white px-2 py-0.5 rounded-full text-xs">{{ category.customers|length }}</span>
-                </button>
-                {% endfor %}
-            {% else %}
-                <p class="text-xs text-gray-500">No categories yet</p>
-            {% endif %}
-        </div>
-
-        <hr class="border-[#3a3d42] my-4">
-
-        <div class="space-y-2">
-            <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wide">Bulk Actions</h3>
-            <button id="bulk-export" class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors text-gray-300 hover:bg-[#32363b] hover:text-white disabled:opacity-50" 
-                    disabled>
-                <i class="fas fa-download mr-2"></i> Export Selected
-            </button>
-            <button id="bulk-email" class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors text-gray-300 hover:bg-[#32363b] hover:text-white disabled:opacity-50" 
-                    disabled>
-                <i class="fas fa-envelope mr-2"></i> Send Email
-            </button>
-            <button id="bulk-delete" class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white disabled:opacity-50" 
-                    disabled>
-                <i class="fas fa-trash mr-2"></i> Delete Selected
-            </button>
-        </div>
-    </aside>
+    </div>
 
     <!-- Main Content Area -->
-    <section class="flex-1">
+    <div class="col-lg-9">
         <!-- Bulk Toolbar (hidden by default) -->
-        <div id="bulk-toolbar" class="hidden mb-4 p-3 bg-blue-600 rounded-md transform translate-y-[-100%] transition-transform duration-300">
-            <div class="flex items-center justify-between text-white">
+        <div id="bulk-toolbar" class="alert alert-primary d-none mb-3">
+            <div class="d-flex justify-content-between align-items-center">
                 <span id="selected-count">0 customers selected</span>
-                <div class="flex gap-2">
-                    <button onclick="exportSelected()" class="px-3 py-1 bg-blue-700 rounded text-sm hover:bg-blue-800">
-                        <i class="fas fa-download mr-1"></i> Export
+                <div>
+                    <button onclick="exportSelected()" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-download me-1"></i> Export
                     </button>
-                    <button onclick="clearSelection()" class="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-700">
+                    <button onclick="clearSelection()" class="btn btn-secondary btn-sm">
                         Clear
                     </button>
                 </div>
@@ -129,122 +127,124 @@
         </div>
 
         <!-- Customer Table -->
-        <div class="rounded-md bg-[#2b2e33] shadow-card overflow-x-auto">
+        <div class="card bg-dark">
             {% if customers %}
-            <table class="w-full table-auto text-sm" id="customers-table">
-                <thead>
-                    <tr class="bg-[#303338] text-left text-gray-400 sticky top-0 z-10">
-                        <th class="px-4 py-3 w-4">
-                            <input type="checkbox" id="select-all" class="rounded">
-                        </th>
-                        <th class="px-4 py-3 cursor-pointer hover:text-white" onclick="sortTable('name')">
-                            Name <i class="fas fa-sort ml-1"></i>
-                        </th>
-                        <th class="px-4 py-3 cursor-pointer hover:text-white" onclick="sortTable('email')">
-                            Email <i class="fas fa-sort ml-1"></i>
-                        </th>
-                        <th class="px-4 py-3 cursor-pointer hover:text-white" onclick="sortTable('phone')">
-                            Phone <i class="fas fa-sort ml-1"></i>
-                        </th>
-                        <th class="px-4 py-3">Category</th>
-                        <th class="px-4 py-3">Activity</th>
-                        <th class="px-4 py-3 text-right w-10"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for customer in customers %}
-                    <tr class="border-t border-[#3a3d42] hover:bg-[#32363b] cursor-pointer transition-colors customer-row" 
-                        data-customer-id="{{ customer.id }}"
-                        data-has-price-lists="{{ customer.price_lists|length > 0 }}"
-                        data-has-email="{{ customer.email is not none and customer.email != '' }}"
-                        data-category-id="{{ customer.category_id if customer.category_id else '' }}"
-                        onclick="selectRow(this, event)">
-                        <td class="px-4 py-3" onclick="event.stopPropagation()">
-                            <input type="checkbox" class="row-checkbox rounded" value="{{ customer.id }}">
-                        </td>
-                        <td class="px-4 py-3 text-white font-medium">
-                            {{ customer.name }}
-                            {% if customer.price_lists|length > 0 %}
-                                <span class="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full" title="Has price lists"></span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-gray-300">
-                            {% if customer.email %}
-                                <a href="mailto:{{ customer.email }}" class="text-blue-400 hover:text-blue-300" onclick="event.stopPropagation()">
-                                    {{ customer.email }}
-                                </a>
-                            {% else %}
-                                <span class="text-gray-500 italic">No email</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-gray-300">
-                            {% if customer.phone %}
-                                <a href="tel:{{ customer.phone }}" class="text-blue-400 hover:text-blue-300" onclick="event.stopPropagation()">
-                                    {{ customer.phone }}
-                                </a>
-                            {% else %}
-                                <span class="text-gray-500">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3">
-                            {% if customer.category %}
-                                <span class="px-2 py-1 bg-blue-600 text-white rounded-full text-xs">
-                                    {{ customer.category.name }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-500 text-xs">Uncategorized</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-gray-400 text-xs">
-                            {% if customer.invoices %}
-                                {{ customer.invoices|length }} invoices
-                            {% else %}
-                                <span class="text-gray-500">No activity</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
-                            <div class="relative">
-                                <button class="kebab text-gray-400 hover:text-white p-1" onclick="toggleKebabMenu({{ customer.id }})">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <div id="kebab-menu-{{ customer.id }}" class="hidden absolute right-0 mt-1 w-32 bg-[#2b2e33] rounded-md shadow-lg border border-[#3a3d42] z-50">
-                                    <div class="py-1">
-                                        <button class="block w-full text-left px-3 py-2 text-sm text-white hover:bg-[#32363b] edit-customer"
-                                                data-id="{{ customer.id }}"
-                                                data-name="{{ customer.name }}"
-                                                data-email="{{ customer.email }}"
-                                                data-phone="{{ customer.phone }}"
-                                                data-address="{{ customer.address }}"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#customerModal">
-                                            <i class="fas fa-edit mr-2"></i> Edit
-                                        </button>
-                                        <button class="block w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-600 hover:text-white"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#deleteModal"
-                                                data-id="{{ customer.id }}"
-                                                data-name="{{ customer.name }}">
-                                            <i class="fas fa-trash mr-2"></i> Delete
-                                        </button>
-                                    </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0" id="customers-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col" style="width: 50px;">
+                                <input type="checkbox" id="select-all" class="form-check-input">
+                            </th>
+                            <th scope="col" class="sortable" onclick="sortTable('name')" style="cursor: pointer;">
+                                Name <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th scope="col" class="sortable" onclick="sortTable('email')" style="cursor: pointer;">
+                                Email <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th scope="col" class="sortable" onclick="sortTable('phone')" style="cursor: pointer;">
+                                Phone <i class="fas fa-sort ms-1"></i>
+                            </th>
+                            <th scope="col">Category</th>
+                            <th scope="col">Activity</th>
+                            <th scope="col" style="width: 100px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr class="customer-row" 
+                            data-customer-id="{{ customer.id }}"
+                            data-has-price-lists="{{ customer.price_lists|length > 0 }}"
+                            data-has-email="{{ customer.email is not none and customer.email != '' }}"
+                            data-category-id="{{ customer.category_id if customer.category_id else '' }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input row-checkbox" value="{{ customer.id }}">
+                            </td>
+                            <td class="fw-bold">
+                                {{ customer.name }}
+                                {% if customer.price_lists|length > 0 %}
+                                    <i class="fas fa-circle text-success ms-2" title="Has price lists" style="font-size: 0.5rem;"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if customer.email %}
+                                    <a href="mailto:{{ customer.email }}" class="text-info text-decoration-none">
+                                        {{ customer.email }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted fst-italic">No email</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if customer.phone %}
+                                    <a href="tel:{{ customer.phone }}" class="text-info text-decoration-none">
+                                        {{ customer.phone }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if customer.category %}
+                                    <span class="badge bg-primary">
+                                        {{ customer.category.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small">Uncategorized</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">
+                                {% if customer.invoices %}
+                                    {{ customer.invoices|length }} invoices
+                                {% else %}
+                                    No activity
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark">
+                                        <li>
+                                            <a class="dropdown-item edit-customer" href="#"
+                                               data-id="{{ customer.id }}"
+                                               data-name="{{ customer.name }}"
+                                               data-email="{{ customer.email }}"
+                                               data-phone="{{ customer.phone }}"
+                                               data-address="{{ customer.address }}"
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#customerModal">
+                                                <i class="fas fa-edit me-2"></i> Edit
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="#"
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#deleteModal"
+                                               data-id="{{ customer.id }}"
+                                               data-name="{{ customer.name }}">
+                                                <i class="fas fa-trash me-2"></i> Delete
+                                            </a>
+                                        </li>
+                                    </ul>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
-            <div class="p-8 text-center">
-                <div class="text-gray-400 mb-4">
-                    <i class="fas fa-users text-4xl"></i>
+            <div class="card-body text-center py-5">
+                <div class="text-muted mb-4">
+                    <i class="fas fa-users" style="font-size: 3rem;"></i>
                 </div>
-                <h3 class="text-lg font-medium text-white mb-2">No customers yet</h3>
-                <p class="text-gray-400 mb-4">Get started by adding your first customer</p>
-                <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#customerModal">
-                    <i class="fas fa-plus mr-2"></i> Add Customer
+                <h5 class="text-light mb-3">No customers yet</h5>
+                <p class="text-muted mb-4">Get started by adding your first customer</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customerModal">
+                    <i class="fas fa-plus me-2"></i> Add Customer
                 </button>
             </div>
             {% endif %}
@@ -252,76 +252,88 @@
 
         <!-- Pagination -->
         {% if customers and customers|length > 20 %}
-        <div class="mt-4 flex items-center justify-center gap-2 text-sm">
-            <button class="pager-btn px-3 py-1 rounded bg-[#2b2e33] text-gray-400 hover:bg-[#32363b] hover:text-white disabled:opacity-50" disabled>
-                &laquo; Previous
-            </button>
-            <button class="pager-btn active px-3 py-1 rounded bg-blue-600 text-white">1</button>
-            <button class="pager-btn px-3 py-1 rounded bg-[#2b2e33] text-gray-400 hover:bg-[#32363b] hover:text-white">2</button>
-            <button class="pager-btn px-3 py-1 rounded bg-[#2b2e33] text-gray-400 hover:bg-[#32363b] hover:text-white">
-                Next &raquo;
-            </button>
-        </div>
-        <div class="mt-2 text-center text-xs text-gray-400">
-            Showing 1-20 of {{ customers|length }} customers
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">&laquo; Previous</a>
+                </li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Next &raquo;</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="text-center">
+            <small class="text-muted">Showing 1-20 of {{ customers|length }} customers</small>
         </div>
         {% endif %}
-    </section>
+    </div>
+</div>
 </div>
 
 <!-- Mobile Filter Toggle (visible on small screens) -->
-<div class="lg:hidden fixed bottom-4 right-4 z-50">
-    <button id="mobile-filter-toggle" class="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700">
+<div class="d-lg-none position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
+    <button id="mobile-filter-toggle" class="btn btn-primary rounded-circle" style="width: 60px; height: 60px;" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters">
         <i class="fas fa-filter"></i>
     </button>
 </div>
 
-<!-- Mobile Filter Overlay -->
-<div id="mobile-filter-overlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden">
-    <div class="absolute right-0 top-0 h-full w-80 bg-[#2b2e33] p-4 transform translate-x-full transition-transform duration-300" id="mobile-filter-panel">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-white">Filters</h2>
-            <button id="close-mobile-filter" class="text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
+<!-- Mobile Filter Offcanvas -->
+<div class="offcanvas offcanvas-end bg-dark" tabindex="-1" id="mobileFilters">
+    <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title text-white">Filters</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <!-- Mobile filters content (same as desktop) -->
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-sm text-start filter-btn" data-filter="all">
+                All Customers 
+                <span class="badge bg-light text-dark float-end">{{ customers|length if customers else 0 }}</span>
             </button>
-        </div>
-        <!-- Same filter content as desktop -->
-        <div class="space-y-2">
-            <!-- Filters will be duplicated here for mobile -->
+            <button class="btn btn-outline-secondary btn-sm text-start filter-btn" data-filter="with-price-lists">
+                With Price Lists 
+                <span class="badge bg-secondary float-end">0</span>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm text-start filter-btn" data-filter="missing-email">
+                Missing Email 
+                <span class="badge bg-warning float-end">0</span>
+            </button>
         </div>
     </div>
 </div>
 
-<!-- Add/Edit Customer Modal (keeping existing modal) -->
+<!-- Add/Edit Customer Modal -->
 <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content bg-[#2b2e33] border border-[#3a3d42]">
-            <div class="modal-header bg-blue-600 text-white border-b border-[#3a3d42]">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="customerModalLabel">Add Customer</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('customers') }}" method="post">
-                <div class="modal-body">
+                <div class="modal-body bg-dark">
                     <input type="hidden" name="customer_id" id="customer_id">
                     <div class="mb-3">
                         <label for="name" class="form-label text-white">Name</label>
-                        <input type="text" class="form-control bg-[#1e2024] border-[#3a3d42] text-white" id="name" name="name" required>
+                        <input type="text" class="form-control bg-dark border-secondary text-white" id="name" name="name" required>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label text-white">Email</label>
-                        <input type="email" class="form-control bg-[#1e2024] border-[#3a3d42] text-white" id="email" name="email">
+                        <input type="email" class="form-control bg-dark border-secondary text-white" id="email" name="email">
                     </div>
                     <div class="mb-3">
                         <label for="phone" class="form-label text-white">Phone</label>
-                        <input type="text" class="form-control bg-[#1e2024] border-[#3a3d42] text-white" id="phone" name="phone">
+                        <input type="text" class="form-control bg-dark border-secondary text-white" id="phone" name="phone">
                     </div>
                     <div class="mb-3">
                         <label for="address" class="form-label text-white">Address</label>
-                        <textarea class="form-control bg-[#1e2024] border-[#3a3d42] text-white" id="address" name="address" rows="3"></textarea>
+                        <textarea class="form-control bg-dark border-secondary text-white" id="address" name="address" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="category_id" class="form-label text-white">Category</label>
-                        <select class="form-control bg-[#1e2024] border-[#3a3d42] text-white" id="category_id" name="category_id">
+                        <select class="form-select bg-dark border-secondary text-white" id="category_id" name="category_id">
                             <option value="">Select a category</option>
                             {% if categories %}
                                 {% for category in categories %}
@@ -331,7 +343,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer border-t border-[#3a3d42]">
+                <div class="modal-footer bg-dark border-top border-secondary">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Customer</button>
                 </div>
@@ -340,21 +352,21 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal (keeping existing modal with dark theme) -->
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content bg-[#2b2e33] border border-[#3a3d42]">
-            <div class="modal-header bg-red-600 text-white border-b border-[#3a3d42]">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="deleteModalLabel">Delete Customer</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body text-white">
-                <p>Are you sure you want to delete <strong id="delete-customer-name" class="text-red-400"></strong>?</p>
-                <p class="text-red-400">This action cannot be undone. All price lists and invoices associated with this customer will also be deleted.</p>
+            <div class="modal-body bg-dark text-white">
+                <p>Are you sure you want to delete <strong id="delete-customer-name" class="text-danger"></strong>?</p>
+                <p class="text-warning">This action cannot be undone. All price lists and invoices associated with this customer will also be deleted.</p>
             </div>
-            <div class="modal-footer border-t border-[#3a3d42]">
+            <div class="modal-footer bg-dark border-top border-secondary">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="delete-form" action="" method="post">
+                <form id="delete-form" action="" method="post" class="d-inline">
                     <button type="submit" class="btn btn-danger">Delete Customer</button>
                 </form>
             </div>
