@@ -465,9 +465,9 @@ def register_routes(app):
         try:
             # Count quotations by status
             quotation_status_counts = db.session.query(
-                QuotationStatus.status, 
-                db.func.count(QuotationStatus.id)
-            ).join(Quotation).group_by(QuotationStatus.status).all()
+                Quotation.status, 
+                db.func.count(Quotation.id)
+            ).group_by(Quotation.status).all()
             
             # Create a dictionary of status counts
             status_counts = {}
