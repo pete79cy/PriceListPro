@@ -41,16 +41,16 @@
         <div class="card border-0 mb-3" style="background-color: #2b2e33;">
             <div class="card-body p-3">
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="chip chip-active" data-filter="all">
+                    <button class="chip chip-active" data-chip="all">
                         All {{ customers|length if customers else 0 }}
                     </button>
-                    <button class="chip" data-filter="with-price-lists">
+                    <button class="chip" data-chip="price-lists">
                         With Price Lists <span id="price-lists-count">0</span>
                     </button>
-                    <button class="chip" data-filter="missing-email">
+                    <button class="chip" data-chip="missing-email">
                         Missing Email <span id="missing-email-count">0</span>
                     </button>
-                    <button class="chip" data-filter="recent">
+                    <button class="chip" data-chip="recent">
                         Recent Activity <span id="recent-count">0</span>
                     </button>
                 </div>
@@ -63,7 +63,7 @@
                 <div class="d-flex flex-wrap gap-2">
                     {% if categories %}
                         {% for category in categories %}
-                        <button class="chip" data-filter="category" data-category-id="{{ category.id }}">
+                        <button class="chip" data-chip="category" data-category-id="{{ category.id }}">
                             {{ category.name }} {{ category.customers|length }}
                         </button>
                         {% endfor %}
@@ -447,21 +447,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Chip filter functionality
-    document.querySelectorAll('.chip[data-filter]').forEach(chip => {
-        chip.addEventListener('click', function() {
-            // Remove active class from all chips
-            document.querySelectorAll('.chip').forEach(c => {
-                c.classList.remove('chip-active');
-            });
+    // Chip filter functionality - instant client-side filtering
+    const chips = document.querySelectorAll('[data-chip]');
+    const rows = document.querySelectorAll('.customer-row');
+
+    chips.forEach(chip => chip.addEventListener('click', e => {
+        // Remove active class from all chips
+        chips.forEach(c => c.classList.remove('chip-active'));
+        // Add active class to clicked chip
+        e.currentTarget.classList.add('chip-active');
+
+        const mode = e.currentTarget.dataset.chip;
+        const categoryId = e.currentTarget.dataset.categoryId;
+        
+        rows.forEach(r => {
+            let shouldShow = true;
             
-            // Add active class to clicked chip
-            this.classList.add('chip-active');
+            if (mode === 'all') {
+                shouldShow = true;
+            } else if (mode === 'price-lists') {
+                shouldShow = r.dataset.hasPriceLists === 'True';
+            } else if (mode === 'missing-email') {
+                shouldShow = r.dataset.hasEmail === 'False';
+            } else if (mode === 'recent') {
+                // Add your recent activity logic here
+                shouldShow = true;
+            } else if (mode === 'category') {
+                shouldShow = r.dataset.categoryId === categoryId;
+            }
             
-            // Apply filter
-            applyFilter(this.dataset.filter, this.dataset.categoryId);
+            r.hidden = !shouldShow;
         });
-    });
+        
+        // Apply search filter on top of category filter
+        filterCustomers();
+    }));
 
     // Select all functionality
     const selectAllCheckbox = document.getElementById('select-all');
