@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Customer Buttons</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 9999px;
+            background-color: #32363b;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            color: #d1d5db;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .chip:hover {
+            background-color: #3a3d42;
+        }
+        .chip-active {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-dark text-white">
+    <div class="container mt-3">
+        <h3>Filter Chip Test</h3>
+        <div class="d-flex gap-2 mb-3">
+            <button class="chip chip-active" data-chip="all">All 5</button>
+            <button class="chip" data-chip="price-lists">With Price Lists 2</button>
+            <button class="chip" data-chip="missing-email">Missing Email 1</button>
+        </div>
+        
+        <table class="table table-dark">
+            <tbody>
+                <tr class="customer-row" data-has-price-lists="True" data-has-email="True">
+                    <td>Customer A (has price lists, has email)</td>
+                </tr>
+                <tr class="customer-row" data-has-price-lists="False" data-has-email="True">
+                    <td>Customer B (no price lists, has email)</td>
+                </tr>
+                <tr class="customer-row" data-has-price-lists="True" data-has-email="False">
+                    <td>Customer C (has price lists, no email)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chips = document.querySelectorAll('[data-chip]');
+            const rows = document.querySelectorAll('.customer-row');
+
+            chips.forEach(chip => chip.addEventListener('click', e => {
+                // Remove active class from all chips
+                chips.forEach(c => c.classList.remove('chip-active'));
+                // Add active class to clicked chip
+                e.currentTarget.classList.add('chip-active');
+
+                const mode = e.currentTarget.dataset.chip;
+                
+                rows.forEach(r => {
+                    let shouldShow = true;
+                    
+                    if (mode === 'all') {
+                        shouldShow = true;
+                    } else if (mode === 'price-lists') {
+                        shouldShow = r.dataset.hasPriceLists === 'True';
+                    } else if (mode === 'missing-email') {
+                        shouldShow = r.dataset.hasEmail === 'False';
+                    }
+                    
+                    r.style.display = shouldShow ? '' : 'none';
+                });
+            }));
+        });
+    </script>
+</body>
+</html>
