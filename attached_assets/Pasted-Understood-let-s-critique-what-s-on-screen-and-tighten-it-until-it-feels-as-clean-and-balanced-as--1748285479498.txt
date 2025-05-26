@@ -1,0 +1,100 @@
+Understood — let’s critique what’s on-screen and tighten it until it feels as clean and balanced as the new dashboard.
+
+---
+
+## 1. What’s not working yet
+
+| Issue                                                        | Why it feels off                                                   | Quick visual                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------- |
+| **Three separate horizontals** (search, “+ New”, action bar) | They stack with unequal spacing → “ransom-note” rhythm.            | ![three bars misaligned](…) |
+| **Section headings + grey borders everywhere**               | Compete with one another; no clear visual hierarchy.               |                             |
+| **Bulk-actions + filters + categories** all on top           | Cognitive overload before you even see one customer.               |                             |
+| **Table rows look empty / low contrast**                     | Sparse vertical padding & thin font weight → hard scan.            |                             |
+| **Action kebab opens a square menu** that keeps outlines     | Outline boxes break the dark-theme illusion; menu feels bolted on. |                             |
+
+---
+
+## 2. Target look & feel
+
+![wireframe](…)
+
+*Single sub-header bar → left filters rail → high-density table just like a Mac “List” view.*
+
+---
+
+## 3. Surgical fixes (no backend changes)
+
+| Area                        | Patch                                                                                                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sub-header**              | Combine title, count-pill, search and **+ New** into one flex container (height ≈ 48 px).                                                                                          |
+| **Remove grey boxes**       | Use cards only for two things: filters rail, table wrapper. Convert headings (“Quick Filters”, “Bulk Actions”) to `sr-only` for accessibility; visual labels become compact pills. |
+| **Filter & category chips** | Inline pills (`inline-flex items-center gap-1 rounded-full bg-[#32363b] px-3 py-1 text-xs`) – no big blocks.                                                                       |
+| **Bulk action bar**         | Hidden by default; `translate-y-[-100%] opacity-0` until at least one checkbox ticked → slide-down. Dark translucent background (`bg-black/30 backdrop-blur-sm`).                  |
+| **Table density**           | Row class: `whitespace-nowrap py-3 px-4 hover:bg-[#303338]`. Header weight `font-semibold`. Add dashed column divider between “Category” and “Activity” for easier scan.           |
+| **Action menu**             | Replace outline rectangles with a floating popover: `absolute right-6 top-2 rounded-md bg-[#2b2e33] shadow-lg ring-1 ring-black/50`. Anchor arrow (`::before`) to kebab.           |
+| **Typography**              | H1 → dropped to `text-xl font-semibold`; everything else `sm` / `xs` with 500 weight.                                                                                              |
+
+---
+
+### Tailwind diff (pseudo)
+
+```html
+<!-- NEW unified sub-header -->
+<div class="flex items-center justify-between gap-4 bg-[#2b2e33] rounded-md p-3 mb-6">
+  <h1 class="text-xl font-semibold text-white flex items-center gap-2">
+    Customers <span class="rounded-full bg-blue-600 px-2 py-0.5 text-xs">34</span>
+  </h1>
+
+  <div class="flex items-center gap-3 flex-1">
+    <input placeholder="Search customers…" class="flex-1 rounded-md bg-[#1e2024] px-3 py-1.5 text-sm">
+    <button class="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium">+ New</button>
+  </div>
+</div>
+
+<!-- FILTER / CATEGORY rail -->
+<aside class="hidden lg:block w-60 space-y-4 mr-6">
+  <div class="rounded-md bg-[#2b2e33] p-4 space-y-2">
+    <div class="flex flex-wrap gap-2">
+      <button class="chip active">All 34</button>
+      <button class="chip">With Price Lists 20</button>
+      <button class="chip">Missing Email 28</button>
+    </div>
+  </div>
+  <div class="rounded-md bg-[#2b2e33] p-4 space-y-2">
+    <div class="flex flex-wrap gap-2">
+      <button class="chip">General 12</button>
+      <button class="chip">Test Category 1</button>
+      <!-- … -->
+    </div>
+  </div>
+</aside>
+```
+
+*(Define `.chip` once: `@apply inline-flex items-center rounded-full bg-[#32363b] px-3 py-1 text-xs hover:bg-[#3a3d42] transition`.)*
+
+---
+
+## 4. Interaction micro-details
+
+1. **Select-all** checkbox in header → when true show “34 selected” in bulk bar.
+2. **Bulk bar** sticky under nav (z-20) with actions **Export CSV**, **Email**, **Delete**. ESC hides it.
+3. **Keyboard**: arrow-up/down navigates rows; `E` triggers edit, `⌘/Ctrl ⌫` delete (with confirm).
+4. **Responsive**: on mobile the rail collapses into a horizontal scroll chips row above the table.
+
+---
+
+## 5. Roll-out plan
+
+* **CSS only first** – tweak existing template with the classes above; leave JS logic untouched.
+* Once spacing/visual wins approved, **swap the row action buttons** for new popover component (you already import shadcn `DropdownMenu` – reuse).
+* QA dark/light; test bulk bar transitions at 60 fps (willAnimate transform).
+
+---
+
+Let me know if you’d like:
+
+* a **live CodePen** snippet to see the exact margins,
+* a **small PR** diff against your Jinja template, or
+* a **Figma** frame for pixel-perfect alignment.
+
+Happy to supply whichever unblocks you fastest.
