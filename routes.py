@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings, QuotationStatus
+from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings, QuotationStatus, Order
 from flask_login import login_user, logout_user, login_required, current_user
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
