@@ -1,202 +1,81 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-{% block head %}
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-.filter-pill { 
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    border-radius: 9999px;
-    background-color: rgb(55 65 81);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    color: rgb(229 231 235);
-    cursor: pointer;
-    user-select: none;
-}
-.filter-pill:hover {
-    background-color: rgb(75 85 99);
-}
-.filter-pill input { 
-    margin-right: 0.25rem;
-    accent-color: rgb(59 130 246);
-}
-.filter-pill-active { 
-    background-color: rgb(37 99 235);
-    color: white;
-}
-.btn-outline { 
-    border-radius: 0.375rem;
-    border: 1px solid rgba(156, 163, 175, 0.4);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
-    color: white;
-}
-.btn-outline:hover {
-    background-color: rgba(55, 65, 81, 0.4);
-}
-.shadow-card { 
-    box-shadow: 0 1px 3px rgba(0,0,0,.3); 
-}
-.tag-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 0.25rem;
-    background-color: rgb(31 41 55);
-    border: 1px solid rgb(75 85 99);
-    border-radius: 0.375rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    z-index: 20;
-    min-width: 12rem;
-}
-.dropdown-menu {
-    position: absolute;
-    right: 0;
-    top: 100%;
-    margin-top: 0.25rem;
-    background-color: rgb(31 41 55);
-    border: 1px solid rgb(75 85 99);
-    border-radius: 0.375rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    z-index: 20;
-    min-width: 8rem;
-}
-</style>
-{% endblock %}
-
-<!-- TOOLBAR -->
-<header style="display: flex; align-items: center; gap: 1rem; background-color: rgb(31 41 55); border-radius: 0.375rem; padding: 0.75rem; margin-bottom: 0.75rem;">
-  <h1 style="font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; color: white;">
-    Customers <span style="margin-left: 0.25rem; border-radius: 9999px; background-color: rgb(37 99 235); padding: 0.125rem 0.5rem; font-size: 0.75rem;">{{ customers|length }}</span>
-  </h1>
-
-  <input id="searchBox" type="search" placeholder="Search customers..."
-         style="flex: 1; border-radius: 0.375rem; background-color: rgb(17 24 39); padding: 0.375rem 0.75rem; font-size: 0.875rem; color: white; border: 1px solid rgb(75 85 99);" />
-
-  <div style="position: relative;">
-    <button id="newCustomerBtn" style="border-radius: 0.375rem; background-color: rgb(37 99 235); padding: 0.375rem 1rem; font-size: 0.875rem; font-weight: 500; color: white; border: none; cursor: pointer;"
-            data-bs-toggle="modal" data-bs-target="#customerModal">
-      ＋ New
-    </button>
-  </div>
-</header>
-
-<!-- SMART FILTER BAR -->
-<div id="filterBar" style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-  <label class="filter-pill">
-    <input type="checkbox" data-f="price"> With Price-list
-  </label>
-  <label class="filter-pill">
-    <input type="checkbox" data-f="missing"> Missing Email
-  </label>
-  
-  <!-- Category filter -->
-  <div style="position: relative;">
-    <button id="tagBtn" class="filter-pill">Categories ▼</button>
-    <div id="tagMenu" class="tag-menu hidden">
-      <div style="padding: 0.5rem;">
-        {% for category in customer_categories %}
-        <label style="display: block; padding: 0.25rem; cursor: pointer; font-size: 0.875rem; color: rgb(229 231 235);">
-          <input type="checkbox" data-f="category" value="{{ category.name }}" style="margin-right: 0.5rem;">
-          {{ category.name }}
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- TABLE -->
-<div style="border-radius: 0.375rem; background-color: rgb(31 41 55); box-shadow: 0 1px 3px rgba(0,0,0,.3); overflow-x: auto;">
-  <table id="custTable" style="width: 100%; font-size: 0.875rem; table-layout: fixed;">
-    <thead style="background-color: rgb(55 65 81); position: sticky; top: 0; z-index: 10;">
-      <tr>
-        <th style="width: 3rem; padding: 0.5rem 1rem;"><input id="chkAll" type="checkbox" style="accent-color: rgb(59 130 246);"></th>
-        <th style="padding: 0.5rem 1rem; text-align: left; width: 15rem; color: rgb(229 231 235);">Name</th>
-        <th style="padding: 0.5rem 1rem; color: rgb(229 231 235);">Email</th>
-        <th style="padding: 0.5rem 1rem; width: 8rem; color: rgb(229 231 235);">Phone</th>
-        <th style="padding: 0.5rem 1rem; width: 5rem; color: rgb(229 231 235);">Category</th>
-        <th style="width: 2rem;"></th>
-      </tr>
-    </thead>
-    <tbody id="custBody">
-      {% for customer in customers %}
-      <tr class="row" style="border-top: 1px solid rgb(75 85 99);"
-          data-price="{{ 'yes' if customer.price_lists else 'no' }}"
-          data-email="{{ 'no' if not customer.email else 'yes' }}"
-          data-category="{{ customer.category.name if customer.category else '' }}"
-          data-id="{{ customer.id }}"
-          data-name="{{ customer.name }}"
-          data-customer-email="{{ customer.email or '' }}"
-          data-phone="{{ customer.phone or '' }}"
-          data-address="{{ customer.address or '' }}"
-          onmouseover="this.style.backgroundColor='rgba(55, 65, 81, 0.5)'"
-          onmouseout="this.style.backgroundColor='transparent'">
-        <td style="padding: 0.75rem 1rem;"><input class="chkRow" type="checkbox" style="accent-color: rgb(59 130 246);"></td>
-        <td style="padding: 0.75rem 1rem; color: white;">{{ customer.name }}</td>
-        <td style="padding: 0.75rem 1rem; color: rgb(209 213 219);">{{ customer.email or '— missing —' }}</td>
-        <td style="padding: 0.75rem 1rem; color: rgb(209 213 219);">{{ customer.phone or '–' }}</td>
-        <td style="padding: 0.75rem 1rem; color: rgb(209 213 219);">{{ customer.category.name if customer.category else '–' }}</td>
-        <td style="padding: 0.5rem;">
-          <!-- Dropdown menu -->
-          <div style="position: relative;">
-            <button style="color: rgb(156 163 175); padding: 0.25rem; background: none; border: none; cursor: pointer;" onclick="toggleDropdown(this)" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgb(156 163 175)'">⋮</button>
-            <div class="dropdown-menu hidden">
-              <div style="padding: 0.25rem;">
-                <button style="display: block; width: 100%; text-align: left; padding: 0.25rem 0.75rem; font-size: 0.875rem; color: rgb(229 231 235); background: none; border: none; cursor: pointer;" 
-                        class="edit-customer"
-                        data-id="{{ customer.id }}"
-                        data-name="{{ customer.name }}"
-                        data-email="{{ customer.email }}"
-                        data-phone="{{ customer.phone }}"
-                        data-address="{{ customer.address }}"
-                        onmouseover="this.style.backgroundColor='rgb(55 65 81)'"
-                        onmouseout="this.style.backgroundColor='transparent'">
-                  Edit
-                </button>
-                <button style="display: block; width: 100%; text-align: left; padding: 0.25rem 0.75rem; font-size: 0.875rem; color: rgb(248 113 113); background: none; border: none; cursor: pointer;"
-                        class="delete-customer"
-                        data-id="{{ customer.id }}"
-                        data-name="{{ customer.name }}"
-                        onmouseover="this.style.backgroundColor='rgb(55 65 81)'"
-                        onmouseout="this.style.backgroundColor='transparent'">
-                  Delete
-                </button>
-              </div>
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Customers</h5>
+                <div>
+                    <a href="{{ url_for('customer_form.create_customer') }}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-plus"></i> New Customer (Improved)
+                    </a>
+                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#customerModal">
+                        <i class="fas fa-plus"></i> Add Customer
+                    </button>
+                </div>
             </div>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  
-  {% if not customers %}
-  <div style="padding: 2rem; text-align: center; color: rgb(156 163 175);">
-    <div style="font-size: 1.125rem; margin-bottom: 0.5rem;">No customers found</div>
-    <div style="font-size: 0.875rem;">Click the "＋ New" button to create your first customer</div>
-  </div>
-  {% endif %}
-</div>
-
-<!-- BULK BAR -->
-<div id="bulkBar"
-     style="position: fixed; left: 0; right: 0; top: 4rem; z-index: 30; display: none; align-items: center; gap: 1rem; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); padding: 0.5rem 1.5rem;">
-  <span id="bulkCount" style="font-size: 0.875rem; color: white;"></span>
-  <button class="btn-outline" id="bulkExport">Export</button>
-  <button class="btn-outline" id="bulkEmail">Email</button>
-  <button class="btn-outline" id="bulkDelete" style="color: rgb(248 113 113);">Delete</button>
-  <button id="bulkClose" style="margin-left: auto; color: rgb(209 213 219); background: none; border: none; cursor: pointer;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgb(209 213 219)'">✕</button>
+            <div class="card-body">
+                {% if customers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in customers %}
+                            <tr>
+                                <td>{{ customer.id }}</td>
+                                <td>{{ customer.name }}</td>
+                                <td>{{ customer.email }}</td>
+                                <td>{{ customer.phone }}</td>
+                                <td>{{ customer.address }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info edit-customer" 
+                                            data-id="{{ customer.id }}"
+                                            data-name="{{ customer.name }}"
+                                            data-email="{{ customer.email }}"
+                                            data-phone="{{ customer.phone }}"
+                                            data-address="{{ customer.address }}"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#customerModal">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal"
+                                            data-id="{{ customer.id }}"
+                                            data-name="{{ customer.name }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No customers found. Click the "Add Customer" button to create your first customer.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Add/Edit Customer Modal -->
 <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content bg-gray-800 border-gray-600">
-            <div class="modal-header bg-blue-600 text-white border-gray-600">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="customerModalLabel">Add Customer</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -204,34 +83,25 @@
                 <div class="modal-body">
                     <input type="hidden" name="customer_id" id="customer_id">
                     <div class="mb-3">
-                        <label for="name" class="form-label text-gray-200">Name</label>
-                        <input type="text" class="form-control bg-gray-700 border-gray-600 text-white" id="name" name="name" required>
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label text-gray-200">Email</label>
-                        <input type="email" class="form-control bg-gray-700 border-gray-600 text-white" id="email" name="email">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email">
                     </div>
                     <div class="mb-3">
-                        <label for="phone" class="form-label text-gray-200">Phone</label>
-                        <input type="text" class="form-control bg-gray-700 border-gray-600 text-white" id="phone" name="phone">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="text" class="form-control" id="phone" name="phone">
                     </div>
                     <div class="mb-3">
-                        <label for="address" class="form-label text-gray-200">Address</label>
-                        <textarea class="form-control bg-gray-700 border-gray-600 text-white" id="address" name="address" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="category_id" class="form-label text-gray-200">Category</label>
-                        <select class="form-control bg-gray-700 border-gray-600 text-white" id="category_id" name="category_id">
-                            <option value="">Select Category</option>
-                            {% for category in customer_categories %}
-                            <option value="{{ category.id }}">{{ category.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <label for="address" class="form-label">Address</label>
+                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer border-gray-600">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary bg-blue-600 border-blue-600">Save</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>
@@ -241,19 +111,19 @@
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content bg-gray-800 border-gray-600">
-            <div class="modal-header bg-red-600 text-white border-gray-600">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="deleteModalLabel">Delete Customer</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body text-gray-200">
-                <p>Are you sure you want to delete <strong id="delete-customer-name" class="text-white"></strong>?</p>
-                <p class="text-red-400">This action cannot be undone. All price lists and invoices associated with this customer will also be deleted.</p>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-customer-name"></strong>?</p>
+                <p class="text-danger">This action cannot be undone. All price lists and invoices associated with this customer will also be deleted.</p>
             </div>
-            <div class="modal-footer border-gray-600">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="delete-form" action="" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger bg-red-600 border-red-600">Delete</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="delete-form" action="" method="post">
+                    <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
             </div>
         </div>
@@ -264,162 +134,37 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const filters = { price: false, missing: false, categories: [] };
-    const rows = document.querySelectorAll('#custBody .row');
-    const bulkBar = document.getElementById('bulkBar');
-    const chkAll = document.getElementById('chkAll');
-    const chkRows = document.querySelectorAll('.chkRow');
-    const bulkCount = document.getElementById('bulkCount');
-    const searchBox = document.getElementById('searchBox');
-
-    // Search functionality
-    searchBox.addEventListener('input', function() {
-        const query = this.value.toLowerCase();
-        rows.forEach(row => {
-            const name = row.dataset.name.toLowerCase();
-            const email = row.dataset.customerEmail.toLowerCase();
-            const phone = row.dataset.phone.toLowerCase();
-            const matchesSearch = !query || name.includes(query) || email.includes(query) || phone.includes(query);
-            
-            if (!matchesSearch) {
-                row.hidden = true;
-            } else {
-                applyFiltersToRow(row);
-            }
-        });
-        updateBulkBar();
-    });
-
-    // Smart filter toggle
-    document.getElementById('filterBar').addEventListener('change', function(e) {
-        const f = e.target.dataset.f;
-        if (!f) return;
-        
-        if (f === 'category') {
-            const value = e.target.value;
-            if (e.target.checked) {
-                filters.categories.push(value);
-            } else {
-                filters.categories = filters.categories.filter(c => c !== value);
-            }
-        } else {
-            filters[f] = e.target.checked;
-        }
-        applyFilters();
-    });
-
-    function applyFilters() {
-        rows.forEach(row => applyFiltersToRow(row));
-        updateBulkBar();
-    }
-
-    function applyFiltersToRow(row) {
-        const query = searchBox.value.toLowerCase();
-        const name = row.dataset.name.toLowerCase();
-        const email = row.dataset.customerEmail.toLowerCase();
-        const phone = row.dataset.phone.toLowerCase();
-        const matchesSearch = !query || name.includes(query) || email.includes(query) || phone.includes(query);
-        
-        const show = matchesSearch &&
-            (!filters.price || row.dataset.price === 'yes') &&
-            (!filters.missing || row.dataset.email === 'no') &&
-            (filters.categories.length === 0 || filters.categories.includes(row.dataset.category));
-        
-        row.hidden = !show;
-    }
-
-    // Category dropdown toggle
-    document.getElementById('tagBtn').addEventListener('click', function() {
-        const menu = document.getElementById('tagMenu');
-        menu.classList.toggle('hidden');
-    });
-
-    // Bulk selection
-    chkAll.addEventListener('change', function() {
-        chkRows.forEach(c => {
-            if (!c.closest('tr').hidden) c.checked = chkAll.checked;
-        });
-        updateBulkBar();
-    });
-
-    chkRows.forEach(c => c.addEventListener('change', updateBulkBar));
-
-    function updateBulkBar() {
-        const n = [...chkRows].filter(c => c.checked && !c.closest('tr').hidden).length;
-        bulkCount.textContent = `${n} selected`;
-        bulkBar.classList.toggle('hidden', n === 0);
-    }
-
-    // Bulk actions
-    document.getElementById('bulkClose').addEventListener('click', function() {
-        chkRows.forEach(c => c.checked = false);
-        chkAll.checked = false;
-        updateBulkBar();
-    });
-
     // Handle edit customer modal
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('edit-customer')) {
-            const btn = e.target;
+    document.querySelectorAll('.edit-customer').forEach(button => {
+        button.addEventListener('click', function() {
             document.getElementById('customerModalLabel').textContent = 'Edit Customer';
-            document.getElementById('customer_id').value = btn.dataset.id;
-            document.getElementById('name').value = btn.dataset.name;
-            document.getElementById('email').value = btn.dataset.email;
-            document.getElementById('phone').value = btn.dataset.phone;
-            document.getElementById('address').value = btn.dataset.address;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('customerModal'));
-            modal.show();
-        }
-        
-        if (e.target.classList.contains('delete-customer')) {
-            const btn = e.target;
-            document.getElementById('delete-customer-name').textContent = btn.dataset.name;
-            document.getElementById('delete-form').action = `/customers/${btn.dataset.id}/delete`;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            modal.show();
-        }
+            document.getElementById('customer_id').value = this.dataset.id;
+            document.getElementById('name').value = this.dataset.name;
+            document.getElementById('email').value = this.dataset.email;
+            document.getElementById('phone').value = this.dataset.phone;
+            document.getElementById('address').value = this.dataset.address;
+        });
     });
-
+    
     // Reset modal when adding a new customer
-    document.getElementById('newCustomerBtn').addEventListener('click', function() {
+    document.querySelector('[data-bs-target="#customerModal"]').addEventListener('click', function() {
         document.getElementById('customerModalLabel').textContent = 'Add Customer';
         document.getElementById('customer_id').value = '';
         document.getElementById('name').value = '';
         document.getElementById('email').value = '';
         document.getElementById('phone').value = '';
         document.getElementById('address').value = '';
-        document.getElementById('category_id').value = '';
     });
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#tagBtn') && !e.target.closest('#tagMenu')) {
-            document.getElementById('tagMenu').classList.add('hidden');
-        }
+    
+    // Handle delete modal
+    document.getElementById('deleteModal').addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const customerId = button.dataset.id;
+        const customerName = button.dataset.name;
         
-        // Close all dropdown menus
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            if (!e.target.closest(menu.parentElement)) {
-                menu.classList.add('hidden');
-            }
-        });
+        document.getElementById('delete-customer-name').textContent = customerName;
+        document.getElementById('delete-form').action = `/customers/${customerId}/delete`;
     });
 });
-
-// Toggle dropdown menu function
-function toggleDropdown(button) {
-    const menu = button.nextElementSibling;
-    const isHidden = menu.classList.contains('hidden');
-    
-    // Close all other dropdowns
-    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
-    
-    // Toggle this dropdown
-    menu.classList.toggle('hidden', !isHidden);
-}
 </script>
 {% endblock %}
