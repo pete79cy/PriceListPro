@@ -880,9 +880,9 @@ def register_routes(app):
             
             if email and not is_valid_email(email):
                 flash('Invalid email address format. Please check and try again.', 'danger')
-                customers_list = Customer.query.all()
-                customer_categories = CustomerCategory.query.all()
-                return render_template('customers.html', customers=customers_list, customer_categories=customer_categories)
+                customers = Customer.query.all()
+                categories = CustomerCategory.query.all()
+                return render_template('customers.html', customers=customers, categories=categories)
             
             if customer_id:  # Update existing
                 customer = Customer.query.get_or_404(customer_id)
@@ -903,8 +903,8 @@ def register_routes(app):
         
         # GET request - show customers
         customers_list = Customer.query.all()
-        customer_categories = CustomerCategory.query.all()
-        return render_template('customers.html', customers=customers_list, customer_categories=customer_categories)
+        categories = CustomerCategory.query.all()
+        return render_template('customers.html', customers=customers_list, categories=categories)
     
     @app.route('/customers/<int:customer_id>', methods=['GET'])
     @login_required
