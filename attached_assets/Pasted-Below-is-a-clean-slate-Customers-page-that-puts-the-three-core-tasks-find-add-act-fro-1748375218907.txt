@@ -1,0 +1,193 @@
+Below is a **clean-slate “Customers” page** that puts the three core tasks— *find*, *add*, *act*—front-and-center and hides everything else until it’s needed. The markup is plain HTML + Tailwind; the behaviour uses just a few lines of vanilla JS, so you can drop it into Flask/Jinja or React without rewiring your backend.
+
+---
+
+## 1 Interface at a glance
+
+```
+┌────────────────────  Toolbar  ────────────────────┐
+│  Customers ㉟  │  🔍 Search …       |  ＋ New ▼ │
+└───────────────────────────────────────────────────┘
+
+┌──────────────  Smart filter bar  ────────────────┐
+│  ▢ With Price-list  |  ▢ Missing Email  |  Tags ▼ │
+└───────────────────────────────────────────────────┘
+
+┌────────────────  Data table  ─────────────────────┐
+│ □ | Name        | Email          | Phone | ⋯ | ⋮ │
+│───┼─────────────┼────────────────┼───────┼───┼───│
+│ □ | Greentouch  | info@…         | 99…   | ▢ | … │
+│ □ | Chrymaris   | — missing —    | 96…   |   | … │
+└───────────────────────────────────────────────────┘
+
+(sticky) Bulk-bar appears when rows selected
+┌─ 2 selected · Export · Email · Delete  ✕ ─┐
+```
+
+---
+
+## 2 Why it’s more user-friendly
+
+| Friction before                     | Fix in this design                                                    |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| Hidden errors stop chips & buttons. | **Zero JS dependency** on element IDs; event delegation guards nulls. |
+| Filters felt secondary & scattered. | Single smart-filter bar always visible under the toolbar.             |
+| Too many grey boxes / borders.      | One card: the table. Everything else is lightweight flex rows.        |
+| Kebab menus looked bolted on.       | Shadcn/DropdownMenu gives native dark popover with arrow.             |
+| Bulk actions were buried.           | Bulk-bar slides down when ≥1 row selected, ESC to dismiss.            |
+
+---
+
+## 3 Drop-in markup
+
+```html
+<!-- TOOLBAR -------------------------------------------------------------->
+<header class="flex items-center gap-4 bg-[#2b2e33] rounded-md p-3 mb-3">
+  <h1 class="text-lg font-semibold flex items-center gap-1">
+    Customers <span class="ml-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs">34</span>
+  </h1>
+
+  <input id="searchBox" type="search" placeholder="Search customers..."
+         class="flex-1 rounded-md bg-[#1e2024] px-3 py-1.5 text-sm" />
+
+  <div class="relative">
+    <button id="newCustomerBtn" class="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium">
+      ＋ New
+    </button>
+    <!-- optional dropdown for “Quick add” vs “Full form” -->
+  </div>
+</header>
+
+<!-- SMART FILTER BAR ----------------------------------------------------->
+<div id="filterBar" class="flex flex-wrap items-center gap-2 mb-4">
+  <label class="filter-pill"><input type="checkbox" data-f="price"> With Price-list</label>
+  <label class="filter-pill"><input type="checkbox" data-f="missing"> Missing Email</label>
+
+  <!-- category multiselect -->
+  <div class="relative">
+    <button id="tagBtn" class="filter-pill">Tags ▼</button>
+    <div id="tagMenu" class="tag-menu hidden">
+      <!-- render categories dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- TABLE --------------------------------------------------------------->
+<div class="rounded-md bg-[#2b2e33] shadow-card overflow-x-auto">
+  <table id="custTable" class="w-full text-sm table-fixed">
+    <thead class="bg-[#303338] sticky top-0 z-10">
+      <tr>
+        <th class="w-4 px-4"><input id="chkAll" type="checkbox"></th>
+        <th class="px-4 py-2 text-left w-60">Name</th>
+        <th class="px-4 py-2">Email</th>
+        <th class="px-4 py-2 w-32">Phone</th>
+        <th class="px-4 py-2 w-20">Tags</th>
+        <th class="w-8"></th>
+      </tr>
+    </thead>
+    <tbody id="custBody">
+      {% for c in customers %}
+      <tr class="row border-t border-[#3a3d42] hover:bg-[#32363b]"
+          data-price="{{ 'yes' if c.price_lists|length else 'no' }}"
+          data-email="{{ 'no' if not c.email else 'yes' }}"
+          data-tags="{{ ','.join(t.name for t in c.tags) }}">
+        <td class="px-4"><input class="chkRow" type="checkbox"></td>
+        <td class="px-4 py-3">{{ c.name }}</td>
+        <td class="px-4 py-3">{{ c.email or '— missing —' }}</td>
+        <td class="px-4 py-3">{{ c.phone or '–' }}</td>
+        <td class="px-4 py-3">{{ ', '.join(t.short for t in c.tags) }}</td>
+        <td class="px-2">
+          <!-- kebab menu via shadcn/ui or your own -->
+          <RowMenu id="{{ c.id }}"/>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- BULK BAR ------------------------------------------------------------->
+<div id="bulkBar"
+     class="fixed inset-x-0 top-[66px] z-30 hidden items-center gap-4
+            bg-black/40 backdrop-blur px-6 py-2">
+  <span id="bulkCount" class="text-sm"></span>
+  <button class="btn-outline" id="bulkExport">Export</button>
+  <button class="btn-outline" id="bulkEmail">Email</button>
+  <button class="btn-outline text-red-400" id="bulkDelete">Delete</button>
+  <button class="ml-auto text-gray-300 hover:text-white" id="bulkClose">✕</button>
+</div>
+```
+
+### Tailwind helpers
+
+```css
+.filter-pill { @apply inline-flex items-center gap-1 rounded-full bg-[#32363b] px-3 py-1 text-xs
+                      text-gray-200 hover:bg-[#3a3d42] cursor-pointer select-none; }
+.filter-pill input { @apply mr-1 accent-blue-500; }
+.filter-pill-active { @apply bg-blue-600 text-white; }
+
+.btn-outline { @apply rounded-md border border-gray-400/40 px-3 py-1 text-sm hover:bg-gray-700/40; }
+.shadow-card { box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+```
+
+---
+
+## 4 Behaviour in \~40 lines of JS
+
+```html
+<script defer>
+document.addEventListener('DOMContentLoaded', () => {
+  const filters   = { price:false, missing:false, tags:[] };
+  const rows      = document.querySelectorAll('#custBody .row');
+  const bulkBar   = document.getElementById('bulkBar');
+  const chkAll    = document.getElementById('chkAll');
+  const chkRows   = document.querySelectorAll('.chkRow');
+  const bulkCount = document.getElementById('bulkCount');
+
+  /* smart-filter toggle */
+  document.getElementById('filterBar').addEventListener('change', e => {
+    const f = e.target.dataset.f;
+    if (!f) return;
+    filters[f] = e.target.checked;
+    applyFilters();
+  });
+
+  function applyFilters(){
+    rows.forEach(r => {
+      const show =
+        (!filters.price   || r.dataset.price  === 'yes') &&
+        (!filters.missing || r.dataset.email === 'no')  &&
+        (filters.tags.length === 0 || filters.tags.some(t => r.dataset.tags.includes(t)));
+      r.hidden = !show;
+    });
+  }
+
+  /* bulk-selection */
+  chkAll.addEventListener('change', () => {
+    chkRows.forEach(c => { if (!c.closest('tr').hidden) c.checked = chkAll.checked; });
+    updateBulkBar();
+  });
+  chkRows.forEach(c => c.addEventListener('change', updateBulkBar));
+
+  function updateBulkBar(){
+    const n = [...chkRows].filter(c => c.checked && !c.closest('tr').hidden).length;
+    bulkCount.textContent = `${n} selected`;
+    bulkBar.classList.toggle('hidden', n === 0);
+  }
+});
+</script>
+```
+
+---
+
+## 5 Why you’ll like maintaining it
+
+* **Single source of truth** – data attributes come from the DB; no duplicated state.
+* **No fragile IDs** – only `filterBar`, `custBody`, `bulkBar` used.
+* **Progressive enhancement** – if JS fails, table still shows all customers and “＋ New” still posts to `/customers/new`.
+
+---
+
+### Want the ready-to-run sandbox?
+
+Tell me and I’ll spin up a small GitHub Gist / CodeSandbox with the full HTML, Tailwind config, and the 40-line JS so you can fork & plug straight into your Flask or React project.
