@@ -1,0 +1,161 @@
+Below is a **ready-to-use template** for a new *Invoice Sales Addendum* that keeps all the information in the PDF you shared  but presents it with clearer hierarchy, stronger typography, and bilingual labels side-by-side instead of stacked.
+
+You can copy-paste the HTML into any email/PDF generator, or hand the structure to your devs and style it with your CSS framework.
+
+---
+
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<title>Invoice Sales Addendum – #252525</title>
+<style>
+  /* --- page shell --- */
+  body{font:14px/1.5 "Inter",Arial,sans-serif;color:#222;margin:32px 48px;background:#fff;}
+  h1,h2,h3{margin:0;font-weight:600}
+  .grid{display:grid;gap:12px}
+  .two{grid-template-columns:1fr 1fr}
+  .muted{color:#666}
+  /* --- header --- */
+  header{border-bottom:3px solid #005cff;padding-bottom:12px;margin-bottom:24px}
+  header .logo{font-size:24px;font-weight:700;color:#005cff}
+  /* --- meta boxes --- */
+  .box{background:#f7f9fc;border:1px solid #e3e8f0;border-radius:6px;padding:12px}
+  .label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#555}
+  /* --- table --- */
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #e3e8f0}
+  th{background:#005cff;color:#fff;font-weight:500;font-size:13px}
+  tbody tr:nth-child(even){background:#fafbfc}
+  tfoot td{border:none;font-weight:600}
+  /* --- footer --- */
+  footer{font-size:11px;color:#666;margin-top:32px;border-top:1px solid #e3e8f0;padding-top:8px}
+</style>
+</head>
+<body>
+
+<!-- =============== HEADER =============== -->
+<header class="grid two">
+  <div>
+    <div class="logo">Your&nbsp;Company&nbsp;Name</div>
+    <div class="muted">Address Line 1<br>Address Line 2</div>
+    <div class="muted">📞 +49 123 456789 &nbsp;|&nbsp; ✉︎ info@example.com</div>
+  </div>
+  <div style="text-align:right">
+    <h1>Invoice&nbsp;Addendum</h1>
+    <h3 class="muted">Παράρτημα Τιμολογίου</h3>
+  </div>
+</header>
+
+<!-- =============== CUSTOMER + DOC DETAILS =============== -->
+<section class="grid two" style="margin-bottom:24px">
+  <div class="box">
+    <div class="label">Customer</div>
+    Δήμος Αγίας Νάπας – Δημοτικό διαμέρισμα Αγίας Νάπας
+  </div>
+
+  <div class="box grid two">
+    <div>
+      <div class="label">Invoice No.</div> 252525
+    </div>
+    <div>
+      <div class="label">Period</div> 01 Jan 2025 – 28 May 2025
+    </div>
+    <div>
+      <div class="label">Issue Date</div> 28 May 2025
+    </div>
+    <div>
+      <div class="label">Status</div> Draft
+    </div>
+  </div>
+</section>
+
+<!-- =============== TRANSACTION TABLE =============== -->
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px">#</th>
+      <th>Date / Ημερ.</th>
+      <th>Product / Προϊόν</th>
+      <th style="text-align:right">Qty</th>
+      <th style="text-align:right">Unit €</th>
+      <th style="text-align:right">VAT %</th>
+      <th style="text-align:right">Line €</th>
+      <th style="text-align:right">VAT €</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td><td>08 Jan 2025</td><td>Στεφάνι – Κηδεία Α.&nbsp;Λιμνιώτη</td>
+      <td style="text-align:right">1</td>
+      <td style="text-align:right">15.00</td>
+      <td style="text-align:right">19</td>
+      <td style="text-align:right">15.00</td>
+      <td style="text-align:right">2.85</td>
+    </tr>
+    <tr>
+      <td>2</td><td>13 Jan 2025</td><td>Στεφάνι – Κηδείας Γ.&nbsp;Μουστάκα</td>
+      <td style="text-align:right">1</td>
+      <td style="text-align:right">15.00</td>
+      <td style="text-align:right">19</td>
+      <td style="text-align:right">15.00</td>
+      <td style="text-align:right">2.85</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="6"></td><td style="text-align:right">Subtotal</td><td style="text-align:right">30.00</td></tr>
+    <tr><td colspan="6"></td><td style="text-align:right">Total VAT</td><td style="text-align:right">5.70</td></tr>
+    <tr><td colspan="6"></td><td style="text-align:right">Grand Total</td><td style="text-align:right">35.70</td></tr>
+  </tfoot>
+</table>
+
+<!-- =============== NOTES =============== -->
+<section style="margin-top:24px">
+  <div class="label">Notes</div>
+  τεστ
+</section>
+
+<!-- =============== FOOTER =============== -->
+<footer class="grid two">
+  <div>This document is a detailed breakdown of sales for the stated period and must be attached to the corresponding invoice.</div>
+  <div style="text-align:right">Generated on 28 May 2025 14:13 &nbsp;|&nbsp; ID d070cbe5-db8d-4f73-b4b3-398f56606821</div>
+</footer>
+
+</body>
+</html>
+```
+
+### ❶ Key usability tweaks
+
+| Before                                                  | Now                                                                         |
+| ------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Greek header sat on its own line ⇒ takes vertical room. | English & Greek titles share space (primary/secondary).                     |
+| Document meta in list format.                           | Two-column “information cards” so client & invoice data scan in one glance. |
+| Wide table with eight headings felt heavy.              | Compact, zebra-striped rows; numeric columns right-aligned.                 |
+| Totals mixed inside main table.                         | Totals boxed in `<tfoot>` with bold right alignment.                        |
+| Status line buried.                                     | Bold “Draft / Paid” chip inside details card—always visible.                |
+
+### ❷ How to turn this into PDF
+
+1. **WeasyPrint** (Python)
+
+   ```python
+   from weasyprint import HTML  
+   HTML("addendum.html").write_pdf("addendum.pdf")
+   ```
+2. **wkhtmltopdf** (CLI)
+   `wkhtmltopdf addendum.html addendum.pdf`
+3. Any browser → *Print → Save as PDF* (the CSS uses standard units & looks good at A4).
+
+### ❸ Where to drop your data
+
+* Replace sample rows inside `<tbody>` via Jinja, React, or your preferred template engine.
+* Fill meta fields (`invoice_no`, `period_from`, …) server-side.
+* Attach a QR/Barcode in the header if you use eArchiving—there’s white space next to the logo.
+
+---
+
+#### Need a live CodePen or Python snippet that pulls real data from your DB and exports the PDF automatically?
+
+Let me know your stack and I’ll supply exactly that.
