@@ -119,13 +119,24 @@ document.addEventListener('DOMContentLoaded', function() {
     dateInputs.forEach(input => {
         input.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            if (value.length >= 3) {
-                value = value.substring(0, 2) + '/' + value.substring(2);
+            let formattedValue = '';
+            
+            if (value.length > 0) {
+                formattedValue = value.substring(0, 2);
             }
-            if (value.length >= 6) {
-                value = value.substring(0, 5) + '/' + value.substring(5, 9);
+            if (value.length > 2) {
+                formattedValue += '/' + value.substring(2, 4);
             }
-            e.target.value = value;
+            if (value.length > 4) {
+                formattedValue += '/' + value.substring(4, 8);
+            }
+            
+            e.target.value = formattedValue;
+        });
+        
+        // Select all text when focused for easy editing
+        input.addEventListener('focus', function(e) {
+            e.target.select();
         });
     });
 });
