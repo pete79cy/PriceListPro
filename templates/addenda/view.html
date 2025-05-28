@@ -198,10 +198,9 @@
                                   placeholder="Optional product description..."></textarea>
                     </div>
                     <div class="form-group mb-3">
-                        <label for="sale_date" class="form-label">Sale Date *</label>
-                        <input type="date" class="form-control" id="sale_date" name="sale_date" 
-                               min="{{ addendum.period_from.strftime('%Y-%m-%d') }}" 
-                               max="{{ addendum.period_to.strftime('%Y-%m-%d') }}" required>
+                        <label for="sale_date" class="form-label">Sale Date * <small class="text-muted">(DD/MM/YYYY Athens time)</small></label>
+                        <input type="text" class="form-control" id="sale_date" name="sale_date" 
+                               placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
                     </div>
                     <div class="row">
                         <div class="col-md-4">
@@ -245,17 +244,38 @@
 {% endif %}
 
 <script>
-// Set default sale date to today (if within period)
+// Set default sale date to today (if within period) in DD/MM/YYYY format
 document.addEventListener('DOMContentLoaded', function() {
-    const today = new Date().toISOString().split('T')[0];
-    const periodFrom = '{{ addendum.period_from.strftime('%Y-%m-%d') }}';
-    const periodTo = '{{ addendum.period_to.strftime('%Y-%m-%d') }}';
+    const today = new Date();
+    const periodFrom = new Date('{{ addendum.period_from.strftime('%Y-%m-%d') }}');
+    const periodTo = new Date('{{ addendum.period_to.strftime('%Y-%m-%d') }}');
+    
+    // Format date as DD/MM/YYYY
+    const formatDate = (date) => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
     
     if (today >= periodFrom && today <= periodTo) {
-        document.getElementById('sale_date').value = today;
+        document.getElementById('sale_date').value = formatDate(today);
     } else {
-        document.getElementById('sale_date').value = periodFrom;
+        document.getElementById('sale_date').value = formatDate(periodFrom);
     }
+    
+    // Add input formatting for sale date field
+    const saleDateInput = document.getElementById('sale_date');
+    saleDateInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        if (value.length >= 3) {
+            value = value.substring(0, 2) + '/' + value.substring(2);
+        }
+        if (value.length >= 6) {
+            value = value.substring(0, 5) + '/' + value.substring(5, 9);
+        }
+        e.target.value = value;
+    });
 });
 </script>
 {% endblock %}
