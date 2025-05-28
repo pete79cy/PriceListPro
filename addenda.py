@@ -38,8 +38,9 @@ def new_addendum():
         try:
             customer_id = request.form.get('customer_id')
             invoice_number = request.form.get('invoice_number')
-            period_from = datetime.strptime(request.form.get('period_from'), '%Y-%m-%d').date()
-            period_to = datetime.strptime(request.form.get('period_to'), '%Y-%m-%d').date()
+            # Parse DD/MM/YYYY format
+            period_from = datetime.strptime(request.form.get('period_from'), '%d/%m/%Y').date()
+            period_to = datetime.strptime(request.form.get('period_to'), '%d/%m/%Y').date()
             notes = request.form.get('notes', '')
             
             # Validation
@@ -98,7 +99,7 @@ def add_line(addendum_id):
         product_name = request.form.get('product_name', '').strip()
         product_category = request.form.get('product_category', '').strip()
         product_description = request.form.get('product_description', '').strip()
-        sale_date = datetime.strptime(request.form.get('sale_date'), '%Y-%m-%d').date()
+        sale_date = datetime.strptime(request.form.get('sale_date'), '%d/%m/%Y').date()
         quantity = float(request.form.get('quantity'))
         unit_price = float(request.form.get('unit_price'))
         vat_rate = float(request.form.get('vat_rate', 19.00))

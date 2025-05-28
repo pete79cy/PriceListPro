@@ -31,14 +31,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label for="period_from" class="form-label">Period From *</label>
-                                    <input type="date" class="form-control" id="period_from" name="period_from" required>
+                                    <label for="period_from" class="form-label">Period From * <small class="text-muted">(DD/MM/YYYY Athens time)</small></label>
+                                    <input type="text" class="form-control" id="period_from" name="period_from" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label for="period_to" class="form-label">Period To *</label>
-                                    <input type="date" class="form-control" id="period_to" name="period_to" required>
+                                    <label for="period_to" class="form-label">Period To * <small class="text-muted">(DD/MM/YYYY Athens time)</small></label>
+                                    <input type="text" class="form-control" id="period_to" name="period_to" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
                                 </div>
                             </div>
                         </div>
@@ -97,14 +97,37 @@
 </div>
 
 <script>
-// Set default dates (current month)
+// Set default dates (current month) in DD/MM/YYYY format
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    document.getElementById('period_from').value = firstDay.toISOString().split('T')[0];
-    document.getElementById('period_to').value = lastDay.toISOString().split('T')[0];
+    // Format dates as DD/MM/YYYY
+    const formatDate = (date) => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+    
+    document.getElementById('period_from').value = formatDate(firstDay);
+    document.getElementById('period_to').value = formatDate(lastDay);
+    
+    // Add input formatting for date fields
+    const dateInputs = document.querySelectorAll('#period_from, #period_to');
+    dateInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.length >= 3) {
+                value = value.substring(0, 2) + '/' + value.substring(2);
+            }
+            if (value.length >= 6) {
+                value = value.substring(0, 5) + '/' + value.substring(5, 9);
+            }
+            e.target.value = value;
+        });
+    });
 });
 
 // Validate date range
