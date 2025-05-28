@@ -1,268 +1,128 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Invoice Sales Addendum – {{ addendum.invoice_number }}</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 32px 48px;
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 10px;
-                color: #666;
-            }
-        }
-        
-        /* --- page shell --- */
-        body {
-            font: 14px/1.5 "Inter", Arial, sans-serif;
-            color: #222;
-            margin: 0;
-            background: #fff;
-        }
-        
-        h1, h2, h3 {
-            margin: 0;
-            font-weight: 600;
-        }
-        
-        .grid {
-            display: grid;
-            gap: 12px;
-        }
-        
-        .two {
-            grid-template-columns: 1fr 1fr;
-        }
-        
-        .muted {
-            color: #666;
-        }
-        
-        /* --- header --- */
-        header {
-            border-bottom: 3px solid #005cff;
-            padding-bottom: 12px;
-            margin-bottom: 24px;
-        }
-        
-        header .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #005cff;
-        }
-        
-        /* --- meta boxes --- */
-        .box {
-            background: #f7f9fc;
-            border: 1px solid #e3e8f0;
-            border-radius: 6px;
-            padding: 12px;
-        }
-        
-        .label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .05em;
-            color: #555;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-        
-        .box-content {
-            margin: 0;
-            font-size: 14px;
-        }
-        
-        /* --- table --- */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 12px;
-        }
-        
-        th, td {
-            padding: 8px 6px;
-            text-align: left;
-            border-bottom: 1px solid #e3e8f0;
-        }
-        
-        th {
-            background: #005cff;
-            color: #fff;
-            font-weight: 500;
-            font-size: 13px;
-        }
-        
-        tbody tr:nth-child(even) {
-            background: #fafbfc;
-        }
-        
-        tfoot td {
-            border: none;
-            font-weight: 600;
-        }
-        
-        .number {
-            text-align: right;
-        }
-        
-        .center {
-            text-align: center;
-        }
-        
-        /* --- footer --- */
-        footer {
-            font-size: 11px;
-            color: #666;
-            margin-top: 32px;
-            border-top: 1px solid #e3e8f0;
-            padding-top: 8px;
-        }
-        
-        /* --- totals section --- */
-        .totals-section {
-            page-break-before: avoid;
-            break-inside: avoid;
-        }
-        
-        .totals-table {
-            margin-top: 24px;
-        }
-        
-        /* --- notes section --- */
-        .notes-section {
-            margin-top: 24px;
-        }
-        
-        .notes-content {
-            background: #f7f9fc;
-            border: 1px solid #e3e8f0;
-            border-radius: 6px;
-            padding: 12px;
-            margin-top: 4px;
-        }
-    </style>
+<meta charset="utf-8">
+<title>Invoice Addendum – {{ addendum.invoice_number }}</title>
+<style>
+  @page {
+    margin: 28mm 20mm 25mm 20mm;
+    @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 10px;
+        color: #666;
+    }
+  }
+  body{font:14px/1.45 "Inter",Arial,sans-serif;color:#212121;}
+  h1,h2{margin:0;font-weight:600;}
+  .grid{display:grid;gap:12px}
+  .two{grid-template-columns:1fr 1fr}
+  .box{background:#f5f7fa;border:1px solid #dde3ec;border-radius:6px;padding:10px}
+  .label{font-size:11px;letter-spacing:.04em;font-weight:500;color:#666;text-transform:uppercase;margin-bottom:2px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:6px 5px;border-bottom:1px solid #e0e6ef}
+  th{background:#0b5cff;color:#fff;font-weight:500;}
+  tbody tr:nth-child(even){background:#fafafa}
+  tfoot td{border:none;padding:4px 5px;font-weight:600}
+  .right{text-align:right}
+  thead{display:table-header-group;}
+  .totals{break-before:page;margin-top:10mm;}
+  .totals .box{background:#fffef4;border-color:#fedb6a}
+  .grand{font-size:16px}
+</style>
 </head>
 <body>
 
-<!-- =============== HEADER =============== -->
-<header class="grid two">
-    <div>
-        <div class="logo">Andreas&nbsp;Pakkoutis&nbsp;&&nbsp;Sons&nbsp;Ltd</div>
-        <div class="muted">Griva Digeni 39<br>Avgorou 5510</div>
-        <div class="muted">📞 23922394 &nbsp;|&nbsp; ✉︎ panayiotis@pakkoutis.com</div>
-    </div>
-    <div style="text-align:right">
-        <h1>Invoice&nbsp;Addendum</h1>
-        <h3 class="muted">Παράρτημα Τιμολογίου</h3>
-    </div>
+<header class="grid two" style="border-bottom:3px solid #0b5cff;padding-bottom:10px;margin-bottom:20px">
+  <div>
+    <h2 style="color:#0b5cff;margin-bottom:4px;">Andreas Pakkoutis & Sons Ltd</h2>
+    <div>Griva Digeni&nbsp;39, Avgorou&nbsp;5510</div>
+    <div>☎ 23922394  |  ✉ panayiotis@pakkoutis.com</div>
+  </div>
+  <div style="text-align:right">
+    <h1>Invoice Addendum</h1>
+    <small style="color:#666">Παράρτημα Τιμολογίου</small>
+  </div>
 </header>
 
-<!-- =============== CUSTOMER + DOC DETAILS =============== -->
-<section class="grid two" style="margin-bottom:24px">
-    <div class="box">
-        <div class="label">Customer</div>
-        <div class="box-content">{{ addendum.customer.name }}</div>
-        {% if addendum.customer.email %}
-        <div class="box-content muted">{{ addendum.customer.email }}</div>
-        {% endif %}
-        {% if addendum.customer.phone %}
-        <div class="box-content muted">{{ addendum.customer.phone }}</div>
-        {% endif %}
-        {% if addendum.customer.address %}
-        <div class="box-content muted">{{ addendum.customer.address }}</div>
-        {% endif %}
+<section class="grid two" style="margin-bottom:18px">
+  <div class="box">
+    <div class="label">Customer</div>
+    {{ addendum.customer.name }}
+  </div>
+  <div class="box grid two">
+    <div>
+      <div class="label">Invoice #</div>{{ addendum.invoice_number }}
     </div>
-
-    <div class="box grid two">
-        <div>
-            <div class="label">Invoice No.</div>
-            <div class="box-content">{{ addendum.invoice_number }}</div>
-        </div>
-        <div>
-            <div class="label">Period</div>
-            <div class="box-content">{{ addendum.period_from.strftime('%d %b %Y') }} – {{ addendum.period_to.strftime('%d %b %Y') }}</div>
-        </div>
-        <div>
-            <div class="label">Issue Date</div>
-            <div class="box-content">{{ addendum.created_at.strftime('%d %b %Y') }}</div>
-        </div>
-        <div>
-            <div class="label">Status</div>
-            <div class="box-content">{{ addendum.status.title() }}</div>
-        </div>
+    <div>
+      <div class="label">Period</div>{{ addendum.period_from.strftime('%d/%m/%Y') }} – {{ addendum.period_to.strftime('%d/%m/%Y') }}
     </div>
+    <div>
+      <div class="label">Issue Date</div>{{ addendum.created_at.strftime('%d/%m/%Y') }}
+    </div>
+    <div>
+      <div class="label">Status</div>{{ addendum.status.title() }}
+    </div>
+  </div>
 </section>
-    
-<!-- =============== TRANSACTION TABLE =============== -->
-{% if addendum.lines %}
+
 <table>
-    <thead>
-        <tr>
-            <th style="width:40px">#</th>
-            <th>Date / Ημερ.</th>
-            <th>Product / Προϊόν</th>
-            <th style="text-align:right">Qty</th>
-            <th style="text-align:right">Unit €</th>
-            <th style="text-align:right">VAT %</th>
-            <th style="text-align:right">Line €</th>
-            <th style="text-align:right">VAT €</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for line in addendum.lines %}
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ line.sale_date.strftime('%d %b %Y') }}</td>
-            <td>
-                {{ line.product_name }}
-                {% if line.product_description %}
-                <br><small class="muted">{{ line.product_description }}</small>
-                {% endif %}
-                {% if line.notes %}
-                <br><small class="muted">{{ line.notes }}</small>
-                {% endif %}
-            </td>
-            <td style="text-align:right">{{ line.quantity }}</td>
-            <td style="text-align:right">{{ "%.2f"|format(line.unit_price) }}</td>
-            <td style="text-align:right">{{ line.vat_rate }}</td>
-            <td style="text-align:right">{{ "%.2f"|format(line.get_line_total()) }}</td>
-            <td style="text-align:right">{{ "%.2f"|format(line.get_vat_amount()) }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
+  <thead>
+    <tr>
+      <th style="width:34px">#</th>
+      <th>Date</th>
+      <th>Product / Προϊόν</th>
+      <th class="right">Qty</th>
+      <th class="right">Unit €</th>
+      <th class="right">Line €</th>
+      <th class="right">VAT %</th>
+      <th class="right">VAT €</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for line in addendum.lines %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ line.sale_date.strftime('%d/%m/%Y') }}</td>
+      <td>
+        <strong>{{ line.product_name }}</strong>
+        {% if line.product_category %}
+        <br><small style="color:#666">{{ line.product_category }}</small>
+        {% endif %}
+        {% if line.product_description %}
+        <br><small style="color:#888">{{ line.product_description }}</small>
+        {% endif %}
+      </td>
+      <td class="right">{{ "%.1f"|format(line.quantity) }}</td>
+      <td class="right">€{{ "%.2f"|format(line.unit_price) }}</td>
+      <td class="right">€{{ "%.2f"|format(line.get_line_total()) }}</td>
+      <td class="right">{{ "%.0f"|format(line.vat_rate) }}%</td>
+      <td class="right">€{{ "%.2f"|format(line.get_vat_amount()) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
 
-<!-- =============== TOTALS SECTION (LAST PAGE ONLY) =============== -->
-<div class="totals-section">
-    <table class="totals-table">
-        <tfoot>
-            <tr><td colspan="6"></td><td style="text-align:right; font-weight: 600;">Subtotal</td><td style="text-align:right; font-weight: 600;">{{ "%.2f"|format(addendum.get_total_amount()) }}</td></tr>
-            <tr><td colspan="6"></td><td style="text-align:right; font-weight: 600;">Total VAT</td><td style="text-align:right; font-weight: 600;">{{ "%.2f"|format(addendum.get_total_vat()) }}</td></tr>
-            <tr><td colspan="6"></td><td style="text-align:right; font-weight: 700; font-size: 16px;">Grand Total</td><td style="text-align:right; font-weight: 700; font-size: 16px;">{{ "%.2f"|format(addendum.get_grand_total()) }}</td></tr>
-        </tfoot>
-    </table>
-</div>
-{% else %}
-<div style="text-align: center; padding: 50px; color: #666;">
-    <p>No sales lines found for this period.</p>
-</div>
-{% endif %}
+<section class="totals">
+  <table style="width:40%;margin-left:auto">
+    <tbody>
+      <tr><td class="right">Subtotal</td><td class="right">€{{ "%.2f"|format(addendum.get_total_amount()) }}</td></tr>
+      <tr><td class="right">Total VAT</td><td class="right">€{{ "%.2f"|format(addendum.get_total_vat()) }}</td></tr>
+      <tr class="grand"><td class="right">Grand Total</td><td class="right">€{{ "%.2f"|format(addendum.get_grand_total()) }}</td></tr>
+    </tbody>
+  </table>
+</section>
 
-<!-- =============== NOTES =============== -->
 {% if addendum.notes %}
-<section class="notes-section">
+<section style="margin-top:15mm">
+  <div class="box">
     <div class="label">Notes</div>
-    <div class="notes-content">{{ addendum.notes|nl2br|safe }}</div>
+    {{ addendum.notes|nl2br|safe }}
+  </div>
 </section>
 {% endif %}
 
-<!-- =============== FOOTER =============== -->
-<footer class="grid two">
-    <div>This document is a detailed breakdown of sales for the stated period and must be attached to the corresponding invoice.</div>
-    <div style="text-align:right">Generated on {{ addendum.created_at.strftime('%d %b %Y %H:%M') }} &nbsp;|&nbsp; ID {{ addendum.id }}</div>
+<footer style="font-size:11px;color:#666;margin-top:10mm;border-top:1px solid #e0e6ef;padding-top:6px">
+This addendum summarises sales for the specified period and must accompany invoice {{ addendum.invoice_number }}.
 </footer>
 
 </body>

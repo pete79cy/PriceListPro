@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invoice Addendum – {{ invoice_no }}</title>
+<style>
+  @page {
+    margin: 28mm 20mm 25mm 20mm;
+    @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 10px;
+        color: #666;
+    }
+  }
+  body{font:14px/1.45 "Inter",Arial,sans-serif;color:#212121;}
+  h1,h2{margin:0;font-weight:600;}
+  .grid{display:grid;gap:12px}
+  .two{grid-template-columns:1fr 1fr}
+  .box{background:#f5f7fa;border:1px solid #dde3ec;border-radius:6px;padding:10px}
+  .label{font-size:11px;letter-spacing:.04em;font-weight:500;color:#666;text-transform:uppercase;margin-bottom:2px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:6px 5px;border-bottom:1px solid #e0e6ef}
+  th{background:#0b5cff;color:#fff;font-weight:500;}
+  tbody tr:nth-child(even){background:#fafafa}
+  tfoot td{border:none;padding:4px 5px;font-weight:600}
+  .right{text-align:right}
+  thead{display:table-header-group;}
+  .totals{break-before:page;margin-top:10mm;}
+  .totals .box{background:#fffef4;border-color:#fedb6a}
+  .grand{font-size:16px}
+</style>
+</head>
+<body>
+
+<header class="grid two" style="border-bottom:3px solid #0b5cff;padding-bottom:10px;margin-bottom:20px">
+  <div>
+    <h2 style="color:#0b5cff;margin-bottom:4px;">Andreas Pakkoutis & Sons Ltd</h2>
+    <div>Griva Digeni&nbsp;39, Avgorou&nbsp;5510</div>
+    <div>☎ 23922394  |  ✉ panayiotis@pakkoutis.com</div>
+  </div>
+  <div style="text-align:right">
+    <h1>Invoice Addendum</h1>
+    <small style="color:#666">Παράρτημα Τιμολογίου</small>
+  </div>
+</header>
+
+<section class="grid two" style="margin-bottom:18px">
+  <div class="box">
+    <div class="label">Customer</div>
+    {{ customer_name }}
+  </div>
+  <div class="box grid two">
+    <div>
+      <div class="label">Invoice #</div>{{ invoice_no }}
+    </div>
+    <div>
+      <div class="label">Period</div>{{ period_from }} – {{ period_to }}
+    </div>
+    <div>
+      <div class="label">Issue Date</div>{{ issue_date }}
+    </div>
+    <div>
+      <div class="label">Status</div>{{ status }}
+    </div>
+  </div>
+</section>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:34px">#</th>
+      <th>Date</th>
+      <th>Product / Προϊόν</th>
+      <th class="right">Qty</th>
+      <th class="right">Unit €</th>
+      <th class="right">Line €</th>
+      <th class="right">VAT %</th>
+      <th class="right">VAT €</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- loop rows -->
+  </tbody>
+</table>
+
+<section class="totals">
+  <table style="width:40%;margin-left:auto">
+    <tbody>
+      <tr><td class="right">Subtotal</td><td class="right">{{ subtotal }}</td></tr>
+      <tr><td class="right">Total VAT</td><td class="right">{{ total_vat }}</td></tr>
+      <tr class="grand"><td class="right">Grand Total</td><td class="right">{{ grand_total }}</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer style="font-size:11px;color:#666;margin-top:10mm;border-top:1px solid #e0e6ef;padding-top:6px">
+This addendum summarises sales for the specified period and must accompany invoice {{ invoice_no }}.
+</footer>
+
+</body>
+</html>
