@@ -324,12 +324,17 @@
     </a>
 </div>
 
-<!-- Customer count and title -->
-<div style="display: flex; align-items: center; margin-bottom: 20px;">
-    <h1 style="font-size: 1.5rem; font-weight: 600; color: white; margin: 0;">
-        Customers
-        <span class="customer-count" id="customerCount">{{ customers|length }}</span>
-    </h1>
+<!-- Navigation and title -->
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center;">
+        <a href="{{ url_for('dashboard') }}" style="background-color: rgb(55 65 81); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; margin-right: 15px; display: flex; align-items: center; gap: 8px; transition: background-color 0.2s ease;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <h1 style="font-size: 1.5rem; font-weight: 600; color: white; margin: 0;">
+            Customers
+            <span class="customer-count" id="customerCount">{{ customers|length }}</span>
+        </h1>
+    </div>
 </div>
 
 <!-- Enhanced Customer Table -->
