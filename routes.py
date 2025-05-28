@@ -961,7 +961,7 @@ def register_routes(app):
             flash(f'Error deleting customer: {str(e)}', 'danger')
         
         return redirect(url_for('customers'))
-                               
+    
     @app.route('/customers/<int:customer_id>/add_contact', methods=['POST'])
     @login_required
     def add_customer_contact(customer_id):
@@ -1023,7 +1023,7 @@ def register_routes(app):
     
     @app.route('/customers/<int:customer_id>/delete', methods=['POST'])
     @login_required
-    def delete_customer(customer_id):
+    def delete_customer_new(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         db.session.delete(customer)
         db.session.commit()
