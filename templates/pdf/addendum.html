@@ -206,12 +206,12 @@
                 <td class="center">{{ loop.index }}</td>
                 <td class="center">{{ line.sale_date.strftime('%d/%m/%Y') }}</td>
                 <td>
-                    <strong>{{ line.product.name }}</strong>
-                    {% if line.product.scientific_name %}
-                    <br><em>{{ line.product.scientific_name }}</em>
+                    <strong>{{ line.product_name }}</strong>
+                    {% if line.product_category %}
+                    <br><em>{{ line.product_category }}</em>
                     {% endif %}
-                    {% if line.product.pot %}
-                    <br>Pot: {{ line.product.pot }}
+                    {% if line.product_description %}
+                    <br>{{ line.product_description }}
                     {% endif %}
                     {% if line.notes %}
                     <br><small>{{ line.notes }}</small>
