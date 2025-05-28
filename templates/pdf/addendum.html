@@ -121,6 +121,16 @@
             padding-top: 8px;
         }
         
+        /* --- totals section --- */
+        .totals-section {
+            page-break-before: avoid;
+            break-inside: avoid;
+        }
+        
+        .totals-table {
+            margin-top: 24px;
+        }
+        
         /* --- notes section --- */
         .notes-section {
             margin-top: 24px;
@@ -223,12 +233,18 @@
         </tr>
         {% endfor %}
     </tbody>
-    <tfoot>
-        <tr><td colspan="6"></td><td style="text-align:right">Subtotal</td><td style="text-align:right">{{ "%.2f"|format(addendum.get_total_amount()) }}</td></tr>
-        <tr><td colspan="6"></td><td style="text-align:right">Total VAT</td><td style="text-align:right">{{ "%.2f"|format(addendum.get_total_vat()) }}</td></tr>
-        <tr><td colspan="6"></td><td style="text-align:right">Grand Total</td><td style="text-align:right">{{ "%.2f"|format(addendum.get_grand_total()) }}</td></tr>
-    </tfoot>
 </table>
+
+<!-- =============== TOTALS SECTION (LAST PAGE ONLY) =============== -->
+<div class="totals-section">
+    <table class="totals-table">
+        <tfoot>
+            <tr><td colspan="6"></td><td style="text-align:right; font-weight: 600;">Subtotal</td><td style="text-align:right; font-weight: 600;">{{ "%.2f"|format(addendum.get_total_amount()) }}</td></tr>
+            <tr><td colspan="6"></td><td style="text-align:right; font-weight: 600;">Total VAT</td><td style="text-align:right; font-weight: 600;">{{ "%.2f"|format(addendum.get_total_vat()) }}</td></tr>
+            <tr><td colspan="6"></td><td style="text-align:right; font-weight: 700; font-size: 16px;">Grand Total</td><td style="text-align:right; font-weight: 700; font-size: 16px;">{{ "%.2f"|format(addendum.get_grand_total()) }}</td></tr>
+        </tfoot>
+    </table>
+</div>
 {% else %}
 <div style="text-align: center; padding: 50px; color: #666;">
     <p>No sales lines found for this period.</p>
