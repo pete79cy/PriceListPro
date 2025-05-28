@@ -25,9 +25,13 @@
   tfoot td{border:none;padding:4px 5px;font-weight:600}
   .right{text-align:right}
   thead{display:table-header-group;}
-  .totals{break-before:page;margin-top:10mm;}
+  .totals{
+    break-before:page;
+    page-break-before:always;
+    margin-top:10mm;
+  }
   .totals .box{background:#fffef4;border-color:#fedb6a}
-  .grand{font-size:16px}
+  .grand td:last-child{font-size:16px;font-weight:700;}
 </style>
 </head>
 <body>
@@ -103,11 +107,20 @@
 </table>
 
 <section class="totals">
-  <table style="width:40%;margin-left:auto">
+  <table style="width:40%;margin-left:auto;border-collapse:collapse;font-size:13px">
     <tbody>
-      <tr><td class="right">Subtotal</td><td class="right">€{{ "%.2f"|format(addendum.get_total_amount()) }}</td></tr>
-      <tr><td class="right">Total VAT</td><td class="right">€{{ "%.2f"|format(addendum.get_total_vat()) }}</td></tr>
-      <tr class="grand"><td class="right">Grand Total</td><td class="right">€{{ "%.2f"|format(addendum.get_grand_total()) }}</td></tr>
+      <tr>
+        <td class="right">Subtotal</td>
+        <td class="right">€{{ "%.2f"|format(addendum.get_total_amount()) }}</td>
+      </tr>
+      <tr>
+        <td class="right">Total&nbsp;VAT</td>
+        <td class="right">€{{ "%.2f"|format(addendum.get_total_vat()) }}</td>
+      </tr>
+      <tr class="grand">
+        <td class="right">Grand&nbsp;Total</td>
+        <td class="right">€{{ "%.2f"|format(addendum.get_grand_total()) }}</td>
+      </tr>
     </tbody>
   </table>
 </section>
