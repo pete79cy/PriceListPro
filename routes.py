@@ -923,35 +923,44 @@ def register_routes(app):
                              customers=customers_list, 
                              customer_categories=customer_categories)
     
-    @app.route('/customers/<int:customer_id>', methods=['GET'])
+    @app.route('/customer/<int:customer_id>', methods=['GET'])
     @login_required
-    def customer_detail(customer_id):
+    def view_customer(customer_id):
         """Show customer details including stats and contact history"""
         customer = Customer.query.get_or_404(customer_id)
         
-        # Get customer statistics
-        from utils.customer_stats import get_customer_stats
-        stats = get_customer_stats(customer_id)
+        # Get customer contact history
+        contacts = CustomerContact.query.filter_by(customer_id=customer_id).order_by(CustomerContact.contact_date.desc()).all()
         
-        # Get customer contacts
-        contacts = customer.contacts
-        
-        # Get price lists for this customer
-        price_lists = PriceList.query.filter_by(customer_id=customer_id).all()
-        
-        # Get invoices for this customer
-        invoices = Invoice.query.filter_by(customer_id=customer_id).all()
-        
-        # Get all available categories for the contact form
-        categories = CustomerCategory.query.all()
+        # Get customer categories for the edit modal
+        customer_categories = CustomerCategory.query.all()
         
         return render_template('customer_detail.html', 
-                               customer=customer, 
-                               stats=stats, 
-                               contacts=contacts,
-                               price_lists=price_lists,
-                               invoices=invoices,
-                               categories=categories)
+                             customer=customer, 
+                             contacts=contacts,
+                             customer_categories=customer_categories)
+    
+    @app.route('/customer/delete/<int:customer_id>', methods=['POST'])
+    @login_required
+    def delete_customer(customer_id):
+        """Delete a customer and all associated data"""
+        try:
+            customer = Customer.query.get_or_404(customer_id)
+            customer_name = customer.name
+            
+            # Delete associated data first
+            CustomerContact.query.filter_by(customer_id=customer_id).delete()
+            
+            # Delete the customer
+            db.session.delete(customer)
+            db.session.commit()
+            
+            flash(f'Customer "{customer_name}" has been deleted successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting customer: {str(e)}', 'danger')
+        
+        return redirect(url_for('customers'))
                                
     @app.route('/customers/<int:customer_id>/add_contact', methods=['POST'])
     @login_required
