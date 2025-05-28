@@ -120,9 +120,12 @@
                         <tr>
                             <td>{{ line.sale_date.strftime('%Y-%m-%d') }}</td>
                             <td>
-                                <strong>{{ line.product.name }}</strong>
-                                {% if line.product.scientific_name %}
-                                <br><small class="text-muted">{{ line.product.scientific_name }}</small>
+                                <strong>{{ line.product_name }}</strong>
+                                {% if line.product_category %}
+                                <br><small class="text-muted">{{ line.product_category }}</small>
+                                {% endif %}
+                                {% if line.product_description %}
+                                <br><small class="text-muted">{{ line.product_description }}</small>
                                 {% endif %}
                             </td>
                             <td>{{ line.quantity }}</td>
@@ -176,25 +179,29 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="product_id" class="form-label">Product *</label>
-                                <select class="form-control" id="product_id" name="product_id" required>
-                                    <option value="">Select a product...</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.id }}">
-                                        {{ product.name }}{% if product.scientific_name %} ({{ product.scientific_name }}){% endif %}
-                                    </option>
-                                    {% endfor %}
-                                </select>
+                                <label for="product_name" class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" id="product_name" name="product_name" 
+                                       placeholder="Enter product name..." required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label for="sale_date" class="form-label">Sale Date *</label>
-                                <input type="date" class="form-control" id="sale_date" name="sale_date" 
-                                       min="{{ addendum.period_from.strftime('%Y-%m-%d') }}" 
-                                       max="{{ addendum.period_to.strftime('%Y-%m-%d') }}" required>
+                                <label for="product_category" class="form-label">Category</label>
+                                <input type="text" class="form-control" id="product_category" name="product_category" 
+                                       placeholder="e.g., Plants, Pots, Tools...">
                             </div>
                         </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="product_description" class="form-label">Product Description</label>
+                        <textarea class="form-control" id="product_description" name="product_description" rows="2" 
+                                  placeholder="Optional product description..."></textarea>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="sale_date" class="form-label">Sale Date *</label>
+                        <input type="date" class="form-control" id="sale_date" name="sale_date" 
+                               min="{{ addendum.period_from.strftime('%Y-%m-%d') }}" 
+                               max="{{ addendum.period_to.strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="row">
                         <div class="col-md-4">
