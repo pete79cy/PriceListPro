@@ -34,8 +34,8 @@
                             </td>
                             <td>{{ addendum.customer.name }}</td>
                             <td>
-                                {{ addendum.period_from.strftime('%Y-%m-%d') }} - 
-                                {{ addendum.period_to.strftime('%Y-%m-%d') }}
+                                {{ addendum.period_from.strftime('%d/%m/%Y') }} - 
+                                {{ addendum.period_to.strftime('%d/%m/%Y') }}
                             </td>
                             <td>
                                 <span class="badge {% if addendum.status == 'draft' %}badge-warning{% else %}badge-success{% endif %}">
