@@ -32,13 +32,17 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="period_from" class="form-label">Period From * <small class="text-muted">(DD/MM/YYYY Athens time)</small></label>
-                                    <input type="text" class="form-control" id="period_from" name="period_from" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
+                                    <input type="text" class="form-control" id="period_from" name="period_from" 
+                                           placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" 
+                                           maxlength="10" autocomplete="off" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="period_to" class="form-label">Period To * <small class="text-muted">(DD/MM/YYYY Athens time)</small></label>
-                                    <input type="text" class="form-control" id="period_to" name="period_to" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
+                                    <input type="text" class="form-control" id="period_to" name="period_to" 
+                                           placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" 
+                                           maxlength="10" autocomplete="off" required>
                                 </div>
                             </div>
                         </div>
@@ -111,12 +115,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${day}/${month}/${year}`;
     };
     
-    document.getElementById('period_from').value = formatDate(firstDay);
-    document.getElementById('period_to').value = formatDate(lastDay);
+    const periodFromInput = document.getElementById('period_from');
+    const periodToInput = document.getElementById('period_to');
     
-    // Add input formatting for date fields
+    // Set initial values
+    periodFromInput.value = formatDate(firstDay);
+    periodToInput.value = formatDate(lastDay);
+    
+    // Add input formatting for date fields with improved editing
     const dateInputs = document.querySelectorAll('#period_from, #period_to');
     dateInputs.forEach(input => {
+        // Make sure the input is fully editable
+        input.removeAttribute('readonly');
+        input.style.cursor = 'text';
+        
+        // Handle keyboard input
+        input.addEventListener('keydown', function(e) {
+            // Allow backspace, delete, tab, escape, enter
+            if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true)) {
+                return;
+            }
+            // Ensure that it is a number and stop the keypress
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+        
         input.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
             let formattedValue = '';
@@ -136,20 +165,87 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Select all text when focused for easy editing
         input.addEventListener('focus', function(e) {
-            e.target.select();
+            setTimeout(() => e.target.select(), 0);
+        });
+        
+        // Clear field on double-click for easy reset
+        input.addEventListener('dblclick', function(e) {
+            e.target.value = '';
+            e.target.focus();
         });
     });
+    
+    // Add helper buttons for common date ranges
+    const fromGroup = periodFromInput.parentElement;
+    const toGroup = periodToInput.parentElement;
+    
+    // Add quick date buttons
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'mt-2';
+    buttonContainer.innerHTML = `
+        <small class="text-muted">Quick dates:</small>
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="setCurrentMonth()">This Month</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="setLastMonth()">Last Month</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="clearDates()">Clear</button>
+    `;
+    toGroup.appendChild(buttonContainer);
 });
 
-// Validate date range
-document.getElementById('period_to').addEventListener('change', function() {
-    const fromDate = document.getElementById('period_from').value;
-    const toDate = this.value;
+// Helper functions for quick date setting
+function setCurrentMonth() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
-        alert('End date cannot be before start date');
-        this.value = '';
-    }
+    const formatDate = (date) => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+    
+    document.getElementById('period_from').value = formatDate(firstDay);
+    document.getElementById('period_to').value = formatDate(lastDay);
+}
+
+function setLastMonth() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    const formatDate = (date) => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+    
+    document.getElementById('period_from').value = formatDate(firstDay);
+    document.getElementById('period_to').value = formatDate(lastDay);
+}
+
+function clearDates() {
+    document.getElementById('period_from').value = '';
+    document.getElementById('period_to').value = '';
+    document.getElementById('period_from').focus();
+}
+
+// Validate date range
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('period_to').addEventListener('change', function() {
+        const fromDate = document.getElementById('period_from').value;
+        const toDate = this.value;
+        
+        if (fromDate && toDate) {
+            const from = new Date(fromDate.split('/').reverse().join('-'));
+            const to = new Date(toDate.split('/').reverse().join('-'));
+            
+            if (from > to) {
+                alert('End date cannot be before start date');
+                this.value = '';
+            }
+        }
+    });
 });
 </script>
 {% endblock %}
