@@ -1,0 +1,79 @@
+Below is the **smallest possible patch** to your current *addendum.html* so that
+
+* **Subtotal / Total VAT / Grand Total appear once, only on the very last page**
+* the running table header still repeats correctly on every page
+
+---
+
+### 1  — Remove the implicit table-footer that WeasyPrint is repeating
+
+Your PDF shows the totals after every page because somewhere an earlier version of the template still keeps a row like
+
+```html
+<tr><td colspan="…">Subtotal …</td></tr>
+```
+
+inside the same `<table>` as your line items.
+When WeasyPrint sees a `<tfoot>` **or** a row whose cells have `display:table-footer-group`
+it **duplicates that block on every page**.
+
+**Delete** any such rows (or the whole `<tfoot>` section) from the line-items table.
+
+---
+
+### 2  — Keep the totals in their own block and force it onto the last page
+
+Below is a drop-in replacement for the bottom part of the template you attached .
+Copy it in **exactly as shown**:
+
+```html
+</table>   <!--  ←—— end of the line–items table  -->
+
+<!-- ░░  NEW: totals pulled completely outside the table  ░░ -->
+<section class="totals">
+  <table style="width:40%;margin-left:auto;border-collapse:collapse;font-size:13px">
+    <tbody>
+      <tr>
+        <td class="right">Subtotal</td>
+        <td class="right">€{{ "%.2f"|format(addendum.get_total_amount()) }}</td>
+      </tr>
+      <tr>
+        <td class="right">Total&nbsp;VAT</td>
+        <td class="right">€{{ "%.2f"|format(addendum.get_total_vat()) }}</td>
+      </tr>
+      <tr class="grand">
+        <td class="right">Grand&nbsp;Total</td>
+        <td class="right">€{{ "%.2f"|format(addendum.get_grand_total()) }}</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+```
+
+### 3  — CSS that makes the block *stick* to the final page
+
+Keep (or add) these rules in the `<style>` part of your template:
+
+```css
+thead { display: table-header-group; }   /* keeps the header repeating */
+
+.totals{
+  break-before: page;            /* ← forces a fresh page */
+  page-break-before: always;     /* cross-browser fallback */
+  margin-top: 10mm;              /* a little breathing room */
+}
+
+.grand td:last-child{font-size:16px;font-weight:700;}  /* emphasise grand total */
+```
+
+*(You already have most of this; the key point is that the `.totals` block is now **outside** the table, so WeasyPrint will render the lengthy table first—spilling across pages—then start a final page and print the totals block once.)*
+
+---
+
+### 4  — Quick sanity test
+
+1. **Generate a PDF with 3-4 pages of line items.**
+2. Scroll each page: pages 1…N-1 show only rows; **page N** shows the totals block.
+3. Page counter in the footer (“Page x of y”) still works.
+
+If you still see duplicates after this change, clear any template cache, re-build the PDF, and confirm no hidden `<tfoot>` or `display:table-footer-group` styles remain. Once those are gone the totals will stay glued to the last page only.
