@@ -52,8 +52,8 @@
                             <p><strong>Period:</strong> {{ addendum.period_from.strftime('%d/%m/%Y') }} to {{ addendum.period_to.strftime('%d/%m/%Y') }}</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Created:</strong> {{ addendum.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                            <p><strong>Last Updated:</strong> {{ addendum.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Created:</strong> {{ addendum.created_at.strftime('%d/%m/%Y %H:%M') }} (Athens)</p>
+                            <p><strong>Last Updated:</strong> {{ addendum.updated_at.strftime('%d/%m/%Y %H:%M') }} (Athens)</p>
                             {% if addendum.notes %}
                             <p><strong>Notes:</strong> {{ addendum.notes }}</p>
                             {% endif %}
