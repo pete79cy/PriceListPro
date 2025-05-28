@@ -882,29 +882,46 @@ def register_routes(app):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers_list = Customer.query.all()
                 customer_categories = CustomerCategory.query.all()
-                return render_template('customers.html', customers=customers_list, customer_categories=customer_categories)
+                return render_template('customers_enhanced.html', 
+                                     customers=customers_list, 
+                                     customer_categories=customer_categories)
             
-            if customer_id:  # Update existing
-                customer = Customer.query.get_or_404(customer_id)
-                customer.name = name
-                customer.email = email
-                customer.phone = phone
-                customer.address = address
-                if category_id:
-                    customer.category_id = category_id
-                flash(f'Customer {name} updated successfully!', 'success')
-            else:  # Create new
-                customer = Customer(name=name, email=email, phone=phone, address=address, category_id=category_id if category_id else None)
-                db.session.add(customer)
-                flash(f'Customer {name} added successfully!', 'success')
-            
-            db.session.commit()
-            return redirect(url_for('customers'))
+            try:
+                if customer_id:
+                    # Update existing customer
+                    customer = Customer.query.get_or_404(customer_id)
+                    customer.name = sanitize_input(name)
+                    customer.email = sanitize_input(email) if email else None
+                    customer.phone = sanitize_input(phone) if phone else None
+                    customer.address = sanitize_input(address) if address else None
+                    customer.category_id = int(category_id) if category_id else None
+                    customer.updated_at = datetime.utcnow()
+                    flash('Customer updated successfully!', 'success')
+                else:
+                    # Create new customer
+                    customer = Customer(
+                        name=sanitize_input(name),
+                        email=sanitize_input(email) if email else None,
+                        phone=sanitize_input(phone) if phone else None,
+                        address=sanitize_input(address) if address else None,
+                        category_id=int(category_id) if category_id else None
+                    )
+                    db.session.add(customer)
+                    flash('Customer added successfully!', 'success')
+                
+                db.session.commit()
+                return redirect(url_for('customers'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error saving customer: {str(e)}', 'danger')
         
-        # GET request - show customers
+        # GET request - display customers
         customers_list = Customer.query.all()
         customer_categories = CustomerCategory.query.all()
-        return render_template('customers.html', customers=customers_list, customer_categories=customer_categories)
+        return render_template('customers_enhanced.html', 
+                             customers=customers_list, 
+                             customer_categories=customer_categories)
     
     @app.route('/customers/<int:customer_id>', methods=['GET'])
     @login_required
