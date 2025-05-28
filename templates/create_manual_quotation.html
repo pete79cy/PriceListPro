@@ -1,0 +1,173 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Manual Quotation{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1>Create New Quotation</h1>
+            <p class="text-muted">Create a quotation manually without uploading any files</p>
+        </div>
+        <div class="col-lg-4 text-end">
+            <a href="{{ url_for('upload_quotation') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Create Options
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Manual Quotation Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_manual_quotation') }}">
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label">
+                                <i class="fas fa-user me-1"></i>
+                                Select Customer *
+                            </label>
+                            <select class="form-select" id="customer_id" name="customer_id" required>
+                                <option value="" selected disabled>Choose a customer...</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Don't see your customer? <a href="{{ url_for('add_customer') }}" target="_blank">Add a new customer</a> first.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="currency" class="form-label">
+                                <i class="fas fa-euro-sign me-1"></i>
+                                Currency
+                            </label>
+                            <select class="form-select" id="currency" name="currency">
+                                <option value="€" selected>Euro (€)</option>
+                                <option value="$">US Dollar ($)</option>
+                                <option value="£">British Pound (£)</option>
+                                <option value="¥">Japanese Yen (¥)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">
+                                <i class="fas fa-sticky-note me-1"></i>
+                                Initial Notes
+                            </label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4" 
+                                placeholder="Add any initial notes or special instructions for this quotation..."></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                You can add more details and items after creating the quotation.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                Create Quotation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle me-1"></i>
+                        What happens next?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">1. Create Quotation</h6>
+                                <p class="text-muted small mb-0">A new quotation will be created with a unique number</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">2. Add Items</h6>
+                                <p class="text-muted small mb-0">You'll be taken to the quotation page where you can add products and services</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">3. Review & Send</h6>
+                                <p class="text-muted small mb-0">Review all details and generate a PDF to send to your customer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Quick Tip
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-0">
+                        <strong>Manual quotations</strong> give you complete control over every detail. 
+                        Perfect for custom quotes or when you want to start from scratch without any file uploads.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 20px;
+    height: 100%;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -16px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    margin-left: 8px;
+}
+</style>
+{% endblock %}

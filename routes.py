@@ -1864,6 +1864,53 @@ def register_routes(app):
         customers = Customer.query.order_by(Customer.name).all()
         return render_template('upload_quotation.html', customers=customers)
     
+    @app.route('/create-manual-quotation', methods=['GET', 'POST'])
+    @login_required
+    def create_manual_quotation():
+        """Create a new quotation manually without file upload"""
+        if request.method == 'GET':
+            customers = Customer.query.order_by(Customer.name).all()
+            return render_template('create_manual_quotation.html', customers=customers)
+        
+        # Handle POST request - create the quotation
+        customer_id = request.form.get('customer_id')
+        notes = request.form.get('notes', '')
+        currency = request.form.get('currency', '€')
+        
+        if not customer_id:
+            flash('Please select a customer', 'danger')
+            customers = Customer.query.order_by(Customer.name).all()
+            return render_template('create_manual_quotation.html', customers=customers)
+        
+        try:
+            # Generate quotation number
+            from blueprints.routes_api import generate_quotation_number
+            quotation_number = generate_quotation_number()
+            
+            # Create new quotation
+            quotation = Quotation(
+                customer_id=customer_id,
+                quotation_number=quotation_number,
+                quotation_date=datetime.now().date(),
+                currency=currency,
+                notes=notes,
+                total_amount=0,
+                status=QuotationStatus.DRAFT
+            )
+            
+            db.session.add(quotation)
+            db.session.commit()
+            
+            flash(f'Quotation {quotation_number} created successfully!', 'success')
+            return redirect(url_for('view_quotation', quotation_id=quotation.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating manual quotation: {str(e)}")
+            flash(f'Error creating quotation: {str(e)}', 'danger')
+            customers = Customer.query.order_by(Customer.name).all()
+            return render_template('create_manual_quotation.html', customers=customers)
+    
     @app.route('/upload-quotation-file', methods=['POST'])
     @login_required
     def upload_quotation_file():
