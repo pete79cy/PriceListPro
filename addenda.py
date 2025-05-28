@@ -255,7 +255,7 @@ def api_get_addendum(addendum_id):
         'grand_total': addendum.get_grand_total(),
         'lines': [{
             'id': str(line.id),
-            'product_name': line.product.name,
+            'product_name': line.product_name,
             'sale_date': line.sale_date.isoformat(),
             'quantity': float(line.quantity),
             'unit_price': float(line.unit_price),
