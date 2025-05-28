@@ -81,10 +81,7 @@ def view_addendum(addendum_id):
     """View a specific invoice addendum"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
     
-    # Get products for the add line form
-    products = Product.query.order_by(Product.name).all()
-    
-    return render_template('addenda/view.html', addendum=addendum, products=products)
+    return render_template('addenda/view.html', addendum=addendum)
 
 @addenda_bp.route('/<uuid:addendum_id>/lines', methods=['POST'])
 @login_required
@@ -98,7 +95,9 @@ def add_line(addendum_id):
         return redirect(url_for('addenda.view_addendum', addendum_id=addendum_id))
     
     try:
-        product_id = request.form.get('product_id')
+        product_name = request.form.get('product_name', '').strip()
+        product_category = request.form.get('product_category', '').strip()
+        product_description = request.form.get('product_description', '').strip()
         sale_date = datetime.strptime(request.form.get('sale_date'), '%Y-%m-%d').date()
         quantity = float(request.form.get('quantity'))
         unit_price = float(request.form.get('unit_price'))
@@ -106,7 +105,7 @@ def add_line(addendum_id):
         notes = request.form.get('notes', '')
         
         # Validation
-        if not product_id or not sale_date or quantity <= 0 or unit_price <= 0:
+        if not product_name or not sale_date or quantity <= 0 or unit_price <= 0:
             flash('Please fill in all required fields with valid values', 'danger')
             return redirect(url_for('addenda.view_addendum', addendum_id=addendum_id))
         
@@ -118,7 +117,9 @@ def add_line(addendum_id):
         # Create new line
         line = InvoiceAddendumLine(
             addendum_id=addendum_id,
-            product_id=product_id,
+            product_name=product_name,
+            product_category=product_category,
+            product_description=product_description,
             sale_date=sale_date,
             quantity=quantity,
             unit_price=unit_price,

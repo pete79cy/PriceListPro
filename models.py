@@ -722,7 +722,10 @@ class InvoiceAddendumLine(db.Model):
     
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     addendum_id = db.Column(UUID(as_uuid=True), db.ForeignKey("invoice_addenda.id"), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    # Independent product fields - not connected to main product database
+    product_name = db.Column(db.String(200), nullable=False)
+    product_category = db.Column(db.String(100), nullable=True)
+    product_description = db.Column(db.Text, nullable=True)
     sale_date = db.Column(db.Date, nullable=False)
     quantity = db.Column(db.Numeric(10, 2), nullable=False)
     unit_price = db.Column(db.Numeric(10, 2), nullable=False)
@@ -732,10 +735,9 @@ class InvoiceAddendumLine(db.Model):
     
     # Relationships
     addendum = db.relationship("InvoiceAddendum", back_populates="lines")
-    product = db.relationship("Product", backref="addendum_lines", lazy=True)
     
     def __repr__(self):
-        return f'<InvoiceAddendumLine {self.product.name if self.product else "No Product"} - {self.quantity}>'
+        return f'<InvoiceAddendumLine {self.product_name} - {self.quantity}>'
     
     def get_line_total(self):
         """Calculate total for this line (quantity * unit_price)"""
