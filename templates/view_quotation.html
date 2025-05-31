@@ -31,6 +31,34 @@
                 <i class="fas fa-file-excel me-1"></i> Excel
             </button>
 
+            {% if quotation.status in ['COMPLETED', 'ACCEPTED'] %}
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-exchange-alt"></i> Adjustments
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.new_quotation_adjustment', quotation_id=quotation.id) }}">
+                            <i class="fas fa-plus"></i> Create Adjustment
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.view_order_adjustments', order_id=quotation.id) }}">
+                            <i class="fas fa-list"></i> View Adjustments
+                        </a>
+                    </li>
+                    {% if quotation.delivery_adjustments %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.view_final_invoice', order_id=quotation.id) }}">
+                            <i class="fas fa-file-invoice"></i> Final Invoice
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="moreActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-ellipsis-v"></i>
