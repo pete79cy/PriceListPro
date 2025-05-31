@@ -9,6 +9,11 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="fas fa-file-invoice"></i> Final Invoice - {{ final_invoice.invoice_number }}</h1>
                 <div>
+                    {% if final_invoice %}
+                    <a href="{{ url_for('delivery_adjustments.print_final_invoice', invoice_id=final_invoice.id) }}" class="btn btn-success me-2">
+                        <i class="fas fa-print"></i> Print Final Invoice
+                    </a>
+                    {% endif %}
                     <a href="{{ url_for('delivery_adjustments.view_quotation_adjustments', quotation_id=quotation.id) }}" class="btn btn-outline-secondary me-2">
                         <i class="fas fa-arrow-left"></i> Back to Adjustments
                     </a>
