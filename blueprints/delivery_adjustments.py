@@ -315,7 +315,8 @@ def view_final_invoice_quotation(quotation_id):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
         
         return render_template('delivery_adjustments/create_final_invoice_quotation.html', 
-                             quotation=quotation, confirmed_adjustments=confirmed_adjustments)
+                             quotation=quotation, confirmed_adjustments=confirmed_adjustments,
+                             today=datetime.now().strftime('%Y-%m-%d'))
     
     return render_template('delivery_adjustments/final_invoice_quotation.html', 
                          quotation=quotation, final_invoice=final_invoice)
