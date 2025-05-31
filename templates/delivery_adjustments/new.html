@@ -8,38 +8,52 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="fas fa-plus-circle"></i> Create Delivery Adjustment</h1>
-                <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-outline-secondary">
+                {% if document_type == 'order' %}
+                <a href="{{ url_for('orders.view_order', order_id=document.id) }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Order
                 </a>
+                {% else %}
+                <a href="{{ url_for('quotation.view_quotation', quotation_id=document.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Quotation
+                </a>
+                {% endif %}
             </div>
 
-            <!-- Order Info -->
+            <!-- Document Info -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Order Information</h5>
+                    <h5 class="mb-0">{{ document_type|title }} Information</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
-                            <strong>Order Number:</strong><br>
-                            {{ order.order_number }}
+                            <strong>{{ document_type|title }} Number:</strong><br>
+                            {% if document_type == 'order' %}
+                                {{ document.order_number }}
+                            {% else %}
+                                {{ document.quotation_number }}
+                            {% endif %}
                         </div>
                         <div class="col-md-3">
                             <strong>Customer:</strong><br>
-                            {{ order.customer.name }}
+                            {{ document.customer.name }}
                         </div>
                         <div class="col-md-3">
-                            <strong>Delivery Date:</strong><br>
-                            {% if order.delivery_date %}
-                                {{ order.delivery_date.strftime('%d/%m/%Y') }}
+                            <strong>{% if document_type == 'order' %}Delivery Date{% else %}Quotation Date{% endif %}:</strong><br>
+                            {% if document_type == 'order' %}
+                                {% if document.delivery_date %}
+                                    {{ document.delivery_date.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    Not set
+                                {% endif %}
                             {% else %}
-                                Not set
+                                {{ document.quotation_date.strftime('%d/%m/%Y') }}
                             {% endif %}
                         </div>
                         <div class="col-md-3">
                             <strong>Status:</strong><br>
-                            <span class="badge" style="background-color: {{ order.get_status_color() }};">
-                                {{ order.get_status_label() }}
+                            <span class="badge" style="background-color: {{ document.get_status_color() }};">
+                                {{ document.get_status_label() }}
                             </span>
                         </div>
                     </div>
@@ -52,7 +66,11 @@
                     <h5 class="mb-0">Adjustment Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('delivery_adjustments.create_adjustment', order_id=order.id) }}">
+                    {% if document_type == 'order' %}
+                    <form method="POST" action="{{ url_for('delivery_adjustments.create_order_adjustment', order_id=document.id) }}">
+                    {% else %}
+                    <form method="POST" action="{{ url_for('delivery_adjustments.create_quotation_adjustment', quotation_id=document.id) }}">
+                    {% endif %}
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
