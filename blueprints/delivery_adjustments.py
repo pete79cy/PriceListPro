@@ -30,6 +30,13 @@ def view_order_adjustments(order_id):
     order = Order.query.get_or_404(order_id)
     return render_template('delivery_adjustments/order_adjustments.html', order=order)
 
+@delivery_adjustments.route('/quotation/<int:quotation_id>')
+@login_required
+def view_quotation_adjustments(quotation_id):
+    """View all adjustments for a specific quotation"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    return render_template('delivery_adjustments/quotation_adjustments.html', quotation=quotation)
+
 @delivery_adjustments.route('/new/order/<int:order_id>')
 @login_required
 def new_order_adjustment(order_id):
