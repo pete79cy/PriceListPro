@@ -320,6 +320,59 @@ def view_final_invoice_quotation(quotation_id):
     return render_template('delivery_adjustments/final_invoice_quotation.html', 
                          quotation=quotation, final_invoice=final_invoice)
 
+@delivery_adjustments.route('/create-final-invoice/quotation/<int:quotation_id>', methods=['POST'])
+@login_required
+def create_final_invoice_quotation(quotation_id):
+    """Create final proforma invoice for quotation"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    # Check if final invoice already exists
+    existing_invoice = FinalProformaInvoice.query.filter_by(quotation_id=quotation_id).first()
+    if existing_invoice:
+        flash('Final proforma invoice already exists for this quotation', 'warning')
+        return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=quotation_id))
+    
+    try:
+        # Generate invoice number
+        invoice_number = FinalProformaInvoice.generate_invoice_number()
+        
+        # Get form data
+        notes = request.form.get('notes', '').strip()
+        invoice_date = request.form.get('invoice_date')
+        
+        if invoice_date:
+            invoice_date = datetime.strptime(invoice_date, '%Y-%m-%d').date()
+        else:
+            invoice_date = datetime.now().date()
+        
+        # Calculate totals
+        original_total = sum(item.selling_price * item.quantity for item in quotation.items) if quotation.items else 0.0
+        adjustments_total = sum(adj.signed_total_value for adj in quotation.delivery_adjustments if adj.status == 'confirmed')
+        final_total = original_total + adjustments_total
+        
+        # Create final invoice
+        final_invoice = FinalProformaInvoice(
+            quotation_id=quotation_id,
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            original_total=original_total,
+            adjustments_total=adjustments_total,
+            final_total=final_total,
+            notes=notes
+        )
+        
+        db.session.add(final_invoice)
+        db.session.commit()
+        
+        flash(f'Final proforma invoice {invoice_number} created successfully', 'success')
+        return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=quotation_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating final invoice for quotation: {e}")
+        flash('Error creating final invoice', 'danger')
+        return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=quotation_id))
+
 @delivery_adjustments.route('/create-final-invoice/<int:order_id>', methods=['POST'])
 @login_required
 def create_final_invoice(order_id):
