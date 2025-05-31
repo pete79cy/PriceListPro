@@ -296,6 +296,30 @@ def view_final_invoice(order_id):
     return render_template('delivery_adjustments/final_invoice.html', 
                          order=order, final_invoice=final_invoice)
 
+@delivery_adjustments.route('/final-invoice/quotation/<int:quotation_id>')
+@login_required
+def view_final_invoice_quotation(quotation_id):
+    """View or create final proforma invoice for a quotation"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    # Check if final invoice already exists
+    final_invoice = FinalProformaInvoice.query.filter_by(quotation_id=quotation_id).first()
+    
+    if not final_invoice:
+        # Check if there are any confirmed adjustments
+        confirmed_adjustments = [adj for adj in quotation.delivery_adjustments if adj.status == 'confirmed']
+        
+        if not confirmed_adjustments and quotation.status in ['COMPLETED', 'ACCEPTED']:
+            # No adjustments, just use original proforma
+            flash('No delivery adjustments found. Use original quotation.', 'info')
+            return redirect(url_for('view_quotation', quotation_id=quotation_id))
+        
+        return render_template('delivery_adjustments/create_final_invoice_quotation.html', 
+                             quotation=quotation, confirmed_adjustments=confirmed_adjustments)
+    
+    return render_template('delivery_adjustments/final_invoice_quotation.html', 
+                         quotation=quotation, final_invoice=final_invoice)
+
 @delivery_adjustments.route('/create-final-invoice/<int:order_id>', methods=['POST'])
 @login_required
 def create_final_invoice(order_id):
