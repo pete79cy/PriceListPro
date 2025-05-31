@@ -1,0 +1,181 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Final Invoice - {{ quotation.quotation_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-file-invoice"></i> Create Final Invoice</h1>
+                <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Quotation
+                </a>
+            </div>
+
+            <!-- Quotation Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quotation Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Quotation Number:</strong><br>
+                            {{ quotation.quotation_number }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Customer:</strong><br>
+                            {{ quotation.customer.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Original Total:</strong><br>
+                            €{{ "%.2f"|format(quotation.items|sum(attribute='total')) }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge" style="background-color: {{ quotation.get_status_color() }};">
+                                {{ quotation.get_status_label() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmed Adjustments -->
+            {% if confirmed_adjustments %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Confirmed Adjustments</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Adjustment #</th>
+                                    <th>Type</th>
+                                    <th>Items</th>
+                                    <th>Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for adjustment in confirmed_adjustments %}
+                                <tr>
+                                    <td>{{ adjustment.adjustment_number }}</td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ adjustment.get_type_color() }};">
+                                            {{ adjustment.get_type_label() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ adjustment.items|length }} item(s)</td>
+                                    <td>
+                                        {% if adjustment.adjustment_type == 'return' %}
+                                            <span class="text-danger">-€{{ "%.2f"|format(adjustment.total_value) }}</span>
+                                        {% else %}
+                                            <span class="text-success">+€{{ "%.2f"|format(adjustment.total_value) }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Calculation -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Final Invoice Calculation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <table class="table">
+                                <tr>
+                                    <td><strong>Original Quotation Total:</strong></td>
+                                    <td class="text-end">€{{ "%.2f"|format(quotation.items|sum(attribute='total')) }}</td>
+                                </tr>
+                                {% for adjustment in confirmed_adjustments %}
+                                <tr>
+                                    <td>{{ adjustment.get_type_label() }} ({{ adjustment.adjustment_number }}):</td>
+                                    <td class="text-end">
+                                        {% if adjustment.adjustment_type == 'return' %}
+                                            <span class="text-danger">-€{{ "%.2f"|format(adjustment.total_value) }}</span>
+                                        {% else %}
+                                            <span class="text-success">+€{{ "%.2f"|format(adjustment.total_value) }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="table-primary">
+                                    <td><strong>Final Total:</strong></td>
+                                    <td class="text-end">
+                                        <strong>€{{ "%.2f"|format(quotation.items|sum(attribute='total') + confirmed_adjustments|sum(attribute='signed_total_value')) }}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Final Invoice</h6>
+                                <p class="mb-0">This will create a final proforma invoice that includes all confirmed delivery adjustments.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Invoice Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Create Final Invoice</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('delivery_adjustments.create_final_invoice_quotation', quotation_id=quotation.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Invoice Notes</label>
+                                    <textarea class="form-control" name="notes" id="notes" rows="3" 
+                                              placeholder="Any additional notes for this final invoice..."></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="invoice_date" class="form-label">Invoice Date</label>
+                                    <input type="date" class="form-control" name="invoice_date" id="invoice_date" 
+                                           value="{{ moment().format('YYYY-MM-DD') }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('delivery_adjustments.view_quotation_adjustments', quotation_id=quotation.id) }}" 
+                               class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-file-invoice"></i> Create Final Invoice
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- No Adjustments -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h4 class="text-muted">No Confirmed Adjustments</h4>
+                    <p class="text-muted">There are no confirmed delivery adjustments for this quotation yet.</p>
+                    <a href="{{ url_for('delivery_adjustments.view_quotation_adjustments', quotation_id=quotation.id) }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Adjustments
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
