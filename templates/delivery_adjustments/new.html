@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Create Delivery Adjustment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-plus-circle"></i> Create Delivery Adjustment</h1>
+                <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Order
+                </a>
+            </div>
+
+            <!-- Order Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Order Number:</strong><br>
+                            {{ order.order_number }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Customer:</strong><br>
+                            {{ order.customer.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Delivery Date:</strong><br>
+                            {% if order.delivery_date %}
+                                {{ order.delivery_date.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                Not set
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge" style="background-color: {{ order.get_status_color() }};">
+                                {{ order.get_status_label() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Adjustment Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Adjustment Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('delivery_adjustments.create_adjustment', order_id=order.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="adjustment_type" class="form-label">Adjustment Type</label>
+                                    <select class="form-select" name="adjustment_type" id="adjustment_type" required>
+                                        <option value="">Select adjustment type...</option>
+                                        <option value="{{ adjustment_types.RETURN }}">{{ adjustment_types.LABELS[adjustment_types.RETURN] }}</option>
+                                        <option value="{{ adjustment_types.ADDITIONAL }}">{{ adjustment_types.LABELS[adjustment_types.ADDITIONAL] }}</option>
+                                        <option value="{{ adjustment_types.REPLACEMENT }}">{{ adjustment_types.LABELS[adjustment_types.REPLACEMENT] }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="reason" class="form-label">Reason</label>
+                                    <input type="text" class="form-control" name="reason" id="reason" 
+                                           placeholder="Brief reason for this adjustment">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" name="notes" id="notes" rows="3" 
+                                      placeholder="Any additional information about this adjustment..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Adjustment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="alert alert-info mt-4">
+                <h6><i class="fas fa-info-circle"></i> Adjustment Types</h6>
+                <ul class="mb-0">
+                    <li><strong>Product Return:</strong> Customer returns products that were delivered</li>
+                    <li><strong>Additional Delivery:</strong> Customer requests additional products to be delivered</li>
+                    <li><strong>Product Replacement:</strong> Replace products due to damage or customer request</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
