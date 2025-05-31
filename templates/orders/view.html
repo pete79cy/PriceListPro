@@ -77,9 +77,37 @@
                             <a href="{{ url_for('orders.print_delivery_note', order_id=order.id) }}" class="btn btn-sm btn-outline-primary me-2" target="_blank">
                                 <i class="fas fa-file-pdf"></i> Delivery Note
                             </a>
-                            <a href="{{ url_for('orders.generate_charge_sheet', order_id=order.id) }}" class="btn btn-sm btn-outline-success" target="_blank">
+                            <a href="{{ url_for('orders.generate_charge_sheet', order_id=order.id) }}" class="btn btn-sm btn-outline-success me-2" target="_blank">
                                 <i class="fas fa-file-invoice-dollar"></i> Pro Forma Invoice
                             </a>
+                            
+                            {% if order.status == 'delivered' %}
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-exchange-alt"></i> Adjustments
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.new_adjustment', order_id=order.id) }}">
+                                            <i class="fas fa-plus"></i> Create Adjustment
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.view_order_adjustments', order_id=order.id) }}">
+                                            <i class="fas fa-list"></i> View Adjustments
+                                        </a>
+                                    </li>
+                                    {% if order.delivery_adjustments %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.view_final_invoice', order_id=order.id) }}">
+                                            <i class="fas fa-file-invoice"></i> Final Invoice
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            {% endif %}
                         </div>
                         
                         <div class="dropdown">

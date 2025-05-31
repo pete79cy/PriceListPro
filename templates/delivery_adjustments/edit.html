@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Adjustment {{ adjustment.adjustment_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-edit"></i> Edit Adjustment {{ adjustment.adjustment_number }}</h1>
+                <div>
+                    <a href="{{ url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment.id) }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    <a href="{{ url_for('orders.view_order', order_id=adjustment.order.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Order
+                    </a>
+                </div>
+            </div>
+
+            <!-- Adjustment Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Adjustment Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <strong>Number:</strong><br>
+                            {{ adjustment.adjustment_number }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Type:</strong><br>
+                            <span class="badge" style="background-color: {{ adjustment.get_type_color() }};">
+                                {{ adjustment.get_type_label() }}
+                            </span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-warning">{{ adjustment.status|title }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Order:</strong><br>
+                            <a href="{{ url_for('orders.view_order', order_id=adjustment.order.id) }}">
+                                {{ adjustment.order.order_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Customer:</strong><br>
+                            {{ adjustment.order.customer.name }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Item Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Add Items to Adjustment</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('delivery_adjustments.add_item', adjustment_id=adjustment.id) }}">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="plant_name" class="form-label">Plant Name *</label>
+                                    <input type="text" class="form-control" name="plant_name" id="plant_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="size" class="form-label">Size/Pot</label>
+                                    <input type="text" class="form-control" name="size" id="size">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">Quantity *</label>
+                                    <input type="number" step="0.01" class="form-control" name="quantity" id="quantity" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="unit_price" class="form-label">Unit Price *</label>
+                                    <input type="number" step="0.01" class="form-control" name="unit_price" id="unit_price" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="vat_rate" class="form-label">VAT Rate (%)</label>
+                                    <input type="number" step="0.1" class="form-control" name="vat_rate" id="vat_rate" value="19.0">
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <div class="mb-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-success d-block">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="reason" class="form-label">Reason for this item</label>
+                                    <input type="text" class="form-control" name="reason" id="reason" 
+                                           placeholder="Optional reason for this specific item">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Current Items -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Items in Adjustment</h5>
+                    <div class="text-muted">
+                        Total: €{{ "%.2f"|format(adjustment.total_value) }}
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if adjustment.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Plant Name</th>
+                                    <th>Size</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>VAT</th>
+                                    <th>Total</th>
+                                    <th>Reason</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in adjustment.items %}
+                                <tr>
+                                    <td>{{ item.plant_name }}</td>
+                                    <td>{{ item.size or '-' }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>€{{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td>{{ item.vat_rate }}%</td>
+                                    <td>€{{ "%.2f"|format(item.get_total()) }}</td>
+                                    <td>{{ item.reason or '-' }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('delivery_adjustments.remove_item', adjustment_id=adjustment.id, item_id=item.id) }}" 
+                                              style="display: inline;" onsubmit="return confirm('Remove this item?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No items added to this adjustment yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            {% if adjustment.items %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="text-muted mb-0">
+                                Ready to confirm this adjustment? This will lock the items and make the adjustment official.
+                            </p>
+                        </div>
+                        <div>
+                            <form method="POST" action="{{ url_for('delivery_adjustments.confirm_adjustment', adjustment_id=adjustment.id) }}" 
+                                  style="display: inline;" onsubmit="return confirm('Confirm this adjustment? This action cannot be undone.')">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Confirm Adjustment
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
