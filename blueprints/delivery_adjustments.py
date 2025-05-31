@@ -397,6 +397,32 @@ def print_adjustment(adjustment_id):
         flash('Error generating PDF', 'danger')
         return redirect(url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment_id))
 
+@delivery_adjustments.route('/final-invoice/<int:invoice_id>/print')
+@login_required
+def print_final_invoice(invoice_id):
+    """Generate PDF for a final proforma invoice"""
+    from utils.pdf_utils import generate_final_invoice_pdf
+    
+    final_invoice = FinalProformaInvoice.query.get_or_404(invoice_id)
+    
+    try:
+        # Generate PDF for final invoice
+        pdf_path = generate_final_invoice_pdf(final_invoice)
+        
+        # Return the PDF file
+        return send_file(pdf_path, 
+                        as_attachment=True,
+                        download_name=f'{final_invoice.invoice_number}.pdf',
+                        mimetype='application/pdf')
+                        
+    except Exception as e:
+        logging.error(f"Error generating PDF for final invoice {final_invoice.invoice_number}: {e}")
+        flash('Error generating PDF', 'danger')
+        if final_invoice.order_id:
+            return redirect(url_for('delivery_adjustments.view_final_invoice', order_id=final_invoice.order_id))
+        else:
+            return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=final_invoice.quotation_id))
+
 @delivery_adjustments.route('/create-final-invoice/<int:order_id>', methods=['POST'])
 @login_required
 def create_final_invoice(order_id):
