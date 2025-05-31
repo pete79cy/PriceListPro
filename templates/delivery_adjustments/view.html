@@ -1,0 +1,215 @@
+{% extends "layout.html" %}
+
+{% block title %}Adjustment {{ adjustment.adjustment_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-eye"></i> Adjustment {{ adjustment.adjustment_number }}</h1>
+                <div>
+                    {% if adjustment.status == 'draft' %}
+                    <a href="{{ url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment.id) }}" class="btn btn-warning me-2">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                    {% if adjustment.order_id %}
+                    <a href="{{ url_for('orders.view_order', order_id=adjustment.order.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Order
+                    </a>
+                    {% elif adjustment.quotation_id %}
+                    <a href="{{ url_for('view_quotation', quotation_id=adjustment.quotation.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Quotation
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Adjustment Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Adjustment Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <strong>Number:</strong><br>
+                            {{ adjustment.adjustment_number }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Type:</strong><br>
+                            <span class="badge" style="background-color: {{ adjustment.get_type_color() }};">
+                                {{ adjustment.get_type_label() }}
+                            </span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Status:</strong><br>
+                            <span class="badge {% if adjustment.status == 'confirmed' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ adjustment.status|title }}
+                            </span>
+                        </div>
+                        <div class="col-md-3">
+                            {% if adjustment.order_id %}
+                            <strong>Order:</strong><br>
+                            <a href="{{ url_for('orders.view_order', order_id=adjustment.order.id) }}">
+                                {{ adjustment.order.order_number }}
+                            </a>
+                            {% elif adjustment.quotation_id %}
+                            <strong>Quotation:</strong><br>
+                            <a href="{{ url_for('view_quotation', quotation_id=adjustment.quotation.id) }}">
+                                {{ adjustment.quotation.quotation_number }}
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Customer:</strong><br>
+                            {% if adjustment.order_id %}
+                            {{ adjustment.order.customer.name }}
+                            {% elif adjustment.quotation_id %}
+                            {{ adjustment.quotation.customer.name }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if adjustment.reason %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <strong>Reason:</strong><br>
+                            {{ adjustment.reason }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if adjustment.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <strong>Notes:</strong><br>
+                            {{ adjustment.notes }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Items -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Items in Adjustment</h5>
+                    <div class="text-muted">
+                        Total: €{{ "%.2f"|format(adjustment.total_value) }}
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if adjustment.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Plant Name</th>
+                                    <th>Size</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>VAT</th>
+                                    <th>Total</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in adjustment.items %}
+                                <tr>
+                                    <td>{{ item.plant_name }}</td>
+                                    <td>{{ item.size or '-' }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>€{{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td>{{ item.vat_rate }}%</td>
+                                    <td>€{{ "%.2f"|format(item.get_total()) }}</td>
+                                    <td>{{ item.reason or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="5" class="text-end">Total Amount:</th>
+                                    <th>€{{ "%.2f"|format(adjustment.total_value) }}</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No items in this adjustment.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Adjustment Created</h6>
+                                <p class="text-muted mb-0">{{ adjustment.created_at.strftime('%d/%m/%Y at %H:%M') }}</p>
+                            </div>
+                        </div>
+                        {% if adjustment.status == 'confirmed' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Adjustment Confirmed</h6>
+                                <p class="text-muted mb-0">{{ adjustment.updated_at.strftime('%d/%m/%Y at %H:%M') if adjustment.updated_at else 'N/A' }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+</style>
+{% endblock %}
