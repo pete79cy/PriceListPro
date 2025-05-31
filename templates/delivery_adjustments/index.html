@@ -88,6 +88,10 @@
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            <a href="{{ url_for('delivery_adjustments.print_adjustment', adjustment_id=adjustment.id) }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-print"></i>
+                                            </a>
                                             {% if adjustment.status == 'pending' %}
                                             <a href="{{ url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment.id) }}" 
                                                class="btn btn-sm btn-outline-secondary">

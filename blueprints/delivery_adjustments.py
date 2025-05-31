@@ -5,7 +5,7 @@ This module handles product returns, additional deliveries, and replacements
 after the initial order delivery, along with final proforma invoice generation.
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, send_file
 from flask_login import login_required
 from app import db
 from models import (Order, Quotation, DeliveryAdjustment, DeliveryAdjustmentItem, 
@@ -373,6 +373,29 @@ def create_final_invoice_quotation(quotation_id):
         logging.error(f"Error creating final invoice for quotation: {e}")
         flash('Error creating final invoice', 'danger')
         return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=quotation_id))
+
+@delivery_adjustments.route('/<int:adjustment_id>/print')
+@login_required
+def print_adjustment(adjustment_id):
+    """Generate PDF for a delivery adjustment"""
+    from utils.pdf_utils import generate_delivery_adjustment_pdf
+    
+    adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
+    
+    try:
+        # Generate PDF using existing PDF utilities
+        pdf_path = generate_delivery_adjustment_pdf(adjustment)
+        
+        # Return the PDF file
+        return send_file(pdf_path, 
+                        as_attachment=True,
+                        download_name=f'{adjustment.adjustment_number}.pdf',
+                        mimetype='application/pdf')
+                        
+    except Exception as e:
+        logging.error(f"Error generating PDF for adjustment {adjustment.adjustment_number}: {e}")
+        flash('Error generating PDF', 'danger')
+        return redirect(url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment_id))
 
 @delivery_adjustments.route('/create-final-invoice/<int:order_id>', methods=['POST'])
 @login_required
