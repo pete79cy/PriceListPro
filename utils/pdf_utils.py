@@ -690,18 +690,19 @@ def generate_final_invoice_pdf(final_invoice):
             </thead>
             <tbody>
                 {% for adj_item in adjustment.items %}
-                {% set vat_amount = adj_item.total_value * (adj_item.vat_rate / 100) if adj_item.vat_rate else 0 %}
-                {% set total_inc_vat = adj_item.total_value + vat_amount %}
+                {% set line_total = adj_item.quantity * adj_item.unit_price %}
+                {% set vat_amount = line_total * (adj_item.vat_rate / 100) if adj_item.vat_rate else 0 %}
+                {% set total_inc_vat = line_total + vat_amount %}
                 <tr>
                     <td class="text-center">{{ loop.index }}</td>
-                    <td>{{ adj_item.description or adj_item.product_name }}</td>
+                    <td>{{ adj_item.plant_name }}</td>
                     <td class="text-center">{{ adj_item.quantity }}</td>
                     <td class="text-right">€{{ "%.2f"|format(adj_item.unit_price) }}</td>
                     <td class="text-right">
                         {% if adjustment.adjustment_type == 'return' %}
-                            <span class="negative">-€{{ "%.2f"|format(adj_item.total_value) }}</span>
+                            <span class="negative">-€{{ "%.2f"|format(line_total) }}</span>
                         {% else %}
-                            €{{ "%.2f"|format(adj_item.total_value) }}
+                            €{{ "%.2f"|format(line_total) }}
                         {% endif %}
                     </td>
                     <td class="text-center">{{ adj_item.vat_rate or 19 }}%</td>
