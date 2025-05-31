@@ -617,10 +617,25 @@ class DeliveryAdjustment(db.Model):
     
     @property
     def total_value(self):
-        """Calculate total value of the adjustment"""
+        """Calculate total value of the adjustment (absolute value)"""
         if not self.items:
             return 0.0
         return sum(item.quantity * item.unit_price for item in self.items)
+    
+    @property
+    def signed_total_value(self):
+        """Calculate signed total value based on adjustment type"""
+        if not self.items:
+            return 0.0
+        
+        base_total = sum(item.quantity * item.unit_price for item in self.items)
+        
+        # Returns should be negative (subtract from invoice)
+        if self.adjustment_type == DeliveryAdjustmentType.RETURN:
+            return -base_total
+        # Additional deliveries and replacements should be positive (add to invoice)
+        else:
+            return base_total
     
     @property
     def parent_document(self):
