@@ -50,7 +50,7 @@
                     {% if quotation.delivery_adjustments %}
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.view_final_invoice', order_id=quotation.id) }}">
+                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=quotation.id) }}">
                             <i class="fas fa-file-invoice"></i> Final Invoice
                         </a>
                     </li>
