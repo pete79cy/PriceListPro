@@ -8,8 +8,8 @@ after the initial order delivery, along with final proforma invoice generation.
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required
 from app import db
-from models import (Order, DeliveryAdjustment, DeliveryAdjustmentItem, 
-                   DeliveryAdjustmentType, FinalProformaInvoice, Product, OrderItem)
+from models import (Order, Quotation, DeliveryAdjustment, DeliveryAdjustmentItem, 
+                   DeliveryAdjustmentType, FinalProformaInvoice, Product, OrderItem, QuotationItem)
 from datetime import datetime, date
 import logging
 
@@ -30,10 +30,10 @@ def view_order_adjustments(order_id):
     order = Order.query.get_or_404(order_id)
     return render_template('delivery_adjustments/order_adjustments.html', order=order)
 
-@delivery_adjustments.route('/new/<int:order_id>')
+@delivery_adjustments.route('/new/order/<int:order_id>')
 @login_required
-def new_adjustment(order_id):
-    """Create a new delivery adjustment"""
+def new_order_adjustment(order_id):
+    """Create a new delivery adjustment for an order"""
     order = Order.query.get_or_404(order_id)
     
     # Check if order is delivered
@@ -41,13 +41,27 @@ def new_adjustment(order_id):
         flash('Can only create adjustments for delivered orders', 'warning')
         return redirect(url_for('orders.view_order', order_id=order_id))
     
-    return render_template('delivery_adjustments/new.html', order=order, 
+    return render_template('delivery_adjustments/new.html', document=order, document_type='order',
                          adjustment_types=DeliveryAdjustmentType)
 
-@delivery_adjustments.route('/create/<int:order_id>', methods=['POST'])
+@delivery_adjustments.route('/new/quotation/<int:quotation_id>')
 @login_required
-def create_adjustment(order_id):
-    """Create a new delivery adjustment"""
+def new_quotation_adjustment(quotation_id):
+    """Create a new delivery adjustment for a quotation"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    # Check if quotation is completed/delivered
+    if quotation.status not in ['COMPLETED', 'ACCEPTED']:
+        flash('Can only create adjustments for completed quotations', 'warning')
+        return redirect(url_for('quotation.view_quotation', quotation_id=quotation_id))
+    
+    return render_template('delivery_adjustments/new.html', document=quotation, document_type='quotation',
+                         adjustment_types=DeliveryAdjustmentType)
+
+@delivery_adjustments.route('/create/order/<int:order_id>', methods=['POST'])
+@login_required
+def create_order_adjustment(order_id):
+    """Create a new delivery adjustment for an order"""
     order = Order.query.get_or_404(order_id)
     
     try:
@@ -61,7 +75,7 @@ def create_adjustment(order_id):
                                  DeliveryAdjustmentType.ADDITIONAL, 
                                  DeliveryAdjustmentType.REPLACEMENT]:
             flash('Invalid adjustment type', 'danger')
-            return redirect(url_for('delivery_adjustments.new_adjustment', order_id=order_id))
+            return redirect(url_for('delivery_adjustments.new_order_adjustment', order_id=order_id))
         
         # Generate adjustment number
         adjustment_number = DeliveryAdjustment.generate_adjustment_number(adjustment_type)
@@ -85,7 +99,50 @@ def create_adjustment(order_id):
         db.session.rollback()
         logging.error(f"Error creating delivery adjustment: {e}")
         flash('Error creating delivery adjustment', 'danger')
-        return redirect(url_for('delivery_adjustments.new_adjustment', order_id=order_id))
+        return redirect(url_for('delivery_adjustments.new_order_adjustment', order_id=order_id))
+
+@delivery_adjustments.route('/create/quotation/<int:quotation_id>', methods=['POST'])
+@login_required
+def create_quotation_adjustment(quotation_id):
+    """Create a new delivery adjustment for a quotation"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    try:
+        # Get form data
+        adjustment_type = request.form.get('adjustment_type')
+        reason = request.form.get('reason', '').strip()
+        notes = request.form.get('notes', '').strip()
+        
+        # Validate adjustment type
+        if adjustment_type not in [DeliveryAdjustmentType.RETURN, 
+                                 DeliveryAdjustmentType.ADDITIONAL, 
+                                 DeliveryAdjustmentType.REPLACEMENT]:
+            flash('Invalid adjustment type', 'danger')
+            return redirect(url_for('delivery_adjustments.new_quotation_adjustment', quotation_id=quotation_id))
+        
+        # Generate adjustment number
+        adjustment_number = DeliveryAdjustment.generate_adjustment_number(adjustment_type)
+        
+        # Create the adjustment
+        adjustment = DeliveryAdjustment(
+            quotation_id=quotation_id,
+            adjustment_type=adjustment_type,
+            adjustment_number=adjustment_number,
+            reason=reason,
+            notes=notes
+        )
+        
+        db.session.add(adjustment)
+        db.session.commit()
+        
+        flash(f'Delivery adjustment {adjustment_number} created successfully', 'success')
+        return redirect(url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error creating delivery adjustment: {e}")
+        flash('Error creating delivery adjustment', 'danger')
+        return redirect(url_for('delivery_adjustments.new_quotation_adjustment', quotation_id=quotation_id))
 
 @delivery_adjustments.route('/<int:adjustment_id>')
 @login_required

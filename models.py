@@ -585,9 +585,11 @@ class DeliveryAdjustmentType:
     }
 
 class DeliveryAdjustment(db.Model):
-    """Model for tracking returns and additional deliveries after initial order delivery"""
+    """Model for tracking returns and additional deliveries after initial order/quotation delivery"""
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    # Can be linked to either an order or a quotation
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True)
+    quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=True)
     adjustment_type = db.Column(db.String(20), nullable=False)  # 'return', 'additional', 'replacement'
     adjustment_number = db.Column(db.String(50), nullable=False, unique=True)
     adjustment_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
@@ -599,6 +601,7 @@ class DeliveryAdjustment(db.Model):
     
     # Relationships
     order = db.relationship('Order', backref='delivery_adjustments', lazy=True)
+    quotation = db.relationship('Quotation', backref='delivery_adjustments', lazy=True)
     items = db.relationship('DeliveryAdjustmentItem', backref='adjustment', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -618,6 +621,16 @@ class DeliveryAdjustment(db.Model):
         if not self.items:
             return 0.0
         return sum(item.quantity * item.unit_price for item in self.items)
+    
+    @property
+    def parent_document(self):
+        """Get the parent document (order or quotation)"""
+        return self.order if self.order else self.quotation
+    
+    @property
+    def parent_type(self):
+        """Get the type of parent document"""
+        return 'order' if self.order else 'quotation'
     
     @staticmethod
     def generate_adjustment_number(adjustment_type):
@@ -680,12 +693,14 @@ class DeliveryAdjustmentItem(db.Model):
         return self.get_total() * (self.vat_rate / 100)
 
 class FinalProformaInvoice(db.Model):
-    """Final proforma invoice combining original order with all adjustments"""
+    """Final proforma invoice combining original order/quotation with all adjustments"""
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    # Can be linked to either an order or a quotation
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True)
+    quotation_id = db.Column(db.Integer, db.ForeignKey('quotation.id'), nullable=True)
     invoice_number = db.Column(db.String(50), nullable=False, unique=True)
     invoice_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
-    original_total = db.Column(db.Float, nullable=False)  # Original order total
+    original_total = db.Column(db.Float, nullable=False)  # Original order/quotation total
     adjustments_total = db.Column(db.Float, nullable=False, default=0.0)  # Sum of all adjustments
     final_total = db.Column(db.Float, nullable=False)  # Final amount after adjustments
     currency = db.Column(db.String(10), nullable=False, default='€')
@@ -697,6 +712,7 @@ class FinalProformaInvoice(db.Model):
     
     # Relationships
     order = db.relationship('Order', backref='final_proforma_invoice', uselist=False, lazy=True)
+    quotation = db.relationship('Quotation', backref='final_proforma_invoice', uselist=False, lazy=True)
     
     def __repr__(self):
         return f'<FinalProformaInvoice {self.invoice_number}>'
@@ -727,15 +743,34 @@ class FinalProformaInvoice(db.Model):
         
         return f'{prefix}-{year}-{sequence:04d}'
     
+    @property
+    def parent_document(self):
+        """Get the parent document (order or quotation)"""
+        return self.order if self.order else self.quotation
+    
+    @property
+    def parent_type(self):
+        """Get the type of parent document"""
+        return 'order' if self.order else 'quotation'
+    
     def calculate_totals(self):
-        """Calculate and update totals based on order and adjustments"""
-        # Original order total
-        self.original_total = self.order.total if self.order else 0.0
+        """Calculate and update totals based on order/quotation and adjustments"""
+        # Original total (from order or quotation)
+        if self.order:
+            self.original_total = self.order.total if self.order else 0.0
+            parent_adjustments = self.order.delivery_adjustments
+        elif self.quotation:
+            # Calculate quotation total from items
+            self.original_total = sum(item.selling_price * item.quantity for item in self.quotation.items) if self.quotation.items else 0.0
+            parent_adjustments = self.quotation.delivery_adjustments
+        else:
+            self.original_total = 0.0
+            parent_adjustments = []
         
         # Calculate adjustments total
         adjustments_total = 0.0
-        if self.order and self.order.delivery_adjustments:
-            for adjustment in self.order.delivery_adjustments:
+        if parent_adjustments:
+            for adjustment in parent_adjustments:
                 if adjustment.status == 'confirmed':
                     if adjustment.adjustment_type == DeliveryAdjustmentType.RETURN:
                         # Returns reduce the total (negative value)
