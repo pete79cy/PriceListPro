@@ -557,11 +557,7 @@ def generate_final_invoice_pdf(final_invoice):
         <!-- Enhanced Header with Logo and Clear Title -->
         <div class="header">
             <div class="logo-section">
-                <h1>PAKKOUTIS</h1>
-                <div class="company-info">
-                    Plant & Garden Solutions<br>
-                    Cyprus • Greece
-                </div>
+                <!-- Logo section left empty as requested -->
             </div>
             <div class="invoice-title">
                 <h1>Pro Forma Invoice</h1>
@@ -578,13 +574,13 @@ def generate_final_invoice_pdf(final_invoice):
         <div class="parties-section">
             <div class="party-box">
                 <h3>Seller / From</h3>
-                <p class="company-name">Pakkoutis Plant & Garden Solutions Ltd</p>
-                <p>123 Ledra Street</p>
-                <p>1011 Nicosia, Cyprus</p>
-                <p>VAT ID: CY12345678A</p>
-                <p>REG: HE123456</p>
-                <p>Tel: +357 22 123456</p>
-                <p>Email: sales@pakkoutis.com</p>
+                <p class="company-name">Andreas Pakkoutis & Sons Ltd</p>
+                <p>Griva Digeni 39</p>
+                <p>Avgorou 5510, Cyprus</p>
+                <p>VAT ID: 10034785 S</p>
+                <p>REG: 12034785 U</p>
+                <p>Tel: +357 99564330</p>
+                <p>Email: panayiotis@pakkoutis.com</p>
             </div>
             
             <div class="party-box">
@@ -622,8 +618,6 @@ def generate_final_invoice_pdf(final_invoice):
                 <p><strong>Reference:</strong> {{ final_invoice.quotation.quotation_number }}</p>
                 {% endif %}
                 <p><strong>Currency:</strong> EUR (€)</p>
-                <p><strong>Incoterm:</strong> DAP Delivery Address</p>
-                <p><strong>Valid for:</strong> 15 days</p>
             </div>
         </div>
 
@@ -631,8 +625,8 @@ def generate_final_invoice_pdf(final_invoice):
         <div class="payment-terms">
             <h4>Payment Terms & Bank Details</h4>
             <p><strong>Terms:</strong> 50% advance payment, 50% prior to delivery</p>
-            <p><strong>Bank:</strong> Bank of Cyprus • <strong>IBAN:</strong> CY12 1234 5678 9012 3456 7890 1234 • <strong>SWIFT:</strong> BCYPCY2N</p>
-            <p><strong>Beneficiary:</strong> Pakkoutis Plant & Garden Solutions Ltd</p>
+            <p><strong>Bank:</strong> Bank of Cyprus • <strong>IBAN:</strong> CY55 0020 0555 0000 0011 0082 4600 • <strong>SWIFT:</strong> BCYPCY2N</p>
+            <p><strong>Beneficiary:</strong> Andreas Pakkoutis & Sons Ltd</p>
         </div>
 
         <!-- Detailed Line Items Table -->
