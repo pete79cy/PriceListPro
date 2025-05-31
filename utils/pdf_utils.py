@@ -298,85 +298,195 @@ def generate_final_invoice_pdf(final_invoice):
         str: Path to the generated PDF file
     """
     
-    # HTML template for final invoice
+    # Enhanced HTML template for pro forma invoice with detailed improvements
     html_template = """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>{{ final_invoice.invoice_number }}</title>
+        <title>Pro Forma Invoice {{ final_invoice.invoice_number }}</title>
         <style>
+            @page {
+                size: A4;
+                margin: 20mm;
+                @bottom-center {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10px;
+                    color: #666;
+                }
+            }
             body {
                 font-family: Arial, sans-serif;
                 margin: 0;
-                padding: 20px;
+                padding: 0;
                 color: #333;
+                line-height: 1.4;
             }
             .header {
-                text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #007bff;
-            }
-            .header h1 {
-                color: #007bff;
-                margin: 0;
-                font-size: 32px;
-                font-weight: bold;
-            }
-            .header .subtitle {
-                color: #666;
-                font-size: 18px;
-                margin-top: 5px;
-            }
-            .invoice-details {
                 display: flex;
                 justify-content: space-between;
-                margin-bottom: 30px;
+                align-items: flex-start;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #007bff;
             }
-            .info-box {
+            .logo-section {
                 flex: 1;
-                margin-right: 20px;
+            }
+            .logo-section h1 {
+                color: #007bff;
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+            }
+            .logo-section .company-info {
+                font-size: 12px;
+                color: #666;
+                margin-top: 5px;
+            }
+            .invoice-title {
+                flex: 2;
+                text-align: center;
+            }
+            .invoice-title h1 {
+                color: #007bff;
+                margin: 0;
+                font-size: 28px;
+                font-weight: bold;
+            }
+            .invoice-title .subtitle {
+                color: #666;
+                font-size: 14px;
+                margin-top: 5px;
+            }
+            .invoice-number {
+                flex: 1;
+                text-align: right;
+                background-color: #f8f9fa;
+                padding: 10px;
+                border-radius: 5px;
+            }
+            .invoice-number .number {
+                font-size: 18px;
+                font-weight: bold;
+                color: #007bff;
+            }
+            .invoice-number .date {
+                font-size: 12px;
+                color: #666;
+                margin-top: 3px;
+            }
+            .parties-section {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 25px;
+                gap: 20px;
+            }
+            .party-box {
+                flex: 1;
                 padding: 15px;
                 background-color: #f8f9fa;
                 border-left: 4px solid #007bff;
+                border-radius: 3px;
             }
-            .info-box:last-child {
-                margin-right: 0;
-            }
-            .info-box h3 {
+            .party-box h3 {
                 color: #007bff;
-                font-size: 14px;
-                margin: 0 0 10px 0;
+                font-size: 12px;
+                margin: 0 0 8px 0;
+                text-transform: uppercase;
+                font-weight: bold;
+                letter-spacing: 0.5px;
+            }
+            .party-box p {
+                margin: 3px 0;
+                font-size: 11px;
+                line-height: 1.3;
+            }
+            .party-box .company-name {
+                font-weight: bold;
+                font-size: 13px;
+                color: #333;
+            }
+            .payment-terms {
+                background-color: #e3f2fd;
+                padding: 12px;
+                border-left: 4px solid #2196f3;
+                margin-bottom: 20px;
+                border-radius: 3px;
+            }
+            .payment-terms h4 {
+                margin: 0 0 6px 0;
+                font-size: 12px;
+                color: #2196f3;
                 text-transform: uppercase;
                 font-weight: bold;
             }
-            .info-box p {
-                margin: 5px 0;
-                font-size: 14px;
+            .payment-terms p {
+                margin: 2px 0;
+                font-size: 11px;
+            }
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                font-size: 11px;
+                background-color: white;
+            }
+            .items-table th {
+                background-color: #007bff;
+                color: white;
+                border: 1px solid #007bff;
+                padding: 8px;
+                text-align: left;
+                font-weight: bold;
+                font-size: 10px;
+                text-transform: uppercase;
+            }
+            .items-table td {
+                border: 1px solid #ddd;
+                padding: 6px 8px;
+                vertical-align: top;
+                font-size: 10px;
+            }
+            .items-table tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            .items-table .text-right {
+                text-align: right;
+            }
+            .items-table .text-center {
+                text-align: center;
+            }
+            .summary-section {
+                background-color: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 20px;
             }
             .summary-table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 30px;
-                background-color: white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                margin-bottom: 15px;
+                font-size: 11px;
             }
             .summary-table th {
-                background-color: #007bff;
-                color: white;
-                border: 1px solid #007bff;
-                padding: 15px;
+                background-color: #e9ecef;
+                color: #495057;
+                border: 1px solid #dee2e6;
+                padding: 8px;
                 text-align: left;
                 font-weight: bold;
+                font-size: 10px;
             }
             .summary-table td {
-                border: 1px solid #ddd;
-                padding: 15px;
+                border: 1px solid #dee2e6;
+                padding: 8px;
                 vertical-align: top;
+                font-size: 10px;
             }
-            .summary-table tr:nth-child(even) {
-                background-color: #f8f9fa;
+            .summary-table .total-row {
+                background-color: #e3f2fd;
+                font-weight: bold;
             }
             .adjustments-table {
                 width: 100%;
@@ -444,197 +554,225 @@ def generate_final_invoice_pdf(final_invoice):
         </style>
     </head>
     <body>
+        <!-- Enhanced Header with Logo and Clear Title -->
         <div class="header">
-            <h1>FINAL PROFORMA INVOICE</h1>
-            <div class="subtitle">{{ final_invoice.invoice_number }}</div>
+            <div class="logo-section">
+                <h1>PAKKOUTIS</h1>
+                <div class="company-info">
+                    Plant & Garden Solutions<br>
+                    Cyprus • Greece
+                </div>
+            </div>
+            <div class="invoice-title">
+                <h1>Pro Forma Invoice</h1>
+                <div class="subtitle">For customs and quotation purposes only</div>
+            </div>
+            <div class="invoice-number">
+                <div class="number">{{ final_invoice.invoice_number }}</div>
+                <div class="date">{{ final_invoice.invoice_date.strftime('%-d %B %Y') }}</div>
+                <div class="date">Rev A</div>
+            </div>
         </div>
 
-        <div class="invoice-details">
-            <div class="info-box">
-                <h3>Invoice Information</h3>
-                <p><strong>Invoice Number:</strong> {{ final_invoice.invoice_number }}</p>
-                <p><strong>Invoice Date:</strong> {{ final_invoice.invoice_date.strftime('%B %d, %Y') }}</p>
-                <p><strong>Created:</strong> {{ final_invoice.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        <!-- Parties Information (Seller & Buyer) -->
+        <div class="parties-section">
+            <div class="party-box">
+                <h3>Seller / From</h3>
+                <p class="company-name">Pakkoutis Plant & Garden Solutions Ltd</p>
+                <p>123 Ledra Street</p>
+                <p>1011 Nicosia, Cyprus</p>
+                <p>VAT ID: CY12345678A</p>
+                <p>REG: HE123456</p>
+                <p>Tel: +357 22 123456</p>
+                <p>Email: sales@pakkoutis.com</p>
             </div>
-
-            <div class="info-box">
-                <h3>Document Reference</h3>
-                {% if final_invoice.order %}
-                <p><strong>Original Order:</strong> {{ final_invoice.order.order_number }}</p>
-                <p><strong>Customer:</strong> {{ final_invoice.order.customer.name }}</p>
-                <p><strong>Order Date:</strong> {{ final_invoice.order.created_at.strftime('%B %d, %Y') }}</p>
-                {% elif final_invoice.quotation %}
-                <p><strong>Original Quotation:</strong> {{ final_invoice.quotation.quotation_number }}</p>
-                <p><strong>Customer:</strong> {{ final_invoice.quotation.customer.name }}</p>
-                <p><strong>Quotation Date:</strong> {{ final_invoice.quotation.created_at.strftime('%B %d, %Y') }}</p>
+            
+            <div class="party-box">
+                <h3>Buyer / Ship To</h3>
+                {% if final_invoice.quotation %}
+                <p class="company-name">{{ final_invoice.quotation.customer.name }}</p>
+                {% if final_invoice.quotation.customer.address %}
+                    {% for line in final_invoice.quotation.customer.address.split('\n') %}
+                    <p>{{ line.strip() }}</p>
+                    {% endfor %}
+                {% else %}
+                <p>[Address to be provided]</p>
+                {% endif %}
+                {% if final_invoice.quotation.customer.email %}
+                <p>Email: {{ final_invoice.quotation.customer.email }}</p>
+                {% endif %}
+                {% if final_invoice.quotation.customer.phone %}
+                <p>Tel: {{ final_invoice.quotation.customer.phone }}</p>
+                {% endif %}
+                {% elif final_invoice.order %}
+                <p class="company-name">{{ final_invoice.order.customer.name }}</p>
+                {% if final_invoice.order.customer.address %}
+                    {% for line in final_invoice.order.customer.address.split('\n') %}
+                    <p>{{ line.strip() }}</p>
+                    {% endfor %}
+                {% endif %}
                 {% endif %}
             </div>
-
-            <div class="info-box">
-                <h3>Financial Summary</h3>
-                <p><strong>Original Total:</strong> €{{ "%.2f"|format(final_invoice.original_total) }}</p>
-                <p><strong>Adjustments:</strong> 
-                    {% if final_invoice.adjustments_total < 0 %}
-                        <span class="negative">€{{ "%.2f"|format(final_invoice.adjustments_total) }}</span>
-                    {% elif final_invoice.adjustments_total > 0 %}
-                        <span class="positive">+€{{ "%.2f"|format(final_invoice.adjustments_total) }}</span>
-                    {% else %}
-                        <span class="neutral">€0.00</span>
-                    {% endif %}
-                </p>
-                <p><strong>Final Total:</strong> €{{ "%.2f"|format(final_invoice.final_total) }}</p>
+            
+            <div class="party-box">
+                <h3>Invoice Details</h3>
+                <p><strong>Invoice No:</strong> {{ final_invoice.invoice_number }}</p>
+                <p><strong>Date:</strong> {{ final_invoice.invoice_date.strftime('%-d %B %Y') }}</p>
+                {% if final_invoice.quotation %}
+                <p><strong>Reference:</strong> {{ final_invoice.quotation.quotation_number }}</p>
+                {% endif %}
+                <p><strong>Currency:</strong> EUR (€)</p>
+                <p><strong>Incoterm:</strong> DAP Delivery Address</p>
+                <p><strong>Valid for:</strong> 15 days</p>
             </div>
         </div>
 
-        <h3>Invoice Summary</h3>
-        <table class="summary-table">
+        <!-- Payment Terms -->
+        <div class="payment-terms">
+            <h4>Payment Terms & Bank Details</h4>
+            <p><strong>Terms:</strong> 50% advance payment, 50% prior to delivery</p>
+            <p><strong>Bank:</strong> Bank of Cyprus • <strong>IBAN:</strong> CY12 1234 5678 9012 3456 7890 1234 • <strong>SWIFT:</strong> BCYPCY2N</p>
+            <p><strong>Beneficiary:</strong> Pakkoutis Plant & Garden Solutions Ltd</p>
+        </div>
+
+        <!-- Detailed Line Items Table -->
+        {% if final_invoice.quotation and final_invoice.quotation.items %}
+        <h3>Line Items from Quotation {{ final_invoice.quotation.quotation_number }}</h3>
+        <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 60%;">Description</th>
-                    <th style="width: 20%;">Type</th>
-                    <th style="width: 20%;">Amount</th>
+                    <th style="width: 8%;">Item #</th>
+                    <th style="width: 35%;">Description</th>
+                    <th style="width: 8%;">Qty</th>
+                    <th style="width: 12%;">Unit Price</th>
+                    <th style="width: 12%;">Line Total</th>
+                    <th style="width: 8%;">VAT%</th>
+                    <th style="width: 10%;">VAT Amount</th>
+                    <th style="width: 12%;">Total Inc VAT</th>
                 </tr>
             </thead>
             <tbody>
+                {% for item in final_invoice.quotation.items %}
+                {% set vat_amount = item.total * (item.vat_rate / 100) %}
+                {% set total_inc_vat = item.total + vat_amount %}
                 <tr>
-                    <td>
-                        <strong>Original {{ "Order" if final_invoice.order else "Quotation" }} Total</strong>
-                        <br><small>Base amount from initial {{ "order" if final_invoice.order else "quotation" }}</small>
-                    </td>
-                    <td class="text-center">Base</td>
-                    <td class="text-right">€{{ "%.2f"|format(final_invoice.original_total) }}</td>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ item.description }}</td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-right">€{{ "%.2f"|format(item.selling_price) }}</td>
+                    <td class="text-right">€{{ "%.2f"|format(item.total) }}</td>
+                    <td class="text-center">{{ item.vat_rate }}%</td>
+                    <td class="text-right">€{{ "%.2f"|format(vat_amount) }}</td>
+                    <td class="text-right">€{{ "%.2f"|format(total_inc_vat) }}</td>
                 </tr>
-                
-                {% if final_invoice.adjustments_total != 0 %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <!-- Delivery Adjustments Detail -->
+        {% if final_invoice.quotation and final_invoice.quotation.delivery_adjustments %}
+        <h3>Delivery Adjustments Detail</h3>
+        {% for adjustment in final_invoice.quotation.delivery_adjustments %}
+        {% if adjustment.status == 'confirmed' %}
+        <h4>{{ adjustment.get_type_label() }} {{ adjustment.adjustment_number }} - {{ adjustment.adjustment_date.strftime('%-d %B %Y') }}</h4>
+        <table class="items-table">
+            <thead>
                 <tr>
-                    <td>
-                        <strong>Delivery Adjustments</strong>
-                        <br><small>
-                            {% if final_invoice.adjustments_total < 0 %}
-                                Credits from returns and refunds
-                            {% else %}
-                                Charges from additional deliveries
-                            {% endif %}
-                        </small>
-                    </td>
-                    <td class="text-center">
-                        {% if final_invoice.adjustments_total < 0 %}
-                            Credit
+                    <th style="width: 8%;">Item #</th>
+                    <th style="width: 40%;">Description</th>
+                    <th style="width: 10%;">Qty</th>
+                    <th style="width: 12%;">Unit Price</th>
+                    <th style="width: 12%;">Line Total</th>
+                    <th style="width: 8%;">VAT%</th>
+                    <th style="width: 10%;">Total Inc VAT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adj_item in adjustment.items %}
+                {% set vat_amount = adj_item.total_value * (adj_item.vat_rate / 100) if adj_item.vat_rate else 0 %}
+                {% set total_inc_vat = adj_item.total_value + vat_amount %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ adj_item.description or adj_item.product_name }}</td>
+                    <td class="text-center">{{ adj_item.quantity }}</td>
+                    <td class="text-right">€{{ "%.2f"|format(adj_item.unit_price) }}</td>
+                    <td class="text-right">
+                        {% if adjustment.adjustment_type == 'return' %}
+                            <span class="negative">-€{{ "%.2f"|format(adj_item.total_value) }}</span>
                         {% else %}
-                            Charge
+                            €{{ "%.2f"|format(adj_item.total_value) }}
                         {% endif %}
                     </td>
+                    <td class="text-center">{{ adj_item.vat_rate or 19 }}%</td>
+                    <td class="text-right">
+                        {% if adjustment.adjustment_type == 'return' %}
+                            <span class="negative">-€{{ "%.2f"|format(total_inc_vat) }}</span>
+                        {% else %}
+                            €{{ "%.2f"|format(total_inc_vat) }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        <!-- Financial Summary -->
+        <div class="summary-section">
+            <h3>Financial Summary</h3>
+            <table class="summary-table">
+                <tr>
+                    <td><strong>Subtotal (Net Amount):</strong></td>
+                    <td class="text-right">€{{ "%.2f"|format(final_invoice.original_total) }}</td>
+                </tr>
+                {% if final_invoice.adjustments_total != 0 %}
+                <tr>
+                    <td><strong>Delivery Adjustments:</strong></td>
                     <td class="text-right">
                         {% if final_invoice.adjustments_total < 0 %}
                             <span class="negative">€{{ "%.2f"|format(final_invoice.adjustments_total) }}</span>
                         {% else %}
-                            <span class="positive">+€{{ "%.2f"|format(final_invoice.adjustments_total) }}</span>
+                            <span class="positive"> + €{{ "%.2f"|format(final_invoice.adjustments_total) }}</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% endif %}
-            </tbody>
-        </table>
+                <tr class="total-row">
+                    <td><strong>Net Total:</strong></td>
+                    <td class="text-right"><strong>€{{ "%.2f"|format(final_invoice.final_total) }}</strong></td>
+                </tr>
+            </table>
+        </div>
 
-        {% if final_invoice.order and final_invoice.order.delivery_adjustments %}
-        <h3>Delivery Adjustments Detail</h3>
-        <table class="adjustments-table">
-            <thead>
-                <tr>
-                    <th>Adjustment #</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Items</th>
-                    <th>Impact</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for adjustment in final_invoice.order.delivery_adjustments %}
-                {% if adjustment.status == 'confirmed' %}
-                <tr>
-                    <td>{{ adjustment.adjustment_number }}</td>
-                    <td>
-                        <span class="badge badge-{{ adjustment.adjustment_type }}">
-                            {{ adjustment.get_type_label() }}
-                        </span>
-                    </td>
-                    <td>{{ adjustment.adjustment_date.strftime('%m/%d/%Y') }}</td>
-                    <td>{{ adjustment.items|length }} item(s)</td>
-                    <td class="text-right">
-                        {% if adjustment.signed_total_value < 0 %}
-                            <span class="negative">€{{ "%.2f"|format(adjustment.signed_total_value) }}</span>
-                        {% else %}
-                            <span class="positive">+€{{ "%.2f"|format(adjustment.signed_total_value) }}</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
-        {% elif final_invoice.quotation and final_invoice.quotation.delivery_adjustments %}
-        <h3>Delivery Adjustments Detail</h3>
-        <table class="adjustments-table">
-            <thead>
-                <tr>
-                    <th>Adjustment #</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Items</th>
-                    <th>Impact</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for adjustment in final_invoice.quotation.delivery_adjustments %}
-                {% if adjustment.status == 'confirmed' %}
-                <tr>
-                    <td>{{ adjustment.adjustment_number }}</td>
-                    <td>
-                        <span class="badge badge-{{ adjustment.adjustment_type }}">
-                            {{ adjustment.get_type_label() }}
-                        </span>
-                    </td>
-                    <td>{{ adjustment.adjustment_date.strftime('%m/%d/%Y') }}</td>
-                    <td>{{ adjustment.items|length }} item(s)</td>
-                    <td class="text-right">
-                        {% if adjustment.signed_total_value < 0 %}
-                            <span class="negative">€{{ "%.2f"|format(adjustment.signed_total_value) }}</span>
-                        {% else %}
-                            <span class="positive">+€{{ "%.2f"|format(adjustment.signed_total_value) }}</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
-
-        <div class="total-section">
-            <h2>FINAL INVOICE TOTAL</h2>
-            <div class="amount">€{{ "%.2f"|format(final_invoice.final_total) }}</div>
-            <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">
-                {% if final_invoice.adjustments_total < 0 %}
-                    Reduced by €{{ "%.2f"|format(final_invoice.adjustments_total|abs) }} due to returns
-                {% elif final_invoice.adjustments_total > 0 %}
-                    Increased by €{{ "%.2f"|format(final_invoice.adjustments_total) }} due to additional deliveries
-                {% else %}
-                    No adjustments applied
-                {% endif %}
-            </p>
+        <!-- Terms & Conditions and Disclaimers -->
+        <div style="margin-top: 25px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; font-size: 10px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 11px; color: #007bff;">Terms & Conditions</h4>
+            <ul style="margin: 0; padding-left: 15px; line-height: 1.4;">
+                <li>This pro forma invoice is issued for customs and quotation purposes only and does <strong>not</strong> constitute a legal tax invoice.</li>
+                <li>Offer valid for 15 days from issue date: {{ final_invoice.invoice_date.strftime('%-d %B %Y') }}.</li>
+                <li>Payment terms: 50% advance payment, 50% prior to delivery.</li>
+                <li>Delivery timeframe will be confirmed upon order placement.</li>
+                <li>All prices are inclusive of applicable taxes as indicated.</li>
+                <li>Prices subject to change without prior notice after validity period.</li>
+            </ul>
         </div>
 
         {% if final_invoice.notes %}
-        <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin-bottom: 20px;">
-            <h4 style="margin: 0 0 10px 0; color: #007bff;">Additional Notes</h4>
-            <p style="margin: 0;">{{ final_invoice.notes }}</p>
+        <div style="background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; border-radius: 3px;">
+            <h4 style="margin: 0 0 6px 0; color: #856404; font-size: 11px;">Additional Notes</h4>
+            <p style="margin: 0; font-size: 10px; color: #856404;">{{ final_invoice.notes }}</p>
         </div>
         {% endif %}
 
-        <div class="footer">
-            <p><strong>{{ final_invoice.invoice_number }}</strong> | Final Proforma Invoice</p>
-            <p>Generated on {{ datetime.now().strftime('%B %d, %Y at %I:%M %p') }}</p>
-            <p>This invoice includes all confirmed delivery adjustments</p>
+        <!-- Footer -->
+        <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 9px; color: #666; text-align: center;">
+            <p style="margin: 2px 0;"><strong>{{ final_invoice.invoice_number }}</strong> | Pro Forma Invoice | Rev A</p>
+            <p style="margin: 2px 0;">Generated on {{ datetime.now().strftime('%-d %B %Y at %H:%M') }}</p>
+            <p style="margin: 2px 0;">Page 1 of 1 | Pakkoutis Plant & Garden Solutions</p>
+            <p style="margin: 2px 0; font-style: italic;">This document includes all confirmed delivery adjustments</p>
         </div>
     </body>
     </html>

@@ -1,0 +1,76 @@
+Below are concrete, easy-to-implement ways to tighten the document and ensure it serves both commercial and compliance purposes.  Each point refers to what I could see in **FPI-2025-0001**.
+
+---
+
+### 1  |  Core business & legal details
+
+| Why it matters                                        | What to add / change                                                                                                                                                |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identify seller & buyer for tax and customs clearance | • Full legal name, street / city / postcode, VAT/Tax ID, and company-registration number for *both* parties.<br>• Contact e-mail and phone in a small header block. |
+| Clear payment destination                             | • Bank name, IBAN/SWIFT (or local account), and beneficiary name.<br>• Payment terms (e.g., “50 % advance, 50 % prior to dispatch” or “Net 30 days”).               |
+| Incoterms & delivery address                          | • State the agreed Incoterm 2020 (e.g., “DAP Limassol, Cyprus”).<br>• Separate “Ship-to” from “Bill-to” when they differ.                                           |
+| Pro-forma status disclaimer                           | • Add a footnote such as: “This pro forma invoice is issued for customs / quotation purposes only and does **not** constitute a legal tax invoice.”                 |
+
+---
+
+### 2  |  Structure & wording
+
+1. **Title conflict** – “**FINAL PROFORMA INVOICE**” appears contradictory: *final* suggests completeness while *pro forma* implies preliminary. Choose one (usually “Pro forma Invoice” alone).
+2. **Section order** – lead with customer & seller details → line items → adjustments → totals. Right now Financial Summary precedes any line-item detail, forcing the reader to scroll back and forth.
+3. **Dates** – May 31 2025 and 05/31/2025 formats are mixed. Pick a single style (ISO 8601 “2025-05-31” or “31 May 2025”) throughout.
+4. **Duplicate headings** – the “FINAL PROFORMA INVOICE” banner repeats at the end of the file; remove the trailing copy.
+
+---
+
+### 3  |  Item-level transparency
+
+| Needed column                                                   | Reason                                                                                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **SKU / Part No.**                                              | Helps match to quotation PAK-2025-002.                                                                                   |
+| **Qty**                                                         | The reader can’t see how many pieces form the €1 287.50 base.                                                            |
+| **Unit price & currency**                                       | Enables a quick recalculation and avoids rounding disputes.                                                              |
+| **Line total (ex-VAT), VAT %, VAT value, Line total (inc-VAT)** | Required in many jurisdictions once the pro-forma is converted into a real invoice; adding it now saves re-keying later. |
+
+Include a **sub-table** for every return/credit (RET-2025-0001) and surcharge (ADD-2025-0001) instead of the single “Delivery Adjustments Detail” block, so each adjustment line mirrors the main item layout.
+
+---
+
+### 4  |  Totals & maths
+
+* Show **Sub-total**, **Discounts/Credits**, **Tax**, **Grand total**, and **Amount due**.
+* Use two-decimal rounding consistently – €29.50 currently carries a plus sign but no spacing (“+ €29.50” reads better).
+* If multiple currencies could arise, label the total “**EUR € 1 227.00**”.
+
+---
+
+### 5  |  Visual & usability tweaks
+
+* **Branding** – place your logo and brand colours in the header for instant recognition.
+* **Readable tables** – apply zebra striping or subtle borders so amounts aren’t bunched together.
+* **White space** – tighten the gap between headings and data (e.g., big blank lines under “INVOICE INFORMATION” ).
+* **Hyper-links / QR** – embed a QR code or link that launches online payment with the invoice number pre-filled.
+* **Page numbers** – “Page 1 of 1” footer for multi-page safety.
+* **Accessibility** – ensure text is selectable (avoid flattened images) so figures can be copied into accounting software.
+
+---
+
+### 6  |  Workflow reminders
+
+* **Version control** – keep a revision code (e.g., “Rev A”) so sales, logistics, and accounts know they’re on the same page.
+* **Validity** – add a small line: “Offer valid for 15 days from issue date.”
+* **Signature line** – optional, but a digital signature field enhances trust for new customers.
+
+---
+
+## Quick-start checklist
+
+* [ ] Add seller & buyer full addresses + VAT IDs
+* [ ] Replace title with “Pro forma Invoice” and remove duplicates
+* [ ] Insert detailed line-item table with qty & unit price
+* [ ] Re-order sections: identities → items → adjustments → totals → payment terms
+* [ ] Harmonise date format to “31 May 2025”
+* [ ] Add bank/IBAN + payment terms block
+* [ ] Footnote disclaimer & validity clause
+* [ ] Brand header, page numbers, QR for payment
+
+Implementing even half of these will make the document clearer for your customer and faster for customs, while reducing back-and-forth once it converts into the final fiscal invoice.
