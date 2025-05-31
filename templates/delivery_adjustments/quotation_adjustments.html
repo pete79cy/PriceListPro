@@ -1,0 +1,170 @@
+{% extends "layout.html" %}
+
+{% block title %}Adjustments for {{ quotation.quotation_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-exchange-alt"></i> Adjustments for {{ quotation.quotation_number }}</h1>
+                <div>
+                    {% if quotation.status in ['COMPLETED', 'ACCEPTED'] %}
+                    <a href="{{ url_for('delivery_adjustments.new_quotation_adjustment', quotation_id=quotation.id) }}" class="btn btn-success me-2">
+                        <i class="fas fa-plus"></i> Create Adjustment
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Quotation
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quotation Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quotation Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Quotation Number:</strong><br>
+                            {{ quotation.quotation_number }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Customer:</strong><br>
+                            {{ quotation.customer.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Date:</strong><br>
+                            {{ quotation.quotation_date.strftime('%d/%m/%Y') }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge" style="background-color: {{ quotation.get_status_color() }};">
+                                {{ quotation.get_status_label() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adjustments List -->
+            {% if quotation.delivery_adjustments %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Delivery Adjustments</h5>
+                    <span class="badge bg-primary">{{ quotation.delivery_adjustments|length }} adjustment(s)</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Adjustment #</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Items</th>
+                                    <th>Total Value</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for adjustment in quotation.delivery_adjustments %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment.id) }}" class="fw-bold text-decoration-none">
+                                            {{ adjustment.adjustment_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ adjustment.get_type_color() }};">
+                                            {{ adjustment.get_type_label() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if adjustment.status == 'confirmed' %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ adjustment.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ adjustment.items|length }} item(s)</td>
+                                    <td>€{{ "%.2f"|format(adjustment.total_value) }}</td>
+                                    <td>{{ adjustment.created_at.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if adjustment.status == 'draft' %}
+                                            <a href="{{ url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment.id) }}" 
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-primary">{{ quotation.delivery_adjustments|length }}</h4>
+                            <p class="text-muted mb-0">Total Adjustments</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success">{{ quotation.delivery_adjustments|selectattr("status", "equalto", "confirmed")|list|length }}</h4>
+                            <p class="text-muted mb-0">Confirmed</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning">{{ quotation.delivery_adjustments|selectattr("status", "equalto", "draft")|list|length }}</h4>
+                            <p class="text-muted mb-0">Draft</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info">€{{ "%.2f"|format(quotation.delivery_adjustments|sum(attribute='total_value')) }}</h4>
+                            <p class="text-muted mb-0">Total Value</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- No Adjustments -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Delivery Adjustments</h4>
+                    <p class="text-muted">This quotation doesn't have any delivery adjustments yet.</p>
+                    {% if quotation.status in ['COMPLETED', 'ACCEPTED'] %}
+                    <a href="{{ url_for('delivery_adjustments.new_quotation_adjustment', quotation_id=quotation.id) }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Create First Adjustment
+                    </a>
+                    {% else %}
+                    <p class="text-muted"><small>Adjustments can only be created for completed or accepted quotations.</small></p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Help Information -->
+            <div class="alert alert-info mt-4">
+                <h6><i class="fas fa-info-circle"></i> About Delivery Adjustments</h6>
+                <p class="mb-0">
+                    Delivery adjustments allow you to handle post-delivery scenarios such as product returns, 
+                    additional deliveries, or product replacements. Each adjustment tracks the specific items 
+                    and generates proper documentation for accounting purposes.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
