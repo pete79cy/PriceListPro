@@ -175,6 +175,14 @@ with app.app_context():
             logger.info("API blueprint registered successfully")
         except (ImportError, Exception) as e:
             logger.warning(f"API blueprint could not be registered: {str(e)}")
+            
+        # Register Delivery Adjustments blueprint
+        try:
+            from blueprints.delivery_adjustments import delivery_adjustments
+            app.register_blueprint(delivery_adjustments)
+            logger.info("Delivery Adjustments blueprint registered successfully")
+        except (ImportError, Exception) as e:
+            logger.warning(f"Delivery Adjustments blueprint could not be registered: {str(e)}")
     except (ImportError, Exception) as e:
         logger.warning(f"Blueprints could not be registered: {str(e)}")
         pass

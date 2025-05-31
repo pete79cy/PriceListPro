@@ -566,6 +566,187 @@ class QuotationItem(db.Model):
     def __repr__(self):
         return f'<QuotationItem {self.description}>'
 
+class DeliveryAdjustmentType:
+    """Types of delivery adjustments"""
+    RETURN = 'return'
+    ADDITIONAL = 'additional'
+    REPLACEMENT = 'replacement'
+    
+    LABELS = {
+        RETURN: 'Product Return',
+        ADDITIONAL: 'Additional Delivery',
+        REPLACEMENT: 'Product Replacement'
+    }
+    
+    COLORS = {
+        RETURN: '#dc3545',      # Red
+        ADDITIONAL: '#28a745',  # Green
+        REPLACEMENT: '#ffc107'  # Yellow
+    }
+
+class DeliveryAdjustment(db.Model):
+    """Model for tracking returns and additional deliveries after initial order delivery"""
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    adjustment_type = db.Column(db.String(20), nullable=False)  # 'return', 'additional', 'replacement'
+    adjustment_number = db.Column(db.String(50), nullable=False, unique=True)
+    adjustment_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    reason = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='pending')  # pending, confirmed, processed
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    order = db.relationship('Order', backref='delivery_adjustments', lazy=True)
+    items = db.relationship('DeliveryAdjustmentItem', backref='adjustment', lazy=True, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<DeliveryAdjustment {self.adjustment_number}>'
+    
+    def get_type_label(self):
+        """Get human-readable type label"""
+        return DeliveryAdjustmentType.LABELS.get(self.adjustment_type, self.adjustment_type)
+    
+    def get_type_color(self):
+        """Get color for the adjustment type"""
+        return DeliveryAdjustmentType.COLORS.get(self.adjustment_type, '#6c757d')
+    
+    @property
+    def total_value(self):
+        """Calculate total value of the adjustment"""
+        if not self.items:
+            return 0.0
+        return sum(item.quantity * item.unit_price for item in self.items)
+    
+    @staticmethod
+    def generate_adjustment_number(adjustment_type):
+        """Generate unique adjustment number"""
+        year = datetime.now().year
+        prefix_map = {
+            DeliveryAdjustmentType.RETURN: 'RET',
+            DeliveryAdjustmentType.ADDITIONAL: 'ADD',
+            DeliveryAdjustmentType.REPLACEMENT: 'REP'
+        }
+        prefix = prefix_map.get(adjustment_type, 'ADJ')
+        
+        # Get the highest number for this type and year
+        last_adjustment = DeliveryAdjustment.query.filter(
+            DeliveryAdjustment.adjustment_number.like(f'{prefix}-{year}-%')
+        ).order_by(DeliveryAdjustment.adjustment_number.desc()).first()
+        
+        if last_adjustment:
+            # Extract the sequence number and increment
+            parts = last_adjustment.adjustment_number.split('-')
+            if len(parts) >= 3:
+                try:
+                    sequence = int(parts[2]) + 1
+                except (ValueError, IndexError):
+                    sequence = 1
+            else:
+                sequence = 1
+        else:
+            sequence = 1
+        
+        return f'{prefix}-{year}-{sequence:04d}'
+
+class DeliveryAdjustmentItem(db.Model):
+    """Individual items in a delivery adjustment"""
+    id = db.Column(db.Integer, primary_key=True)
+    adjustment_id = db.Column(db.Integer, db.ForeignKey('delivery_adjustment.id'), nullable=False)
+    order_item_id = db.Column(db.Integer, db.ForeignKey('order_item.id'), nullable=True)  # Reference to original order item
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    plant_name = db.Column(db.String(200), nullable=False)
+    size = db.Column(db.String(50), nullable=True)
+    quantity = db.Column(db.Float, nullable=False)
+    unit_price = db.Column(db.Float, nullable=False)
+    vat_rate = db.Column(db.Float, nullable=False, default=19.0)
+    reason = db.Column(db.Text, nullable=True)  # Specific reason for this item
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    order_item = db.relationship('OrderItem', backref='adjustments', lazy=True)
+    product = db.relationship('Product', backref='adjustment_items', lazy=True)
+    
+    def __repr__(self):
+        return f'<DeliveryAdjustmentItem {self.plant_name} x {self.quantity}>'
+    
+    def get_total(self):
+        """Calculate total for this adjustment item"""
+        return self.quantity * self.unit_price
+    
+    def get_vat_amount(self):
+        """Calculate VAT amount for this item"""
+        return self.get_total() * (self.vat_rate / 100)
+
+class FinalProformaInvoice(db.Model):
+    """Final proforma invoice combining original order with all adjustments"""
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    invoice_number = db.Column(db.String(50), nullable=False, unique=True)
+    invoice_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
+    original_total = db.Column(db.Float, nullable=False)  # Original order total
+    adjustments_total = db.Column(db.Float, nullable=False, default=0.0)  # Sum of all adjustments
+    final_total = db.Column(db.Float, nullable=False)  # Final amount after adjustments
+    currency = db.Column(db.String(10), nullable=False, default='€')
+    notes = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='draft')  # draft, sent, paid
+    file_path = db.Column(db.String(255), nullable=True)  # Path to generated PDF
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    order = db.relationship('Order', backref='final_proforma_invoice', uselist=False, lazy=True)
+    
+    def __repr__(self):
+        return f'<FinalProformaInvoice {self.invoice_number}>'
+    
+    @staticmethod
+    def generate_invoice_number():
+        """Generate unique final proforma invoice number"""
+        year = datetime.now().year
+        prefix = 'FPI'  # Final Proforma Invoice
+        
+        # Get the highest number for this year
+        last_invoice = FinalProformaInvoice.query.filter(
+            FinalProformaInvoice.invoice_number.like(f'{prefix}-{year}-%')
+        ).order_by(FinalProformaInvoice.invoice_number.desc()).first()
+        
+        if last_invoice:
+            # Extract sequence number and increment
+            parts = last_invoice.invoice_number.split('-')
+            if len(parts) >= 3:
+                try:
+                    sequence = int(parts[2]) + 1
+                except (ValueError, IndexError):
+                    sequence = 1
+            else:
+                sequence = 1
+        else:
+            sequence = 1
+        
+        return f'{prefix}-{year}-{sequence:04d}'
+    
+    def calculate_totals(self):
+        """Calculate and update totals based on order and adjustments"""
+        # Original order total
+        self.original_total = self.order.total if self.order else 0.0
+        
+        # Calculate adjustments total
+        adjustments_total = 0.0
+        if self.order and self.order.delivery_adjustments:
+            for adjustment in self.order.delivery_adjustments:
+                if adjustment.status == 'confirmed':
+                    if adjustment.adjustment_type == DeliveryAdjustmentType.RETURN:
+                        # Returns reduce the total (negative value)
+                        adjustments_total -= adjustment.total_value
+                    else:
+                        # Additional deliveries and replacements add to total
+                        adjustments_total += adjustment.total_value
+        
+        self.adjustments_total = adjustments_total
+        self.final_total = self.original_total + adjustments_total
+
 # Order model is already defined earlier in the file
     
     def __repr__(self):
