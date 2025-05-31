@@ -615,6 +615,26 @@ class DeliveryAdjustment(db.Model):
         """Get color for the adjustment type"""
         return DeliveryAdjustmentType.COLORS.get(self.adjustment_type, '#6c757d')
     
+    def get_status_color(self):
+        """Get color for the adjustment status"""
+        status_colors = {
+            'pending': '#ffc107',     # Yellow
+            'confirmed': '#28a745',   # Green
+            'processed': '#007bff',   # Blue
+            'cancelled': '#dc3545'    # Red
+        }
+        return status_colors.get(self.status, '#6c757d')
+    
+    def get_status_label(self):
+        """Get human-readable status label"""
+        status_labels = {
+            'pending': 'Pending',
+            'confirmed': 'Confirmed',
+            'processed': 'Processed',
+            'cancelled': 'Cancelled'
+        }
+        return status_labels.get(self.status, self.status.title())
+    
     @property
     def total_value(self):
         """Calculate total value of the adjustment (absolute value)"""

@@ -43,12 +43,29 @@
                                         </a>
                                     </td>
                                     <td>
+                                        {% if adjustment.order %}
                                         <a href="{{ url_for('orders.view_order', order_id=adjustment.order.id) }}" 
                                            class="text-decoration-none">
                                             {{ adjustment.order.order_number }}
                                         </a>
+                                        {% elif adjustment.quotation %}
+                                        <a href="{{ url_for('view_quotation', quotation_id=adjustment.quotation.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ adjustment.quotation.quotation_number }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">No document</span>
+                                        {% endif %}
                                     </td>
-                                    <td>{{ adjustment.order.customer.name }}</td>
+                                    <td>
+                                        {% if adjustment.order %}
+                                        {{ adjustment.order.customer.name }}
+                                        {% elif adjustment.quotation %}
+                                        {{ adjustment.quotation.customer.name }}
+                                        {% else %}
+                                        <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <span class="badge" style="background-color: {{ adjustment.get_type_color() }};">
                                             {{ adjustment.get_type_label() }}
