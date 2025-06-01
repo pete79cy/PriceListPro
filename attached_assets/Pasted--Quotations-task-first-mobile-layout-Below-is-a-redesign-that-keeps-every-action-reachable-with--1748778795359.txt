@@ -1,0 +1,121 @@
+“Quotations” — task-first mobile layout
+
+Below is a redesign that keeps every action reachable with one thumb-tap, makes the list scannable at a glance, and collapses the bulky filter panel into an unobtrusive sheet.
+
+⸻
+
+1 High-level structure
+
+┌─ Top bar ───────────────────────────────┐
+│  ☰  Plant Pricing System       ＋ New   │
+└──────────────────────────────────────────┘
+
+┌─ Search & quick filter row ─────────────┐
+│  🔍  Search…      |  Status ▾           │
+└──────────────────────────────────────────┘
+
+┌─ Quote cards (virtual list) ────────────┐
+│ PAK-2025-035          €1 095.00         │
+│ Μαρία Ισαάκ           2025-05-29        │
+│ • Completed    • 28 Jun 2025            │
+│      👁️   ⬇︎PDF   🗑️                  │
+└──────────────────────────────────────────┘
+   … infinite scroll …
+
+⌄  Slide-up sheet (Filters)   ────────────
+|  Customer ○      Status ○              |
+|  Date from ▢     Date to ▢             |
+|        Apply   Reset                  |
+└─────────────────────────────────────────
+
+
+⸻
+
+2 Key usability gains
+
+Issue today	New behaviour
+Full-width “Customize PDF” button clutters top area.	Move to kebab menu inside each quote card (“Download → Custom fields”).
+Filter panel consumes ¾ of first screen.	Collapsed into slide-up sheet triggered by tiny filter icon on search row.
+Action buttons cramped (eye / pdf / bin).	24 px touch targets, spaced 8 px; long-press card = context menu.
+Hard to scan status vs date.	Badges inline: ● Sent • 27 May—same baseline, small separator dot.
+New quote button buried under filter block.	＋ New in top bar—always visible, iOS “Compose” pattern.
+
+
+⸻
+
+3 Component specs (Tailwind classes)
+
+3.1 Search / Quick filters row
+
+<div class="flex gap-2 px-4 pt-3 pb-2 sticky top-0 bg-[#1c1e22] z-20">
+  <input class="flex-1 rounded-md bg-[#2b2e33] px-3 py-2 text-sm"
+         placeholder="Search quotations…">
+  <button id="fltBtn" class="rounded-md bg-[#2b2e33] px-3">
+     <svg …/> <!-- funnel icon -->
+  </button>
+</div>
+
+3.2 Quotation card
+
+<article class="rounded-lg bg-[#2b2e33] p-4 mb-2 mx-4 flex flex-col gap-2 shadow-sm">
+  <div class="flex justify-between text-sm font-semibold">
+    <span>PAK-2025-035</span>
+    <span>€ 1 095.00</span>
+  </div>
+  <div class="text-gray-300 text-sm">Μαρία Ισαάκ</div>
+
+  <div class="flex gap-2 text-xs">
+    <span class="rounded-full bg-green-600/80 px-2 py-0.5">Completed</span>
+    <span class="rounded-full bg-gray-600/40 px-2 py-0.5 flex items-center gap-1">
+      <svg …/> 2025-06-28
+    </span>
+  </div>
+
+  <div class="mt-2 flex gap-3">
+    <button class="icon-btn text-blue-400" onclick="view(id)"><i class="i-eye"></i></button>
+    <button class="icon-btn text-green-400" onclick="pdf(id)"><i class="i-file-pdf"></i></button>
+    <button class="icon-btn text-red-400"  onclick="del(id)"><i class="i-trash"></i></button>
+  </div>
+</article>
+
+.icon-btn{ @apply w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#3a3d42]; }
+
+3.3 Slide-up filter sheet (Alpine.js example)
+
+<div x-data="{open:false}" x-show="open"
+     x-transition class="fixed inset-x-0 bottom-0 bg-[#2b2e33] rounded-t-2xl p-4 z-40">
+  <!-- drag pill -->
+  <div class="mx-auto h-1 w-10 rounded bg-gray-500 mb-4"></div>
+
+  <!-- form fields … -->
+  <select …>Customer</select>
+  <select …>Status</select>
+  …
+
+  <button class="btn-primary w-full mt-4" @click="applyFilters()">Apply filters</button>
+</div>
+
+#fltBtn toggles open = true.
+
+⸻
+
+4 Interaction details
+	•	Pull-to-refresh on the quotes list (mobile convention) instead of top-right reload icon.
+	•	Long-press a card to enter multi-select mode (✓ overlay) then bulk actions appear in bottom bar (Delete, Export CSV).
+	•	When user hits ＋ New from mobile, open in full-screen modal; on desktop, side-by-side drawer.
+	•	FAB “Insights” can stay bottom-right but reduce to 48 px circle instead of pill to save space.
+
+⸻
+
+5 Implementation order
+	1.	Replace filter panel markup with hidden <div id="filterSheet">.
+	2.	Move ＋ New button into top bar and wire route.
+	3.	Wrap list rows with new card component; reuse existing status colors.
+	4.	Add small JS (Alpine/vanilla) for sheet toggle and bulk-select.
+	5.	Progressive enhancement: if JS disabled, fallback is current desktop layout.
+
+⸻
+
+Want a live CodeSandbox prototype?
+
+Let me know—I’ll spin up a sandbox so you can swipe and test on your phone before you code-merge.
