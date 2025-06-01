@@ -25,11 +25,12 @@
 <div class="container-fluid sticky-top bg-body border-bottom" style="top: 73px; z-index: 1019;">
     <div class="d-flex gap-2 px-3 pt-3 pb-2">
         <div class="flex-grow-1 position-relative">
+            <i class="fas fa-search position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; z-index: 10;"></i>
             <input type="text" class="form-control form-control-sm bg-light" 
                    placeholder="Search quotations..." 
                    id="searchInput"
-                   value="{{ request.args.get('search', '') }}">
-            <i class="fas fa-search position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                   style="padding-left: 2.5rem;"
+                   value="{{ search or '' }}">
         </div>
         <button class="btn btn-light btn-sm" id="filterBtn" type="button" data-bs-toggle="modal" data-bs-target="#filterModal">
             <i class="fas fa-filter"></i>
