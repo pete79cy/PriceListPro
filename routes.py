@@ -1818,9 +1818,19 @@ def register_routes(app):
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         status = request.args.get('status')
+        search = request.args.get('search', '').strip()
         
         # Build the query
         query = Quotation.query
+        
+        # Apply search filter first
+        if search:
+            search_filter = db.or_(
+                Quotation.quotation_number.ilike(f'%{search}%'),
+                Customer.name.ilike(f'%{search}%'),
+                Quotation.notes.ilike(f'%{search}%')
+            )
+            query = query.join(Customer).filter(search_filter)
         
         # Apply filters if provided
         if customer_id:
@@ -1855,7 +1865,8 @@ def register_routes(app):
                               selected_customer_id=customer_id,
                               selected_status=status,
                               date_from=date_from,
-                              date_to=date_to)
+                              date_to=date_to,
+                              search=search)
     
     @app.route('/upload-quotation')
     @login_required
