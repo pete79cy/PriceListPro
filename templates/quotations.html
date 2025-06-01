@@ -50,7 +50,6 @@
         {% set all_statuses = ['Draft', 'Sent', 'Accepted', 'Completed', 'Created'] %}
         {% for status in all_statuses %}
             {% set count = status_counts.get(status, 0) %}
-            {% set is_active = selected_status and quotation.get_status_label() == status %}
             <button type="button" 
                     class="btn btn-sm d-flex align-items-center gap-2 text-nowrap flex-shrink-0 status-card"
                     data-status="{{ status }}"
