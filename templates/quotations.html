@@ -41,21 +41,27 @@
 <!-- Status Cards -->
 <div class="container-fluid bg-body border-bottom">
     <div id="statusBar" class="d-flex gap-2 px-3 pb-3 overflow-auto">
-        {% set status_counts = {} %}
-        {% for quotation in quotations %}
-            {% set status = quotation.get_status_label() %}
-            {% if status_counts.update({status: status_counts.get(status, 0) + 1}) %}{% endif %}
-        {% endfor %}
+        {% set draft_count = quotations|selectattr('status', 'equalto', 'DRAFT')|list|length %}
+        {% set sent_count = quotations|selectattr('status', 'equalto', 'SENT')|list|length %}
+        {% set accepted_count = quotations|selectattr('status', 'equalto', 'ACCEPTED')|list|length %}
+        {% set completed_count = quotations|selectattr('status', 'equalto', 'COMPLETED')|list|length %}
+        {% set created_count = quotations|selectattr('status', 'equalto', 'created')|list|length %}
         
-        {% set all_statuses = ['Draft', 'Sent', 'Accepted', 'Completed', 'Created'] %}
-        {% for status in all_statuses %}
-            {% set count = status_counts.get(status, 0) %}
+        {% set status_data = [
+            ('Draft', 'DRAFT', draft_count),
+            ('Sent', 'SENT', sent_count),
+            ('Accepted', 'ACCEPTED', accepted_count),
+            ('Completed', 'COMPLETED', completed_count),
+            ('Created', 'created', created_count)
+        ] %}
+        
+        {% for display_name, status_value, count in status_data %}
             <button type="button" 
                     class="btn btn-sm d-flex align-items-center gap-2 text-nowrap flex-shrink-0 status-card"
-                    data-status="{{ status }}"
-                    onclick="filterByStatus('{{ status }}')"
-                    style="{% if selected_status == status.upper() %}background-color: #0d6efd; color: white;{% else %}background-color: #f8f9fa; color: #495057;{% endif %}">
-                <span>{{ status }}</span>
+                    data-status="{{ display_name }}"
+                    onclick="filterByStatus('{{ display_name }}')"
+                    style="{% if selected_status == status_value %}background-color: #0d6efd; color: white;{% else %}background-color: #f8f9fa; color: #495057;{% endif %}">
+                <span>{{ display_name }}</span>
                 <span class="badge rounded-pill" 
                       style="background-color: rgba(0,0,0,0.3); color: white; font-size: 0.7rem; padding: 0.2rem 0.5rem;">
                     {{ count }}
