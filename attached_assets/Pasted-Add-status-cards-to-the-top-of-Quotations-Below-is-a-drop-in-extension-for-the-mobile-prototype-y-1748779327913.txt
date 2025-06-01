@@ -1,0 +1,80 @@
+Add “status-cards” to the top of Quotations
+
+Below is a drop-in extension for the mobile prototype you downloaded.
+It shows one pill-sized card per status (Draft, Sent, Accepted, Completed, etc.), each displaying the live count. Tapping a card:
+	1.	Sets the fltStatus in Alpine state.
+	2.	Scrolls the list into view.
+	3.	Highlights the active card.
+
+⸻
+
+1 HTML + Tailwind snippet (place right under the search row)
+
+<!-- STATUS CARDS --------------------------------------------------------->
+<div id="statusBar"
+     class="flex gap-2 px-4 pb-3 overflow-x-auto snap-x snap-mandatory"
+     x-data
+     @click="$dispatch('scroll-to-list')">
+
+  <template x-for="s in ['Draft','Sent','Accepted','Completed']" :key="s">
+    <button
+      class="status-card snap-start"
+      :class="fltStatus===s ? 'bg-blue-600 text-white' : 'bg-[#2b2e33]'"
+      @click.stop="fltStatus = (fltStatus===s ? '' : s); applyFilters()">
+
+      <span x-text="s"></span>
+      <span class="count-badge" x-text="statusCount(s)"></span>
+    </button>
+  </template>
+</div>
+
+Tailwind helpers
+
+.status-card{ @apply inline-flex items-center gap-2 px-3 py-2 rounded-md
+                     text-sm font-medium whitespace-nowrap shrink-0; }
+.count-badge { @apply rounded-full bg-black/30 text-[11px] leading-none
+                      px-1.5 py-0.5 font-semibold; }
+
+
+⸻
+
+2 Alpine.js additions
+
+Add these to the return object of quotesApp():
+
+statusCount(s){              // live badge count
+  return this.rows.filter(r => r.status === s).length;
+},
+init(){                      // ensure scroll-to-list works
+  this.$watch('fltStatus', () => {
+    this.$nextTick(() => document.querySelector('main')
+      .scrollIntoView({behavior:'smooth'}));
+  });
+}
+
+(Alpine automatically calls init() on component mount.)
+
+applyFilters() already filters the list; now it also fires when a card toggles.
+
+⸻
+
+3 Behaviour details
+	•	Horizontal scroll – cards overflow elegantly on small screens (overflow-x-auto) and snap one-by-one.
+	•	Active style – bg-blue-600 text-white; tap again to clear the filter.
+	•	Counts auto-update – deleting / adding rows instantly changes badge numbers because statusCount() is computed live.
+	•	Keyboard support – each card is a real <button>; space/enter toggles it.
+
+⸻
+
+4 Desktop enhancement (optional)
+
+At ≥ 768 px you can turn the scroller into a grid:
+
+@media (min-width:768px){
+  #statusBar{ flex-wrap:wrap; overflow-x-visible; }
+}
+
+
+⸻
+
+Drop this snippet into index.html, reload, and you’ll have tappable status boxes that jump straight to the filtered quotes list. If you need the counts fetched from the backend instead of computed client-side, just replace statusCount() with values you inject server-side. Enjoy!

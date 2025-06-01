@@ -38,6 +38,34 @@
     </div>
 </div>
 
+<!-- Status Cards -->
+<div class="container-fluid bg-body border-bottom">
+    <div id="statusBar" class="d-flex gap-2 px-3 pb-3 overflow-auto">
+        {% set status_counts = {} %}
+        {% for quotation in quotations %}
+            {% set status = quotation.get_status_label() %}
+            {% if status_counts.update({status: status_counts.get(status, 0) + 1}) %}{% endif %}
+        {% endfor %}
+        
+        {% set all_statuses = ['Draft', 'Sent', 'Accepted', 'Completed', 'Created'] %}
+        {% for status in all_statuses %}
+            {% set count = status_counts.get(status, 0) %}
+            {% set is_active = selected_status and quotation.get_status_label() == status %}
+            <button type="button" 
+                    class="btn btn-sm d-flex align-items-center gap-2 text-nowrap flex-shrink-0 status-card"
+                    data-status="{{ status }}"
+                    onclick="filterByStatus('{{ status }}')"
+                    style="{% if selected_status == status.upper() %}background-color: #0d6efd; color: white;{% else %}background-color: #f8f9fa; color: #495057;{% endif %}">
+                <span>{{ status }}</span>
+                <span class="badge rounded-pill" 
+                      style="background-color: rgba(0,0,0,0.3); color: white; font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+                    {{ count }}
+                </span>
+            </button>
+        {% endfor %}
+    </div>
+</div>
+
 <!-- Desktop header (hidden on mobile) -->
 <div class="container py-4 d-none d-lg-block">
     <div class="row mb-4">
@@ -304,6 +332,30 @@ function applyFilters() {
     document.getElementById('filterForm').submit();
 }
 
+// Filter by status function
+function filterByStatus(status) {
+    const currentStatus = new URLSearchParams(window.location.search).get('status');
+    const searchValue = document.getElementById('searchInput').value;
+    
+    // Toggle status - if same status is clicked, clear it
+    const newStatus = (currentStatus === status.toUpperCase()) ? '' : status.toUpperCase();
+    
+    // Build new URL with updated status
+    const params = new URLSearchParams(window.location.search);
+    if (newStatus) {
+        params.set('status', newStatus);
+    } else {
+        params.delete('status');
+    }
+    
+    if (searchValue) {
+        params.set('search', searchValue);
+    }
+    
+    // Navigate to new URL
+    window.location.href = window.location.pathname + '?' + params.toString();
+}
+
 // Clear filters function
 function clearFilters() {
     // Clear all form fields
@@ -432,6 +484,40 @@ article.card:hover {
 #searchInput:focus {
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     border-color: #86b7fe;
+}
+
+/* Status cards styling */
+.status-card {
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.status-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.status-card:active {
+    transform: translateY(0);
+}
+
+#statusBar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#statusBar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Desktop enhancement for status cards */
+@media (min-width: 768px) {
+    #statusBar {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
 }
 </style>
 {% endblock %}
