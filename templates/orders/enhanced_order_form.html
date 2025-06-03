@@ -390,7 +390,7 @@ function displayEnhancedSearchResults(products) {
             : '<i class="fas fa-seedling text-success"></i>';
         
         html += `
-            <div class="list-group-item list-group-item-action" onclick="addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
+            <div class="list-group-item list-group-item-action">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center">
@@ -406,7 +406,7 @@ function displayEnhancedSearchResults(products) {
                     </div>
                     <div class="text-end">
                         <div class="fw-bold">${priceDisplay}</div>
-                        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
+                        <button class="btn btn-sm btn-primary" onclick="addProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
                             <i class="fas fa-plus"></i> Add
                         </button>
                     </div>
