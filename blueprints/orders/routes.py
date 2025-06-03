@@ -1,15 +1,17 @@
 from datetime import datetime, date, timedelta
-from flask import render_template, request, redirect, url_for, flash, abort, current_app
+from flask import render_template, request, redirect, url_for, flash, abort, current_app, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import uuid
+import json
 
 from . import orders
 from models import db, Customer, Product, PriceList, OrderStatusEnum, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_TRANSITIONS
 from models import Order, OrderItem
 from utils.pdf_generator import generate_delivery_note_pdf, generate_charge_sheet_pdf
 from utils.translations import get_translations
+from forms import EnhancedOrderForm, OrderItemForm
 
 # Helper functions
 def generate_order_number():
@@ -205,9 +207,9 @@ def new_order():
         return redirect(url_for('orders.view_order', order_id=order.id))
     
     # GET request - display the enhanced form
-    customers = Customer.query.order_by(Customer.name).all()
+    form = EnhancedOrderForm()
     return render_template('orders/enhanced_order_form.html', 
-                         customers=customers, 
+                         form=form, 
                          order=None,
                          status_choices=[])
 
@@ -320,7 +322,11 @@ def edit_order(order_id):
         return redirect(url_for('orders.view_order', order_id=order.id))
     
     # GET request - display the enhanced form
-    customers = Customer.query.order_by(Customer.name).all()
+    form = EnhancedOrderForm(obj=order)
+    
+    # Set current customer
+    if order.customer_id:
+        form.customer_id.data = order.customer_id
     
     # Get available status choices
     status_choices = [(order.status, ORDER_STATUS_LABELS.get(order.status, order.status))]
@@ -328,9 +334,27 @@ def edit_order(order_id):
         status_choices.append((status_value, ORDER_STATUS_LABELS.get(status_value, status_value)))
     
     return render_template('orders/enhanced_order_form.html', 
-                         customers=customers, 
+                         form=form, 
                          order=order,
                          status_choices=status_choices)
+
+@orders.route('/price-list')
+@login_required
+def customer_price_list():
+    """Manage customer price lists"""
+    # Get all price list entries with relationships
+    price_list_entries = PriceList.query.join(Customer).join(Product).order_by(
+        Customer.name, Product.name
+    ).all()
+    
+    # Get all customers and products for the dropdowns
+    customers = Customer.query.order_by(Customer.name).all()
+    products = Product.query.order_by(Product.name).all()
+    
+    return render_template('orders/customer_price_list.html',
+                         price_list_entries=price_list_entries,
+                         customers=customers,
+                         products=products)
 
 @orders.route('/<int:order_id>/status', methods=['POST'])
 @login_required
