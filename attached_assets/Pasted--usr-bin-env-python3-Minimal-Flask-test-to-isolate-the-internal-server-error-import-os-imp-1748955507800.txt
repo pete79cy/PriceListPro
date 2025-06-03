@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""
+Minimal Flask test to isolate the internal server error
+"""
+import os
+import sys
+from flask import Flask, render_template, request, redirect, url_for
+import traceback
+
+# Create minimal Flask app
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'test-secret-key'
+app.config['DEBUG'] = True
+
+# Test route that mimics your new order functionality
+@app.route('/test-new-order')
+def test_new_order():
+    try:
+        # Try to import your models step by step
+        print("Step 1: Importing models...")
+        from models import Order, Customer, Product
+        print("✓ Models imported successfully")
+        
+        print("Step 2: Querying customers...")
+        customers = Customer.query.all()
+        print(f"✓ Found {len(customers)} customers")
+        
+        print("Step 3: Querying products...")
+        products = Product.query.all()
+        print(f"✓ Found {len(products)} products")
+        
+        print("Step 4: Creating form...")
+        from forms import OrderForm
+        form = OrderForm()
+        print("✓ Form created successfully")
+        
+        return f"Test successful! Found {len(customers)} customers and {len(products)} products"
+        
+    except Exception as e:
+        error_msg = f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        print(error_msg)
+        return f"<pre>{error_msg}</pre>", 500
+
+@app.route('/test-imports')
+def test_imports():
+    """Test individual imports to find the problematic one"""
+    results = []
+    
+    # Test each import individually
+    imports_to_test = [
+        ('flask', 'from flask import Flask'),
+        ('models', 'import models'),
+        ('forms', 'import forms'),
+        ('sqlalchemy', 'import sqlalchemy'),
+        ('flask_admin', 'import flask_admin'),
+        ('enum', 'from enum import Enum'),
+    ]
+    
+    for name, import_statement in imports_to_test:
+        try:
+            exec(import_statement)
+            results.append(f"✓ {name}: SUCCESS")
+        except Exception as e:
+            results.append(f"✗ {name}: {str(e)}")
+    
+    return "<pre>" + "\n".join(results) + "</pre>"
+
+@app.route('/')
+def index():
+    return """
+    <h1>Flask Debug Test</h1>
+    <ul>
+        <li><a href="/test-imports">Test Imports</a></li>
+        <li><a href="/test-new-order">Test New Order Functionality</a></li>
+    </ul>
+    """
+
+if __name__ == '__main__':
+    print("Starting minimal Flask test...")
+    print(f"Current directory: {os.getcwd()}")
+    print(f"Files in directory: {os.listdir('.')}")
+    
+    # Try to run the app
+    try:
+        app.run(debug=True, port=5001, host='0.0.0.0')
+    except Exception as e:
+        print(f"Failed to start Flask app: {e}")
+        traceback.print_exc()

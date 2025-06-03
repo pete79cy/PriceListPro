@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""
+Debug script to identify the internal server error in your Flask application
+"""
+import os
+import sys
+import traceback
+from flask import Flask
+
+def check_imports():
+    """Check if all required modules can be imported"""
+    print("Checking imports...")
+    
+    try:
+        import flask
+        print("✓ Flask imported successfully")
+    except ImportError as e:
+        print(f"✗ Flask import error: {e}")
+        
+    try:
+        import sqlalchemy
+        print("✓ SQLAlchemy imported successfully")
+    except ImportError as e:
+        print(f"✗ SQLAlchemy import error: {e}")
+        
+    try:
+        import flask_admin
+        print("✓ Flask-Admin imported successfully")
+    except ImportError as e:
+        print(f"✗ Flask-Admin import error: {e}")
+
+def check_circular_imports():
+    """Check for circular import issues"""
+    print("\nChecking for circular imports...")
+    
+    try:
+        # Try importing your main modules
+        import models
+        print("✓ models.py imported successfully")
+    except ImportError as e:
+        print(f"✗ models.py import error: {e}")
+        traceback.print_exc()
+        
+    try:
+        import forms
+        print("✓ forms.py imported successfully")  
+    except ImportError as e:
+        print(f"✗ forms.py import error: {e}")
+        traceback.print_exc()
+
+def check_database_connection():
+    """Check database connection"""
+    print("\nChecking database connection...")
+    
+    try:
+        from models import db
+        # Try to connect to database
+        print("✓ Database models imported")
+    except Exception as e:
+        print(f"✗ Database connection error: {e}")
+        traceback.print_exc()
+
+def check_flask_app():
+    """Try to create Flask app instance"""
+    print("\nTesting Flask app creation...")
+    
+    try:
+        from app import create_app
+        app = create_app()
+        print("✓ Flask app created successfully")
+        
+        # Check routes
+        print("\nRegistered routes:")
+        for rule in app.url_map.iter_rules():
+            print(f"  {rule.endpoint}: {rule.rule}")
+            
+    except Exception as e:
+        print(f"✗ Flask app creation error: {e}")
+        traceback.print_exc()
+
+def main():
+    print("=== Flask Application Debug Script ===\n")
+    
+    # Check current directory
+    print(f"Current directory: {os.getcwd()}")
+    print(f"Python path: {sys.path}\n")
+    
+    # Run checks
+    check_imports()
+    check_circular_imports()
+    check_database_connection()
+    check_flask_app()
+    
+    print("\n=== Debug Complete ===")
+
+if __name__ == "__main__":
+    main()
