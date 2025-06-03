@@ -1,0 +1,88 @@
+### Why the search still looks “dead”
+
+1. **Two competing approaches are wired to the same `<input>`**
+
+   ```html
+   <input … id="product_search"
+          oninput="filterProducts()">   <!-- inline handler -->
+   ```
+
+   *and*
+
+   ```js
+   // (in another place in the file you didn’t paste)
+   document.getElementById('product_search')
+           .addEventListener('input', filterProducts);
+   ```
+
+   When the page is served **un-minified**, both versions call the same global
+   `filterProducts()` so you normally just get duplicate calls (harmless).
+   But after an ES-module or `type="module"` refactor, the function in the
+   bundled script is no longer on `window`, so the inline handler throws
+   `ReferenceError: filterProducts is not defined` and the whole debounce chain
+   never starts.
+
+2. **The fetch target doesn’t exist**
+   Your JavaScript calls `/api/v1/products`, but the Flask blueprint route is
+   `@api.route("/products")`.  Unless that blueprint was created with
+   `url_prefix="/api/v1"`, every request returns **404** → the spinner stays
+   forever.
+
+---
+
+### Minimal fix (2 quick edits)
+
+| File                                               | What to change                                                 | Why                                                                      |
+| -------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **templates/orders/view\.html**                    | **Remove** `oninput="filterProducts()"` from the `<input>` tag | Rely on the JS listener only, avoids “function not on window” errors     |
+| **templates/orders/view\.html** (JS)               | Ensure the listener is added once the modal exists:            | Guarantees the element is found even with Turbo/HTMX-style partial loads |
+|                                                    | \`\`\`js                                                       |                                                                          |
+| document.addEventListener('shown.bs.modal', e => { |                                                                |                                                                          |
+
+```
+if (e.target.id !== 'addItemModal') return;   // your modal id
+document.getElementById('product_search')
+        .addEventListener('input', filterProducts);
+loadInitialProducts();        // populate first 10 items
+```
+
+});
+
+````| |
+| **blueprints/routes_api.py** OR `__init__` where the blueprint is created | Make sure the blueprint has `url_prefix='/api/v1'` **or** change the fetch URL to `/api/products` | Front-end URL ⟷ back-end route must match |
+
+```python
+# blueprints/routes_api.py
+api = Blueprint("api", __name__, url_prefix="/api/v1")
+````
+
+or
+
+```js
+// view.html - inside searchProductsAPI()
+const url = `/api/products?search=${encodeURIComponent(query)}&limit=20`;
+```
+
+---
+
+### Sanity-check after the edit
+
+1. **Open the modal → F12 → Console**
+   No more “filterProducts is not defined”.
+2. **Type “lant” → Network tab**
+   One request fires to `/api/v1/products?search=lant&limit=20` (or `/api/products…`) and returns **200** with JSON.
+3. **Results render** in `#product_results_list`.
+
+---
+
+### Nice-to-have clean-up
+
+* Remove inline JS from all buttons; attach them once in the modal’s
+  `shown.bs.modal` event—prevents multiple listeners when users reopen the
+  dialog.
+* Keep a single `let searchTimeout;` at the top of the script so the debounce
+  variable doesn’t leak to `window`.
+
+Give those two edits a try and let me know what you see in the Network tab—
+if the request still 404s after the prefix fix, we’ll trace the blueprint
+registration next.

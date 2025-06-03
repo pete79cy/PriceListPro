@@ -375,8 +375,7 @@
                                                 class="form-control" 
                                                 id="product_search" 
                                                 placeholder="Search products by name, category, size, or SKU..." 
-                                                autocomplete="off"
-                                                oninput="filterProducts()">
+                                                autocomplete="off">
                                             <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
                                                 <i class="fas fa-times"></i>
                                             </button>
@@ -1088,7 +1087,6 @@ function validateForm() {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the form
-    loadInitialProducts();
     updatePreview();
     updateFormState();
     
@@ -1119,22 +1117,44 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('cancelNewProduct').addEventListener('click', toggleNewProductForm);
     document.getElementById('clear_product_btn').addEventListener('click', clearSelectedProduct);
     
-    // Search and filter button listeners
-    document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
-    document.getElementById('showAllBtn').addEventListener('click', showAllProducts);
-    document.getElementById('clearCategoryBtn').addEventListener('click', clearCategoryFilter);
-    
-    // Category filter buttons
-    document.querySelectorAll('.category-filter').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const category = this.getAttribute('data-category');
-            filterByCategory(category);
+    // Modal-based event listeners to avoid conflicts
+    document.addEventListener('shown.bs.modal', function(e) {
+        if (e.target.id !== 'addItemModal') return;
+        
+        // Search input listener
+        const productSearch = document.getElementById('product_search');
+        if (productSearch) {
+            productSearch.addEventListener('input', filterProducts);
+        }
+        
+        // Search and filter button listeners
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', clearSearch);
+        }
+        
+        const showAllBtn = document.getElementById('showAllBtn');
+        if (showAllBtn) {
+            showAllBtn.addEventListener('click', showAllProducts);
+        }
+        
+        const clearCategoryBtn = document.getElementById('clearCategoryBtn');
+        if (clearCategoryBtn) {
+            clearCategoryBtn.addEventListener('click', clearCategoryFilter);
+        }
+        
+        // Category filter buttons
+        document.querySelectorAll('.category-filter').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const category = this.getAttribute('data-category');
+                filterByCategory(category);
+            });
         });
+        
+        // Load initial products when modal opens
+        loadInitialProducts();
     });
 });
-    
-    // DOM Elements
-    const productSearch = document.getElementById('product_search');
     const productIdInput = document.getElementById('product_id');
     const searchResults = document.getElementById('search_results');
     const resultsList = document.getElementById('product_results_list');
