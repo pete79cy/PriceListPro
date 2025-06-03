@@ -247,17 +247,47 @@
                 {% endif %}
                 
                 {% if fields.vat %}
-                <!-- VAT information - assuming we calculate this -->
-                {% set vat_total = (quotation.total_amount or 0) * 0.19 %}
+                <!-- VAT information - calculate per item based on actual VAT rates -->
+                {% set vat_dict = {} %}
+                {% set subtotal = 0 %}
+                {% for item in quotation.items %}
+                    {% set item_subtotal = item.quantity * item.selling_price %}
+                    {% set subtotal = subtotal + item_subtotal %}
+                    {% set vat_rate = item.vat_rate %}
+                    {% set vat_amount = item_subtotal * (vat_rate / 100) %}
+                    {% if vat_rate in vat_dict %}
+                        {% set _ = vat_dict.update({vat_rate: vat_dict[vat_rate] + vat_amount}) %}
+                    {% else %}
+                        {% set _ = vat_dict.update({vat_rate: vat_amount}) %}
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Display VAT breakdown by rate -->
+                {% for vat_rate, vat_amount in vat_dict.items() %}
                 <tr>
-                    <td colspan="{{ visible_column_count - 1 }}" class="text-right"><strong>VAT (19%):</strong></td>
-                    <td class="text-right">{{ '%.2f'|format(vat_total) }} {{ quotation.currency }}</td>
+                    <td colspan="{{ visible_column_count - 1 }}" class="text-right"><strong>VAT {{ vat_rate }}%:</strong></td>
+                    <td class="text-right">{{ '%.2f'|format(vat_amount) }} {{ quotation.currency }}</td>
                 </tr>
+                {% endfor %}
                 {% endif %}
                 
                 {% if fields.total %}
-                <!-- Grand Total -->
-                {% set grand_total = (quotation.total_amount or 0) * 1.19 %}
+                <!-- Grand Total - calculate from subtotal + all VAT amounts -->
+                {% set vat_dict = {} %}
+                {% set subtotal = 0 %}
+                {% for item in quotation.items %}
+                    {% set item_subtotal = item.quantity * item.selling_price %}
+                    {% set subtotal = subtotal + item_subtotal %}
+                    {% set vat_rate = item.vat_rate %}
+                    {% set vat_amount = item_subtotal * (vat_rate / 100) %}
+                    {% if vat_rate in vat_dict %}
+                        {% set _ = vat_dict.update({vat_rate: vat_dict[vat_rate] + vat_amount}) %}
+                    {% else %}
+                        {% set _ = vat_dict.update({vat_rate: vat_amount}) %}
+                    {% endif %}
+                {% endfor %}
+                {% set total_vat = vat_dict.values() | sum %}
+                {% set grand_total = subtotal + total_vat %}
                 <tr class="grand-total-row">
                     <td colspan="{{ visible_column_count - 1 }}" class="text-right"><strong>TOTAL:</strong></td>
                     <td class="text-right">{{ '%.2f'|format(grand_total) }} {{ quotation.currency }}</td>
