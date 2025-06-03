@@ -942,13 +942,12 @@ function showInitialProducts() {
 function selectProduct(productId) {
     selectedProductId = productId;
     
-    // Find product in current displayed list
-    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
-    if (!productCard) return;
-    
-    // Extract product data from the card
-    const productName = productCard.querySelector('.product-name').textContent.replace(/<[^>]*>/g, '');
-    const productDetails = productCard.querySelector('.product-details').textContent;
+    // Find product in allProducts array
+    const selectedProduct = allProducts.find(p => p.id == productId);
+    if (!selectedProduct) {
+        console.error('Product not found:', productId);
+        return;
+    }
     
     // Update hidden input
     document.getElementById('product_id').value = productId;
@@ -958,8 +957,14 @@ function selectProduct(productId) {
     const selectedName = document.getElementById('selected_product_name');
     const selectedDetailsEl = document.getElementById('selected_product_details');
     
-    selectedName.textContent = productName;
-    selectedDetailsEl.textContent = productDetails;
+    selectedName.textContent = selectedProduct.name;
+    
+    // Build details string
+    const details = [];
+    if (selectedProduct.category) details.push(selectedProduct.category);
+    if (selectedProduct.pot) details.push(`Size: ${selectedProduct.pot}`);
+    if (selectedProduct.sku) details.push(`SKU: ${selectedProduct.sku}`);
+    selectedDetailsEl.textContent = details.join(' • ');
     
     selectedDisplay.classList.remove('d-none');
     
@@ -967,7 +972,10 @@ function selectProduct(productId) {
     document.querySelectorAll('.product-card').forEach(card => {
         card.classList.remove('selected');
     });
-    productCard.classList.add('selected');
+    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    if (productCard) {
+        productCard.classList.add('selected');
+    }
     
     // Hide new product form
     document.getElementById('newProductForm').classList.add('d-none');
