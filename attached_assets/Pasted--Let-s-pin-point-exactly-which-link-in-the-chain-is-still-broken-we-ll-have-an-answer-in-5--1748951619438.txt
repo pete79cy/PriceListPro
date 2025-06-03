@@ -1,0 +1,115 @@
+### Let’s pin-point exactly *which* link in the chain is still broken
+
+(we’ll have an answer in < 5 min once you run these three micro-tests).
+
+---
+
+## 1 ️⃣  Does the `filterProducts()` function ever fire?
+
+Add one **single** log line inside `filterProducts`:
+
+```js
+async function filterProducts () {
+  console.log('[DEBUG] filterProducts called');   // <-- add this
+  …
+}
+```
+
+*Open the modal, type* **l** **a** **n** **t** ►
+*Do you see that message in **Console**?*
+
+| Result              | Meaning                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| **No message**      | The listener never attaches → we’re still fighting a DOM-ready / modal-ready issue. |
+| **Message appears** | The listener is fine – jump to step 2.                                              |
+
+<details><summary>Quick repair if you get “no message”</summary>
+
+Your modal is injected dynamically, so attach the listener when the
+modal is shown (Bootstrap 5 syntax):
+
+```js
+document.addEventListener('shown.bs.modal', e => {
+  if (e.target.id !== 'addItemModal') return;
+  e.target.querySelector('#product_search')
+          .addEventListener('input', filterProducts, { once: true });
+  loadInitialProducts();
+});
+```
+
+Remove **all** other `addEventListener('input', …)` lines for that element.
+Now repeat the test.
+
+</details>
+
+---
+
+## 2 ️⃣  Does the browser actually hit the API?
+
+Keep DevTools **Network** panel open and type “lant”.
+
+*Look for a request whose path ends in* `/products?...`.
+
+| What you see                         | What it tells us                                                                                      |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| **No request at all**                | The code that issues `fetch` is throwing before the call (usually `resultsList` is null). See step 3. |
+| **Request with 404**                 | Front-end path ↔ back-end blueprint mismatch.                                                         |
+| **Request with 200 but empty array** | Search logic in Flask query returns no rows (SQL `ILIKE` maybe on wrong column).                      |
+| **Request with 500**                 | Flask exception – check server logs.                                                                  |
+
+**If you get 404:** your JS is hitting `/api/v1/products` but the route
+is `/api/products` **or vice versa**.
+Easiest fix:
+
+```python
+# blueprints/routes_api.py
+api = Blueprint('api', __name__, url_prefix='/api/v1')   # 👈 make sure this line exists
+```
+
+(or change the fetch URL to `/api/products`).
+
+---
+
+## 3 ️⃣  If the fetch never fires, one DOM lookup is still null
+
+In `searchProductsAPI` right before the spinner code add:
+
+```js
+console.assert(document.getElementById('product_results_list'),
+               '[DEBUG] #product_results_list not found!');
+```
+
+If that fires, the element isn’t in the DOM **when** you search.
+Move the container **inside** the modal or delay the listener as in step 1.
+
+---
+
+### 60-second smoke test once the three issues are gone
+
+```bash
+curl -s http://<your-repl>/api/v1/products?search=lant\&limit=5 | jq .
+```
+
+Should spit back JSON like:
+
+```json
+[
+  {"id":42,"name":"Lantana Camara","category":"Shrubs",…}
+]
+```
+
+When that works, the front-end will show results immediately.
+
+---
+
+### Why “Add New Product” also fails
+
+That button calls **the same search endpoint** to pre-fill the form with
+“Not found, want to create?” logic. Once the search route responds 200,
+the “Add New Product” flow will start working too.
+
+---
+
+Run the three micro-tests, note exactly which line fails, and paste the
+*one* console / network line you see.
+With that single data point we can deliver the precise patch.
