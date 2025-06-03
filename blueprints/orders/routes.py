@@ -338,6 +338,12 @@ def edit_order(order_id):
                          order=order,
                          status_choices=status_choices)
 
+@orders.route('/demo')
+@login_required
+def demo():
+    """Demo page for enhanced daily orders management"""
+    return render_template('orders/demo.html')
+
 @orders.route('/price-list')
 @login_required
 def customer_price_list():
