@@ -244,34 +244,7 @@ class QuotationStatus:
         CREATED: [SENT, DRAFT]
     }
     
-# The OrderStatusEnum is defined at the top of the file
-
-# For convenience, we define UI constants for order status display
-ORDER_STATUS_LABELS = {
-    OrderStatusEnum.NEW.value: 'New',
-    OrderStatusEnum.PREPARING.value: 'Preparing',
-    OrderStatusEnum.READY.value: 'Ready',
-    OrderStatusEnum.DELIVERED.value: 'Delivered',
-    OrderStatusEnum.CANCELLED.value: 'Cancelled'
-}
-
-# Order status colors for UI
-ORDER_STATUS_COLORS = {
-    OrderStatusEnum.NEW.value: '#FF9800',  # Orange
-    OrderStatusEnum.PREPARING.value: '#2196F3',  # Blue
-    OrderStatusEnum.READY.value: '#4CAF50',  # Green
-    OrderStatusEnum.DELIVERED.value: '#8BC34A',  # Light Green
-    OrderStatusEnum.CANCELLED.value: '#F44336'  # Red
-}
-
-# Valid order status transitions
-ORDER_STATUS_TRANSITIONS = {
-    OrderStatusEnum.NEW.value: [OrderStatusEnum.PREPARING.value, OrderStatusEnum.CANCELLED.value],
-    OrderStatusEnum.PREPARING.value: [OrderStatusEnum.READY.value, OrderStatusEnum.NEW.value, OrderStatusEnum.CANCELLED.value],
-    OrderStatusEnum.READY.value: [OrderStatusEnum.DELIVERED.value, OrderStatusEnum.PREPARING.value, OrderStatusEnum.CANCELLED.value],
-    OrderStatusEnum.DELIVERED.value: [OrderStatusEnum.NEW.value, OrderStatusEnum.CANCELLED.value],
-    OrderStatusEnum.CANCELLED.value: [OrderStatusEnum.NEW.value]
-}
+# Note: ORDER_STATUS_LABELS and related constants are defined above with the OrderStatusEnum
 
 # The Order class is defined later in the file
     
