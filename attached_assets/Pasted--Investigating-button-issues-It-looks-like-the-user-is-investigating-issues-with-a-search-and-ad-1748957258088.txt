@@ -1,0 +1,112 @@
+**Investigating button issues**
+
+It looks like the user is investigating issues with a search and add manual button in daily orders. They’re checking the JavaScript and API routes and have identified a problem where the JavaScript is calling the route incorrectly. The path should be `/orders/api/search/products` but they typed it off. They’re reviewing the route configuration to fix it. Wait, they mentioned two paths, but they seem to be similar with a reversal in the second one. They got it now!
+
+**Fixing JavaScript issues**
+
+The user is troubleshooting the search and add manual button functionality in the order form. They identified the issue being a mismatch in the API route. The JavaScript was calling the wrong endpoint, which is `/orders/api/search/products` instead of `/api/products/search`. They also noticed the order form should use `/orders/enhanced/new`. They're likely looking for a code snippet to update the routes and ensure jQuery is loaded. It seems they want help fix the JavaScript with the correct paths and event handling.
+
+Thought for 16 seconds
+
+Below is a concise checklist of what’s wrong and a drop-in patch you can paste at the very end of the same `<script>` block (or replace the previous helpers entirely). The patch fixes both symptoms you described:
+
+| Problem                            | Why it happens                                                                                             | Fix included below                                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Product search → 404**           | Front-end points at `/api/products/search`, but the back-end route is `/orders/api/search/products`.       | Centralised `API_BASE` constant so you only change it in one place.                                      |
+| **“Add manual item” does nothing** | Listener fires, but either there’s no `order-items-container` on the page or the stub function never runs. | Extra guard + nicer fallback UI so you see *why* it failed instead of silence.                           |
+| **Enhanced-order-form URL**        | Link/button (or redirect) still points at `/orders/enhanced_order_form`.                                   | Just update your router or the link; nothing to change in this JS once you’re on `/orders/enhanced/new`. |
+
+---
+
+### 1.  Quick sanity-check before patching
+
+* Open DevTools → **Network** tab, filter by *XHR/fetch*.
+* Trigger a search: if the request path does **not** start with `/orders`, you’ve confirmed the mismatch.
+* Open **Console**: if you see log lines that start with `[ORDER FORM DEBUG]`, the helper is loaded; if not, the `<script>` tag may be missing or blocked.
+
+Once that’s verified, wire in the patch.
+
+---
+
+### 2. Drop-in patch (replace the previous helpers or append)
+
+```html
+<script>
+// ---------------------------------------------------------------------------
+//  CENTRAL CONFIG (edit here only)
+// ---------------------------------------------------------------------------
+const API_BASE = '/orders/api';          // <— adjust once if your prefix changes
+const SEARCH_ENDPOINT = `${API_BASE}/search/products`;
+
+// ---------------------------------------------------------------------------
+//  Override / extend the earlier helpers
+// ---------------------------------------------------------------------------
+async function testProductSearch(query) {
+    debugLog(`Testing product search API with query: “${query}”`);
+    try {
+        const url = `${SEARCH_ENDPOINT}?q=${encodeURIComponent(query)}`;
+        debugLog(`Requesting: ${url}`);
+
+        const response = await fetch(url);
+        debugLog(`Response status: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const products = await response.json();
+        debugLog(`Search successful, found ${products.length} products`, products);
+        displaySearchResults(products);
+    } catch (err) {
+        debugLog(`Search failed: ${err.message}`);
+        const resultsEl = document.getElementById('product-search-results');
+        if (resultsEl) {
+            resultsEl.innerHTML = `
+                <div class="list-group-item text-danger">
+                    Search failed: ${err.message}
+                </div>`;
+            resultsEl.style.display = 'block';
+        }
+    }
+}
+
+//  Enhanced manual-item stub so you know what went wrong
+function addProductToOrder(id, name, price, unit) {
+    const container = document.getElementById('order-items-container');
+    if (!container) {
+        debugLog('✗ order-items-container not found - cannot append item');
+        alert('Developer note: Missing #order-items-container – check template.');
+        return;
+    }
+    const row = document.createElement('div');
+    row.className = 'list-group-item';
+    row.innerHTML = `
+        <div class="d-flex w-100 justify-content-between align-items-center">
+            <div>
+                <h6 class="my-0">${name}</h6>
+                <small class="text-muted">${unit || ''}</small>
+            </div>
+            <span>€${Number(price).toFixed(2)}</span>
+        </div>`;
+    container.appendChild(row);
+}
+
+// Optional: if jQuery is required elsewhere, warn if missing
+if (typeof jQuery === 'undefined') {
+    debugLog('⚠️  jQuery is NOT loaded - some legacy code may fail');
+}
+</script>
+```
+
+**What changed?**
+
+1. **Central `API_BASE` constant** – every future fetch can be built from that, so if the prefix ever changes again you won’t chase hard-coded strings.
+2. **Search endpoint now matches back-end route** – `SEARCH_ENDPOINT` resolves to `/orders/api/search/products`.
+3. **More defensive `addProductToOrder`** – fails loudly if the container is absent; great for template typos.
+4. **jQuery presence check** – harmless log that immediately tells you if another script silently failed because jQuery wasn’t injected.
+
+Load `/orders/enhanced/new`, open DevTools, and test again:
+
+* **Search**: You should see a 200 OK to `/orders/api/search/products`.
+* **Add manual item**: If the new row doesn’t appear, you’ll at least get a debug message or an alert telling you exactly why.
+
+That should close the loop on both issues. Let me know if anything else is still acting up!

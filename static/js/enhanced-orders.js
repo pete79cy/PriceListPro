@@ -85,9 +85,10 @@ class EnhancedOrderManager {
         .done((results) => {
             this.displaySearchResults(results);
         })
-        .fail(() => {
+        .fail((xhr) => {
+            console.error('Search API failed:', xhr);
             $('#searchResults').html(
-                '<div class="alert alert-danger">Search failed. Please try again.</div>'
+                `<div class="alert alert-danger">Search failed (${xhr.status}): ${xhr.statusText || 'Please try again'}</div>`
             );
         });
     }
