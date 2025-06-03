@@ -21,7 +21,7 @@
     </div>
 
     <form id="orderForm" method="POST">
-        {{ form.hidden_tag() }}
+        {% if form %}{{ form.hidden_tag() }}{% endif %}
         
         <!-- Order Header -->
         <div class="row mb-4">
@@ -32,21 +32,41 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            {{ form.customer_id.label(class="form-label fw-bold") }}
-                            {{ form.customer_id(class="form-select", id="customerSelect") }}
-                            {% if form.customer_id.errors %}
-                                <div class="text-danger small">{{ form.customer_id.errors[0] }}</div>
+                            <label class="form-label fw-bold">Customer</label>
+                            {% if form and form.customer_id %}
+                                {{ form.customer_id(class="form-select", id="customerSelect") }}
+                                {% if form.customer_id.errors %}
+                                    <div class="text-danger small">{{ form.customer_id.errors[0] }}</div>
+                                {% endif %}
+                            {% else %}
+                                <select name="customer_id" class="form-select" id="customerSelect" required>
+                                    <option value="">-- Select Customer --</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.id }}" {% if order and order.customer_id == customer.id %}selected{% endif %}>
+                                        {{ customer.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
                             {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.delivery_date.label(class="form-label fw-bold") }}
-                            {{ form.delivery_date(class="form-control") }}
+                            <label class="form-label fw-bold">Delivery Date</label>
+                            {% if form and form.delivery_date %}
+                                {{ form.delivery_date(class="form-control") }}
+                            {% else %}
+                                <input type="date" name="delivery_date" class="form-control" 
+                                       value="{{ order.delivery_date.strftime('%Y-%m-%d') if order and order.delivery_date else '' }}">
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.notes.label(class="form-label fw-bold") }}
-                            {{ form.notes(class="form-control", rows="3", placeholder="Order notes...") }}
+                            <label class="form-label fw-bold">Order Notes</label>
+                            {% if form and form.notes %}
+                                {{ form.notes(class="form-control", rows="3", placeholder="Order notes...") }}
+                            {% else %}
+                                <textarea name="notes" class="form-control" rows="3" placeholder="Order notes...">{{ order.notes if order else '' }}</textarea>
+                            {% endif %}
                         </div>
                         
                         {% if order %}

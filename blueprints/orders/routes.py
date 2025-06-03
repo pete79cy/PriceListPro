@@ -208,10 +208,12 @@ def new_order():
     
     # GET request - display the enhanced form
     form = EnhancedOrderForm()
+    customers = Customer.query.order_by(Customer.name).all()
     return render_template('orders/enhanced_order_form.html', 
                          form=form, 
                          order=None,
-                         status_choices=[])
+                         status_choices=[],
+                         customers=customers)
 
 @orders.route('/enhanced/new', methods=['GET', 'POST'])
 @login_required
@@ -323,6 +325,7 @@ def edit_order(order_id):
     
     # GET request - display the enhanced form
     form = EnhancedOrderForm(obj=order)
+    customers = Customer.query.order_by(Customer.name).all()
     
     # Set current customer
     if order.customer_id:
@@ -336,7 +339,8 @@ def edit_order(order_id):
     return render_template('orders/enhanced_order_form.html', 
                          form=form, 
                          order=order,
-                         status_choices=status_choices)
+                         status_choices=status_choices,
+                         customers=customers)
 
 @orders.route('/demo')
 @login_required
