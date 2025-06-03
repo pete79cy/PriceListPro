@@ -133,12 +133,13 @@ def index():
 @orders.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_order():
-    """Create a new order"""
+    """Create a new order with enhanced functionality"""
     if request.method == 'POST':
         # Extract form data
         customer_id = request.form.get('customer_id')
         delivery_date_str = request.form.get('delivery_date')
         notes = request.form.get('notes')
+        items_json = request.form.get('items')
         
         # Validate required fields
         if not customer_id:
@@ -163,14 +164,58 @@ def new_order():
         )
         
         db.session.add(order)
+        db.session.flush()  # Get the order ID
+        
+        # Process order items if provided
+        if items_json:
+            try:
+                import json
+                items = json.loads(items_json)
+                
+                for item_data in items:
+                    if not item_data.get('plant_name') or not item_data.get('quantity'):
+                        continue
+                        
+                    item = OrderItem(
+                        order_id=order.id,
+                        product_id=item_data.get('product_id'),
+                        price_list_id=item_data.get('price_list_id'),
+                        plant_name=item_data['plant_name'],
+                        size=item_data.get('size', ''),
+                        quantity=int(item_data['quantity']),
+                        price=float(item_data.get('price', 0)),
+                        vat_rate=float(item_data.get('vat_rate', 19.0)),
+                        notes=item_data.get('notes', '')
+                    )
+                    
+                    db.session.add(item)
+                    
+                    # Update customer price list if requested
+                    if (item_data.get('update_price_list', False) and 
+                        item.product_id and item.price > 0):
+                        update_customer_price_list(order.customer_id, item.product_id, item.price)
+                        item.updated_price_list = True
+                        
+            except (json.JSONDecodeError, ValueError, KeyError) as e:
+                flash(f'Error processing order items: {str(e)}', 'warning')
+        
         db.session.commit()
         
         flash(f'Order {order.order_number} created successfully', 'success')
         return redirect(url_for('orders.view_order', order_id=order.id))
     
-    # GET request - display the form
+    # GET request - display the enhanced form
     customers = Customer.query.order_by(Customer.name).all()
-    return render_template('orders/new.html', customers=customers)
+    return render_template('orders/enhanced_order_form.html', 
+                         customers=customers, 
+                         order=None,
+                         status_choices=[])
+
+@orders.route('/enhanced/new', methods=['GET', 'POST'])
+@login_required
+def new_enhanced_order():
+    """Create a new order using the enhanced interface"""
+    return new_order()
 
 @orders.route('/<int:order_id>')
 @login_required
@@ -194,6 +239,98 @@ def view_order(order_id):
         available_statuses=available_statuses,
         ORDER_STATUS_COLORS=ORDER_STATUS_COLORS
     )
+
+@orders.route('/<int:order_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_order(order_id):
+    """Edit an existing order with enhanced functionality"""
+    order = Order.query.get_or_404(order_id)
+    
+    if request.method == 'POST':
+        # Extract form data
+        customer_id = request.form.get('customer_id')
+        delivery_date_str = request.form.get('delivery_date')
+        notes = request.form.get('notes')
+        status = request.form.get('status')
+        items_json = request.form.get('items')
+        
+        # Validate required fields
+        if not customer_id:
+            flash('Customer is required', 'danger')
+            return redirect(url_for('orders.edit_order', order_id=order_id))
+            
+        # Parse delivery date if provided
+        delivery_date = None
+        if delivery_date_str:
+            try:
+                delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Invalid delivery date format', 'warning')
+        
+        # Update order fields
+        order.customer_id = customer_id
+        order.delivery_date = delivery_date
+        order.notes = notes
+        order.updated_at = datetime.utcnow()
+        
+        # Update status if provided and valid
+        if status and status in ORDER_STATUS_TRANSITIONS.get(order.status, []) or status == order.status:
+            order.status = status
+        
+        # Clear existing items if new items provided
+        if items_json:
+            try:
+                import json
+                items = json.loads(items_json)
+                
+                # Remove existing items
+                OrderItem.query.filter_by(order_id=order.id).delete()
+                
+                # Add new items
+                for item_data in items:
+                    if not item_data.get('plant_name') or not item_data.get('quantity'):
+                        continue
+                        
+                    item = OrderItem(
+                        order_id=order.id,
+                        product_id=item_data.get('product_id'),
+                        price_list_id=item_data.get('price_list_id'),
+                        plant_name=item_data['plant_name'],
+                        size=item_data.get('size', ''),
+                        quantity=int(item_data['quantity']),
+                        price=float(item_data.get('price', 0)),
+                        vat_rate=float(item_data.get('vat_rate', 19.0)),
+                        notes=item_data.get('notes', '')
+                    )
+                    
+                    db.session.add(item)
+                    
+                    # Update customer price list if requested
+                    if (item_data.get('update_price_list', False) and 
+                        item.product_id and item.price > 0):
+                        update_customer_price_list(order.customer_id, item.product_id, item.price)
+                        item.updated_price_list = True
+                        
+            except (json.JSONDecodeError, ValueError, KeyError) as e:
+                flash(f'Error processing order items: {str(e)}', 'warning')
+        
+        db.session.commit()
+        
+        flash(f'Order {order.order_number} updated successfully', 'success')
+        return redirect(url_for('orders.view_order', order_id=order.id))
+    
+    # GET request - display the enhanced form
+    customers = Customer.query.order_by(Customer.name).all()
+    
+    # Get available status choices
+    status_choices = [(order.status, ORDER_STATUS_LABELS.get(order.status, order.status))]
+    for status_value in ORDER_STATUS_TRANSITIONS.get(order.status, []):
+        status_choices.append((status_value, ORDER_STATUS_LABELS.get(status_value, status_value)))
+    
+    return render_template('orders/enhanced_order_form.html', 
+                         customers=customers, 
+                         order=order,
+                         status_choices=status_choices)
 
 @orders.route('/<int:order_id>/status', methods=['POST'])
 @login_required
