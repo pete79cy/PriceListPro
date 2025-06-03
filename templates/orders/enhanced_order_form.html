@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 
 {% block title %}Enhanced Daily Order Management{% endblock %}
 
@@ -264,10 +264,9 @@
 
 {% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/enhanced-orders.js') }}"></script>
+{% block scripts %}
 <script>
-// Debug helper and fallback functionality
+// Debug helper functionality
 function debugLog(message, data = null) {
     console.log(`[ORDER FORM DEBUG] ${message}`, data);
     
@@ -629,6 +628,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     debugLog('Enhanced order form initialization complete');
+});
+
+// Also bind events directly to make sure they work
+document.addEventListener('DOMContentLoaded', function() {
+    // Direct event binding for search
+    const searchInput = document.getElementById('productSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            if (query.length >= 2) {
+                enhancedProductSearch(query);
+            } else {
+                document.getElementById('searchResults').innerHTML = '';
+            }
+        });
+    }
+    
+    // Direct event binding for manual add button
+    const manualBtn = document.getElementById('manualAddBtn');
+    if (manualBtn) {
+        manualBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addManualItem();
+        });
+    }
 });
 </script>
 {% endblock %}
