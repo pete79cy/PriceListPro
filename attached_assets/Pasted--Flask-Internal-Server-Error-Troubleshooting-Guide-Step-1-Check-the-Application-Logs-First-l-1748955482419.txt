@@ -1,0 +1,185 @@
+# Flask Internal Server Error Troubleshooting Guide
+
+## Step 1: Check the Application Logs
+
+First, let's see what the actual error is:
+
+```bash
+# In your Replit console, run:
+python3 -c "
+import sys
+sys.path.append('.')
+try:
+    from app import create_app
+    app = create_app()
+    print('✓ App created successfully')
+except Exception as e:
+    import traceback
+    print('✗ Error creating app:')
+    print(str(e))
+    print('\\n--- Full Traceback ---')
+    traceback.print_exc()
+"
+```
+
+## Step 2: Test Individual Components
+
+Run this to test each component separately:
+
+```bash
+# Test 1: Check imports
+python3 -c "
+try:
+    import models
+    print('✓ Models imported')
+except Exception as e:
+    print(f'✗ Models error: {e}')
+
+try:
+    import forms
+    print('✓ Forms imported')
+except Exception as e:
+    print(f'✗ Forms error: {e}')
+
+try:
+    from app import create_app
+    print('✓ App imported')
+except Exception as e:
+    print(f'✗ App error: {e}')
+"
+```
+
+## Step 3: Common Issues and Fixes
+
+### Issue 1: Circular Import
+**Symptoms:** ImportError mentioning circular imports
+**Fix:** Use the application factory pattern (see flask_fixes artifact)
+
+### Issue 2: Enum Handling Error  
+**Symptoms:** Error with OrderStatus or enum values
+**Fix:** Update forms.py to handle enums properly:
+
+```python
+# In forms.py, replace:
+status = SelectField('Status', choices=ORDER_STATUS_LABELS)
+
+# With:
+status = SelectField(
+    'Status',
+    choices=[(status.value, status.value.title()) for status in OrderStatus],
+    default=OrderStatus.PENDING.value
+)
+```
+
+### Issue 3: Database Connection Error
+**Symptoms:** SQLAlchemy errors, database connection issues
+**Fix:** Check your database configuration:
+
+```python
+# In app.py, ensure you have:
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///app.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+```
+
+### Issue 4: Missing Templates
+**Symptoms:** TemplateNotFound error
+**Fix:** Create the missing template or check template paths
+
+### Issue 5: Flask-Admin Configuration Error
+**Symptoms:** AttributeError in Flask-Admin setup
+**Fix:** Remove problematic filters:
+
+```python
+# Remove or fix these in your Flask-Admin setup:
+column_filters = ['category.name']  # Remove if category relationship doesn't exist
+column_searchable_list = ['name', 'email']  # Keep only existing fields
+```
+
+## Step 4: Quick Fix Implementation
+
+1. **Backup your current files:**
+   ```bash
+   cp app.py app.py.backup
+   cp models.py models.py.backup
+   cp forms.py forms.py.backup
+   ```
+
+2. **Apply the fixes from the flask_fixes artifact above**
+
+3. **Test the fixes:**
+   ```bash
+   python3 run.py
+   ```
+
+## Step 5: Restart Your Replit Environment
+
+Sometimes Replit caches imports. Try:
+1. Stop the current process
+2. Clear the console
+3. Run `python3 run.py` again
+
+## Step 6: Enable Debug Mode
+
+Add this to see detailed error messages:
+
+```python
+# In your app.py or run.py:
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+```
+
+## Step 7: Database Reset (If Needed)
+
+If you're getting database-related errors:
+
+```python
+# Create a reset_db.py file:
+from app import create_app, db
+
+app = create_app()
+with app.app_context():
+    db.drop_all()
+    db.create_all()
+    print("Database reset complete!")
+```
+
+Then run: `python3 reset_db.py`
+
+## Step 8: Test the Specific Route
+
+Once your app starts, test the problematic route directly:
+
+```bash
+curl http://localhost:5000/orders/new
+```
+
+Or use the minimal test script I provided to isolate the issue.
+
+---
+
+## Most Likely Cause
+
+Based on your workflow history, the most likely cause is a **circular import** between `app.py` and `models.py`. The fix is to restructure your code using the application factory pattern shown in the flask_fixes artifact.
+
+## Quick Test
+
+Run this single command to test if the fix works:
+
+```bash
+python3 -c "
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'test'
+
+db = SQLAlchemy(app)
+
+print('✓ Basic Flask app with SQLAlchemy works')
+print('Now test your actual imports...')
+"
+```
+
+If this works, the issue is in your specific code structure. If this fails, there's a more fundamental problem with your environment.
