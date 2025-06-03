@@ -266,4 +266,369 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/enhanced-orders.js') }}"></script>
+<script>
+// Debug helper and fallback functionality
+function debugLog(message, data = null) {
+    console.log(`[ORDER FORM DEBUG] ${message}`, data);
+    
+    // Create debug panel if it doesn't exist
+    let debugPanel = document.getElementById('debug-panel');
+    if (!debugPanel) {
+        debugPanel = document.createElement('div');
+        debugPanel.id = 'debug-panel';
+        debugPanel.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 9999;
+            display: none;
+        `;
+        document.body.appendChild(debugPanel);
+        
+        // Add toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = 'Debug';
+        toggleBtn.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 320px;
+            z-index: 10000;
+            padding: 5px 10px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        `;
+        toggleBtn.onclick = () => 
+            debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
+        document.body.appendChild(toggleBtn);
+    }
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message}`;
+    if (data) {
+        logEntry.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    }
+    logEntry.style.borderBottom = '1px solid #333';
+    logEntry.style.marginBottom = '5px';
+    debugPanel.appendChild(logEntry);
+    debugPanel.scrollTop = debugPanel.scrollHeight;
+}
+
+// Enhanced search function with proper error handling
+async function enhancedProductSearch(query) {
+    if (!query || query.length < 2) {
+        debugLog('Query too short, clearing results');
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    const customerSelect = document.getElementById('customerSelect');
+    const customerId = customerSelect ? customerSelect.value : null;
+    
+    if (!customerId || customerId === '0') {
+        debugLog('No customer selected');
+        document.getElementById('searchResults').innerHTML = 
+            '<div class="alert alert-warning">Please select a customer first</div>';
+        return;
+    }
+    
+    debugLog(`Searching for "${query}" with customer ID: ${customerId}`);
+    
+    try {
+        const url = `/orders/api/search/products?q=${encodeURIComponent(query)}&customer_id=${customerId}&limit=10`;
+        debugLog(`Requesting: ${url}`);
+        
+        const response = await fetch(url);
+        debugLog(`Response status: ${response.status} ${response.statusText}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const products = await response.json();
+        debugLog(`Found ${products.length} products`, products);
+        displayEnhancedSearchResults(products);
+        
+    } catch (error) {
+        debugLog(`Search failed: ${error.message}`);
+        document.getElementById('searchResults').innerHTML = 
+            `<div class="alert alert-danger">Search failed: ${error.message}</div>`;
+    }
+}
+
+// Enhanced results display
+function displayEnhancedSearchResults(products) {
+    const resultsContainer = document.getElementById('searchResults');
+    
+    if (products.length === 0) {
+        resultsContainer.innerHTML = 
+            '<div class="alert alert-info">No products found for this search</div>';
+        return;
+    }
+    
+    let html = '<div class="list-group mt-2">';
+    
+    products.forEach(product => {
+        const priceDisplay = product.has_customer_price 
+            ? `€${product.price.toFixed(2)} <small class="text-success">(Customer Price)</small>`
+            : `€${product.price.toFixed(2)} <small class="text-muted">(Default)</small>`;
+            
+        const typeIcon = product.type === 'supplier_product' 
+            ? '<i class="fas fa-truck text-info"></i>' 
+            : '<i class="fas fa-seedling text-success"></i>';
+        
+        html += `
+            <div class="list-group-item list-group-item-action" onclick="addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                            ${typeIcon}
+                            <strong class="ms-2">${product.name}</strong>
+                            ${product.sku ? `<span class="badge bg-secondary ms-2">${product.sku}</span>` : ''}
+                        </div>
+                        <div class="text-muted small">
+                            ${product.scientific_name || ''}
+                            ${product.pot ? `• ${product.pot}` : ''}
+                            ${product.category ? `• ${product.category}` : ''}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold">${priceDisplay}</div>
+                        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    resultsContainer.innerHTML = html;
+}
+
+// Enhanced add product function
+function addProductToOrder(productId, productName, price, unit) {
+    debugLog(`Adding product: ${productName} (ID: ${productId}) - €${price} per ${unit}`);
+    
+    const orderItemsContainer = document.getElementById('orderItems');
+    if (!orderItemsContainer) {
+        debugLog('ERROR: orderItems container not found');
+        alert('Error: Order items container not found. Please refresh the page.');
+        return;
+    }
+    
+    // Remove empty message if present
+    const emptyMessage = document.getElementById('emptyItemsMessage');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
+    const itemId = 'temp_' + Date.now();
+    const itemHtml = `
+        <div class="order-item card mb-2" data-item-id="${itemId}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-1">
+                        <div class="drag-handle text-muted" style="cursor: move;">
+                            <i class="fas fa-grip-vertical"></i>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold">${productName}</div>
+                        <div class="text-muted small">${unit}</div>
+                    </div>
+                    <div class="col-2">
+                        <input type="number" class="form-control form-control-sm quantity-input" value="1" min="1">
+                    </div>
+                    <div class="col-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">€</span>
+                            <input type="number" class="form-control price-input" value="${price}" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-1">
+                        <select class="form-select form-select-sm vat-rate-input">
+                            <option value="5">5%</option>
+                            <option value="19" selected>19%</option>
+                            <option value="0">0%</option>
+                        </select>
+                    </div>
+                    <div class="col-1 text-end">
+                        <div class="fw-bold">€${price}</div>
+                        <div class="text-muted small">+€${(price * 0.19).toFixed(2)}</div>
+                    </div>
+                    <div class="col-1 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('${itemId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+    debugLog('Product added successfully');
+    
+    // Clear search
+    document.getElementById('productSearch').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+}
+
+// Enhanced manual item function
+function addManualItem() {
+    debugLog('Adding manual item');
+    
+    const orderItemsContainer = document.getElementById('orderItems');
+    if (!orderItemsContainer) {
+        debugLog('ERROR: orderItems container not found');
+        alert('Error: Order items container not found. Please refresh the page.');
+        return;
+    }
+    
+    // Remove empty message if present
+    const emptyMessage = document.getElementById('emptyItemsMessage');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
+    const itemId = 'manual_' + Date.now();
+    const itemHtml = `
+        <div class="order-item card mb-2" data-item-id="${itemId}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-1">
+                        <div class="drag-handle text-muted" style="cursor: move;">
+                            <i class="fas fa-grip-vertical"></i>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <input type="text" class="form-control form-control-sm" placeholder="Product name" value="">
+                        <input type="text" class="form-control form-control-sm mt-1" placeholder="Size/description" value="">
+                    </div>
+                    <div class="col-2">
+                        <input type="number" class="form-control form-control-sm quantity-input" value="1" min="1">
+                    </div>
+                    <div class="col-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">€</span>
+                            <input type="number" class="form-control price-input" value="0" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-1">
+                        <select class="form-select form-select-sm vat-rate-input">
+                            <option value="5">5%</option>
+                            <option value="19" selected>19%</option>
+                            <option value="0">0%</option>
+                        </select>
+                    </div>
+                    <div class="col-1 text-end">
+                        <div class="fw-bold">€0.00</div>
+                        <div class="text-muted small">+€0.00</div>
+                    </div>
+                    <div class="col-1 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('${itemId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+    debugLog('Manual item added successfully');
+    
+    // Focus on the first input
+    setTimeout(() => {
+        const firstInput = orderItemsContainer.querySelector(`[data-item-id="${itemId}"] input[type="text"]`);
+        if (firstInput) firstInput.focus();
+    }, 100);
+}
+
+// Remove order item function
+function removeOrderItem(itemId) {
+    const item = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (item) {
+        item.remove();
+        debugLog(`Removed item: ${itemId}`);
+        
+        // Show empty message if no items left
+        const orderItemsContainer = document.getElementById('orderItems');
+        if (orderItemsContainer && orderItemsContainer.children.length === 0) {
+            orderItemsContainer.innerHTML = `
+                <div class="text-center text-muted py-4" id="emptyItemsMessage">
+                    <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
+                    <p>No items added yet. Use the search above to add products.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    debugLog('DOM loaded, initializing enhanced order form');
+    
+    // Check for required elements
+    const requiredElements = {
+        'productSearch': 'Product search input',
+        'manualAddBtn': 'Manual add button',
+        'searchResults': 'Search results container',
+        'orderItems': 'Order items container',
+        'customerSelect': 'Customer select dropdown'
+    };
+    
+    for (const [id, description] of Object.entries(requiredElements)) {
+        const element = document.getElementById(id);
+        if (element) {
+            debugLog(`✓ Found: ${description}`);
+        } else {
+            debugLog(`✗ Missing: ${description} (ID: ${id})`);
+        }
+    }
+    
+    // Bind product search
+    const productSearchInput = document.getElementById('productSearch');
+    if (productSearchInput) {
+        let searchTimeout;
+        productSearchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                enhancedProductSearch(e.target.value);
+            }, 300);
+        });
+        debugLog('Product search event listener attached');
+    }
+    
+    // Bind manual add button
+    const manualAddBtn = document.getElementById('manualAddBtn');
+    if (manualAddBtn) {
+        manualAddBtn.addEventListener('click', addManualItem);
+        debugLog('Manual add button event listener attached');
+    }
+    
+    // Check if jQuery is loaded (for existing functionality)
+    if (typeof jQuery !== 'undefined') {
+        debugLog('jQuery is loaded');
+    } else {
+        debugLog('⚠️ jQuery is NOT loaded - some features may not work');
+    }
+    
+    debugLog('Enhanced order form initialization complete');
+});
+</script>
 {% endblock %}
