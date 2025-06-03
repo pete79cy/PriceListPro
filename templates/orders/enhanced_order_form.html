@@ -481,6 +481,14 @@ function addProductToOrder(productId, productName, price, unit) {
     `;
     
     orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+    
+    // Attach calculation listeners to the new item
+    const newItem = orderItemsContainer.lastElementChild;
+    if (newItem) {
+        attachCalculationListeners(newItem);
+        updateOrderTotals(); // Update totals immediately
+    }
+    
     debugLog('Product added successfully');
     
     // Clear search
@@ -550,6 +558,13 @@ function addManualItem() {
     `;
     
     orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+    
+    // Attach calculation listeners to the new manual item
+    const newItem = orderItemsContainer.lastElementChild;
+    if (newItem) {
+        attachCalculationListeners(newItem);
+    }
+    
     debugLog('Manual item added successfully');
     
     // Focus on the first input
@@ -565,6 +580,7 @@ function removeOrderItem(itemId) {
     if (item) {
         item.remove();
         debugLog(`Removed item: ${itemId}`);
+        updateOrderTotals();
         
         // Show empty message if no items left
         const orderItemsContainer = document.getElementById('orderItems');
@@ -577,6 +593,89 @@ function removeOrderItem(itemId) {
             `;
         }
     }
+}
+
+// Update order totals when quantities or prices change
+function updateOrderTotals() {
+    let totalItems = 0;
+    let subtotal = 0;
+    let vat19Total = 0;
+    let vat5Total = 0;
+    
+    const orderItems = document.querySelectorAll('#orderItems .order-item-row');
+    
+    orderItems.forEach(function(item) {
+        const quantityInput = item.querySelector('.quantity-input');
+        const priceInput = item.querySelector('.price-input');
+        const vatSelect = item.querySelector('.vat-rate-input');
+        const totalDisplay = item.querySelector('.col-1.text-end .fw-bold');
+        const vatDisplay = item.querySelector('.col-1.text-end .text-muted');
+        
+        if (quantityInput && priceInput && vatSelect) {
+            const quantity = parseInt(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const vatRate = parseFloat(vatSelect.value) || 19;
+            
+            const itemSubtotal = quantity * price;
+            const itemVat = itemSubtotal * (vatRate / 100);
+            const itemTotal = itemSubtotal + itemVat;
+            
+            // Update item display
+            if (totalDisplay) {
+                totalDisplay.textContent = `€${itemTotal.toFixed(2)}`;
+            }
+            if (vatDisplay) {
+                vatDisplay.textContent = `+€${itemVat.toFixed(2)}`;
+            }
+            
+            // Add to order totals
+            totalItems += quantity;
+            subtotal += itemSubtotal;
+            
+            if (vatRate === 19) {
+                vat19Total += itemVat;
+            } else if (vatRate === 5) {
+                vat5Total += itemVat;
+            }
+        }
+    });
+    
+    const grandTotal = subtotal + vat19Total + vat5Total;
+    
+    // Update summary display
+    const totalItemsEl = document.getElementById('totalItems');
+    const subtotalEl = document.getElementById('subtotal');
+    const vat19El = document.getElementById('vat19');
+    const vat5El = document.getElementById('vat5');
+    const totalAmountEl = document.getElementById('totalAmount');
+    
+    if (totalItemsEl) totalItemsEl.textContent = totalItems;
+    if (subtotalEl) subtotalEl.textContent = `€${subtotal.toFixed(2)}`;
+    if (vat19El) vat19El.textContent = `€${vat19Total.toFixed(2)}`;
+    if (vat5El) vat5El.textContent = `€${vat5Total.toFixed(2)}`;
+    if (totalAmountEl) totalAmountEl.textContent = `€${grandTotal.toFixed(2)}`;
+    
+    debugLog('Order totals updated', {
+        totalItems,
+        subtotal,
+        vat19Total,
+        vat5Total,
+        grandTotal
+    });
+}
+
+// Attach calculation update listeners to order items
+function attachCalculationListeners(itemElement) {
+    const quantityInput = itemElement.querySelector('.quantity-input');
+    const priceInput = itemElement.querySelector('.price-input');
+    const vatSelect = itemElement.querySelector('.vat-rate-input');
+    
+    [quantityInput, priceInput, vatSelect].forEach(function(input) {
+        if (input) {
+            input.addEventListener('input', updateOrderTotals);
+            input.addEventListener('change', updateOrderTotals);
+        }
+    });
 }
 
 // Initialize when DOM is ready
