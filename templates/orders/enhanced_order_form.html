@@ -22,6 +22,7 @@
 
     <form id="orderForm" method="POST">
         {% if form %}{{ form.hidden_tag() }}{% endif %}
+        <input type="hidden" name="items_json" id="itemsJsonField" value="">
         
         <!-- Order Header -->
         <div class="row mb-4">
@@ -651,6 +652,65 @@ document.addEventListener('DOMContentLoaded', function() {
         manualBtn.addEventListener('click', function(e) {
             e.preventDefault();
             addManualItem();
+        });
+    }
+    
+    // Handle form submission - serialize order items
+    const orderForm = document.getElementById('orderForm');
+    if (orderForm) {
+        orderForm.addEventListener('submit', function(e) {
+            debugLog('Form submission started');
+            
+            // Serialize order items into JSON
+            const orderItems = [];
+            const itemRows = document.querySelectorAll('#orderItems .order-item-row');
+            
+            itemRows.forEach(function(row) {
+                const plantName = row.querySelector('[data-field="plant_name"]')?.textContent || '';
+                const size = row.querySelector('[data-field="size"]')?.textContent || '';
+                const quantity = row.querySelector('[data-field="quantity"]')?.textContent || '0';
+                const price = row.querySelector('[data-field="price"]')?.textContent?.replace('€', '') || '0';
+                const vatRate = row.querySelector('[data-field="vat_rate"]')?.textContent?.replace('%', '') || '19';
+                const notes = row.querySelector('[data-field="notes"]')?.textContent || '';
+                const productId = row.dataset.productId || null;
+                const priceListId = row.dataset.priceListId || null;
+                
+                if (plantName && quantity && parseFloat(quantity) > 0) {
+                    orderItems.push({
+                        plant_name: plantName,
+                        size: size,
+                        quantity: parseInt(quantity),
+                        price: parseFloat(price),
+                        vat_rate: parseFloat(vatRate),
+                        notes: notes,
+                        product_id: productId,
+                        price_list_id: priceListId
+                    });
+                }
+            });
+            
+            // Set the JSON data in the hidden field
+            const itemsJsonField = document.getElementById('itemsJsonField');
+            if (itemsJsonField) {
+                itemsJsonField.value = JSON.stringify(orderItems);
+                debugLog('Order items serialized', orderItems);
+            }
+            
+            // Validate customer selection
+            const customerSelect = document.getElementById('customerSelect');
+            if (!customerSelect || !customerSelect.value) {
+                e.preventDefault();
+                alert('Please select a customer before creating the order.');
+                return false;
+            }
+            
+            if (orderItems.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one item to the order.');
+                return false;
+            }
+            
+            debugLog('Form validation passed, submitting order');
         });
     }
 });
