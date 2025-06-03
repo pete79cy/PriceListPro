@@ -6,7 +6,7 @@ import os
 from flask import Blueprint, request, jsonify, current_app, url_for, abort, render_template
 from flask_httpauth import HTTPTokenAuth
 from app import db
-from models import Quotation, QuotationItem, Customer
+from models import Quotation, QuotationItem, Customer, Product
 from utils.logger import logger, log_api_request
 from datetime import datetime
 
@@ -298,6 +298,50 @@ def list_quotations():
     }
     
     return jsonify(response), 200
+
+@api.route("/products", methods=["GET"])
+def search_products():
+    """
+    Search products endpoint for the add item modal.
+    No authentication required for internal use.
+    """
+    search_query = request.args.get('search', '').strip()
+    limit = request.args.get('limit', 50, type=int)
+    
+    # Start with base query
+    query = Product.query
+    
+    # Apply search filter if provided
+    if search_query:
+        search_term = f"%{search_query}%"
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(search_term),
+                Product.category.ilike(search_term),
+                Product.pot.ilike(search_term),
+                Product.sku.ilike(search_term),
+                Product.scientific_name.ilike(search_term),
+                Product.description.ilike(search_term)
+            )
+        )
+    
+    # Get results with limit
+    products = query.order_by(Product.name).limit(limit).all()
+    
+    # Format response
+    results = []
+    for product in products:
+        results.append({
+            'id': product.id,
+            'name': product.name,
+            'category': product.category or '',
+            'pot': product.pot or '',
+            'sku': product.sku or '',
+            'scientific_name': product.scientific_name or '',
+            'description': product.description or ''
+        })
+    
+    return jsonify(results), 200
 
 # Route for API documentation
 @api.route("/", methods=["GET"])
