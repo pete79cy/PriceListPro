@@ -33,7 +33,8 @@ class EnhancedOrderForm(FlaskForm):
         
         # Populate status choices (will be updated via JavaScript for existing orders)
         self.status.choices = [
-            (status.value, label) for status, label in ORDER_STATUS_LABELS.items()
+            (status.value if hasattr(status, 'value') else status, label) 
+            for status, label in ORDER_STATUS_LABELS.items()
         ]
 
 class OrderItemForm(FlaskForm):
