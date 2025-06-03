@@ -1,0 +1,233 @@
+Here’s a fully-working version of the debug helper, with the missing pieces filled in and a couple of handy stub functions so you can test everything without touching your production logic.
+Drop the whole block right before `</body>` in your order-form template.
+
+```html
+<!-- Debug helper – place just before </body> -->
+<script>
+// Debug helper function ------------------------------------------------------
+function debugLog(message, data = null) {
+    console.log(`[ORDER FORM DEBUG] ${message}`, data);
+
+    // Create the floating debug panel once
+    let debugPanel = document.getElementById('debug-panel');
+    if (!debugPanel) {
+        debugPanel = document.createElement('div');
+        debugPanel.id = 'debug-panel';
+        debugPanel.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 9999;
+            display: none;
+        `;
+        document.body.appendChild(debugPanel);
+
+        // Toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = 'Debug';
+        toggleBtn.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 320px;
+            z-index: 10000;
+            padding: 5px 10px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        `;
+        toggleBtn.onclick = () =>
+            debugPanel.style.display =
+                debugPanel.style.display === 'none' ? 'block' : 'none';
+        document.body.appendChild(toggleBtn);
+    }
+
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message}`;
+    if (data) {
+        logEntry.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    }
+    logEntry.style.borderBottom = '1px solid #333';
+    logEntry.style.marginBottom = '5px';
+    debugPanel.appendChild(logEntry);
+
+    // Auto-scroll
+    debugPanel.scrollTop = debugPanel.scrollHeight;
+}
+
+// Kick-off diagnostics once DOM is ready -------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    debugLog('DOM Content Loaded – Starting diagnostics');
+
+    // Essentials check
+    const essentials = {
+        'product-search-input': 'Product search input',
+        'search-btn':           'Search button',
+        'add-manual-item':      'Add manual item button',
+        'product-search-results': 'Search results container',
+        'order-items-container': 'Order items container'
+    };
+
+    for (const [id, desc] of Object.entries(essentials)) {
+        document.getElementById(id)
+            ? debugLog(`✓ Found: ${desc}`)
+            : debugLog(`✗ Missing: ${desc} (ID: ${id})`);
+    }
+
+    // Wire up search controls
+    const searchInput = document.getElementById('product-search-input');
+    const searchBtn   = document.getElementById('search-btn');
+
+    if (searchInput && searchBtn) {
+        debugLog('Setting up search event listeners');
+
+        searchBtn.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            debugLog(`Search button clicked with query: "${query}"`);
+            if (query.length >= 2) testProductSearch(query);
+            else debugLog('Query too short, skipping search');
+        });
+
+        searchInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = searchInput.value.trim();
+                debugLog('Enter pressed in search input');
+                if (query.length >= 2) testProductSearch(query);
+            }
+        });
+    }
+
+    // Manual-item button
+    const addManualBtn = document.getElementById('add-manual-item');
+    if (addManualBtn) {
+        addManualBtn.addEventListener('click', () => {
+            debugLog('Add manual item button clicked');
+            testAddManualItem();
+        });
+    }
+
+    debugLog('All diagnostics wired up');
+});
+
+// ---------------------------------------------------------------------------
+// API test helpers
+async function testProductSearch(query) {
+    debugLog(`Testing product search API with query: "${query}"`);
+    try {
+        const url = `/api/products/search?q=${encodeURIComponent(query)}`;
+        debugLog(`Requesting: ${url}`);
+
+        const response = await fetch(url);
+        debugLog(`Response status: ${response.status} ${response.statusText}`);
+
+        if (!response.ok)
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+        const data = await response.json();
+        debugLog(`Search successful, found ${data.length} products`, data);
+        displaySearchResults(data);
+    } catch (err) {
+        debugLog(`Search failed: ${err.message}`);
+        const resultsEl = document.getElementById('product-search-results');
+        if (resultsEl) {
+            resultsEl.innerHTML =
+                `<div class="list-group-item text-danger">Search failed: ${err.message}</div>`;
+            resultsEl.style.display = 'block';
+        }
+    }
+}
+
+// Render the result list (stub) ---------------------------------------------
+function displaySearchResults(products) {
+    debugLog(`Displaying ${products.length} search results`);
+
+    const resultsEl = document.getElementById('product-search-results');
+    if (!resultsEl) {
+        debugLog('✗ Search results container not found');
+        return;
+    }
+
+    // Empty state
+    if (products.length === 0) {
+        resultsEl.innerHTML =
+            '<div class="list-group-item text-muted">No products found</div>';
+        resultsEl.style.display = 'block';
+        return;
+    }
+
+    // Build result buttons
+    resultsEl.innerHTML = products
+        .map((product, i) => {
+            debugLog(`Processing product ${i + 1}: ${product.name}`);
+
+            // Escape single quotes so inline onclick stays intact
+            const safeName = product.name.replace(/'/g, "\\'");
+            const unit     = product.unit || 'pcs';
+            const price    = Number(product.price).toFixed(2);
+
+            return `
+<button type="button"
+        class="list-group-item list-group-item-action"
+        onclick="addProductToOrder('${product.id}', '${safeName}', ${price}, '${unit}')">
+    <div class="d-flex w-100 justify-content-between">
+        <h6 class="mb-1">${product.name}</h6>
+        <small>€${price} / ${unit}</small>
+    </div>
+</button>`;
+        })
+        .join('');
+
+    resultsEl.style.display = 'block';
+}
+
+// Stub: add product row to order list ---------------------------------------
+function addProductToOrder(id, name, price, unit) {
+    debugLog('addProductToOrder called', { id, name, price, unit });
+
+    const container = document.getElementById('order-items-container');
+    if (!container) {
+        debugLog('✗ order-items-container not found');
+        return;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'list-group-item';
+    row.dataset.productId = id;
+    row.innerHTML = `
+<div class="d-flex w-100 justify-content-between align-items-center">
+    <div>
+        <h6 class="my-0">${name}</h6>
+        <small class="text-muted">${unit}</small>
+    </div>
+    <span>€${Number(price).toFixed(2)}</span>
+</div>`;
+    container.appendChild(row);
+}
+
+// Stub: add a dummy manual item so the button does something -----------------
+function testAddManualItem() {
+    debugLog('Adding dummy manual item');
+
+    const dummy = {
+        id:   `manual-${Date.now()}`,
+        name: `Manual Item (${new Date().toLocaleTimeString()})`,
+        price: 0,
+        unit:  ''
+    };
+
+    addProductToOrder(dummy.id, dummy.name, dummy.price, dummy.unit);
+}
+</script>
+```
