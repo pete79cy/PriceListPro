@@ -1,0 +1,136 @@
+Here’s a focused troubleshooting path I use when a “live-search” UI suddenly stops returning results, followed by a small, drop-in sample you can paste in to verify whether the front-end or the back-end is at fault.
+
+---
+
+## 1. Quick triage checklist
+
+| Where to look                         | What to confirm                                                                                                                                                      | Typical culprit                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Browser console** (`F12` → Console) | Are there red JS errors as soon as you type / press “Show All Products”?                                                                                             | Missing import, typo in function name, event listener never attaches |
+| **Network tab** (`F12` → Network)     | Does a request fire when you type or click? What’s its status? <br/> • **404** → wrong path / route not mounted <br/> • **200 but empty body** → server search logic | Wrong fetch URL (e.g. `/products/search` vs `/api/products`)         |
+| **XHR / Fetch payload**               | What query string actually goes out? (e.g. `%20` instead of blank, or trailing `/`)                                                                                  | Debounce wrapper still passes the *previous* query                   |
+| **Server-side logs**                  | Does the request ever reach the controller / route?                                                                                                                  | Route file not re-imported after refactor                            |
+| **Returned JSON**                     | Does it look like `[ {id,name,price}, … ]` or is it HTML/error page?                                                                                                 | Content-type mismatch means front-end can’t parse                    |
+
+Run through that grid once and you’ll almost always spot the issue in < 5 min.
+
+---
+
+## 2. Common gotchas I keep hitting
+
+1. **Relative vs absolute fetch paths**
+   When the modal is rendered from `/orders/10`, fetching `'/products'` will silently go to `/orders/10/products` unless you have a leading `/` **and** an `apiBase`.
+
+   ```js
+   const url = `${window.__apiBase || ''}/api/products?search=${encodeURIComponent(q)}`;
+   ```
+
+2. **Event listener added before the modal exists**
+   If you refactored to dynamically mount the modal, `document.querySelector('#search')` is `null` at script load. Wrap in:
+
+   ```js
+   document.addEventListener('turbo:load', attachSearch); // Rails/Turbo
+   // or
+   window.addEventListener('DOMContentLoaded', attachSearch);
+   ```
+
+3. **Debounce that never fires**
+   Lodash’s `_.debounce` defaults to `leading:false, trailing:true`. If you invoke `.cancel()` anywhere, the last trailing call never executes, so nothing reaches the API and you get silence.
+
+4. **CORS on Replit**
+   When you tested locally at `localhost:3000` it worked, but on the Replit URL the browser blocks the call until you add `app.use(cors())` or the Rails rack-cors gem.
+
+---
+
+## 3. Minimal “sanity-check” patch (drop-in)
+
+Paste this into a new `<script>` tag (or temp file) in the modal page. It bypasses your custom search code; if this works, the bug is in the original JS—not the API.
+
+```html
+<script>
+(async () => {
+  const input = document.querySelector('#product-search');
+  const box   = document.querySelector('#results-box');
+  if (!input || !box) return console.error('Missing elements');
+
+  async function doSearch(q = '') {
+    try {
+      // hard-coded 10-item limit for test
+      const res = await fetch(`/api/products?search=${encodeURIComponent(q)}&limit=10`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const items = await res.json();
+      box.innerHTML = items.map(p =>
+        `<div class="item" data-id="${p.id}">${p.name} – €${p.price}</div>`
+      ).join('') || '<em>No matches</em>';
+    } catch (err) {
+      console.error(err);
+      box.innerHTML = `<span style="color:red">${err.message}</span>`;
+    }
+  }
+
+  // initial load
+  doSearch();
+
+  input.addEventListener('input', e => doSearch(e.target.value.trim()));
+  document.getElementById('show-all-btn')?.addEventListener('click', () => doSearch(''));
+})();
+</script>
+```
+
+**Interpretation of the test:**
+
+| Outcome                            | Interpretation                                                                                                   |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Items render ✔️                    | API is fine; your original front-end logic is blocking or mis-routing results.                                   |
+| Still blank, but Network shows 404 | Your route path is wrong; register `GET /api/products` (Express) or `resources :products, only: :index` (Rails). |
+| Still blank, Network 200 but empty | Search query param parsing on the server is off (e.g., expecting `?q=` instead of `?search=`).                   |
+
+---
+
+## 4. If the API really is missing
+
+Add a very thin route and controller; e.g. **Express**:
+
+```js
+// routes/products.js
+const express = require('express');
+const router  = express.Router();
+router.get('/', async (req, res) => {
+  const { search = '', limit = 10 } = req.query;
+  const items = await db('products')
+    .whereILike('name', `%${search}%`)
+    .limit(limit);
+  res.json(items);
+});
+module.exports = router;
+
+// server.js
+app.use('/api/products', require('./routes/products'));
+```
+
+Or **Rails**:
+
+```ruby
+# config/routes.rb
+namespace :api do
+  resources :products, only: :index
+end
+
+# app/controllers/api/products_controller.rb
+class Api::ProductsController < ApplicationController
+  def index
+    q = params[:search].to_s
+    render json: Product.where('name ILIKE ?', "%#{q}%").limit(params[:limit] || 10)
+  end
+end
+```
+
+---
+
+### Next steps
+
+1. Run the minimal patch; note what you see in the Network tab.
+2. Adjust the fetch URL or back-end route until the test works.
+3. Re-wire your styled/animated search box to call the same endpoint.
+
+Let me know **exactly** what you observe (status codes, console logs) and I can zero in further on the fix.

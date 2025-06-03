@@ -717,72 +717,158 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Product data and search functionality
-const allProducts = [
-    {% for product in products %}
-    {
-        id: {{ product.id }},
-        name: "{{ product.name|replace('"', '\\"')|replace('\n', '\\n') }}",
-        pot: "{{ product.pot|replace('"', '\\"') if product.pot else '' }}",
-        sku: "{{ product.sku|replace('"', '\\"') if product.sku else '' }}",
-        category: "{{ product.category|replace('"', '\\"') if product.category else '' }}",
-        scientific_name: "{{ product.scientific_name|replace('"', '\\"') if product.scientific_name else '' }}",
-        description: "{{ product.description|replace('"', '\\"')|replace('\n', '\\n') if product.description else '' }}"
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-];
+// Minimal test script to verify API connectivity (following troubleshooting guide)
+(async function testProductAPI() {
+    try {
+        const res = await fetch('/api/v1/products?limit=5');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const items = await res.json();
+        console.log('✅ Product API test successful:', items.length, 'products loaded');
+    } catch (err) {
+        console.error('❌ Product API test failed:', err.message);
+    }
+})();
 
+// Enhanced search functionality using API
 let selectedProductId = null;
+let searchTimeout = null;
 
-// Filter products based on search input
-function filterProducts() {
+// API-based search with debouncing
+async function filterProducts() {
     const searchInput = document.getElementById('product_search');
-    const query = searchInput.value.toLowerCase().trim();
-    const resultsList = document.getElementById('product_results_list');
+    const query = searchInput.value.trim();
     
-    if (query.length === 0) {
-        showInitialProducts();
-        return;
+    // Clear previous timeout
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
     }
     
-    // Filter products
-    const filteredProducts = allProducts.filter(product => {
-        const searchText = `${product.name} ${product.category} ${product.pot} ${product.sku} ${product.scientific_name} ${product.description}`.toLowerCase();
-        return searchText.includes(query);
-    });
+    // Debounce search requests
+    searchTimeout = setTimeout(async () => {
+        if (query.length === 0) {
+            await loadInitialProducts();
+            return;
+        }
+        
+        await searchProductsAPI(query);
+    }, 300);
+}
+
+// Search products via API
+async function searchProductsAPI(query) {
+    const resultsList = document.getElementById('product_results_list');
     
-    displayProductList(filteredProducts, query);
+    try {
+        // Show loading state
+        resultsList.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                Searching products...
+            </div>
+        `;
+        
+        const url = `/api/v1/products?search=${encodeURIComponent(query)}&limit=20`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const products = await response.json();
+        displayProductList(products, query);
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        resultsList.innerHTML = `
+            <div class="text-center py-4 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <p>Search failed: ${error.message}</p>
+                <small>Check console for details</small>
+            </div>
+        `;
+    }
 }
 
 // Clear search
 function clearSearch() {
     document.getElementById('product_search').value = '';
-    showInitialProducts();
+    loadInitialProducts();
 }
 
-// Show all products
-function showAllProducts() {
+// Show all products via API
+async function showAllProducts() {
     document.getElementById('product_search').value = '';
-    displayProductList(allProducts);
+    
+    try {
+        const response = await fetch('/api/v1/products?limit=100');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const products = await response.json();
+        displayProductList(products);
+    } catch (error) {
+        console.error('Error loading all products:', error);
+        await loadInitialProducts();
+    }
 }
 
-// Filter by category
-function filterByCategory(category) {
-    const filteredProducts = allProducts.filter(product => 
-        product.category.toLowerCase().includes(category.toLowerCase())
-    );
-    displayProductList(filteredProducts);
-    
-    // Update active button
-    document.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+// Filter by category via API
+async function filterByCategory(category) {
+    try {
+        const response = await fetch(`/api/v1/products?search=${encodeURIComponent(category)}&limit=50`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const products = await response.json();
+        const filteredProducts = products.filter(product => 
+            product.category.toLowerCase().includes(category.toLowerCase())
+        );
+        displayProductList(filteredProducts);
+        
+        // Update active button
+        document.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    } catch (error) {
+        console.error('Category filter error:', error);
+    }
 }
 
 // Clear category filter
 function clearCategoryFilter() {
     document.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
     document.getElementById('product_search').value = '';
-    showInitialProducts();
+    loadInitialProducts();
+}
+
+// Load initial products from API
+async function loadInitialProducts() {
+    try {
+        const response = await fetch('/api/v1/products?limit=10');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const products = await response.json();
+        displayProductList(products);
+        
+        // Add info header if there are more products
+        if (products.length === 10) {
+            const resultsList = document.getElementById('product_results_list');
+            const header = document.createElement('div');
+            header.className = 'alert alert-info mb-2';
+            header.innerHTML = `
+                <i class="fas fa-info-circle me-2"></i>
+                Showing first 10 products. Type to search or click "Show All Products".
+            `;
+            resultsList.insertBefore(header, resultsList.firstChild);
+        }
+    } catch (error) {
+        console.error('Error loading initial products:', error);
+        const resultsList = document.getElementById('product_results_list');
+        resultsList.innerHTML = `
+            <div class="text-center py-4 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <p>Failed to load products</p>
+                <small>Check console for details</small>
+            </div>
+        `;
+    }
 }
 
 // Display list of products
@@ -854,39 +940,39 @@ function showInitialProducts() {
 // Select a product
 function selectProduct(productId) {
     selectedProductId = productId;
-    const product = allProducts.find(p => p.id == productId);
     
-    if (product) {
-        // Update hidden input
-        document.getElementById('product_id').value = productId;
-        
-        // Update selected product display
-        const selectedDisplay = document.getElementById('selected_product_display');
-        const selectedName = document.getElementById('selected_product_name');
-        const selectedDetails = document.getElementById('selected_product_details');
-        
-        selectedName.textContent = product.name;
-        
-        const details = [];
-        if (product.category) details.push(product.category);
-        if (product.pot) details.push(`Size: ${product.pot}`);
-        if (product.sku) details.push(`SKU: ${product.sku}`);
-        selectedDetails.textContent = details.join(' • ');
-        
-        selectedDisplay.classList.remove('d-none');
-        
-        // Update product cards
-        document.querySelectorAll('.product-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        document.querySelector(`[data-product-id="${productId}"]`).classList.add('selected');
-        
-        // Hide new product form
-        document.getElementById('newProductForm').classList.add('d-none');
-        document.getElementById('newProductToggle').style.display = 'block';
-        
-        updateFormState();
-    }
+    // Find product in current displayed list
+    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    if (!productCard) return;
+    
+    // Extract product data from the card
+    const productName = productCard.querySelector('.product-name').textContent.replace(/<[^>]*>/g, '');
+    const productDetails = productCard.querySelector('.product-details').textContent;
+    
+    // Update hidden input
+    document.getElementById('product_id').value = productId;
+    
+    // Update selected product display
+    const selectedDisplay = document.getElementById('selected_product_display');
+    const selectedName = document.getElementById('selected_product_name');
+    const selectedDetailsEl = document.getElementById('selected_product_details');
+    
+    selectedName.textContent = productName;
+    selectedDetailsEl.textContent = productDetails;
+    
+    selectedDisplay.classList.remove('d-none');
+    
+    // Update product cards
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    productCard.classList.add('selected');
+    
+    // Hide new product form
+    document.getElementById('newProductForm').classList.add('d-none');
+    document.getElementById('newProductToggle').style.display = 'block';
+    
+    updateFormState();
 }
 
 // Clear selected product
@@ -1001,10 +1087,8 @@ function validateForm() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Products loaded:', allProducts.length);
-    
     // Initialize the form
-    showInitialProducts();
+    loadInitialProducts();
     updatePreview();
     updateFormState();
     
