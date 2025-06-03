@@ -377,7 +377,7 @@
                                                 placeholder="Search products by name, category, size, or SKU..." 
                                                 autocomplete="off"
                                                 oninput="filterProducts()">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </div>
@@ -391,19 +391,19 @@
                                     <div class="mb-3">
                                         <label class="form-label small text-muted">Quick Actions:</label>
                                         <div class="d-flex flex-wrap gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="showAllProducts()">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="showAllBtn">
                                                 <i class="fas fa-list me-1"></i>Show All Products
                                             </button>
-                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="filterByCategory('Shrubs')">
+                                            <button type="button" class="btn btn-outline-success btn-sm category-filter" data-category="Shrubs">
                                                 <i class="fas fa-leaf me-1"></i>Shrubs
                                             </button>
-                                            <button type="button" class="btn btn-outline-info btn-sm" onclick="filterByCategory('Roses')">
+                                            <button type="button" class="btn btn-outline-info btn-sm category-filter" data-category="Roses">
                                                 <i class="fas fa-rose me-1"></i>Roses
                                             </button>
-                                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterByCategory('Perennials')">
+                                            <button type="button" class="btn btn-outline-warning btn-sm category-filter" data-category="Perennials">
                                                 <i class="fas fa-spa me-1"></i>Perennials
                                             </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearCategoryFilter()">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearCategoryBtn">
                                                 <i class="fas fa-times me-1"></i>Clear
                                             </button>
                                         </div>
@@ -1118,6 +1118,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('newProductToggle').addEventListener('click', toggleNewProductForm);
     document.getElementById('cancelNewProduct').addEventListener('click', toggleNewProductForm);
     document.getElementById('clear_product_btn').addEventListener('click', clearSelectedProduct);
+    
+    // Search and filter button listeners
+    document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
+    document.getElementById('showAllBtn').addEventListener('click', showAllProducts);
+    document.getElementById('clearCategoryBtn').addEventListener('click', clearCategoryFilter);
+    
+    // Category filter buttons
+    document.querySelectorAll('.category-filter').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            filterByCategory(category);
+        });
+    });
 });
     
     // DOM Elements
