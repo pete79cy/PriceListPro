@@ -51,6 +51,31 @@ def generate_custom_pdf(quotation, fields=None):
         # Count the number of visible item columns for layout purposes
         visible_column_count = sum(1 for value in item_fields.values() if value)
         
+        # Calculate VAT and totals in Python to avoid Jinja2 complexity
+        vat_dict = {}
+        subtotal = 0
+        
+        for item in quotation.items:
+            item_subtotal = item.quantity * item.selling_price
+            subtotal += item_subtotal
+            
+            # Track VAT amounts by rate
+            vat_rate = item.vat_rate
+            vat_amount = item_subtotal * (vat_rate / 100)
+            
+            if vat_rate in vat_dict:
+                vat_dict[vat_rate] += vat_amount
+            else:
+                vat_dict[vat_rate] = vat_amount
+        
+        # Convert to list for template
+        vat_list = [{'rate': rate, 'amount': amount} for rate, amount in vat_dict.items()]
+        vat_list.sort(key=lambda x: x['rate'])  # Sort by rate
+        
+        # Calculate grand total
+        total_vat = sum(item['amount'] for item in vat_list)
+        grand_total = subtotal + total_vat
+        
         # Generate HTML from template
         with app.app_context():
             html = render_template(
@@ -61,6 +86,9 @@ def generate_custom_pdf(quotation, fields=None):
                 fields=field_visibility,
                 item_fields=item_fields,
                 visible_column_count=visible_column_count,
+                calculated_subtotal=subtotal,
+                vat_breakdown=vat_list,
+                calculated_grand_total=grand_total,
                 timestamp=datetime.now().strftime('%Y%m%d_%H%M%S')
             )
         
@@ -73,11 +101,11 @@ def generate_custom_pdf(quotation, fields=None):
         output_path = os.path.join(output_dir, filename)
         
         # Convert HTML to PDF
-        pdf = weasyprint.HTML(string=html).write_pdf()
+        pdf_bytes = weasyprint.HTML(string=html).write_pdf()
         
         # Save PDF to file
         with open(output_path, 'wb') as f:
-            f.write(pdf)
+            f.write(pdf_bytes)
         
         # Update quotation with file path
         quotation.file_path = os.path.join('pdf', filename)
