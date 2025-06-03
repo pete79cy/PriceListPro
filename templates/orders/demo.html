@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Enhanced Daily Orders Demo{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center mb-5">
+                <h1 class="display-4">
+                    <i class="fas fa-seedling text-success me-3"></i>
+                    Enhanced Daily Orders Management
+                </h1>
+                <p class="lead text-muted">
+                    Smart product search, customer-specific pricing, and VAT management for plant orders
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Overview -->
+    <div class="row mb-5">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-search me-2"></i>Smart Product Search</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Fuzzy search across multiple fields</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Product name and scientific name</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Category and description matching</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Supplier product integration</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Real-time search suggestions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-tags me-2"></i>Customer Pricing</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Individual customer price lists</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Automatic price retrieval</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Price list updates from orders</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Effective date management</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Price history tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-calculator me-2"></i>VAT Management</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Multiple VAT rates (5%, 19%, 0%)</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Plant-specific reduced rate</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Automatic VAT calculations</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Real-time totals</li>
+                        <li><i class="fas fa-check text-success me-2"></i>VAT breakdown by rate</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <div class="btn-group-lg" role="group">
+                <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-plus-circle me-2"></i>Create New Order
+                </a>
+                <a href="{{ url_for('orders.customer_price_list') }}" class="btn btn-success btn-lg me-3">
+                    <i class="fas fa-tags me-2"></i>Manage Price Lists
+                </a>
+                <a href="{{ url_for('orders.index') }}" class="btn btn-info btn-lg">
+                    <i class="fas fa-list me-2"></i>View All Orders
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Features Demo -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-star me-2"></i>Key Features</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Order Management</h6>
+                            <ul>
+                                <li>Interactive order creation with drag-and-drop items</li>
+                                <li>Real-time order totals and VAT calculations</li>
+                                <li>Status workflow management</li>
+                                <li>Delivery date tracking</li>
+                                <li>Order notes and special instructions</li>
+                            </ul>
+                            
+                            <h6 class="text-success mt-4">Product Integration</h6>
+                            <ul>
+                                <li>Search across main product catalog</li>
+                                <li>Integration with supplier products</li>
+                                <li>Manual product entry for special items</li>
+                                <li>Product categorization and scientific names</li>
+                                <li>SKU and barcode support</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-warning">Pricing Features</h6>
+                            <ul>
+                                <li>Customer-specific price lists</li>
+                                <li>Automatic price suggestions</li>
+                                <li>Price history and effective dates</li>
+                                <li>Bulk price list management</li>
+                                <li>Price override capabilities</li>
+                            </ul>
+                            
+                            <h6 class="text-info mt-4">Advanced Functions</h6>
+                            <ul>
+                                <li>Multi-rate VAT support (5%, 19%, 0%)</li>
+                                <li>Real-time total calculations</li>
+                                <li>Order item reordering</li>
+                                <li>Customer categorization</li>
+                                <li>Export capabilities</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Info -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h6><i class="fas fa-cogs me-2"></i>Technical Implementation</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Backend Features:</strong>
+                            <ul class="small">
+                                <li>Flask-based API endpoints</li>
+                                <li>SQLAlchemy ORM with PostgreSQL</li>
+                                <li>WTForms validation</li>
+                                <li>Real-time data processing</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Frontend Features:</strong>
+                            <ul class="small">
+                                <li>Bootstrap 5 responsive design</li>
+                                <li>jQuery AJAX interactions</li>
+                                <li>Real-time search and filtering</li>
+                                <li>Drag-and-drop functionality</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Data Management:</strong>
+                            <ul class="small">
+                                <li>Customer relationship management</li>
+                                <li>Product catalog integration</li>
+                                <li>Price list automation</li>
+                                <li>VAT calculation engine</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.display-4 {
+    font-weight: 300;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-group-lg .btn {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+.list-unstyled li {
+    padding: 3px 0;
+}
+
+.border-primary { border-width: 2px !important; }
+.border-success { border-width: 2px !important; }
+.border-warning { border-width: 2px !important; }
+</style>
+{% endblock %}

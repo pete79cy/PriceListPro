@@ -340,3 +340,85 @@ def api_get_vat_rates():
         {'rate': 19.0, 'label': '19% (Standard Rate)', 'description': 'Standard goods and services'},
         {'rate': 0.0, 'label': '0% (Exempt)', 'description': 'Tax-exempt items'}
     ])
+
+
+@orders.route('/api/price-list/<int:price_list_id>', methods=['PUT'])
+@login_required
+def api_update_price_list_entry(price_list_id):
+    """Update an existing price list entry"""
+    price_list_entry = PriceList.query.get_or_404(price_list_id)
+    data = request.get_json()
+    
+    price = data.get('price', type=float)
+    effective_date_str = data.get('effective_date')
+    
+    if price is None or price < 0:
+        return jsonify({'error': 'Valid price is required'}), 400
+    
+    try:
+        # Update the entry
+        price_list_entry.price = price
+        
+        if effective_date_str:
+            from datetime import datetime
+            price_list_entry.effective_date = datetime.strptime(effective_date_str, '%Y-%m-%d').date()
+        
+        price_list_entry.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'price_list_id': price_list_entry.id,
+            'price': price_list_entry.price,
+            'updated_at': price_list_entry.updated_at.isoformat()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@orders.route('/api/price-list/<int:price_list_id>', methods=['DELETE'])
+@login_required
+def api_delete_price_list_entry(price_list_id):
+    """Delete a price list entry"""
+    price_list_entry = PriceList.query.get_or_404(price_list_id)
+    
+    try:
+        db.session.delete(price_list_entry)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@orders.route('/api/customers/<int:customer_id>/price-list')
+@login_required
+def api_get_customer_price_list(customer_id):
+    """Get all price list entries for a specific customer"""
+    customer = Customer.query.get_or_404(customer_id)
+    
+    price_list_entries = PriceList.query.filter_by(customer_id=customer_id).join(Product).all()
+    
+    entries = []
+    for entry in price_list_entries:
+        entries.append({
+            'id': entry.id,
+            'product_id': entry.product_id,
+            'product_name': entry.product.name,
+            'scientific_name': entry.product.scientific_name or '',
+            'category': entry.product.category or '',
+            'price': entry.price,
+            'effective_date': entry.effective_date.isoformat() if entry.effective_date else None,
+            'updated_at': entry.updated_at.isoformat() if entry.updated_at else None
+        })
+    
+    return jsonify({
+        'customer_id': customer_id,
+        'customer_name': customer.name,
+        'entries': entries,
+        'total_entries': len(entries)
+    })
