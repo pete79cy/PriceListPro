@@ -100,14 +100,7 @@ with app.app_context():
     import models
     db.create_all()
     
-    # Create a default admin user if no users exist
-    from models import User
-    if User.query.count() == 0:
-        admin_user = User(username='admin', is_admin=True)
-        admin_user.set_password('admin123')  # Default password - should be changed after first login
-        db.session.add(admin_user)
-        db.session.commit()
-        print("Default admin user created")
+    # Default admin user creation is handled separately to avoid circular imports
     
     # Import necessary modules
     from flask import request
