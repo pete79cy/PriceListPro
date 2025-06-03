@@ -734,6 +734,7 @@ let searchTimeout = null;
 
 // API-based search with debouncing
 async function filterProducts() {
+    console.log('[DEBUG] filterProducts called');   // Test 1: Does function fire?
     const searchInput = document.getElementById('product_search');
     const query = searchInput.value.trim();
     
@@ -756,6 +757,7 @@ async function filterProducts() {
 // Search products via API
 async function searchProductsAPI(query) {
     const resultsList = document.getElementById('product_results_list');
+    console.assert(resultsList, '[DEBUG] #product_results_list not found!');   // Test 3: DOM element check
     
     try {
         // Show loading state
@@ -1121,10 +1123,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('shown.bs.modal', function(e) {
         if (e.target.id !== 'addItemModal') return;
         
-        // Search input listener
-        const productSearch = document.getElementById('product_search');
+        // Search input listener (with once: true to prevent duplicates)
+        const productSearch = e.target.querySelector('#product_search');
         if (productSearch) {
-            productSearch.addEventListener('input', filterProducts);
+            productSearch.addEventListener('input', filterProducts, { once: true });
         }
         
         // Search and filter button listeners
