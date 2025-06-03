@@ -51,30 +51,37 @@ def generate_custom_pdf(quotation, fields=None):
         # Count the number of visible item columns for layout purposes
         visible_column_count = sum(1 for value in item_fields.values() if value)
         
-        # Calculate VAT and totals in Python to avoid Jinja2 complexity
+        # Calculate VAT and totals in Python with precise decimal arithmetic
+        from decimal import Decimal, ROUND_HALF_UP
+        
         vat_dict = {}
-        subtotal = 0
+        subtotal = Decimal('0.00')
         
         for item in quotation.items:
-            item_subtotal = item.quantity * item.selling_price
+            # Use Decimal for precise calculations
+            item_subtotal = Decimal(str(item.quantity)) * Decimal(str(item.selling_price))
             subtotal += item_subtotal
             
-            # Track VAT amounts by rate
-            vat_rate = item.vat_rate
-            vat_amount = item_subtotal * (vat_rate / 100)
+            # Track VAT amounts by rate with precise calculation
+            vat_rate = Decimal(str(item.vat_rate))
+            vat_amount = (item_subtotal * vat_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             
             if vat_rate in vat_dict:
                 vat_dict[vat_rate] += vat_amount
             else:
                 vat_dict[vat_rate] = vat_amount
         
-        # Convert to list for template
-        vat_list = [{'rate': rate, 'amount': amount} for rate, amount in vat_dict.items()]
+        # Convert to list for template with proper rounding
+        vat_list = [{'rate': float(rate), 'amount': float(amount)} for rate, amount in vat_dict.items()]
         vat_list.sort(key=lambda x: x['rate'])  # Sort by rate
         
-        # Calculate grand total
-        total_vat = sum(item['amount'] for item in vat_list)
+        # Calculate grand total with precise arithmetic
+        total_vat = sum(vat_dict.values(), Decimal('0.00'))
         grand_total = subtotal + total_vat
+        
+        # Convert to float for template rendering
+        subtotal = float(subtotal)
+        grand_total = float(grand_total)
         
         # Generate HTML from template
         with app.app_context():

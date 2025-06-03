@@ -104,25 +104,37 @@ def generate_enhanced_pdf(quotation, upload_folder, use_modern_template=False, d
                             f"Position={getattr(item, 'position', 'unknown')}, "
                             f"Description={getattr(item, 'description', 'unknown')[:30]}")
         
-        # Calculate financial totals as in original function
+        # Calculate financial totals with precise decimal arithmetic
+        from decimal import Decimal, ROUND_HALF_UP
+        
+        vat_dict_decimal = {}
+        subtotal_decimal = Decimal('0.00')
+        
         for item in sorted_items:
-            item_subtotal = item.quantity * item.selling_price
-            subtotal += item_subtotal
+            # Use Decimal for precise calculations
+            item_subtotal = Decimal(str(item.quantity)) * Decimal(str(item.selling_price))
+            subtotal_decimal += item_subtotal
             
-            # Track VAT amounts by rate
-            vat_rate = item.vat_rate
-            vat_amount = item_subtotal * (vat_rate / 100)
+            # Track VAT amounts by rate with precise calculation
+            vat_rate = Decimal(str(item.vat_rate))
+            vat_amount = (item_subtotal * vat_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             
-            if vat_rate in vat_dict:
-                vat_dict[vat_rate] += vat_amount
+            if vat_rate in vat_dict_decimal:
+                vat_dict_decimal[vat_rate] += vat_amount
             else:
-                vat_dict[vat_rate] = vat_amount
+                vat_dict_decimal[vat_rate] = vat_amount
         
-        # Convert to list for template
-        vat_list = [{'rate': rate, 'label': f'VAT {rate}%', 'amount': amount} for rate, amount in vat_dict.items()]
+        # Convert to list for template with proper precision
+        vat_list = [{'rate': float(rate), 'label': f'VAT {float(rate)}%', 'amount': float(amount)} 
+                   for rate, amount in vat_dict_decimal.items()]
         
-        # Calculate grand total
-        grand_total = subtotal + sum(item['amount'] for item in vat_list)
+        # Calculate grand total with precise arithmetic
+        total_vat_decimal = sum(vat_dict_decimal.values(), Decimal('0.00'))
+        grand_total_decimal = subtotal_decimal + total_vat_decimal
+        
+        # Convert to float for template rendering
+        subtotal = float(subtotal_decimal)
+        grand_total = float(grand_total_decimal)
         
         # Get company settings
         company = CompanySettings.query.first()
