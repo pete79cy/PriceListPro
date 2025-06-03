@@ -144,9 +144,15 @@ def new_order():
         items_json = request.form.get('items')
         
         # Validate required fields
-        if not customer_id:
-            flash('Customer is required', 'danger')
-            return redirect(url_for('orders.new_order'))
+        if not customer_id or customer_id == '0':
+            flash('Please select a valid customer', 'danger')
+            form = EnhancedOrderForm()
+            customers = Customer.query.order_by(Customer.name).all()
+            return render_template('orders/enhanced_order_form.html', 
+                                 form=form, 
+                                 order=None,
+                                 status_choices=[],
+                                 customers=customers)
             
         # Parse delivery date if provided
         delivery_date = None
