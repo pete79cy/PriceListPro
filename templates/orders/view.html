@@ -88,7 +88,7 @@
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li>
-                                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.new_adjustment', order_id=order.id) }}">
+                                        <a class="dropdown-item" href="{{ url_for('delivery_adjustments.new_order_adjustment', order_id=order.id) }}">
                                             <i class="fas fa-plus"></i> Create Adjustment
                                         </a>
                                     </li>
@@ -344,174 +344,266 @@
 
 <!-- Add Item Modal -->
 <div class="modal fade" id="addItemModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Item to Order</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Add Item to Order #{{ order.order_number }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="{{ url_for('orders.add_item', order_id=order.id) }}">
+            <form method="POST" action="{{ url_for('orders.add_item', order_id=order.id) }}" id="addItemForm">
                 <div class="modal-body">
-                    <!-- Product Selection Tabs -->
-                    <ul class="nav nav-tabs mb-3" id="productTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="existing-product-tab" data-bs-toggle="tab" data-bs-target="#existing-product" type="button" role="tab">
-                                <i class="fas fa-search"></i> Select Existing Product
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="new-product-tab" data-bs-toggle="tab" data-bs-target="#new-product" type="button" role="tab">
-                                <i class="fas fa-plus"></i> Add New Product
-                            </button>
-                        </li>
-                    </ul>
-                    
-                    <div class="tab-content" id="productTabContent">
-                        <!-- Existing Product Tab -->
-                        <div class="tab-pane fade show active" id="existing-product" role="tabpanel">
-                            <div class="mb-3">
-                                <label for="product_id" class="form-label">Select Product</label>
-                                <div class="product-search-container position-relative">
-                                    <!-- Hidden input for form submission -->
-                                    <input type="hidden" name="product_id" id="product_id">
-                                    
-                                    <!-- Visible search input -->
-                                    <div class="input-group">
-                                        <input type="text" 
-                                            class="form-control" 
-                                            id="product_search" 
-                                            placeholder="Type to search for products..." 
-                                            autocomplete="off">
-                                        <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                    
-                                    <!-- Product dropdown results -->
-                                    <div id="search_results" class="product-search-results shadow-sm d-none">
-                                        <div class="list-group list-group-flush" id="product_results_list">
-                                            <!-- Results will be dynamically populated here -->
+                    <!-- Product Selection Section -->
+                    <div class="row">
+                        <!-- Product Search Column -->
+                        <div class="col-lg-7">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-search text-primary me-2"></i>Product Selection
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Search Input -->
+                                    <div class="mb-3">
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-seedling text-success"></i>
+                                            </span>
+                                            <input type="text" 
+                                                class="form-control" 
+                                                id="product_search" 
+                                                placeholder="Search products by name, category, size, or SKU..." 
+                                                autocomplete="off">
+                                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="fas fa-lightbulb text-warning me-1"></i>
+                                            Try searching for "rose", "3L", or product codes
                                         </div>
                                     </div>
                                     
-                                    <!-- Selected product display -->
-                                    <div id="selected_product_display" class="mt-2 p-2 border rounded bg-light d-none">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <span class="fw-bold" id="selected_product_name"></span>
-                                                <small class="text-muted d-block" id="selected_product_details"></small>
-                                            </div>
-                                            <button type="button" class="btn btn-sm btn-link text-danger" id="clear_product_btn">
-                                                <i class="fas fa-times"></i> Change
+                                    <!-- Quick Categories -->
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Quick Categories:</label>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm category-filter" data-category="Trees">
+                                                <i class="fas fa-tree me-1"></i>Trees
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success btn-sm category-filter" data-category="Shrubs">
+                                                <i class="fas fa-leaf me-1"></i>Shrubs
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info btn-sm category-filter" data-category="Roses">
+                                                <i class="fas fa-rose me-1"></i>Roses
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning btn-sm category-filter" data-category="Perennials">
+                                                <i class="fas fa-spa me-1"></i>Perennials
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearCategoryFilter">
+                                                <i class="fas fa-times me-1"></i>Clear
                                             </button>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Search Results -->
+                                    <div id="search_results" class="search-results-container">
+                                        <div id="product_results_list" class="product-grid">
+                                            <!-- Initial state - show popular products -->
+                                            <div class="text-center py-4 text-muted" id="search_placeholder">
+                                                <i class="fas fa-search fa-2x mb-2"></i>
+                                                <p>Start typing to search for products</p>
+                                                <small>Or click a category above to browse</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Selected Product Display -->
+                                    <div id="selected_product_display" class="alert alert-success d-none">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="alert-heading mb-1">
+                                                    <i class="fas fa-check-circle me-2"></i>Selected Product
+                                                </h6>
+                                                <div class="fw-bold" id="selected_product_name"></div>
+                                                <small class="text-success" id="selected_product_details"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-success" id="clear_product_btn">
+                                                <i class="fas fa-edit me-1"></i>Change
+                                            </button>
+                                        </div>
+                                        <input type="hidden" name="product_id" id="product_id">
+                                    </div>
+                                    
+                                    <!-- Add New Product Option -->
+                                    <div class="text-center mt-3">
+                                        <button type="button" class="btn btn-outline-primary" id="newProductToggle">
+                                            <i class="fas fa-plus me-2"></i>Can't find your product? Add new product
+                                        </button>
+                                    </div>
                                 </div>
-                                <small class="text-muted mt-1">Search by name, size, code or any part of the description</small>
                             </div>
                         </div>
                         
-                        <!-- New Product Tab -->
-                        <div class="tab-pane fade" id="new-product" role="tabpanel">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Create a new product that doesn't exist in your database yet
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="new_product_name" class="form-label">Product Name <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="new_product_name" name="new_product_name" placeholder="e.g., Rosa gallica">
-                                    </div>
+                        <!-- Order Details Column -->
+                        <div class="col-lg-5">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-calculator text-success me-2"></i>Order Details
+                                    </h6>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="new_product_category" class="form-label">Category</label>
-                                        <input type="text" class="form-control" id="new_product_category" name="new_product_category" placeholder="e.g., Roses, Shrubs">
+                                <div class="card-body">
+                                    <!-- Quantity Section -->
+                                    <div class="mb-4">
+                                        <label for="quantity" class="form-label fw-bold">
+                                            <i class="fas fa-sort-numeric-up text-primary me-1"></i>Quantity
+                                        </label>
+                                        <div class="input-group input-group-lg">
+                                            <button class="btn btn-outline-primary" type="button" onclick="decreaseQuantity('quantity')">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center fw-bold" id="quantity" name="quantity" value="1" min="1" required>
+                                            <button class="btn btn-outline-primary" type="button" onclick="increaseQuantity('quantity')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="new_product_scientific_name" class="form-label">Scientific Name</label>
-                                        <input type="text" class="form-control" id="new_product_scientific_name" name="new_product_scientific_name" placeholder="e.g., Rosa gallica officinalis">
+                                    
+                                    <!-- Price Section -->
+                                    <div class="mb-4">
+                                        <label for="unit_price" class="form-label fw-bold">
+                                            <i class="fas fa-euro-sign text-success me-1"></i>Unit Price
+                                        </label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text bg-success text-white">€</span>
+                                            <input type="number" class="form-control fw-bold" id="unit_price" name="unit_price" min="0" step="0.01" placeholder="0.00">
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle text-info me-1"></i>
+                                            Leave empty to use customer's price list
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="new_product_pot" class="form-label">Pot Size</label>
-                                        <input type="text" class="form-control" id="new_product_pot" name="new_product_pot" placeholder="e.g., 3L, 10cm">
+                                    
+                                    <!-- VAT Rate Section -->
+                                    <div class="mb-4">
+                                        <label for="vat_rate" class="form-label fw-bold">
+                                            <i class="fas fa-percentage text-warning me-1"></i>VAT Rate
+                                        </label>
+                                        <select class="form-select form-select-lg" id="vat_rate" name="vat_rate">
+                                            <option value="19.0" selected>19% (Standard Rate)</option>
+                                            <option value="5.0">5% (Reduced Rate)</option>
+                                        </select>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="new_product_sku" class="form-label">SKU/Code</label>
-                                        <input type="text" class="form-control" id="new_product_sku" name="new_product_sku" placeholder="Product code or SKU">
+                                    
+                                    <!-- Total Preview -->
+                                    <div class="alert alert-info">
+                                        <h6 class="alert-heading">
+                                            <i class="fas fa-calculator me-2"></i>Order Total Preview
+                                        </h6>
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <div class="fw-bold text-primary" id="preview_quantity">1</div>
+                                                <small class="text-muted">Quantity</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="fw-bold text-success" id="preview_unit_price">€0.00</div>
+                                                <small class="text-muted">Unit Price</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="fw-bold text-warning" id="preview_total">€0.00</div>
+                                                <small class="text-muted">Total</small>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="new_product_description" class="form-label">Description</label>
-                                        <textarea class="form-control" id="new_product_description" name="new_product_description" rows="2" placeholder="Additional product details"></textarea>
+                                    
+                                    <!-- Additional Options -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="update_price_list" name="update_price_list" checked>
+                                        <label class="form-check-label" for="update_price_list">
+                                            <i class="fas fa-sync-alt text-info me-1"></i>
+                                            Update customer's price list with this price
+                                        </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Common fields for both tabs -->
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity('quantity')">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <input type="number" class="form-control text-center" id="quantity" name="quantity" value="1" min="1" required>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity('quantity')">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
+                    <!-- New Product Form (Hidden by default) -->
+                    <div class="row mt-3 d-none" id="newProductForm">
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-plus-circle me-2"></i>Add New Product to Database
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="new_product_name" class="form-label">Product Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="new_product_name" name="new_product_name" placeholder="e.g., Rosa gallica">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="new_product_category" class="form-label">Category</label>
+                                                <input type="text" class="form-control" id="new_product_category" name="new_product_category" placeholder="e.g., Roses, Shrubs">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="new_product_scientific_name" class="form-label">Scientific Name</label>
+                                                <input type="text" class="form-control" id="new_product_scientific_name" name="new_product_scientific_name" placeholder="e.g., Rosa gallica officinalis">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="new_product_pot" class="form-label">Pot Size</label>
+                                                <input type="text" class="form-control" id="new_product_pot" name="new_product_pot" placeholder="e.g., 3L, 10cm">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="new_product_sku" class="form-label">SKU/Code</label>
+                                                <input type="text" class="form-control" id="new_product_sku" name="new_product_sku" placeholder="Product code or SKU">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="new_product_description" class="form-label">Description</label>
+                                                <textarea class="form-control" id="new_product_description" name="new_product_description" rows="2" placeholder="Additional product details"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <button type="button" class="btn btn-secondary" id="cancelNewProduct">
+                                            <i class="fas fa-times me-1"></i>Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="unit_price" class="form-label">Unit Price <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text">€</span>
-                                    <input type="number" class="form-control" id="unit_price" name="unit_price" min="0" step="0.01" placeholder="0.00">
-                                </div>
-                                <small class="text-muted">For existing products, leave empty to use customer's price list</small>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="vat_rate" class="form-label">VAT Rate</label>
-                                <select class="form-select" id="vat_rate" name="vat_rate">
-                                    <option value="19.0" selected>19%</option>
-                                    <option value="5.0">5%</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="update_price_list" name="update_price_list" checked>
-                        <label class="form-check-label" for="update_price_list">
-                            Update customer's price list with this price
-                        </label>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Item</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-lg" id="addItemBtn">
+                        <i class="fas fa-plus-circle me-2"></i>Add Item to Order
+                    </button>
                 </div>
             </form>
         </div>
@@ -522,52 +614,101 @@
 {% block head %}
 {{ super() }}
 <style>
-    /* Product search autocomplete styling */
-    .product-search-container {
+    /* Enhanced Add Item Modal Styling */
+    .search-results-container {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+    
+    .product-grid {
+        display: grid;
+        gap: 0;
+    }
+    
+    .product-card {
+        cursor: pointer;
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: all 0.2s ease;
         position: relative;
     }
     
-    .product-search-results {
-        position: absolute;
-        left: 0;
-        right: 0;
-        z-index: 10;
-        max-height: 250px;
-        overflow-y: auto;
-        background: #fff;
-        border: 1px solid rgba(0,0,0,.125);
-        border-radius: 0.25rem;
-        margin-top: 2px;
+    .product-card:hover {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
     }
     
-    .product-result-item {
-        cursor: pointer;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid rgba(0,0,0,.125);
-        transition: background-color 0.2s;
+    .product-card.selected {
+        background-color: #e7f3ff;
+        border-left: 4px solid #0d6efd;
     }
     
-    .product-result-item:hover,
-    .product-result-item.active {
-        background-color: rgba(13,110,253,.1);
-    }
-    
-    .product-result-item:last-child {
+    .product-card:last-child {
         border-bottom: none;
     }
     
-    .product-result-item .product-name {
+    .product-name {
         font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.25rem;
     }
     
-    .product-result-item .product-details {
-        font-size: 0.85rem;
+    .product-details {
+        font-size: 0.875rem;
         color: #6c757d;
+        margin-bottom: 0.25rem;
     }
     
-    .product-result-item .highlight {
-        background-color: rgba(255, 255, 0, 0.3);
-        font-weight: bold;
+    .product-badges {
+        display: flex;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+    }
+    
+    .product-badge {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .highlight {
+        background-color: rgba(255, 193, 7, 0.3);
+        font-weight: 600;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.125rem;
+    }
+    
+    .category-filter.active {
+        background-color: var(--bs-primary);
+        color: white;
+        border-color: var(--bs-primary);
+    }
+    
+    .modal-xl .modal-dialog {
+        max-width: 1200px;
+    }
+    
+    .btn-group-quantity {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .preview-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    
+    @media (max-width: 991.98px) {
+        .modal-xl .modal-dialog {
+            max-width: 95%;
+        }
+        
+        .col-lg-7, .col-lg-5 {
+            margin-bottom: 1rem;
+        }
     }
 </style>
 {% endblock %}
@@ -575,38 +716,24 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Quantity increase/decrease functions for edit modals
-function increaseQuantity(inputId) {
-    const input = document.getElementById(inputId);
-    if (input) {
-        input.value = Math.max(1, parseInt(input.value || 0) + 1);
-    }
-}
-
-function decreaseQuantity(inputId) {
-    const input = document.getElementById(inputId);
-    if (input) {
-        input.value = Math.max(1, parseInt(input.value || 0) - 1);
-    }
-}
-
+// Enhanced Add Item Modal JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Get all products data
+    // Product data from server
     const products = [
         {% for product in products %}
         {
             id: "{{ product.id }}",
-            name: "{{ product.name }}",
-            pot: "{{ product.pot if product.pot else '' }}",
-            sku: "{{ product.sku if product.sku else '' }}",
-            category: "{{ product.category if product.category else '' }}",
-            scientific_name: "{{ product.scientific_name if product.scientific_name else '' }}",
-            description: "{{ product.description if product.description else '' }}"
-        },
+            name: "{{ product.name|e }}",
+            pot: "{{ product.pot|e if product.pot else '' }}",
+            sku: "{{ product.sku|e if product.sku else '' }}",
+            category: "{{ product.category|e if product.category else '' }}",
+            scientific_name: "{{ product.scientific_name|e if product.scientific_name else '' }}",
+            description: "{{ product.description|e if product.description else '' }}"
+        }{% if not loop.last %},{% endif %}
         {% endfor %}
     ];
     
-    // Elements
+    // DOM Elements
     const productSearch = document.getElementById('product_search');
     const productIdInput = document.getElementById('product_id');
     const searchResults = document.getElementById('search_results');
@@ -616,38 +743,339 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedProductDetails = document.getElementById('selected_product_details');
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const clearProductBtn = document.getElementById('clear_product_btn');
+    const searchPlaceholder = document.getElementById('search_placeholder');
     
-    // Tab and form elements
-    const existingProductTab = document.getElementById('existing-product-tab');
-    const newProductTab = document.getElementById('new-product-tab');
+    // Category filter buttons
+    const categoryFilters = document.querySelectorAll('.category-filter');
+    const clearCategoryFilter = document.getElementById('clearCategoryFilter');
+    
+    // New product form elements
+    const newProductToggle = document.getElementById('newProductToggle');
+    const newProductForm = document.getElementById('newProductForm');
+    const cancelNewProduct = document.getElementById('cancelNewProduct');
     const newProductNameInput = document.getElementById('new_product_name');
+    
+    // Order details elements
+    const quantityInput = document.getElementById('quantity');
     const unitPriceInput = document.getElementById('unit_price');
-    const addItemForm = document.querySelector('#addItemModal form');
+    const vatRateSelect = document.getElementById('vat_rate');
     
-    // Initialize - hide selected product display initially
-    selectedProductDisplay.classList.add('d-none');
+    // Preview elements
+    const previewQuantity = document.getElementById('preview_quantity');
+    const previewUnitPrice = document.getElementById('preview_unit_price');
+    const previewTotal = document.getElementById('preview_total');
     
-    // Track currently active list item
-    let activeItemIndex = -1;
+    // Form elements
+    const addItemForm = document.getElementById('addItemForm');
+    const addItemBtn = document.getElementById('addItemBtn');
     
-    // Form validation and submission handling
-    addItemForm.addEventListener('submit', function(e) {
-        const activeTab = document.querySelector('.tab-pane.active');
-        const isNewProductTab = activeTab && activeTab.id === 'new-product';
-        
-        if (isNewProductTab) {
-            // Validate new product form
-            const productName = newProductNameInput.value.trim();
-            const unitPrice = unitPriceInput.value;
+    // State
+    let selectedProduct = null;
+    let filteredProducts = products;
+    let currentFilter = '';
+    
+    // Initialize
+    updatePreview();
+    showInitialState();
+    
+    // Search functionality
+    productSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        if (query.length >= 2) {
+            searchProducts(query);
+        } else if (query.length === 0) {
+            if (currentFilter) {
+                filterByCategory(currentFilter);
+            } else {
+                showInitialState();
+            }
+        }
+    });
+    
+    // Clear search
+    clearSearchBtn.addEventListener('click', function() {
+        productSearch.value = '';
+        if (currentFilter) {
+            filterByCategory(currentFilter);
+        } else {
+            showInitialState();
+        }
+    });
+    
+    // Category filtering
+    categoryFilters.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const category = this.dataset.category;
             
-            if (!productName) {
-                e.preventDefault();
-                alert('Please enter a product name for the new product.');
-                newProductNameInput.focus();
-                return;
+            // Update active state
+            categoryFilters.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            currentFilter = category;
+            filterByCategory(category);
+            productSearch.value = '';
+        });
+    });
+    
+    // Clear category filter
+    clearCategoryFilter.addEventListener('click', function() {
+        categoryFilters.forEach(btn => btn.classList.remove('active'));
+        currentFilter = '';
+        productSearch.value = '';
+        showInitialState();
+    });
+    
+    // New product toggle
+    newProductToggle.addEventListener('click', function() {
+        newProductForm.classList.remove('d-none');
+        newProductToggle.style.display = 'none';
+        clearSelectedProduct();
+    });
+    
+    // Cancel new product
+    cancelNewProduct.addEventListener('click', function() {
+        newProductForm.classList.add('d-none');
+        newProductToggle.style.display = 'block';
+        clearNewProductForm();
+    });
+    
+    // Clear selected product
+    clearProductBtn.addEventListener('click', function() {
+        clearSelectedProduct();
+    });
+    
+    // Input event listeners for real-time preview
+    quantityInput.addEventListener('input', updatePreview);
+    unitPriceInput.addEventListener('input', updatePreview);
+    vatRateSelect.addEventListener('change', updatePreview);
+    
+    // Form validation
+    addItemForm.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+        }
+    });
+    
+    // Search products function
+    function searchProducts(query) {
+        const searchTerms = query.toLowerCase().split(' ');
+        const results = products.filter(product => {
+            const searchText = `${product.name} ${product.category} ${product.pot} ${product.sku} ${product.scientific_name} ${product.description}`.toLowerCase();
+            return searchTerms.every(term => searchText.includes(term));
+        });
+        
+        displayProducts(results, query);
+    }
+    
+    // Filter by category
+    function filterByCategory(category) {
+        const results = products.filter(product => 
+            product.category.toLowerCase().includes(category.toLowerCase())
+        );
+        displayProducts(results);
+    }
+    
+    // Display products in grid
+    function displayProducts(productList, highlightQuery = '') {
+        if (productList.length === 0) {
+            resultsList.innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <p>No products found</p>
+                    <small>Try different search terms or browse categories</small>
+                </div>
+            `;
+            return;
+        }
+        
+        resultsList.innerHTML = productList.map(product => {
+            let displayName = product.name;
+            let displayDetails = '';
+            
+            // Build details string
+            const details = [];
+            if (product.category) details.push(product.category);
+            if (product.pot) details.push(`Size: ${product.pot}`);
+            if (product.sku) details.push(`SKU: ${product.sku}`);
+            displayDetails = details.join(' • ');
+            
+            // Highlight search terms
+            if (highlightQuery) {
+                const terms = highlightQuery.toLowerCase().split(' ');
+                terms.forEach(term => {
+                    const regex = new RegExp(`(${term})`, 'gi');
+                    displayName = displayName.replace(regex, '<span class="highlight">$1</span>');
+                    displayDetails = displayDetails.replace(regex, '<span class="highlight">$1</span>');
+                });
             }
             
-            if (!unitPrice || parseFloat(unitPrice) <= 0) {
+            return `
+                <div class="product-card" data-product-id="${product.id}" onclick="selectProduct(${product.id})">
+                    <div class="product-name">${displayName}</div>
+                    <div class="product-details">${displayDetails}</div>
+                    <div class="product-badges">
+                        ${product.category ? `<span class="badge bg-primary product-badge">${product.category}</span>` : ''}
+                        ${product.pot ? `<span class="badge bg-info product-badge">${product.pot}</span>` : ''}
+                        ${product.sku ? `<span class="badge bg-secondary product-badge">${product.sku}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Show initial state
+    function showInitialState() {
+        resultsList.innerHTML = `
+            <div class="text-center py-4 text-muted" id="search_placeholder">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <p>Start typing to search for products</p>
+                <small>Or click a category above to browse</small>
+            </div>
+        `;
+    }
+    
+    // Select product function (global)
+    window.selectProduct = function(productId) {
+        selectedProduct = products.find(p => p.id == productId);
+        if (selectedProduct) {
+            // Update UI
+            selectedProductName.textContent = selectedProduct.name;
+            
+            const details = [];
+            if (selectedProduct.category) details.push(selectedProduct.category);
+            if (selectedProduct.pot) details.push(`Size: ${selectedProduct.pot}`);
+            if (selectedProduct.sku) details.push(`SKU: ${selectedProduct.sku}`);
+            selectedProductDetails.textContent = details.join(' • ');
+            
+            productIdInput.value = selectedProduct.id;
+            selectedProductDisplay.classList.remove('d-none');
+            
+            // Hide new product form if shown
+            newProductForm.classList.add('d-none');
+            newProductToggle.style.display = 'block';
+            
+            // Update product cards
+            document.querySelectorAll('.product-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-product-id="${productId}"]`).classList.add('selected');
+            
+            updateFormState();
+        }
+    };
+    
+    // Clear selected product
+    function clearSelectedProduct() {
+        selectedProduct = null;
+        productIdInput.value = '';
+        selectedProductDisplay.classList.add('d-none');
+        
+        // Clear selection in product cards
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        updateFormState();
+    }
+    
+    // Clear new product form
+    function clearNewProductForm() {
+        document.getElementById('new_product_name').value = '';
+        document.getElementById('new_product_category').value = '';
+        document.getElementById('new_product_scientific_name').value = '';
+        document.getElementById('new_product_pot').value = '';
+        document.getElementById('new_product_sku').value = '';
+        document.getElementById('new_product_description').value = '';
+    }
+    
+    // Update preview calculations
+    function updatePreview() {
+        const quantity = parseInt(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const total = quantity * unitPrice;
+        
+        previewQuantity.textContent = quantity;
+        previewUnitPrice.textContent = `€${unitPrice.toFixed(2)}`;
+        previewTotal.textContent = `€${total.toFixed(2)}`;
+    }
+    
+    // Update form state
+    function updateFormState() {
+        const hasProduct = selectedProduct || newProductForm.classList.contains('d-none') === false;
+        const hasValidInputs = validateInputs();
+        
+        addItemBtn.disabled = !hasProduct || !hasValidInputs;
+        addItemBtn.innerHTML = hasProduct ? 
+            '<i class="fas fa-plus-circle me-2"></i>Add Item to Order' : 
+            '<i class="fas fa-exclamation-triangle me-2"></i>Select a Product First';
+    }
+    
+    // Validate inputs
+    function validateInputs() {
+        const quantity = parseInt(quantityInput.value) || 0;
+        return quantity > 0;
+    }
+    
+    // Validate form before submission
+    function validateForm() {
+        // Check if we have a product selected or new product form filled
+        const hasSelectedProduct = selectedProduct !== null;
+        const hasNewProduct = !newProductForm.classList.contains('d-none') && 
+                             newProductNameInput.value.trim() !== '';
+        
+        if (!hasSelectedProduct && !hasNewProduct) {
+            alert('Please select an existing product or fill in the new product form.');
+            return false;
+        }
+        
+        // Validate quantity
+        const quantity = parseInt(quantityInput.value) || 0;
+        if (quantity <= 0) {
+            alert('Please enter a valid quantity.');
+            quantityInput.focus();
+            return false;
+        }
+        
+        // Validate price for new products
+        if (hasNewProduct) {
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            if (unitPrice <= 0) {
+                alert('Please enter a valid unit price for the new product.');
+                unitPriceInput.focus();
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    // Listen for input changes to update form state
+    [quantityInput, unitPriceInput, newProductNameInput].forEach(input => {
+        input.addEventListener('input', updateFormState);
+    });
+    
+    // Initialize form state
+    updateFormState();
+});
+
+// Quantity increase/decrease functions
+function increaseQuantity(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        const newValue = Math.max(1, parseInt(input.value || 0) + 1);
+        input.value = newValue;
+        input.dispatchEvent(new Event('input'));
+    }
+}
+
+function decreaseQuantity(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        const newValue = Math.max(1, parseInt(input.value || 0) - 1);
+        input.value = newValue;
+        input.dispatchEvent(new Event('input'));
+    }
+}
                 e.preventDefault();
                 alert('Please enter a valid price for the new product.');
                 unitPriceInput.focus();
