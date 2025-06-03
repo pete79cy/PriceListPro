@@ -40,7 +40,7 @@ class CustomerModelView(SecureModelView):
         'updated_at': 'Last Updated'
     }
     column_searchable_list = ('name', 'email', 'phone')
-    column_filters = ('category.name', 'created_at')
+    column_filters = ('created_at',)
     column_formatters = {
         'created_at': lambda v, c, m, p: m.created_at.strftime('%Y-%m-%d') if m.created_at else '',
         'updated_at': lambda v, c, m, p: m.updated_at.strftime('%Y-%m-%d') if m.updated_at else ''
@@ -89,7 +89,7 @@ class CustomerContactModelView(SecureModelView):
         'notes': 'Notes'
     }
     column_searchable_list = ('contact_type', 'notes')
-    column_filters = ('customer.name', 'contact_date', 'contact_type')
+    column_filters = ('contact_date', 'contact_type')
     column_formatters = {
         'contact_date': lambda v, c, m, p: m.contact_date.strftime('%Y-%m-%d %H:%M') if m.contact_date else ''
     }
