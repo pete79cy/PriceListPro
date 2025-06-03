@@ -375,8 +375,9 @@
                                                 class="form-control" 
                                                 id="product_search" 
                                                 placeholder="Search products by name, category, size, or SKU..." 
-                                                autocomplete="off">
-                                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                                                autocomplete="off"
+                                                oninput="filterProducts()">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </div>
@@ -390,19 +391,19 @@
                                     <div class="mb-3">
                                         <label class="form-label small text-muted">Quick Actions:</label>
                                         <div class="d-flex flex-wrap gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" id="showAllProducts">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="showAllProducts()">
                                                 <i class="fas fa-list me-1"></i>Show All Products
                                             </button>
-                                            <button type="button" class="btn btn-outline-success btn-sm category-filter" data-category="Shrubs">
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="filterByCategory('Shrubs')">
                                                 <i class="fas fa-leaf me-1"></i>Shrubs
                                             </button>
-                                            <button type="button" class="btn btn-outline-info btn-sm category-filter" data-category="Roses">
+                                            <button type="button" class="btn btn-outline-info btn-sm" onclick="filterByCategory('Roses')">
                                                 <i class="fas fa-rose me-1"></i>Roses
                                             </button>
-                                            <button type="button" class="btn btn-outline-warning btn-sm category-filter" data-category="Perennials">
+                                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterByCategory('Perennials')">
                                                 <i class="fas fa-spa me-1"></i>Perennials
                                             </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearCategoryFilter">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearCategoryFilter()">
                                                 <i class="fas fa-times me-1"></i>Clear
                                             </button>
                                         </div>
@@ -716,22 +717,324 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Enhanced Add Item Modal JavaScript
+// Product data and search functionality
+const allProducts = [
+    {% for product in products %}
+    {
+        id: {{ product.id }},
+        name: "{{ product.name|replace('"', '\\"')|replace('\n', '\\n') }}",
+        pot: "{{ product.pot|replace('"', '\\"') if product.pot else '' }}",
+        sku: "{{ product.sku|replace('"', '\\"') if product.sku else '' }}",
+        category: "{{ product.category|replace('"', '\\"') if product.category else '' }}",
+        scientific_name: "{{ product.scientific_name|replace('"', '\\"') if product.scientific_name else '' }}",
+        description: "{{ product.description|replace('"', '\\"')|replace('\n', '\\n') if product.description else '' }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+let selectedProductId = null;
+
+// Filter products based on search input
+function filterProducts() {
+    const searchInput = document.getElementById('product_search');
+    const query = searchInput.value.toLowerCase().trim();
+    const resultsList = document.getElementById('product_results_list');
+    
+    if (query.length === 0) {
+        showInitialProducts();
+        return;
+    }
+    
+    // Filter products
+    const filteredProducts = allProducts.filter(product => {
+        const searchText = `${product.name} ${product.category} ${product.pot} ${product.sku} ${product.scientific_name} ${product.description}`.toLowerCase();
+        return searchText.includes(query);
+    });
+    
+    displayProductList(filteredProducts, query);
+}
+
+// Clear search
+function clearSearch() {
+    document.getElementById('product_search').value = '';
+    showInitialProducts();
+}
+
+// Show all products
+function showAllProducts() {
+    document.getElementById('product_search').value = '';
+    displayProductList(allProducts);
+}
+
+// Filter by category
+function filterByCategory(category) {
+    const filteredProducts = allProducts.filter(product => 
+        product.category.toLowerCase().includes(category.toLowerCase())
+    );
+    displayProductList(filteredProducts);
+    
+    // Update active button
+    document.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+// Clear category filter
+function clearCategoryFilter() {
+    document.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('product_search').value = '';
+    showInitialProducts();
+}
+
+// Display list of products
+function displayProductList(products, highlightQuery = '') {
+    const resultsList = document.getElementById('product_results_list');
+    
+    if (products.length === 0) {
+        resultsList.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <p>No products found</p>
+                <small>Try different search terms</small>
+            </div>
+        `;
+        return;
+    }
+    
+    resultsList.innerHTML = products.map(product => {
+        let displayName = product.name;
+        let displayDetails = '';
+        
+        // Build details
+        const details = [];
+        if (product.category) details.push(product.category);
+        if (product.pot) details.push(`Size: ${product.pot}`);
+        if (product.sku) details.push(`SKU: ${product.sku}`);
+        displayDetails = details.join(' • ');
+        
+        // Highlight search terms
+        if (highlightQuery) {
+            const regex = new RegExp(`(${highlightQuery})`, 'gi');
+            displayName = displayName.replace(regex, '<span class="highlight">$1</span>');
+            displayDetails = displayDetails.replace(regex, '<span class="highlight">$1</span>');
+        }
+        
+        return `
+            <div class="product-card ${selectedProductId == product.id ? 'selected' : ''}" 
+                 data-product-id="${product.id}" 
+                 onclick="selectProduct(${product.id})">
+                <div class="product-name">${displayName}</div>
+                <div class="product-details">${displayDetails}</div>
+                <div class="product-badges">
+                    ${product.category ? `<span class="badge bg-primary product-badge">${product.category}</span>` : ''}
+                    ${product.pot ? `<span class="badge bg-info product-badge">${product.pot}</span>` : ''}
+                    ${product.sku ? `<span class="badge bg-secondary product-badge">${product.sku}</span>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Show initial products (first 10)
+function showInitialProducts() {
+    const initialProducts = allProducts.slice(0, 10);
+    displayProductList(initialProducts);
+    
+    if (allProducts.length > 10) {
+        const resultsList = document.getElementById('product_results_list');
+        const header = document.createElement('div');
+        header.className = 'alert alert-info mb-2';
+        header.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            Showing first 10 products. Type to search all ${allProducts.length} products or click "Show All Products".
+        `;
+        resultsList.insertBefore(header, resultsList.firstChild);
+    }
+}
+
+// Select a product
+function selectProduct(productId) {
+    selectedProductId = productId;
+    const product = allProducts.find(p => p.id == productId);
+    
+    if (product) {
+        // Update hidden input
+        document.getElementById('product_id').value = productId;
+        
+        // Update selected product display
+        const selectedDisplay = document.getElementById('selected_product_display');
+        const selectedName = document.getElementById('selected_product_name');
+        const selectedDetails = document.getElementById('selected_product_details');
+        
+        selectedName.textContent = product.name;
+        
+        const details = [];
+        if (product.category) details.push(product.category);
+        if (product.pot) details.push(`Size: ${product.pot}`);
+        if (product.sku) details.push(`SKU: ${product.sku}`);
+        selectedDetails.textContent = details.join(' • ');
+        
+        selectedDisplay.classList.remove('d-none');
+        
+        // Update product cards
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        document.querySelector(`[data-product-id="${productId}"]`).classList.add('selected');
+        
+        // Hide new product form
+        document.getElementById('newProductForm').classList.add('d-none');
+        document.getElementById('newProductToggle').style.display = 'block';
+        
+        updateFormState();
+    }
+}
+
+// Clear selected product
+function clearSelectedProduct() {
+    selectedProductId = null;
+    document.getElementById('product_id').value = '';
+    document.getElementById('selected_product_display').classList.add('d-none');
+    
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    updateFormState();
+}
+
+// Toggle new product form
+function toggleNewProductForm() {
+    const form = document.getElementById('newProductForm');
+    const toggle = document.getElementById('newProductToggle');
+    
+    if (form.classList.contains('d-none')) {
+        form.classList.remove('d-none');
+        toggle.style.display = 'none';
+        clearSelectedProduct();
+    } else {
+        form.classList.add('d-none');
+        toggle.style.display = 'block';
+        clearNewProductForm();
+    }
+}
+
+// Clear new product form
+function clearNewProductForm() {
+    document.getElementById('new_product_name').value = '';
+    document.getElementById('new_product_category').value = '';
+    document.getElementById('new_product_scientific_name').value = '';
+    document.getElementById('new_product_pot').value = '';
+    document.getElementById('new_product_sku').value = '';
+    document.getElementById('new_product_description').value = '';
+}
+
+// Update preview calculations
+function updatePreview() {
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+    const total = quantity * unitPrice;
+    
+    document.getElementById('preview_quantity').textContent = quantity;
+    document.getElementById('preview_unit_price').textContent = `€${unitPrice.toFixed(2)}`;
+    document.getElementById('preview_total').textContent = `€${total.toFixed(2)}`;
+}
+
+// Update form state
+function updateFormState() {
+    const hasProduct = selectedProductId || !document.getElementById('newProductForm').classList.contains('d-none');
+    const hasValidInputs = parseInt(document.getElementById('quantity').value) > 0;
+    
+    const addBtn = document.getElementById('addItemBtn');
+    addBtn.disabled = !hasProduct || !hasValidInputs;
+    
+    if (!hasProduct) {
+        addBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Select a Product First';
+    } else if (!hasValidInputs) {
+        addBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Enter Valid Quantity';
+    } else {
+        addBtn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add Item to Order';
+    }
+}
+
+// Quantity functions
+function increaseQuantity(inputId) {
+    const input = document.getElementById(inputId);
+    input.value = Math.max(1, parseInt(input.value || 0) + 1);
+    updatePreview();
+    updateFormState();
+}
+
+function decreaseQuantity(inputId) {
+    const input = document.getElementById(inputId);
+    input.value = Math.max(1, parseInt(input.value || 0) - 1);
+    updatePreview();
+    updateFormState();
+}
+
+// Form validation
+function validateForm() {
+    const hasSelectedProduct = selectedProductId !== null;
+    const hasNewProduct = !document.getElementById('newProductForm').classList.contains('d-none') && 
+                         document.getElementById('new_product_name').value.trim() !== '';
+    
+    if (!hasSelectedProduct && !hasNewProduct) {
+        alert('Please select an existing product or fill in the new product form.');
+        return false;
+    }
+    
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    if (quantity <= 0) {
+        alert('Please enter a valid quantity.');
+        return false;
+    }
+    
+    if (hasNewProduct) {
+        const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+        if (unitPrice <= 0) {
+            alert('Please enter a valid unit price for the new product.');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Product data from server
-    const products = [
-        {% for product in products %}
-        {
-            id: "{{ product.id }}",
-            name: "{{ product.name|e }}",
-            pot: "{{ product.pot|e if product.pot else '' }}",
-            sku: "{{ product.sku|e if product.sku else '' }}",
-            category: "{{ product.category|e if product.category else '' }}",
-            scientific_name: "{{ product.scientific_name|e if product.scientific_name else '' }}",
-            description: "{{ product.description|e if product.description else '' }}"
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
+    console.log('Products loaded:', allProducts.length);
+    
+    // Initialize the form
+    showInitialProducts();
+    updatePreview();
+    updateFormState();
+    
+    // Add event listeners
+    document.getElementById('quantity').addEventListener('input', function() {
+        updatePreview();
+        updateFormState();
+    });
+    
+    document.getElementById('unit_price').addEventListener('input', function() {
+        updatePreview();
+        updateFormState();
+    });
+    
+    document.getElementById('vat_rate').addEventListener('change', updatePreview);
+    
+    document.getElementById('new_product_name').addEventListener('input', updateFormState);
+    
+    // Form submission
+    document.getElementById('addItemForm').addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+        }
+    });
+    
+    // Button event listeners
+    document.getElementById('newProductToggle').addEventListener('click', toggleNewProductForm);
+    document.getElementById('cancelNewProduct').addEventListener('click', toggleNewProductForm);
+    document.getElementById('clear_product_btn').addEventListener('click', clearSelectedProduct);
+});
     
     // DOM Elements
     const productSearch = document.getElementById('product_search');
