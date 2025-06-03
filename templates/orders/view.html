@@ -388,10 +388,10 @@
                                     
                                     <!-- Quick Categories -->
                                     <div class="mb-3">
-                                        <label class="form-label small text-muted">Quick Categories:</label>
+                                        <label class="form-label small text-muted">Quick Actions:</label>
                                         <div class="d-flex flex-wrap gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-sm category-filter" data-category="Trees">
-                                                <i class="fas fa-tree me-1"></i>Trees
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="showAllProducts">
+                                                <i class="fas fa-list me-1"></i>Show All Products
                                             </button>
                                             <button type="button" class="btn btn-outline-success btn-sm category-filter" data-category="Shrubs">
                                                 <i class="fas fa-leaf me-1"></i>Shrubs
@@ -748,6 +748,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Category filter buttons
     const categoryFilters = document.querySelectorAll('.category-filter');
     const clearCategoryFilter = document.getElementById('clearCategoryFilter');
+    const showAllProducts = document.getElementById('showAllProducts');
     
     // New product form elements
     const newProductToggle = document.getElementById('newProductToggle');
@@ -775,13 +776,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFilter = '';
     
     // Initialize
+    console.log('Products loaded:', products.length); // Debug log
     updatePreview();
     showInitialState();
     
     // Search functionality
     productSearch.addEventListener('input', function() {
         const query = this.value.trim();
-        if (query.length >= 2) {
+        console.log('Search query:', query); // Debug log
+        if (query.length >= 1) {
             searchProducts(query);
         } else if (query.length === 0) {
             if (currentFilter) {
@@ -825,6 +828,14 @@ document.addEventListener('DOMContentLoaded', function() {
         showInitialState();
     });
     
+    // Show all products
+    showAllProducts.addEventListener('click', function() {
+        categoryFilters.forEach(btn => btn.classList.remove('active'));
+        currentFilter = '';
+        productSearch.value = '';
+        displayProducts(products);
+    });
+    
     // New product toggle
     newProductToggle.addEventListener('click', function() {
         newProductForm.classList.remove('d-none');
@@ -858,12 +869,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Search products function
     function searchProducts(query) {
+        console.log('Searching for:', query); // Debug log
         const searchTerms = query.toLowerCase().split(' ');
         const results = products.filter(product => {
             const searchText = `${product.name} ${product.category} ${product.pot} ${product.sku} ${product.scientific_name} ${product.description}`.toLowerCase();
             return searchTerms.every(term => searchText.includes(term));
         });
         
+        console.log('Search results:', results.length); // Debug log
         displayProducts(results, query);
     }
     
@@ -925,13 +938,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Show initial state
     function showInitialState() {
-        resultsList.innerHTML = `
-            <div class="text-center py-4 text-muted" id="search_placeholder">
-                <i class="fas fa-search fa-2x mb-2"></i>
-                <p>Start typing to search for products</p>
-                <small>Or click a category above to browse</small>
-            </div>
-        `;
+        // Show first 10 products as examples
+        if (products.length > 0) {
+            const initialProducts = products.slice(0, 10);
+            displayProducts(initialProducts);
+            
+            // Add a header to show this is just a sample
+            const header = document.createElement('div');
+            header.className = 'alert alert-info mb-2';
+            header.innerHTML = `
+                <i class="fas fa-info-circle me-2"></i>
+                Showing first ${initialProducts.length} products. Type to search all ${products.length} products.
+            `;
+            resultsList.insertBefore(header, resultsList.firstChild);
+        } else {
+            resultsList.innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>No products available</p>
+                    <small>Add products to your database first</small>
+                </div>
+            `;
+        }
     }
     
     // Select product function (global)
