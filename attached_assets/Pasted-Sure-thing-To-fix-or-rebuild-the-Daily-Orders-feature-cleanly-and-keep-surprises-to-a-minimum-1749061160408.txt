@@ -1,0 +1,62 @@
+Sure thing! To fix or rebuild the **“Daily Orders”** feature cleanly—and keep surprises to a minimum—I’ll need a full picture of how it currently works, what’s broken, and what “good” looks like to you. Below is a checklist you can skim and fill in as you have time. You don’t have to answer every bullet up front; even partial info helps me start shaping a plan.
+
+---
+
+### 1. High-level context
+
+| What I need                                                                                                      | Why it matters                                 |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Business goal** (one-liner): e.g. “Each morning, auto-generate sales orders from yesterday’s approved quotes.” | Confirms we’re solving the right problem.      |
+| **Pain points today**: user complaints, error logs, missing records, performance lags, etc.                      | Helps reproduce the failure and define “done.” |
+| **Success criteria / KPIs**: How will we know it’s fixed?                                                        | Drives test cases and acceptance tests.        |
+
+### 2. Current architecture
+
+* **Tech stack** (language, framework, DB, queue, hosting).
+* **Where the Daily Orders logic lives** (service name, file path, cron job, etc.).
+* **Data flow diagram** (even a photo of a whiteboard sketch works).
+* **External integrations** (ERP, payment, shipping, etc.).
+* **Auth/session model** (tokens, cookies, OAuth scopes).
+
+### 3. Code & data specifics
+
+* **Model/schema definitions** for quotations and orders (tables or ORM classes).
+* **Existing Daily Orders source code** (or the chunk that’s failing).
+* **Sample input data** (a quotation JSON/record).
+* **Expected output** (an order object, downstream calls).
+* **Edge-case rules** (partial shipments, expired quotes, price overrides).
+
+### 4. Operational details
+
+* **Trigger schedule** (cron expression, timezone, manual button).
+* **Concurrency rules** (one job at a time? retries?).
+* **Performance targets** (e.g. “≤ 2 min for 10 k quotes”).
+* **Logging & monitoring hooks** (where should we push metrics/errors?).
+
+### 5. Environment & delivery
+
+* **Version control repo access** (Git branch, PR workflow).
+* **Local dev environment instructions** (Docker compose, `.env` samples).
+* **Test dataset or staging DB snapshot**.
+* **CI/CD pipeline steps** (build, lint, unit/integration tests, deploy).
+
+### 6. Stakeholders & timeline
+
+* **Who approves functional changes** (product owner, QA lead).
+* **Desired rollout date / milestones**.
+* **Risk tolerance / rollback plan**.
+
+---
+
+#### Next steps
+
+1. **Share whatever you have handy**—even raw snippets or screenshots.
+2. I’ll map out:
+
+   * Gap analysis (what’s missing vs. needed)
+   * A repair-or-rewrite decision
+   * A step-by-step implementation plan & estimate
+
+Feel free to paste code chunks directly or attach files; I can review and pinpoint the fixes.
+
+**Question for you:** Do you already have a failing unit test or stack trace for the Daily Orders job? That’s usually the fastest breadcrumb to start with.
