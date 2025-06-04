@@ -152,19 +152,70 @@
                 <small class="text-muted">Drag items to reorder</small>
             </div>
             <div class="card-body">
-                <div id="orderItems" class="order-items-container">
-                    {% if order and order.items %}
-                        {% for item in order.items %}
-                        <div class="order-item mb-3" data-item-id="{{ item.id }}">
-                            {% include 'orders/partials/order_item_row.html' %}
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                    <div class="text-center text-muted py-4" id="emptyItemsMessage">
-                        <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
-                        <p>No items added yet. Use the search above to add products.</p>
-                    </div>
-                    {% endif %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Order</th>
+                                <th>Product</th>
+                                <th style="width: 100px;">Quantity</th>
+                                <th style="width: 120px;">Price (€)</th>
+                                <th style="width: 80px;">VAT</th>
+                                <th style="width: 120px;">Total</th>
+                                <th style="width: 80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItems">
+                            {% if order and order.items %}
+                                {% for item in order.items %}
+                                <tr class="order-item" data-item-id="{{ item.id }}">
+                                    <td>
+                                        <div class="drag-handle text-muted" style="cursor: move;">
+                                            <i class="fas fa-grip-vertical"></i>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ item.plant_name }}</div>
+                                        <div class="text-muted small">{{ item.size or 'pcs' }}</div>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control qty" value="{{ item.quantity }}" min="1">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control price" value="{{ item.price }}" step="0.01" min="0">
+                                    </td>
+                                    <td>
+                                        <select class="form-select vat-rate">
+                                            <option value="5" {% if item.vat_rate == 5 %}selected{% endif %}>5%</option>
+                                            <option value="19" {% if item.vat_rate == 19 %}selected{% endif %}>19%</option>
+                                            <option value="0" {% if item.vat_rate == 0 %}selected{% endif %}>0%</option>
+                                        </select>
+                                    </td>
+                                    <td class="line-total">{{ "%.2f"|format(item.quantity * item.price) }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('{{ item.id }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                            <tr id="emptyItemsMessage">
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
+                                    <p>No items added yet. Use the search above to add products.</p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-end fw-bold">Total:</td>
+                                <td id="order-grand-total" class="fw-bold">0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>
@@ -406,7 +457,7 @@ function displayEnhancedSearchResults(products) {
                     </div>
                     <div class="text-end">
                         <div class="fw-bold">${priceDisplay}</div>
-                        <button class="btn btn-sm btn-primary" onclick="addProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
+                        <button class="btn btn-sm btn-primary" onclick="addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
                             <i class="fas fa-plus"></i> Add
                         </button>
                     </div>
@@ -438,56 +489,42 @@ function addProductToOrder(productId, productName, price, unit) {
     
     const itemId = 'temp_' + Date.now();
     const itemHtml = `
-        <div class="order-item card mb-2" data-item-id="${itemId}">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-1">
-                        <div class="drag-handle text-muted" style="cursor: move;">
-                            <i class="fas fa-grip-vertical"></i>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="fw-bold">${productName}</div>
-                        <div class="text-muted small">${unit}</div>
-                    </div>
-                    <div class="col-2">
-                        <input type="number" class="form-control form-control-sm quantity-input" value="1" min="1">
-                    </div>
-                    <div class="col-2">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">€</span>
-                            <input type="number" class="form-control price-input" value="${price}" step="0.01" min="0">
-                        </div>
-                    </div>
-                    <div class="col-1">
-                        <select class="form-select form-select-sm vat-rate-input">
-                            <option value="5">5%</option>
-                            <option value="19" selected>19%</option>
-                            <option value="0">0%</option>
-                        </select>
-                    </div>
-                    <div class="col-1 text-end">
-                        <div class="fw-bold">€${price}</div>
-                        <div class="text-muted small">+€${(price * 0.19).toFixed(2)}</div>
-                    </div>
-                    <div class="col-1 text-end">
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('${itemId}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+        <tr class="order-item" data-item-id="${itemId}">
+            <td>
+                <div class="drag-handle text-muted" style="cursor: move;">
+                    <i class="fas fa-grip-vertical"></i>
                 </div>
-            </div>
-        </div>
+            </td>
+            <td>
+                <div class="fw-bold">${productName}</div>
+                <div class="text-muted small">${unit}</div>
+            </td>
+            <td>
+                <input type="number" class="form-control qty" value="1" min="1">
+            </td>
+            <td>
+                <input type="number" class="form-control price" value="${price}" step="0.01" min="0">
+            </td>
+            <td>
+                <select class="form-select vat-rate">
+                    <option value="5">5%</option>
+                    <option value="19" selected>19%</option>
+                    <option value="0">0%</option>
+                </select>
+            </td>
+            <td class="line-total">${price}</td>
+            <td>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('${itemId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
     `;
     
     orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
     
-    // Attach calculation listeners to the new item
-    const newItem = orderItemsContainer.lastElementChild;
-    if (newItem) {
-        attachCalculationListeners(newItem);
-        updateOrderTotals(); // Update totals immediately
-    }
+    // Update totals immediately
+    updateOrderTotal();
     
     debugLog('Product added successfully');
     
@@ -515,55 +552,42 @@ function addManualItem() {
     
     const itemId = 'manual_' + Date.now();
     const itemHtml = `
-        <div class="order-item card mb-2" data-item-id="${itemId}">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-1">
-                        <div class="drag-handle text-muted" style="cursor: move;">
-                            <i class="fas fa-grip-vertical"></i>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <input type="text" class="form-control form-control-sm" placeholder="Product name" value="">
-                        <input type="text" class="form-control form-control-sm mt-1" placeholder="Size/description" value="">
-                    </div>
-                    <div class="col-2">
-                        <input type="number" class="form-control form-control-sm quantity-input" value="1" min="1">
-                    </div>
-                    <div class="col-2">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">€</span>
-                            <input type="number" class="form-control price-input" value="0" step="0.01" min="0">
-                        </div>
-                    </div>
-                    <div class="col-1">
-                        <select class="form-select form-select-sm vat-rate-input">
-                            <option value="5">5%</option>
-                            <option value="19" selected>19%</option>
-                            <option value="0">0%</option>
-                        </select>
-                    </div>
-                    <div class="col-1 text-end">
-                        <div class="fw-bold">€0.00</div>
-                        <div class="text-muted small">+€0.00</div>
-                    </div>
-                    <div class="col-1 text-end">
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('${itemId}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+        <tr class="order-item" data-item-id="${itemId}">
+            <td>
+                <div class="drag-handle text-muted" style="cursor: move;">
+                    <i class="fas fa-grip-vertical"></i>
                 </div>
-            </div>
-        </div>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm" placeholder="Product name" value="">
+                <input type="text" class="form-control form-control-sm mt-1" placeholder="Size/description" value="">
+            </td>
+            <td>
+                <input type="number" class="form-control qty" value="1" min="1">
+            </td>
+            <td>
+                <input type="number" class="form-control price" value="0" step="0.01" min="0">
+            </td>
+            <td>
+                <select class="form-select vat-rate">
+                    <option value="5">5%</option>
+                    <option value="19" selected>19%</option>
+                    <option value="0">0%</option>
+                </select>
+            </td>
+            <td class="line-total">0.00</td>
+            <td>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderItem('${itemId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
     `;
     
     orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
     
-    // Attach calculation listeners to the new manual item
-    const newItem = orderItemsContainer.lastElementChild;
-    if (newItem) {
-        attachCalculationListeners(newItem);
-    }
+    // Update totals immediately
+    updateOrderTotal();
     
     debugLog('Manual item added successfully');
     
@@ -580,16 +604,18 @@ function removeOrderItem(itemId) {
     if (item) {
         item.remove();
         debugLog(`Removed item: ${itemId}`);
-        updateOrderTotals();
+        updateOrderTotal();
         
         // Show empty message if no items left
         const orderItemsContainer = document.getElementById('orderItems');
         if (orderItemsContainer && orderItemsContainer.children.length === 0) {
             orderItemsContainer.innerHTML = `
-                <div class="text-center text-muted py-4" id="emptyItemsMessage">
-                    <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
-                    <p>No items added yet. Use the search above to add products.</p>
-                </div>
+                <tr id="emptyItemsMessage">
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
+                        <p>No items added yet. Use the search above to add products.</p>
+                    </td>
+                </tr>
             `;
         }
     }

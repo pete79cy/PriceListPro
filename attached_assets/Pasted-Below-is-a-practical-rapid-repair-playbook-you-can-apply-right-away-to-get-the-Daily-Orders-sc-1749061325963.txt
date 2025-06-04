@@ -1,0 +1,119 @@
+Below is a practical “rapid-repair” playbook you can apply right away to get the **Daily Orders** screen working again and rid the console of the
+`updateRowTotal is not defined` error.
+Everything is framed in the order you’ll touch the code, so you can copy-paste-test in one short sitting.
+
+---
+
+## 1  Locate the broken template & script
+
+1. **Template** – `templates/orders/enhanced_order_form.html`
+
+   * Inside each `<tr>` you call a handler named **`updateRowTotal()`** on `onkeyup` / `onchange`.
+2. **Script** – `static/js/enhanced-orders.js`
+
+   * That file is loaded in the template but **never defines** the function.
+
+> ✅  Fix path-typos first (a few projects had `assets/js/...` instead of `static/js/...` after a recent folder rename).
+
+---
+
+## 2  Add the three missing helpers
+
+Paste the snippet below at the bottom of **`static/js/enhanced-orders.js`** (or break it into ES-modules if you’re modernising).
+It follows the exact calculations already working in your new React invoice screen , so behaviour stays consistent across the app.
+
+```js
+// ------------------------------
+// DAILY ORDERS – helpers
+// ------------------------------
+/**
+ * Recalculate the line total for the row that triggered the event
+ * and refresh the order grand total.
+ * @param {HTMLElement | Event} el
+ */
+function updateRowTotal(el) {
+  const row   = el.closest('tr');                       // current <tr>
+  const qty   = parseFloat(row.querySelector('.qty' ).value || 0);
+  const price = parseFloat(row.querySelector('.price').value || 0);
+
+  const lineTotalCell   = row.querySelector('.line-total');
+  const newLineTotal    = (qty * price).toFixed(2);
+  lineTotalCell.textContent = newLineTotal;
+
+  updateOrderTotal();                                   // ← grand total
+}
+
+/** Walk every `.line-total` cell and write the footer total. */
+function updateOrderTotal() {
+  const totals = [...document.querySelectorAll('.line-total')]
+    .map(cell => parseFloat(cell.textContent || 0));
+  const grandTotal = totals.reduce((s, n) => s + n, 0).toFixed(2);
+
+  const footerCell = document.querySelector('#order-grand-total');
+  if (footerCell) footerCell.textContent = grandTotal;
+}
+
+/** Delegated listener – handles any new rows injected dynamically. */
+document.addEventListener('input', e => {
+  if (e.target.matches('.qty, .price')) updateRowTotal(e.target);
+});
+```
+
+* `.qty`, `.price`, `.line-total`, and `#order-grand-total` should match the CSS classes/ids already present in your HTML.
+  Adjust the selectors if your markup differs.
+
+---
+
+## 3  Wire it up in the template
+
+Make sure each editable field is labelled with the matching class:
+
+```html
+<input  type="number" class="qty"   min="1"    value="1"     />
+<input  type="number" class="price" step="0.01" value="0.00" />
+<td     class="line-total">0.00</td>
+```
+
+…and that you have a single cell for the grand total:
+
+```html
+<tfoot>
+  <tr>
+    <td colspan="4" class="text-right font-bold">Total:</td>
+    <td id="order-grand-total">0.00</td>
+  </tr>
+</tfoot>
+```
+
+No inline `onkeyup="updateRowTotal(this)"` attributes are needed anymore—the delegated listener in the script captures every change, including rows added via “Add Item”.
+
+---
+
+## 4  Regression guard (optional but recommended)
+
+Add a **Jest/Puppeteer** (or Cypress) test that:
+
+1. Loads the form.
+2. Types `10` in the first **Qty**, `2.5` in **Price**.
+3. Asserts first line total reads `25.00` and footer reads the same.
+
+This prevents the missing-function bug from sneaking back in.
+
+---
+
+## 5  Long-term modernisation path
+
+Your React/TypeScript screens (invoices, quotes, price lists) already centralise this logic with hooks like `updateLineItem` and `updateTotalAmount` .
+When you migrate Daily Orders to React you can:
+
+* Re-use the **`LineItemsTable`** component from `invoice/new.tsx`, swapping “invoice” for “order”.
+* Expose a `/api/orders` endpoint in `routes.ts` parallel to quotations & invoices.
+* Add `orders` + `order_items` tables to your Drizzle schema the same way invoices do.
+
+Doing that eliminates duplicate JS and brings the last legacy template onto the modern stack.
+
+---
+
+### You’re set!
+
+Save the script, refresh the browser, and the console error should disappear while totals update live as expected. Feel free to ping me once it’s in and we can tackle the database & cron side of the **Daily Orders** job next.

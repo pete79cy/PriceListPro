@@ -562,3 +562,38 @@ class EnhancedOrderManager {
 $(document).ready(() => {
     new EnhancedOrderManager();
 });
+
+// ------------------------------
+// DAILY ORDERS – helpers
+// ------------------------------
+/**
+ * Recalculate the line total for the row that triggered the event
+ * and refresh the order grand total.
+ * @param {HTMLElement | Event} el
+ */
+function updateRowTotal(el) {
+  const row   = el.closest('tr');                       // current <tr>
+  const qty   = parseFloat(row.querySelector('.qty' ).value || 0);
+  const price = parseFloat(row.querySelector('.price').value || 0);
+
+  const lineTotalCell   = row.querySelector('.line-total');
+  const newLineTotal    = (qty * price).toFixed(2);
+  lineTotalCell.textContent = newLineTotal;
+
+  updateOrderTotal();                                   // ← grand total
+}
+
+/** Walk every `.line-total` cell and write the footer total. */
+function updateOrderTotal() {
+  const totals = [...document.querySelectorAll('.line-total')]
+    .map(cell => parseFloat(cell.textContent || 0));
+  const grandTotal = totals.reduce((s, n) => s + n, 0).toFixed(2);
+
+  const footerCell = document.querySelector('#order-grand-total');
+  if (footerCell) footerCell.textContent = grandTotal;
+}
+
+/** Delegated listener – handles any new rows injected dynamically. */
+document.addEventListener('input', e => {
+  if (e.target.matches('.qty, .price')) updateRowTotal(e.target);
+});
