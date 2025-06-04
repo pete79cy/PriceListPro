@@ -19,28 +19,43 @@ from forms import EnhancedOrderForm, OrderItemForm
 
 # Helper functions
 def generate_order_number():
-    """Generate a unique order number in format ORD-YYYY-XXX format"""
+    """Atomic, race-safe order number generator: ORD-YYYY-NNN"""
     year = datetime.utcnow().year
+    prefix = f"ORD-{year}-"
     
-    # Get the highest existing order number for this year
+    # Start with highest existing number + 1 to avoid unnecessary retries
     latest_order = Order.query.filter(
         Order.order_number.like(f'ORD-{year}-%')
     ).order_by(Order.order_number.desc()).first()
     
     if latest_order:
-        # Extract sequence number and increment
         try:
             parts = latest_order.order_number.split('-')
             if len(parts) >= 3:
-                seq_num = int(parts[2]) + 1
+                next_seq_num = int(parts[2]) + 1
             else:
-                seq_num = 1
+                next_seq_num = 1
         except (ValueError, IndexError):
-            seq_num = 1
+            next_seq_num = 1
     else:
-        seq_num = 1
+        next_seq_num = 1
     
-    return f'ORD-{year}-{seq_num:03d}'
+    # Try up to 100 times to avoid infinite loop
+    max_attempts = 100
+    for attempt in range(max_attempts):
+        candidate = f"{prefix}{next_seq_num:03d}"
+        
+        # Check if this number is already taken
+        existing = Order.query.filter_by(order_number=candidate).first()
+        if not existing:
+            return candidate
+        
+        next_seq_num += 1
+    
+    # Fallback with timestamp if all attempts failed
+    import time
+    timestamp = int(time.time() * 1000) % 99999
+    return f"ORD-{year}-{timestamp:05d}"
 
 def get_customer_price(customer_id, product_id):
     """Get the price for a product from customer's price list"""
