@@ -1,0 +1,74 @@
+### Rapid code-review of your **enhanced `orders` blueprint**
+
+Below is a punch-list of the most important fixes and hardening tweaks, grouped so you can address them in focused commits. Everything here is based solely on the snippet you just posted; adjust if your models differ.
+
+| ⚠️ Issue                          | File/line (≈)                                                                                                                                           | Why it matters                                                                                                  | Suggested fix                                                                                                                                                                                                                                                                                                                                                             |                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Route/function duplicates**     | You now have two `update_status()` routes (`/<id>/update-status` and `/<id>/status`) plus two `add_item` routes.                                        | Flask will register the *last* one it sees and silently shadow the first; you’ll get 404s from half your links. | Pick one URI & handler per action, rename/delete the rest, then `flask routes` to verify there’s only one line per endpoint.                                                                                                                                                                                                                                              |                                                                    |
+| **Blueprint self-import**         | `from . import orders` at top of file while you also create `orders = Blueprint(...)`.                                                                  | Creates a circular import and may end up with two Blueprint objects (one empty).                                | Delete the `from . import orders` line; use the `orders` object you already define.                                                                                                                                                                                                                                                                                       |                                                                    |
+| **Order-number race**             | `generate_order_number()` queries latest row, then formats next seq. Two concurrent requests between that query and the subsequent insert will collide. | Duplicate order numbers trigger `IntegrityError` (or worse, silent overwrite if no unique index).               | ① Add a **unique index** on `order_number`. ② Wrap the query in `with_for_update()` **and** do the generation + insert in the same transaction.<br>`python<br>latest = (Order.query.<br>          filter(Order.order_number.like(f"ORD-{year}-%"))<br>          .with_for_update()   # PG/MySQL<br>          .order_by(Order.order_number.desc())<br>          .first())` |                                                                    |
+| **Float money**                   | You convert prices & quantities straight to `float`.                                                                                                    | Binary float ≠ exact decimal → rounding drift in totals & VAT.                                                  | Store money as `Decimal` and declare columns as `db.Numeric(scale=2)`. Cast with `Decimal(str(unit_price))`.                                                                                                                                                                                                                                                              |                                                                    |
+| **`unit_price` falsy check**      | `if not unit_price:` rejects legitimate price `0.0`.                                                                                                    | You force the user to supply a price even when the item is complimentary.                                       | Use `if unit_price is None:` (and same for quantity).                                                                                                                                                                                                                                                                                                                     |                                                                    |
+| **Large JSON strings in forms**   | Whole line-items array is posted as one hidden `<input name="items">`.                                                                                  | Browsers cap URL-encoded form fields (\~ 2 MB). You’ll hit that limit on very large orders.                     | Post the form as JSON from the front-end (`fetch("/orders", {body: JSON.stringify(payload)})`) or switch to `<textarea>` + multipart.                                                                                                                                                                                                                                     |                                                                    |
+| **Status-transition validation**  | You allow transition if `status in ORDER_STATUS_TRANSITIONS[...] OR status == order.status`.                                                            | Typos slip through (e.g. “preparing ” with trailing space).                                                     | Convert incoming string → Enum, catch `ValueError`, and compare Enums.                                                                                                                                                                                                                                                                                                    |                                                                    |
+| **Inline update totals**          | In `update_item_inline()` you recompute totals with floats.                                                                                             | Same rounding drift, plus expensive `sum` on every inline edit.                                                 | Keep a cached `order.subtotal, order.vat…` on the model and recompute once per commit; use `Decimal`.                                                                                                                                                                                                                                                                     |                                                                    |
+| **Missing CSRF tokens**           | None of the `POST`/`PUT` routes show CSRF protection.                                                                                                   | XSRF in authenticated session lets attacker create/modify orders silently.                                      | If you use WTForms, enable `Flask-WTF` CSRF; otherwise add the `@csrf.exempt` only where you have API tokens.                                                                                                                                                                                                                                                             |                                                                    |
+| **AJAX update error leaks**       | Generic `except Exception as e:` returns `500` with no detail.                                                                                          | Tough debugging in prod.                                                                                        | Log `e` with traceback before rollback; return a generic message to client.                                                                                                                                                                                                                                                                                               |                                                                    |
+| **Price-list helper autocommits** | `update_customer_price_list()` commits inside itself.                                                                                                   | If caller later rolls back (e.g. validation fails), price-list change is already persisted.                     | Pass \`commit=True                                                                                                                                                                                                                                                                                                                                                        | False\` flag or remove the commit; caller commits once at the end. |
+
+---
+
+### Quick wins you can push today
+
+1. **Uniqueness & race-free order numbers**
+
+   ```python
+   order_number = db.Column(db.String(20), unique=True, index=True, nullable=False)
+   ```
+
+2. **Decimal money helper**
+
+   ```python
+   from decimal import Decimal
+   def to_decimal(x): return Decimal(str(x)) if x is not None else None
+   ```
+
+   Then:
+
+   ```python
+   item.price  = to_decimal(unit_price)
+   item.vat_rate = to_decimal(vat_rate)
+   ```
+
+3. **Route sanity check**
+
+   ```bash
+   flask routes | grep '/orders'
+   ```
+
+   Confirm no duplicates.
+
+4. **Error logging decorator**
+
+   ```python
+   def log_exceptions(fn):
+       @wraps(fn)
+       def wrapper(*a, **k):
+           try:
+               return fn(*a, **k)
+           except Exception:
+               current_app.logger.exception(f"Error in {fn.__name__}")
+               db.session.rollback()
+               raise
+       return wrapper
+   ```
+
+   Apply to noisy handlers like `update_item_inline`.
+
+---
+
+### Next structural step: nightly **Daily Orders** job
+
+All CRUD & PDF routes look solid once the fixes above land.  To close the original “Daily Orders” loop, wire up the nightly quotation-to-order conversion service (see previous message) and point it at this blueprint’s `/orders/<id>` URLs for manual review the next morning.
+
+Let me know if you need a hand wiring `apscheduler` or Celery-beat, or if any of the enum / Decimal migrations cause trouble.
