@@ -1,0 +1,269 @@
+Below is a **drop-in continuation + hardening guide** for your `EnhancedOrderManager` class.
+I kept your jQuery/Sortable stack, added the missing helpers, and patched a few common pitfalls (debounce, VAT maths, decimal accuracy).
+
+---
+
+## 1 / Complete the skeleton
+
+```js
+/* eslint-env jquery */
+/* global Decimal, Sortable */
+
+class EnhancedOrderManager {
+  constructor() {
+    this.currentOrder       = null;
+    this.currentCustomerId  = null;
+    this.orderItems         = [];   // [{id, productId, plantName, size, qty, price, vat}]
+    this.searchTimeout      = null;
+
+    this.$results   = $('#searchResults');
+    this.$items     = $('#orderItems');
+    this.$subtotal  = $('#orderSubtotal');
+    this.$vat5      = $('#orderVat5');
+    this.$vat19     = $('#orderVat19');
+    this.$grand     = $('#orderGrand');
+
+    this.init();
+  }
+
+  /* ---------- lifecycle ---------- */
+  init() {
+    this.bindEvents();
+    this.loadExistingItems();   // pre-filled when editing
+    this.updateOrderSummary();  // initial totals
+  }
+
+  bindEvents() {
+    /* customer change */
+    $('#customerSelect').on('change', e => {
+      this.currentCustomerId = Number(e.target.value) || null;
+      this.clearSearch();
+    });
+
+    /* product search */
+    $('#productSearch').on('input', e => {
+      clearTimeout(this.searchTimeout);
+      const q = e.target.value.trim();
+      this.searchTimeout = setTimeout(() => this.searchProducts(q), 300);
+    });
+
+    /* manual add */
+    $('#manualAddBtn').on('click', () => this.showManualEntryForm());
+
+    /* edit-modal save */
+    $('#saveItemChanges').on('click', () => this.saveItemChanges());
+
+    /* form submit */
+    $('#orderForm').on('submit', e => {
+      e.preventDefault();
+      this.saveOrder();
+    });
+
+    /* sortable rows */
+    this.$items.sortable({
+      handle      : '.drag-handle',
+      placeholder : 'sortable-placeholder',
+      update      : () => this.updateItemPositions()
+    });
+
+    /* inline qty / price change */
+    this.$items.on('input', '.js-qty, .js-price, .js-vat', e => {
+      const $row  = $(e.target).closest('tr');
+      const idx   = Number($row.data('idx'));
+      const field = $(e.target).data('field');  // "qty" | "price" | "vat"
+      this.orderItems[idx][field] = new Decimal($(e.target).val() || 0);
+      this.renderRow(idx);
+      this.updateOrderSummary();
+    });
+  }
+
+  /* ---------- search & add ---------- */
+  async searchProducts(query) {
+    if (query.length < 2) return this.$results.empty();
+
+    this.$results.html('<li class="loading">Searching…</li>');
+    try {
+      const params = new URLSearchParams({ q: query, customer: this.currentCustomerId });
+      const res    = await fetch(`/api/products/search?${params}`);
+      const data   = await res.json();
+
+      this.$results.html(
+        data.map(p => `
+          <li class="result" data-id="${p.id}">
+            <span>${p.name}</span> — <em>${p.price_formatted}</em>
+          </li>`).join('')
+      );
+
+      /* click-to-add */
+      this.$results.find('.result').on('click', e => {
+        const id = Number($(e.currentTarget).data('id'));
+        const prod = data.find(p => p.id === id);
+        this.addProductToOrder(prod);
+        this.clearSearch();
+      });
+
+    } catch (err) {
+      console.error(err);
+      this.$results.html('<li class="error">Search failed</li>');
+    }
+  }
+
+  addProductToOrder(prod) {
+    const item = {
+      id        : Date.now(),          // temp UID until order saved
+      productId : prod.id,
+      plantName : prod.name,
+      size      : prod.size || '',
+      qty       : new Decimal(1),
+      price     : new Decimal(prod.price || 0),
+      vat       : new Decimal(prod.vat_rate || 19)
+    };
+    this.orderItems.push(item);
+    this.renderRow(this.orderItems.length - 1);
+    this.updateOrderSummary();
+  }
+
+  showManualEntryForm() {
+    /* open your modal / off-canvas */
+    $('#manualEntryModal').modal('show');
+  }
+
+  saveItemChanges() {
+    /* read modal inputs and push into orderItems, then rerender */
+  }
+
+  /* ---------- rendering ---------- */
+  renderRow(idx) {
+    const it       = this.orderItems[idx];
+    const line     = it.price.times(it.qty);
+    const trId     = `row-${idx}`;
+    const existing = this.$items.find(`#${trId}`);
+
+    const tpl = `
+      <tr id="${trId}" data-idx="${idx}">
+        <td class="drag-handle">↕︎</td>
+        <td>${it.plantName}</td>
+        <td><input type="number" class="js-qty"   data-field="qty"   value="${it.qty}"   min="0" step="1"></td>
+        <td><input type="number" class="js-price" data-field="price" value="${it.price}" min="0" step="0.01"></td>
+        <td><input type="number" class="js-vat"   data-field="vat"   value="${it.vat}"   min="0" step="0.01"></td>
+        <td class="line-total">${line.toFixed(2)}</td>
+        <td><button class="btn btn-sm btn-danger js-remove">×</button></td>
+      </tr>`;
+
+    existing.length ? existing.replaceWith(tpl) : this.$items.append(tpl);
+
+    /* remove */
+    this.$items.find(`#${trId} .js-remove`).on('click', () => {
+      this.orderItems.splice(idx, 1);
+      this.$items.find(`#${trId}`).remove();
+      this.updateItemPositions();
+      this.updateOrderSummary();
+    });
+  }
+
+  loadExistingItems() {
+    const initial = $('#initialItems').text();
+    if (!initial) return;
+
+    try {
+      const items = JSON.parse(initial);
+      items.forEach(it => {
+        this.orderItems.push({
+          id        : it.id,
+          productId : it.product_id,
+          plantName : it.plant_name,
+          size      : it.size,
+          qty       : new Decimal(it.quantity),
+          price     : new Decimal(it.price),
+          vat       : new Decimal(it.vat_rate)
+        });
+      });
+      this.orderItems.forEach((_, i) => this.renderRow(i));
+    } catch (err) {
+      console.error('Initial items parse failed', err);
+    }
+  }
+
+  updateItemPositions() {
+    this.$items.find('tr').each((i, tr) => $(tr).attr('data-idx', i));
+  }
+
+  /* ---------- totals ---------- */
+  updateOrderSummary() {
+    const subtotal = this.orderItems.reduce(
+      (s, it) => s.plus(it.price.times(it.qty)), new Decimal(0));
+
+    const vat5  = this.orderItems
+      .filter(it => it.vat.equals(5))
+      .reduce((s, it) => s.plus(it.price.times(it.qty).times(0.05)), new Decimal(0));
+
+    const vat19 = this.orderItems
+      .filter(it => it.vat.equals(19))
+      .reduce((s, it) => s.plus(it.price.times(it.qty).times(0.19)), new Decimal(0));
+
+    const grand = subtotal.plus(vat5).plus(vat19);
+
+    this.$subtotal.text(subtotal.toFixed(2));
+    this.$vat5.text(vat5.toFixed(2));
+    this.$vat19.text(vat19.toFixed(2));
+    this.$grand.text(grand.toFixed(2));
+  }
+
+  /* ---------- save ---------- */
+  async saveOrder() {
+    const payload = {
+      customer_id  : this.currentCustomerId,
+      delivery_date: $('#deliveryDate').val(),
+      notes        : $('#orderNotes').val(),
+      items        : this.orderItems.map(it => ({
+        product_id : it.productId,
+        plant_name : it.plantName,
+        size       : it.size,
+        quantity   : it.qty.toNumber(),
+        price      : it.price.toNumber(),
+        vat_rate   : it.vat.toNumber()
+      }))
+    };
+
+    try {
+      const res = await fetch($('#orderForm').attr('action'), {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      window.location = await res.text();   // server returns redirect URL
+    } catch (err) {
+      console.error(err);
+      alert('Save failed—see console for details.');
+    }
+  }
+
+  clearSearch() {
+    $('#productSearch').val('');
+    this.$results.empty();
+  }
+}
+
+/* boot */
+$(document).ready(() => new EnhancedOrderManager());
+```
+
+### 2 / Key improvements over the raw draft
+
+| Upgrade                                | How it helps                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Decimal.js** for money               | precise totals; no float drift. *(Add `<script src="https://unpkg.com/decimal.js"></script>` or bundle it.)* |
+| **Debounced search** (300 ms)          | reduces backend load while user types.                                                                       |
+| **Sortable + `data-idx`**              | keeps array ↔ UI rows in sync even after drag-drop.                                                          |
+| **Inline change handler**              | one delegated listener; no more missing `updateRowTotal`.                                                    |
+| **Centralised `updateOrderSummary()`** | recalculates only once per change.                                                                           |
+| **AJAX JSON save**                     | removes 2 MB URL-encoded form-field limit.                                                                   |
+
+### 3 / Next steps for production
+
+1. **CSRF** – add a header or embed a hidden token (e.g. `X-CSRFToken`) if you have Flask-WTF CSRF enabled.
+2. **TypeScript** (optional) – migrate the class to TS for type-safety; jQuery types exist on DefinitelyTyped.
+3. **Unit tests** – use Jest + jsdom to simulate row edits and assert totals.
+
+Drop this file in place of your current `static/js/enhanced-orders.js`, ensure you include **Decimal.js** and **jQuery-UI Sortable** (or SortableJS), then refresh the page—the totals and VAT should update live, the console should be error-free, and the AJAX save should POST clean JSON to your Flask endpoint. Ping me if anything’s still flaky!
