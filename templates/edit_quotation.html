@@ -302,8 +302,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+</script>
 
 <script>
+    // Add the missing updateRowTotal function
+    function updateRowTotal(input) {
+        calculateSummary();
+    }
+
     // Calculate row and total values when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         calculateSummary();
