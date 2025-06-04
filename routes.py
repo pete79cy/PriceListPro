@@ -2098,9 +2098,11 @@ def register_routes(app):
                 quotation.currency = currency
                 quotation.notes = notes
                 
-                # Delete existing items to replace with updated ones
-                for item in quotation.items:
-                    db.session.delete(item)
+                # Clear existing items using a direct SQL delete to avoid session conflicts
+                db.session.execute(
+                    db.text("DELETE FROM quotation_item WHERE quotation_id = :quotation_id"),
+                    {'quotation_id': quotation.id}
+                )
                 db.session.flush()
                 
                 logger.info(f"Updating existing quotation: {quotation_number}")
@@ -2113,8 +2115,8 @@ def register_routes(app):
                     currency=currency,
                     notes=notes
                 )
-            db.session.add(quotation)
-            db.session.flush()  # Generate the quotation.id
+                db.session.add(quotation)
+                db.session.flush()  # Generate the quotation.id
             
             # Track totals for the quotation
             total_amount = 0
