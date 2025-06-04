@@ -602,7 +602,7 @@ function updateOrderTotals() {
     let vat19Total = 0;
     let vat5Total = 0;
     
-    const orderItems = document.querySelectorAll('#orderItems .order-item-row');
+    const orderItems = document.querySelectorAll('#orderItems .order-item');
     
     orderItems.forEach(function(item) {
         const quantityInput = item.querySelector('.quantity-input');
