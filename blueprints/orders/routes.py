@@ -17,25 +17,15 @@ from forms import EnhancedOrderForm, OrderItemForm
 def generate_order_number():
     """Generate a unique order number in format ORD-YYYY-XXX format"""
     year = datetime.utcnow().year
+    today = date.today()
     
-    # Get the highest order number for this year
-    latest_order = Order.query.filter(
-        Order.order_number.like(f'ORD-{year}-%')
-    ).order_by(Order.order_number.desc()).first()
+    # Get daily order count with row-level locking to prevent race conditions
+    daily_order_count = Order.query.filter(
+        db.func.date(Order.created_at) == today
+    ).with_for_update().count()
     
-    if latest_order is None:
-        # First order of the year
-        return f'ORD-{year}-001'
-        
-    # Extract the sequence number from the latest order
-    try:
-        seq_num = int(latest_order.order_number.split('-')[2])
-        new_seq_num = seq_num + 1
-        return f'ORD-{year}-{new_seq_num:03d}'
-    except (IndexError, ValueError):
-        # If there's any issue with parsing, generate a random number
-        random_num = int(uuid.uuid4().hex[:4], 16) % 10000
-        return f'ORD-{year}-{random_num:03d}'
+    new_seq_num = daily_order_count + 1
+    return f'ORD-{year}-{new_seq_num:03d}'
 
 def get_customer_price(customer_id, product_id):
     """Get the price for a product from customer's price list"""

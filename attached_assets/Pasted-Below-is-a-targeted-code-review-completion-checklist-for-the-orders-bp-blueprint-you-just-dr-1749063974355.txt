@@ -1,0 +1,145 @@
+Below is a **targeted code-review & completion checklist** for the `orders_bp` blueprint you just dropped. It focuses on: (1) eliminating real-world bugs, (2) making the *Daily Orders* flow rock-solid, and (3) preparing the ground for the nightly auto-conversion job we discussed earlier.
+
+---
+
+## 1  Correctness fixes you can copy-paste today
+
+| 🔍 Where                              | ✅ What to change                                                                                                                                                                                                        | 💬 Why                                                                                                                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`new_order()` – daily sequence**    | `python<br>today = date.today()<br>daily_order_count = (Order.query<br>    .filter(db.func.date(Order.created_at) == today)  # plus timezone<br>    .with_for_update()  # ← prevents race on PG/MySQL<br>).count()<br>` | Two simultaneous requests at 23:59 could generate the same order number.  `SELECT … FOR UPDATE` (or a DB-side **unique index on `order_number`**) guarantees uniqueness. |
+| **`add_item()`**                      | Replace `if not unit_price:` with `if unit_price is None:`                                                                                                                                                              | `0`, `0.0`, or `Decimal("0")` are valid prices but evaluate to `False`. Same for `quantity` in validation.                                                               |
+| **`OrderItem.quantity / unit_price`** | Always store as **`Decimal`** (`db.Numeric`) not float. Cast incoming `float` ⇒ `Decimal(str(value))` before persisting.                                                                                                | Eliminates rounding drift that breaks invoices.                                                                                                                          |
+| **`update_status()`**                 | `python<br>if order.transition_to(new_status):<br>    db.session.commit()<br>    flash('Order status updated ✔︎', 'success')<br>else:<br>    db.session.rollback()<br>    flash(f'Cannot transition …', 'danger')<br>`  | Roll back the Session if transition fails; otherwise you may keep a partially mutated object in the flush queue.                                                         |
+| **`update_customer_price_list()`**    | Surround `db.session.add()` / `flush()` with **try/except** and roll back on IntegrityError (unique constraints).                                                                                                       | Price-list updates run in the same transaction: keep failure atomic.                                                                                                     |
+| **JS front-end** (legacy form)        | Keep the `updateRowTotal / updateOrderTotal` helpers I sent earlier and **remove inline `onkeyup` attrs** in the template.                                                                                              | Delegated listener covers dynamic rows and kills the “function not defined” console spam.                                                                                |
+
+---
+
+## 2  Model & schema hardening for “Daily Orders”
+
+1. **Unique, indexed columns**
+
+   ```python
+   order_number = db.Column(db.String(20), unique=True, index=True, nullable=False)
+   quotation_id = db.Column(db.Integer,
+                            db.ForeignKey('quotation.id'),
+                            unique=True)  # idempotency: one order per quote
+   ```
+
+2. **Relationship helpers** *(nice-to-have)*
+
+   ```python
+   quotation = db.relationship('Quotation', back_populates='order')
+   items      = db.relationship('OrderItem', cascade='all, delete-orphan')
+   ```
+
+3. **`OrderStatus` transitions dict** lives in `models.py`; export it so the blueprint can import without a circular reference:
+
+   ```python
+   ORDER_STATUS_TRANSITIONS: dict[OrderStatus, list[OrderStatus]] = {
+       OrderStatus.new:      [OrderStatus.processing, OrderStatus.cancelled],
+       OrderStatus.processing: [OrderStatus.shipped, OrderStatus.cancelled],
+       # …
+   }
+   ```
+
+---
+
+## 3  Nightly *Daily Orders* job (auto-convert quotations ➜ orders)
+
+**Service** (`services/daily_orders.py`):
+
+```python
+from datetime import date
+from sqlalchemy.exc import IntegrityError
+from models import db, Quotation, Order, OrderStatus
+
+def generate_daily_orders(run_date: date | None = None):
+    run_date = run_date or date.today()
+    accepted_quotes = (Quotation.query
+                       .filter(Quotation.status == 'accepted',
+                               db.func.date(Quotation.accepted_at) == run_date)
+                       .all())
+    for q in accepted_quotes:
+        if q.order:          # already converted – idempotent
+            continue
+        order = Order(quotation_id=q.id,
+                      order_number=f"O{q.id:06d}",
+                      status=OrderStatus.pending)
+        db.session.add(order)
+        q.status = 'converted'
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        # log & continue – the unique quotation_id index keeps us safe
+```
+
+**Scheduler** (simple in-process):
+
+```python
+from apscheduler.schedulers.background import BackgroundScheduler
+from pytz import timezone
+
+def schedule(app):
+    sched = BackgroundScheduler(timezone=timezone('Europe/Nicosia'))
+    sched.add_job(lambda: generate_daily_orders(),
+                  'cron', hour=2, minute=0, id='daily_orders')
+    sched.start()
+```
+
+Call `schedule(app)` once in `app.py` **after** the application context is ready.
+
+---
+
+## 4  Integration test template (PyTest)
+
+```python
+def test_generate_daily_orders(client, db_session):
+    # 1. create an accepted quotation
+    quote = Quotation(customer_id=customer.id, status='accepted',
+                      accepted_at=datetime.utcnow())
+    db_session.add(quote); db_session.commit()
+
+    # 2. run job
+    generate_daily_orders(run_date=date.today())
+
+    # 3. assert order exists
+    order = Order.query.filter_by(quotation_id=quote.id).one()
+    assert order.status == OrderStatus.pending
+    assert quote.status == 'converted'
+```
+
+Run it in CI to guarantee the nightly job keeps passing.
+
+---
+
+## 5  Future UX improvements (optional but quick wins)
+
+* **Autocomplete** the *unit price* field with the last quote’s price using an AJAX endpoint:
+
+  ```python
+  @orders_bp.route('/price-suggestion')
+  def price_suggestion():
+      product_id = request.args['product_id']
+      customer_id = request.args['customer_id']
+      price = (PriceListItem.query
+               .join(PriceList)
+               .filter(PriceList.customer_id == customer_id,
+                       PriceListItem.product_id == product_id)
+               .with_entities(PriceListItem.price)
+               .scalar())
+      return jsonify({'price': price})
+  ```
+* Replace the legacy HTML form with the **React LineItemsTable** you already use for invoices/quotations—zero duplication, live validation, currency formatting from `utils/currency.ts`.
+
+---
+
+### Next steps
+
+1. Patch the quick-wins (Section 1) → push → verify console/dev-tools is green.
+2. Add the `Order`/`OrderItem` schema tweaks & run migrations.
+3. Drop `services/daily_orders.py` + scheduler glue, redeploy, check logs at 02:00.
+4. Write the PyTest integration to keep it all green in CI.
+
+Ping me if anything blocks you—happy to iterate on edge cases like multi-currency lines or partial shipments. Good luck 🚀
