@@ -21,15 +21,26 @@ from forms import EnhancedOrderForm, OrderItemForm
 def generate_order_number():
     """Generate a unique order number in format ORD-YYYY-XXX format"""
     year = datetime.utcnow().year
-    today = date.today()
     
-    # Get daily order count - PostgreSQL doesn't support FOR UPDATE with COUNT
-    daily_order_count = Order.query.filter(
-        db.func.date(Order.created_at) == today
-    ).count()
+    # Get the highest existing order number for this year
+    latest_order = Order.query.filter(
+        Order.order_number.like(f'ORD-{year}-%')
+    ).order_by(Order.order_number.desc()).first()
     
-    new_seq_num = daily_order_count + 1
-    return f'ORD-{year}-{new_seq_num:03d}'
+    if latest_order:
+        # Extract sequence number and increment
+        try:
+            parts = latest_order.order_number.split('-')
+            if len(parts) >= 3:
+                seq_num = int(parts[2]) + 1
+            else:
+                seq_num = 1
+        except (ValueError, IndexError):
+            seq_num = 1
+    else:
+        seq_num = 1
+    
+    return f'ORD-{year}-{seq_num:03d}'
 
 def get_customer_price(customer_id, product_id):
     """Get the price for a product from customer's price list"""

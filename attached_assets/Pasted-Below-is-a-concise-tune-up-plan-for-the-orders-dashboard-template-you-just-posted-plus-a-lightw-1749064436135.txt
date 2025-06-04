@@ -1,0 +1,71 @@
+Below is a concise tune-up plan for the **orders dashboard template** you just posted, plus a lightweight JS snippet you can drop in to give users instant search + filter without a page reload.
+
+---
+
+## 1  Template correctness & polish
+
+| Line                      | What to adjust                                                                                                                                                                    | Why                                                                                                                                                                                                                            |                          |                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------ |
+| **Items / Total columns** | \`\`\`jinja<br>{% set total = order.items                                                                                                                                         | sum(attribute='price', start=0) %}  {# price × qty? #}<br>`<br>**Better:**<br>`jinja<br>{% set total = namespace(v=0) %}{% for it in order.items %}{% set total.v = total.v + it.price \* it.quantity %}{% endfor %}€{{ '%.2f' | format(total.v) }}\`\`\` | `sum(attribute='price')` ignores quantity and VAT, so totals are wrong when qty ≠ 1. |
+| **Status badge colour**   | Keep `order.get_status_color()` but also add a text-only fallback for users with forced colour contrast:<br>`<span class="visually-hidden">{{ order.get_status_label() }}</span>` | WCAG accessibility.                                                                                                                                                                                                            |                          |                                                                                      |
+| **Delivery date**         | If you support *time* as well, wrap in a `<time datetime="{{ order.delivery_date.isoformat() }}">` tag so search engines & screen-readers parse it correctly.                     |                                                                                                                                                                                                                                |                          |                                                                                      |
+| **Table tbody id**        | Give the `<tbody>` an id (e.g. `id="ordersTableBody"`) so JS can target it without querying the entire DOM.                                                                       |                                                                                                                                                                                                                                |                          |                                                                                      |
+
+---
+
+## 2  Drop-in Vanilla JS for live search + customer filter
+
+> Add this after jQuery (or adapt to your favourite framework).
+
+```html
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $search   = document.getElementById('orderSearchInput');
+  const $customer = document.getElementById('customerFilter');
+  const $rows     = [...document.querySelectorAll('#ordersTable tbody tr')];
+
+  function normalise(txt) {
+    return txt.toLowerCase().trim();
+  }
+
+  function filter() {
+    const q        = normalise($search.value);
+    const custId   = $customer.value;        // '' = All
+    let visible    = 0;
+
+    $rows.forEach(row => {
+      const haystack   = normalise(row.innerText);
+      const rowCustId  = row.dataset.customerId;
+      const matchText  = q === '' || haystack.includes(q);
+      const matchCust  = custId === '' || custId === rowCustId;
+      const show       = matchText && matchCust;
+
+      row.style.display = show ? '' : 'none';
+      if (show) visible += 1;
+    });
+
+    // Optional: show “no results” row
+    document.getElementById('noResults')?.classList.toggle('d-none', visible !== 0);
+  }
+
+  $search.addEventListener('input', filter);
+  $customer.addEventListener('change', filter);
+});
+</script>
+```
+
+### Notes
+
+* **Performance:** Even with a few thousand rows this is snappy; beyond that, consider DataTables or server-side pagination.
+* **Accessibility:** Because the filter simply hides rows (instead of removing them), screen-reader focus remains predictable.
+* **No external libs:** Works with or without jQuery.
+
+---
+
+## 3  Optional UX niceties
+
+1. **Highlight hits** – wrap matches in `<mark>` so users see why a row matched.
+2. **Persist filters in URL** – sync `search` & `customer` params via `history.pushState` so a refresh keeps the filter.
+3. **Add CSV export** – once the table is filtered, let users download the visible rows with a single click (`tableexport.js` or your own small script).
+
+Implement these tweaks and your order dashboard will feel instantly more responsive and accurate. Let me know if you’d like a hand wiring the highlight or CSV pieces!
