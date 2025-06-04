@@ -457,7 +457,7 @@ function displayEnhancedSearchResults(products) {
                     </div>
                     <div class="text-end">
                         <div class="fw-bold">${priceDisplay}</div>
-                        <button class="btn btn-sm btn-primary" onclick="addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}')">
+                        <button class="btn btn-sm btn-primary" onclick="addProductToOrder('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.pot || 'pcs'}', '${product.price_list_id || ''}')">
                             <i class="fas fa-plus"></i> Add
                         </button>
                     </div>
@@ -471,7 +471,7 @@ function displayEnhancedSearchResults(products) {
 }
 
 // Enhanced add product function
-function addProductToOrder(productId, productName, price, unit) {
+function addProductToOrder(productId, productName, price, unit, priceListId) {
     debugLog(`Adding product: ${productName} (ID: ${productId}) - €${price} per ${unit}`);
     
     const orderItemsContainer = document.getElementById('orderItems');
@@ -489,15 +489,19 @@ function addProductToOrder(productId, productName, price, unit) {
     
     const itemId = 'temp_' + Date.now();
     const itemHtml = `
-        <tr class="order-item" data-item-id="${itemId}">
+        <tr class="order-item" data-item-id="${itemId}" data-product-id="${productId}" data-price-list-id="${priceListId || ''}">
             <td>
                 <div class="drag-handle text-muted" style="cursor: move;">
                     <i class="fas fa-grip-vertical"></i>
                 </div>
+                <input type="hidden" class="product-id" value="${productId}">
+                <input type="hidden" class="price-list-id" value="${priceListId || ''}">
             </td>
             <td>
                 <div class="fw-bold">${productName}</div>
                 <div class="text-muted small">${unit}</div>
+                <input type="hidden" class="plant-name" value="${productName}">
+                <input type="hidden" class="plant-size" value="${unit}">
             </td>
             <td>
                 <input type="number" class="form-control qty" value="1" min="1">
@@ -797,17 +801,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 const priceInput = row.querySelector('.price');
                 const vatSelect = row.querySelector('.vat-rate');
                 
-                // For existing products, get name from text content
+                // For existing products, get name from text content or hidden inputs
                 const plantNameDiv = row.querySelector('td:nth-child(2) .fw-bold');
                 const sizeDiv = row.querySelector('td:nth-child(2) .text-muted');
+                const plantNameHidden = row.querySelector('.plant-name');
+                const plantSizeHidden = row.querySelector('.plant-size');
+                const productIdHidden = row.querySelector('.product-id');
+                const priceListIdHidden = row.querySelector('.price-list-id');
                 
-                const plantName = plantNameInput ? plantNameInput.value : (plantNameDiv ? plantNameDiv.textContent : '');
-                const size = sizeInput ? sizeInput.value : (sizeDiv ? sizeDiv.textContent : '');
+                const plantName = plantNameInput ? plantNameInput.value : 
+                                (plantNameHidden ? plantNameHidden.value : 
+                                (plantNameDiv ? plantNameDiv.textContent : ''));
+                const size = sizeInput ? sizeInput.value : 
+                           (plantSizeHidden ? plantSizeHidden.value : 
+                           (sizeDiv ? sizeDiv.textContent : ''));
                 const quantity = quantityInput ? parseInt(quantityInput.value) || 0 : 0;
                 const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
                 const vatRate = vatSelect ? parseFloat(vatSelect.value) || 19 : 19;
-                const productId = row.dataset.productId || null;
-                const priceListId = row.dataset.priceListId || null;
+                
+                // Get product_id and price_list_id from hidden inputs or dataset
+                const productId = productIdHidden ? productIdHidden.value : 
+                                (row.dataset.productId || null);
+                const priceListId = priceListIdHidden ? priceListIdHidden.value : 
+                                  (row.dataset.priceListId || null);
                 
                 if (plantName && quantity > 0) {
                     orderItems.push({
