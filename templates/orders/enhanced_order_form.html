@@ -788,26 +788,35 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Serialize order items into JSON
             const orderItems = [];
-            const itemRows = document.querySelectorAll('#orderItems .order-item-row');
+            const itemRows = document.querySelectorAll('#orderItems .order-item');
             
             itemRows.forEach(function(row) {
-                const plantName = row.querySelector('[data-field="plant_name"]')?.textContent || '';
-                const size = row.querySelector('[data-field="size"]')?.textContent || '';
-                const quantity = row.querySelector('[data-field="quantity"]')?.textContent || '0';
-                const price = row.querySelector('[data-field="price"]')?.textContent?.replace('€', '') || '0';
-                const vatRate = row.querySelector('[data-field="vat_rate"]')?.textContent?.replace('%', '') || '19';
-                const notes = row.querySelector('[data-field="notes"]')?.textContent || '';
+                const plantNameInput = row.querySelector('input[placeholder="Product name"]');
+                const sizeInput = row.querySelector('input[placeholder="Size/description"]');
+                const quantityInput = row.querySelector('.qty');
+                const priceInput = row.querySelector('.price');
+                const vatSelect = row.querySelector('.vat-rate');
+                
+                // For existing products, get name from text content
+                const plantNameDiv = row.querySelector('td:nth-child(2) .fw-bold');
+                const sizeDiv = row.querySelector('td:nth-child(2) .text-muted');
+                
+                const plantName = plantNameInput ? plantNameInput.value : (plantNameDiv ? plantNameDiv.textContent : '');
+                const size = sizeInput ? sizeInput.value : (sizeDiv ? sizeDiv.textContent : '');
+                const quantity = quantityInput ? parseInt(quantityInput.value) || 0 : 0;
+                const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+                const vatRate = vatSelect ? parseFloat(vatSelect.value) || 19 : 19;
                 const productId = row.dataset.productId || null;
                 const priceListId = row.dataset.priceListId || null;
                 
-                if (plantName && quantity && parseFloat(quantity) > 0) {
+                if (plantName && quantity > 0) {
                     orderItems.push({
                         plant_name: plantName,
                         size: size,
-                        quantity: parseInt(quantity),
-                        price: parseFloat(price),
-                        vat_rate: parseFloat(vatRate),
-                        notes: notes,
+                        quantity: quantity,
+                        price: price,
+                        vat_rate: vatRate,
+                        notes: '',
                         product_id: productId,
                         price_list_id: priceListId
                     });
