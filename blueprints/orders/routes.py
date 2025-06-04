@@ -23,10 +23,10 @@ def generate_order_number():
     year = datetime.utcnow().year
     today = date.today()
     
-    # Get daily order count with row-level locking to prevent race conditions
+    # Get daily order count - PostgreSQL doesn't support FOR UPDATE with COUNT
     daily_order_count = Order.query.filter(
         db.func.date(Order.created_at) == today
-    ).with_for_update().count()
+    ).count()
     
     new_seq_num = daily_order_count + 1
     return f'ORD-{year}-{new_seq_num:03d}'
