@@ -445,7 +445,15 @@
 <script>
 /* ---------- Edit Item Modal Functionality ---------- */
 const modalEl = document.getElementById('editItemModal');
-const bsModal = new bootstrap.Modal(modalEl);
+let bsModal = null;
+
+// Initialize Bootstrap modal only if Bootstrap is loaded
+if (typeof bootstrap !== 'undefined' && modalEl) {
+    bsModal = new bootstrap.Modal(modalEl);
+} else {
+    console.warn('Bootstrap not loaded or modal element not found');
+}
+
 const editItemForm = document.getElementById('editItemForm');
 const item_id = document.getElementById('item_id');
 const item_product = document.getElementById('item_product');
@@ -467,13 +475,21 @@ const showToast = msg => {
                     data-bs-dismiss="toast"></button>
         </div>`;
     document.body.appendChild(t);
-    const toastInstance = new bootstrap.Toast(t);
-    toastInstance.show();
     
-    // Clean up after toast hides
-    t.addEventListener('hidden.bs.toast', () => {
+    // Check if Bootstrap is available before using it
+    if (typeof bootstrap !== 'undefined') {
+        const toastInstance = new bootstrap.Toast(t);
+        toastInstance.show();
+        
+        // Clean up after toast hides
+        t.addEventListener('hidden.bs.toast', () => {
+            document.body.removeChild(t);
+        });
+    } else {
+        // Fallback: show alert if Bootstrap isn't loaded
+        alert(msg);
         document.body.removeChild(t);
-    });
+    }
 };
 
 /* Open modal when edit button is clicked */
@@ -489,7 +505,12 @@ document.querySelectorAll('.edit-item').forEach(btn => {
         // Calculate and show initial line total
         calcTotal();
         
-        bsModal.show();
+        // Show modal only if Bootstrap is available
+        if (bsModal) {
+            bsModal.show();
+        } else {
+            console.warn('Bootstrap modal not available');
+        }
     });
 });
 
@@ -558,7 +579,10 @@ editItemForm.addEventListener('submit', async e => {
         if (vat19El) vat19El.textContent = data.order_vat_19.toFixed(2);
         if (totalEl) totalEl.textContent = data.order_total.toFixed(2);
         
-        bsModal.hide();
+        // Hide modal only if Bootstrap is available
+        if (bsModal) {
+            bsModal.hide();
+        }
         showToast('Item updated successfully!');
         
     } catch (error) {
