@@ -762,6 +762,68 @@ def generate_final_invoice_pdf(final_invoice):
         </div>
         {% endif %}
 
+        <!-- Delivery Adjustments Explanation (if adjustments exist) -->
+        {% if final_invoice.quotation and final_invoice.quotation.delivery_adjustments %}
+        <div style="page-break-before: always; margin-top: 40px; padding: 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; font-size: 11px; line-height: 1.5;">
+            <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #007bff; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Understanding Delivery Adjustments in Pro Forma Invoices</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #495057;">Overview</h4>
+                <p style="margin: 0 0 10px 0; text-align: justify;">
+                    This Pro Forma Invoice includes delivery adjustments that modify the final invoice amount after the original quotation was delivered. 
+                    These adjustments ensure accurate billing by accounting for any changes that occurred during or after the delivery process.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #495057;">Types of Adjustments</h4>
+                <div style="margin-left: 15px;">
+                    <p style="margin: 3px 0;"><strong>• Product Returns:</strong> Items returned by the customer are credited (subtracted) from the invoice total.</p>
+                    <p style="margin: 3px 0;"><strong>• Additional Deliveries:</strong> Extra items delivered are charged (added) to the invoice total.</p>
+                    <p style="margin: 3px 0;"><strong>• Product Replacements:</strong> Replacement items provided are charged (added) to the invoice total.</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #495057;">Calculation Method</h4>
+                <p style="margin: 0 0 10px 0; text-align: justify;">
+                    The final Pro Forma Invoice total is calculated using the following formula:
+                </p>
+                <div style="background-color: #e3f2fd; padding: 10px; border-left: 4px solid #2196f3; margin: 10px 0; font-family: monospace; text-align: center;">
+                    <strong>Final Total = Original Quotation Total + Delivery Adjustments</strong>
+                </div>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666;">
+                    Where delivery adjustments are automatically signed: returns as negative values (credits), additions and replacements as positive values (charges).
+                </p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #495057;">Individual Item Calculation</h4>
+                <p style="margin: 0 0 5px 0;">For each adjustment item, the following calculations apply:</p>
+                <div style="margin-left: 15px; font-size: 10px;">
+                    <p style="margin: 2px 0;">• Line Total = Quantity × Unit Price</p>
+                    <p style="margin: 2px 0;">• VAT Amount = Line Total × (VAT Rate ÷ 100)</p>
+                    <p style="margin: 2px 0;">• Total Including VAT = Line Total + VAT Amount</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #495057;">Quality Assurance</h4>
+                <p style="margin: 0; text-align: justify;">
+                    All delivery adjustments included in this invoice have been confirmed and verified. Only adjustments with "confirmed" status 
+                    are reflected in the final calculation, ensuring accuracy and preventing unauthorized modifications to the invoice total.
+                </p>
+            </div>
+
+            <div style="background-color: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; margin-top: 15px; border-radius: 3px;">
+                <p style="margin: 0; font-size: 10px; color: #856404; font-style: italic;">
+                    <strong>Note:</strong> This explanation is provided for transparency and clarity regarding the adjustment calculations reflected in this Pro Forma Invoice. 
+                    All adjustments are documented with detailed line items above for your review and records.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Footer -->
         <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 9px; color: #666; text-align: center;">
             <p style="margin: 2px 0;"><strong>{{ final_invoice.invoice_number }}</strong> | Pro Forma Invoice | Rev A</p>
