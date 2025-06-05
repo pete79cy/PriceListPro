@@ -567,7 +567,9 @@ editItemForm.addEventListener('submit', async e => {
     }
 });
 
-// Add Product functionality
+// Add Product functionality - with debugging
+console.log('[ADD PRODUCT DEBUG] Initializing add product functionality');
+
 const addProductBtn = document.getElementById('addProductBtn');
 const addProductSection = document.getElementById('addProductSection');
 const cancelAddProduct = document.getElementById('cancelAddProduct');
@@ -575,13 +577,36 @@ const productSearch = document.getElementById('productSearch');
 const productSearchResults = document.getElementById('productSearchResults');
 const confirmAddProduct = document.getElementById('confirmAddProduct');
 
-// Show/hide add product section
-addProductBtn.addEventListener('click', () => {
-    addProductSection.style.display = addProductSection.style.display === 'none' ? 'block' : 'none';
-    if (addProductSection.style.display === 'block') {
-        productSearch.focus();
-    }
+console.log('[ADD PRODUCT DEBUG] Elements found:', {
+    addProductBtn: !!addProductBtn,
+    addProductSection: !!addProductSection,
+    cancelAddProduct: !!cancelAddProduct,
+    productSearch: !!productSearch,
+    productSearchResults: !!productSearchResults,
+    confirmAddProduct: !!confirmAddProduct
 });
+
+// Show/hide add product section
+if (addProductBtn) {
+    addProductBtn.addEventListener('click', (e) => {
+        console.log('[ADD PRODUCT DEBUG] Add product button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (addProductSection.style.display === 'none' || addProductSection.style.display === '') {
+            addProductSection.style.display = 'block';
+            console.log('[ADD PRODUCT DEBUG] Showing add product section');
+            if (productSearch) {
+                productSearch.focus();
+            }
+        } else {
+            addProductSection.style.display = 'none';
+            console.log('[ADD PRODUCT DEBUG] Hiding add product section');
+        }
+    });
+} else {
+    console.error('[ADD PRODUCT DEBUG] Add product button not found!');
+}
 
 cancelAddProduct.addEventListener('click', () => {
     addProductSection.style.display = 'none';
@@ -607,7 +632,7 @@ productSearch.addEventListener('input', (e) => {
 
 async function searchProducts(query) {
     try {
-        const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/orders/api/search/products?q=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error('Search failed');
         
         const products = await response.json();
