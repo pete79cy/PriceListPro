@@ -762,33 +762,49 @@ class FinalProformaInvoice(db.Model):
         return 'order' if self.order else 'quotation'
     
     def calculate_totals(self):
-        """Calculate and update totals based on order/quotation and adjustments"""
-        # Original total (from order or quotation)
+        """Calculate and update totals based on order/quotation and adjustments including VAT"""
+        from decimal import Decimal
+        
+        # Original total (from order or quotation) - WITH VAT
         if self.order:
-            self.original_total = self.order.total if self.order else 0.0
+            # For orders, use the total with VAT if available
+            self.original_total = float(self.order.total) if self.order and self.order.total else 0.0
             parent_adjustments = self.order.delivery_adjustments
         elif self.quotation:
-            # Calculate quotation total from items
-            self.original_total = sum(item.selling_price * item.quantity for item in self.quotation.items) if self.quotation.items else 0.0
+            # Calculate quotation total from items WITH VAT
+            total_with_vat = Decimal('0.0')
+            if self.quotation.items:
+                for item in self.quotation.items:
+                    net_amount = Decimal(str(item.selling_price)) * Decimal(str(item.quantity))
+                    vat_rate = Decimal(str(item.vat_rate or 19)) / Decimal('100')
+                    total_with_vat += net_amount * (Decimal('1') + vat_rate)
+            self.original_total = float(total_with_vat)
             parent_adjustments = self.quotation.delivery_adjustments
         else:
             self.original_total = 0.0
             parent_adjustments = []
         
-        # Calculate adjustments total
-        adjustments_total = 0.0
+        # Calculate adjustments total WITH VAT
+        adjustments_total = Decimal('0.0')
         if parent_adjustments:
             for adjustment in parent_adjustments:
                 if adjustment.status == 'confirmed':
+                    # Calculate adjustment total with VAT
+                    adjustment_value = Decimal('0.0')
+                    for item in adjustment.items:
+                        net_amount = Decimal(str(item.quantity)) * Decimal(str(item.unit_price))
+                        vat_rate = Decimal(str(item.vat_rate or 19)) / Decimal('100')
+                        adjustment_value += net_amount * (Decimal('1') + vat_rate)
+                    
                     if adjustment.adjustment_type == DeliveryAdjustmentType.RETURN:
                         # Returns reduce the total (negative value)
-                        adjustments_total -= adjustment.total_value
+                        adjustments_total -= adjustment_value
                     else:
                         # Additional deliveries and replacements add to total
-                        adjustments_total += adjustment.total_value
+                        adjustments_total += adjustment_value
         
-        self.adjustments_total = adjustments_total
-        self.final_total = self.original_total + adjustments_total
+        self.adjustments_total = float(adjustments_total)
+        self.final_total = self.original_total + self.adjustments_total
 
 # Order model is already defined earlier in the file
     
