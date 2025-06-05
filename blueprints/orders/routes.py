@@ -18,6 +18,12 @@ from utils.orders_helpers import (
 from forms import EnhancedOrderForm, OrderItemForm
 
 # Helper functions
+def as_int_or_none(raw):
+    """Coerce '', None, or non-digit strings to None; else return int(value)."""
+    if raw is None or raw == '':
+        return None
+    return int(raw) if str(raw).isdigit() else None
+
 def generate_order_number():
     """Atomic, race-safe order number generator: ORD-YYYY-NNN"""
     year = datetime.utcnow().year
@@ -206,8 +212,8 @@ def new_order():
                         
                     item = OrderItem(
                         order_id=order.id,
-                        product_id=item_data.get('product_id'),
-                        price_list_id=item_data.get('price_list_id'),
+                        product_id=as_int_or_none(item_data.get('product_id')),
+                        price_list_id=as_int_or_none(item_data.get('price_list_id')),
                         plant_name=item_data['plant_name'],
                         size=item_data.get('size', ''),
                         quantity=int(item_data['quantity']),

@@ -1,0 +1,99 @@
+It’s failing **before the INSERT hits PostgreSQL** because the request payload still contains
+empty strings (`""`) and non-numeric IDs (`"supplier_83"`) for columns that are declared
+`INTEGER / FOREIGN KEY`.
+SQLAlchemy tries to coerce those values to `int`, can’t, and the whole request bubbles up
+as a 500.
+
+---
+
+## 1  Where the bad data comes from
+
+| Source field in the POST        | What it means              | DB column                                         | Why it explodes                  |
+| ------------------------------- | -------------------------- | ------------------------------------------------- | -------------------------------- |
+| `product_id__0 = "1815"`        | OK → digits                | `order_items.product_id`                          | Fine                             |
+| `price_list_id__0 = ""`         | “no price-list”            | `order_items.price_list_id` (`INTEGER, nullable`) | `"" → int()` raises `ValueError` |
+| `product_id__1 = "supplier_83"` | a *new* ad-hoc product row | same                                              | non-numeric string ⇒ fails       |
+
+Those names with a double-underscore (`product_id__0`) come from the **legacy
+table-input** rather than the new JSON serializer.
+
+---
+
+## 2  Quick patch – backend sanitiser
+
+Drop this helper into **`orders/utils.py`** (or inline it in the route):
+
+```python
+def as_int_or_none(raw):
+    """Coerce '', None, or non-digit strings to None; else return int(value)."""
+    if raw is None or raw == '':
+        return None
+    return int(raw) if str(raw).isdigit() else None
+```
+
+and use it wherever you build an `OrderItem`:
+
+```python
+item = OrderItem(
+    order_id       = order.id,
+    product_id     = as_int_or_none(item_data.get('product_id')),
+    price_list_id  = as_int_or_none(item_data.get('price_list_id')),
+    # … other fields …
+)
+```
+
+*If `product_id` comes back as `None`, branch into “create new product” logic and
+replace the `None` with the freshly generated `product.id`.*
+
+---
+
+## 3  Long-term fix – send clean JSON only
+
+1. **Front-end** – keep the hidden `<input id="itemsJson">` and call
+   `updateHiddenItems()` **every time** `orderItems` changes (add, edit, delete, sort).
+   Don’t rely on those `product_id__0` legacy names anymore.
+
+2. **Route** – in `new_order()` / `edit_order()` read
+
+   ```python
+   items = request.get_json(silent=True) or json.loads(request.form['items'])
+   ```
+
+   so you parse exactly the structure you expect.
+
+3. **Validation** – before inserting:
+
+   ```python
+   if any(i['product_id'] is None and not i['plant_name'] for i in items):
+       return jsonify(error='Missing product info'), 400
+   ```
+
+---
+
+## 4  Verify the fix
+
+1. **Clear browser cache**, hard-refresh.
+
+2. Add two products: one existing, one manual.
+
+3. **Open DevTools → Network → POST /orders/new** and confirm the payload now looks like
+
+   ```json
+   {
+     "customer_id": 12,
+     "items": [
+       {"product_id":1815,"price_list_id":null,"quantity":2,"price":3.5},
+       {"product_id":null,"plant_name":"My New Fern",…}
+     ]
+   }
+   ```
+
+4. Submit – you should get **200 / redirect** and a new order row in the DB.
+
+---
+
+### Still seeing a 500?
+
+Please copy-paste **the full stack-trace** from your terminal (or attach the log file)
+and the exact JSON/body sent in the failing request.
+With that we can nail any remaining edge case in one pass.
