@@ -1,0 +1,122 @@
+The yellow warning in your console – **“Bootstrap not loaded or modal element not found”** – is the smoking-gun: your custom script runs, but it can’t find either
+
+* the **`bootstrap`** global object **or**
+* the HTML element it should open (modal / slide-in panel / hidden div).
+
+That’s why clicking **“+ Add Product”** does nothing even though you see the debug lines.
+
+---
+
+## 1  Make one decision: **with or without Bootstrap JS**
+
+### A. You **do** want the Bootstrap modal / collapse helpers
+
+Add **exactly one** bundle script **before** your `enhanced-orders.js`.
+
+```html
+<!-- jQuery only if something else still needs it -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+
+<!-- Bootstrap 5 bundle = Popper + Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-6OP2…" crossorigin="anonymous"></script>
+
+<!-- Your script (now safe to reference window.bootstrap) -->
+<script src="{{ url_for('static', filename='js/enhanced-orders.js') }}"></script>
+```
+
+*Hit F12 → Network → JS, refresh: you must see **bootstrap.bundle.min.js 200**.*
+
+---
+
+### B. You **don’t** need Bootstrap JS
+
+Keep the CSS for styling but drop the JS dependency; drive the panel with plain
+classes. Update the click-handler:
+
+```js
+// in enhanced-orders.js (inside DOMContentLoaded)
+const addBtn  = document.getElementById('addProductBtn');
+const panel   = document.getElementById('addProductSection');   // the hidden div
+
+addBtn.addEventListener('click', () => {
+  panel.classList.toggle('d-none');       // show / hide
+});
+```
+
+No `bootstrap` global, no modal; just toggle `display:none`.
+
+---
+
+## 2  Make sure the target element actually exists
+
+Whichever path you choose, you still need the **section / modal** the button should open.
+
+**Option 1 – Modal**
+
+```html
+<!-- Button -->
+<button id="addProductBtn"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#addProductModal">
+  + Add Product
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      … search & line-item form …
+    </div>
+  </div>
+</div>
+```
+
+**Option 2 – Slide-down panel**
+
+```html
+<!-- Button -->
+<button id="addProductBtn" class="btn btn-primary">+ Add Product</button>
+
+<!-- Hidden panel -->
+<div id="addProductSection" class="d-none mb-3">
+  … search inputs & “Add to order” button …
+</div>
+```
+
+---
+
+## 3  Remove the console warning (optional but tidy)
+
+At the very top of `enhanced-orders.js` you planted:
+
+```js
+if (typeof bootstrap === 'undefined' || !document.getElementById('addProductModal')) {
+  console.warn('Bootstrap not loaded or modal element not found');
+}
+```
+
+Once you’ve fixed one of the paths above, delete or update that guard so it
+doesn’t spam the console.
+
+---
+
+## 4  Verify end-to-end
+
+1. **Hard-refresh** (Ctrl + F5) to bust the old cache.
+2. Open **DevTools → Console** – the yellow warning must be gone.
+3. Click **+ Add Product**:
+
+   * If you kept Bootstrap JS → modal pops.
+   * If you dropped it → hidden panel slides into view.
+4. Use the search box, select a product, “Add to Order”: the new row appears and totals update.
+
+If anything is still silent:
+
+* Check Network tab – bootstrap bundle missing or 404.
+* Inspect the button – wrong `id` (should match the JS selector).
+* Inspect the modal/panel – wrong `id` (should match `data-bs-target` or JS).
+
+Send back the exact console error or a fresh screenshot if another blocker pops
+up, and we’ll close the loop quickly.

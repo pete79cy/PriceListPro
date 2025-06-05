@@ -148,7 +148,7 @@
                 </div>
                 <div class="card-body p-0">
                     <!-- Add Product Section (Hidden by default) -->
-                    <div id="addProductSection" class="border-bottom p-3" style="display: none;">
+                    <div id="addProductSection" class="d-none border-bottom p-3">
                         <h6 class="mb-3">Add New Product to Order</h6>
                         <form id="addProductForm">
                             <div class="row g-3">
@@ -611,22 +611,20 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmAddProduct: !!confirmAddProduct
     });
 
-    // Show/hide add product section
+    // Show/hide add product section using Bootstrap classes
     if (addProductBtn) {
         addProductBtn.addEventListener('click', function(e) {
             console.log('[ADD PRODUCT DEBUG] Add product button clicked');
             e.preventDefault();
             e.stopPropagation();
             
-            if (addProductSection.style.display === 'none' || addProductSection.style.display === '') {
-                addProductSection.style.display = 'block';
-                console.log('[ADD PRODUCT DEBUG] Showing add product section');
-                if (productSearch) {
+            if (addProductSection) {
+                addProductSection.classList.toggle('d-none');
+                console.log('[ADD PRODUCT DEBUG] Toggled add product section');
+                
+                if (!addProductSection.classList.contains('d-none') && productSearch) {
                     setTimeout(() => productSearch.focus(), 100);
                 }
-            } else {
-                addProductSection.style.display = 'none';
-                console.log('[ADD PRODUCT DEBUG] Hiding add product section');
             }
         });
         console.log('[ADD PRODUCT DEBUG] Click handler attached to add product button');
@@ -636,7 +634,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (cancelAddProduct) {
         cancelAddProduct.addEventListener('click', function() {
-            addProductSection.style.display = 'none';
+            if (addProductSection) {
+                addProductSection.classList.add('d-none');
+            }
             clearAddProductForm();
         });
     }
