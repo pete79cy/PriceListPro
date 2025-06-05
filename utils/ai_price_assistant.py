@@ -280,15 +280,16 @@ class AIPriceAssistant:
         """Get market data from other customers"""
         try:
             # Get pricing from other customers (not the current customer)
-            query = QuotationItem.query.join(QuotationItem.quotation).filter(
+            market_items = QuotationItem.query.join(Quotation).filter(
                 QuotationItem.scientific_name.ilike(f"%{scientific_name}%"),
-                QuotationItem.quotation.has(customer_id != customer_id)
+                Quotation.customer_id != customer_id,
+                QuotationItem.selling_price.isnot(None)
             )
             
             if pot_size:
-                query = query.filter(QuotationItem.pot_size.ilike(f"%{pot_size}%"))
+                market_items = market_items.filter(QuotationItem.pot_size.ilike(f"%{pot_size}%"))
             
-            market_items = query.filter(QuotationItem.selling_price.isnot(None)).limit(20).all()
+            market_items = market_items.limit(20).all()
             
             if market_items:
                 prices = [float(item.selling_price) for item in market_items if item.selling_price]
@@ -376,6 +377,9 @@ Last public price from competitors, marketplaces, or catalogues: {market_str}
     def _get_openai_response(self, prompt):
         """Get response from OpenAI API"""
         try:
+            if not self.client:
+                return "Error: OpenAI client not initialized"
+                
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -385,7 +389,12 @@ Last public price from competitors, marketplaces, or catalogues: {market_str}
                 max_tokens=200,   # Limited response for JSON output
                 timeout=30.0
             )
-            return response.choices[0].message.content.strip()
+            
+            if response and response.choices and len(response.choices) > 0:
+                content = response.choices[0].message.content
+                return content.strip() if content else "Error: Empty response from AI"
+            else:
+                return "Error: Invalid response format from AI"
         
         except Exception as e:
             logger.error(f"OpenAI API error: {str(e)}")

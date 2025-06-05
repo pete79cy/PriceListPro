@@ -297,17 +297,33 @@ function confirmDelete(deleteUrl) {
     deleteModal.show();
 }
 
-// Add price suggestion handlers
+// Add AI price suggestion handlers
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle suggest button clicks for all suggest price buttons
+    document.addEventListener('click', function(event) {
+        if (event.target.closest('.suggest-price-btn')) {
+            const button = event.target.closest('.suggest-price-btn');
+            const scientificNameId = button.getAttribute('data-scientific-name-id');
+            const potSizeId = button.getAttribute('data-pot-size-id');
+            const priceId = button.getAttribute('data-price-id');
+            const costPriceId = button.getAttribute('data-cost-price-id');
+            
+            if (scientificNameId && potSizeId && priceId) {
+                getPriceSuggestion(scientificNameId, potSizeId, priceId, costPriceId);
+            }
+        }
+    });
+    
+    // Legacy handlers for backwards compatibility
     if (document.getElementById('priceAssistBtn')) {
         document.getElementById('priceAssistBtn').addEventListener('click', function() {
-            getPriceSuggestion('scientific_name', 'pot_size', 'selling_price');
+            getPriceSuggestion('scientific_name', 'pot_size', 'selling_price', 'cost_price');
         });
     }
     
     if (document.getElementById('editPriceAssistBtn')) {
         document.getElementById('editPriceAssistBtn').addEventListener('click', function() {
-            getPriceSuggestion('edit_scientific_name', 'edit_pot_size', 'edit_selling_price');
+            getPriceSuggestion('edit_scientific_name', 'edit_pot_size', 'edit_selling_price', 'edit_cost_price');
         });
     }
     
@@ -336,22 +352,38 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.appendChild(currencyInput);
 });
 
-// Function to get price suggestions
-function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
+// Function to get AI-powered price suggestions
+function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPriceId = null) {
     const scientificName = document.getElementById(scientificNameId).value.trim();
     const potSize = document.getElementById(potSizeId).value.trim();
     const customerId = document.getElementById('customer-id').value;
+    const costPrice = costPriceId ? document.getElementById(costPriceId).value.trim() : null;
     
     if (!scientificName) {
         showToast("Please enter a scientific name first", "warning");
         return;
     }
     
-    // Show loading indicator
-    showToast("Looking for historical prices...", "info");
+    // Show AI loading indicator
+    const button = document.querySelector(`[data-price-id="${sellingPriceId}"]`);
+    const originalText = button ? button.innerHTML : '';
+    if (button) {
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> AI Thinking...';
+        button.disabled = true;
+    }
     
-    // Call the price assistant API
-    fetch('/api/price-assistant?scientific_name=' + encodeURIComponent(scientificName) + '&pot_size=' + encodeURIComponent(potSize) + '&customer_id=' + customerId)
+    // Build API URL with parameters
+    let apiUrl = '/api/price-assistant?scientific_name=' + encodeURIComponent(scientificName) + 
+                '&pot_size=' + encodeURIComponent(potSize) + 
+                '&customer_id=' + customerId + 
+                '&use_ai=true';
+    
+    if (costPrice && !isNaN(parseFloat(costPrice))) {
+        apiUrl += '&cost_price=' + encodeURIComponent(costPrice);
+    }
+    
+    // Call the AI price assistant API
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -374,15 +406,44 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId) {
             
             if (data.suggested_price) {
                 // Update the price field
-                document.getElementById(sellingPriceId).value = data.suggested_price;
-                showToast('Price suggestion: ' + data.suggested_price.toFixed(2) + ' € (based on ' + data.source + ')', "success");
+                document.getElementById(sellingPriceId).value = data.suggested_price.toFixed(2);
+                
+                // Show AI rationale if available
+                if (data.rationale) {
+                    showToast('AI Suggestion: €' + data.suggested_price.toFixed(2) + ' - ' + data.rationale, "success");
+                } else {
+                    showToast('AI Price suggestion: €' + data.suggested_price.toFixed(2) + ' (based on ' + data.source + ')', "success");
+                }
+                
+                // Add visual indicator that this is an AI suggestion
+                const priceField = document.getElementById(sellingPriceId);
+                priceField.style.borderColor = '#28a745';
+                priceField.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
+                
+                // Remove the visual indicator after 3 seconds
+                setTimeout(() => {
+                    priceField.style.borderColor = '';
+                    priceField.style.boxShadow = '';
+                }, 3000);
+                
+                // Trigger recalculation if the function exists
+                if (typeof updateRowTotal === 'function') {
+                    updateRowTotal(priceField);
+                }
             } else {
-                showToast("No historical price data found for this product", "warning");
+                showToast("No price suggestion available for this product", "warning");
             }
         })
         .catch(error => {
-            console.error('Error fetching price suggestions:', error);
-            showToast("Error retrieving price data: " + error.message, "danger");
+            console.error('Error fetching AI price suggestions:', error);
+            showToast("Error retrieving AI price data: " + error.message, "danger");
+        })
+        .finally(() => {
+            // Restore button state
+            if (button) {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
         });
 }
 
