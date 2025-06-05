@@ -276,6 +276,55 @@ def view_order(order_id):
         ORDER_STATUS_COLORS=ORDER_STATUS_COLORS
     )
 
+@orders.route('/<int:order_id>/add_item', methods=['POST'])
+@login_required
+def add_item_to_order(order_id):
+    """Add a new item to an existing order"""
+    order = Order.query.get_or_404(order_id)
+    
+    try:
+        # Extract item data from form
+        product_id = request.form.get('product_id')
+        price_list_id = request.form.get('price_list_id')
+        plant_name = request.form.get('plant_name')
+        size = request.form.get('size', '')
+        quantity = request.form.get('quantity')
+        price = request.form.get('price')
+        vat_rate = request.form.get('vat_rate', '19.0')
+        notes = request.form.get('notes', '')
+        
+        # Validate required fields
+        if not plant_name or not quantity or not price:
+            flash('Plant name, quantity, and price are required', 'danger')
+            return redirect(url_for('orders.view_order', order_id=order_id))
+        
+        # Create new order item with proper data type conversion
+        item = OrderItem(
+            order_id=order.id,
+            product_id=as_int_or_none(product_id),
+            price_list_id=as_int_or_none(price_list_id),
+            plant_name=plant_name,
+            size=size,
+            quantity=int(quantity),
+            price=float(price),
+            vat_rate=float(vat_rate),
+            notes=notes
+        )
+        
+        db.session.add(item)
+        db.session.commit()
+        
+        flash(f'Product "{plant_name}" added to order successfully', 'success')
+        
+    except ValueError as e:
+        db.session.rollback()
+        flash(f'Invalid data provided: {str(e)}', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding product to order: {str(e)}', 'danger')
+    
+    return redirect(url_for('orders.view_order', order_id=order_id))
+
 @orders.route('/<int:order_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_order(order_id):
