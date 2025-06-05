@@ -1,0 +1,118 @@
+**Clarifying AI prompt request**
+
+The user is debugging an order system and initially mentioned a data-driven button for price suggestions. Now, it seems like they want an AI-specific prompt for generating suggested prices, possibly for a plant nursery context. I’ll need to craft a tailored AI prompt, considering the system's existing setup. I’ll focus on the price suggestion feature, ensuring the prompt matches the intended use of AI for displaying relevant price recommendations based on the data available.
+
+Thought for 11 seconds
+
+Below is a **ready-to-paste prompt** you can pass to OpenAI (or another LLM) when the user clicks **“Suggest”** on a line-item inside a quotation or order.
+It mirrors the data-driven logic you already use but lets the model surface a *recommended unit price* plus a short justification.
+
+---
+
+## AI Prompt — Price Suggestion (for a single product row)
+
+````text
+You are a pricing assistant for a wholesale plant nursery.
+
+=== Context ===
+• Business currency: EUR  
+• Default VAT rate: 19 % (unless an item has a specific VAT override)  
+• Minimum target margin: 25 % over cost (unless the customer’s history allows lower)
+
+=== Customer ===
+ID: {customer_id}
+Name: {customer_name}
+Segment: {customer_segment}            # e.g. Garden Center, Landscaper, Retailer
+Annual spend: €{customer_lifetime_value}
+Credit terms: {credit_terms}           # e.g. 30 days EOM
+
+=== Product ===
+ID: {product_id}
+Plant / SKU: {product_name}
+Pot / Size: {product_size}
+Cost basis: €{cost_price} per unit
+Stock on hand: {stock_qty}
+
+=== Historical Pricing (most recent first) ===
+{list 5–10 rows in this format:  
+  • Date: YYYY-MM-DD | Customer: {cust_name or “same customer”} | Qty: {qty} | Sold @ €{unit_price}
+}
+
+=== Customer-specific Price List ===
+{If a price exists} €{price} (last updated {price_updated_at})  
+{Else} None
+
+=== Market Data (optional) ===
+Last public price from competitors, marketplaces, or catalogues: €{market_price}
+
+=== Task ===
+1. Propose a **recommended unit price** for this product for the customer above.  
+2. Give a **one-sentence rationale** that references at least one of:  
+   • recent transactions with this customer  
+   • prevailing market price  
+   • target margin vs. cost  
+   • stock considerations.  
+3. Output **ONLY** in this JSON schema (no extra keys, no markdown):
+
+```json
+{
+  "recommended_price": 0.00,
+  "rationale": ""
+}
+````
+
+````
+
+---
+
+### How to use it
+
+1. **Server-side builder**  
+   Assemble the prompt by filling the placeholders with live data from your DB:
+   ```python
+   prompt = PROMPT_TEMPLATE.format(
+       customer_id=customer.id,
+       customer_name=customer.name,
+       customer_segment=customer.segment or "Unclassified",
+       customer_lifetime_value=customer.ltv or 0,
+       credit_terms=customer.credit_terms or "standard",
+       product_id=product.id,
+       product_name=product.name,
+       product_size=product.size or "",
+       cost_price=product.cost_price,
+       stock_qty=product.stock_qty,
+       # join 5 recent OrderItems into one big string
+       list_of_historical_rows=hist_string,
+       price=price_list_price or "None",
+       price_updated_at=price_updated_at or "",
+       market_price=market_price or "n/a",
+   )
+````
+
+2. **Call the model**
+
+   ```python
+   resp = openai.ChatCompletion.create(
+       model="gpt-4o-mini",
+       temperature=0.1,           # keep suggestions stable
+       messages=[{"role": "system", "content": prompt}]
+   )
+   data = json.loads(resp.choices[0].message.content)
+   ```
+
+3. **Display**
+   Show `recommended_price` directly in the Qty/Unit-price row and put the
+   `rationale` in a small muted “AI note” tooltip.
+
+---
+
+### Why this prompt works
+
+* **Grounded data** – you feed concrete cost, history, and margin targets so the
+  model can’t hallucinate wildly low or high prices.
+* **JSON-only output** – no markdown to strip, easy to `json.loads()`.
+* **Short rationale** – sales reps get quick insight but the UI stays uncluttered.
+
+Feel free to tweak the “Context” (e.g. different VAT or margin), add more
+history rows, or batch multiple items by repeating the *Product* block if you
+ever build a bulk-suggestion endpoint.
