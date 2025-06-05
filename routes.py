@@ -4219,13 +4219,16 @@ def register_routes(app):
     @app.route('/api/price-assistant', methods=['GET'])
     @login_required
     def price_assistant():
-        """Get pricing suggestions for a product based on historical data"""
+        """Get AI-powered pricing suggestions for a product with fallback to historical data"""
+        from utils.ai_price_assistant import get_ai_price_assistant
         from utils.price_assistant import get_price_assistant
         
         # Get required parameters
         scientific_name = request.args.get('scientific_name')
         pot_size = request.args.get('pot_size', '')
         customer_id = request.args.get('customer_id')
+        cost_price = request.args.get('cost_price')
+        use_ai = request.args.get('use_ai', 'true').lower() == 'true'
         
         # Validate parameters
         if not scientific_name:
@@ -4235,10 +4238,32 @@ def register_routes(app):
             
         try:
             customer_id = int(customer_id)
+            if cost_price:
+                cost_price = float(cost_price)
         except ValueError:
-            return jsonify({"error": "Invalid customer ID"}), 400
-            
-        # Get price assistant
+            return jsonify({"error": "Invalid customer ID or cost price"}), 400
+        
+        # Try AI-powered suggestion first if enabled
+        if use_ai:
+            ai_assistant = get_ai_price_assistant()
+            if ai_assistant.is_enabled():
+                logger.info(f"Using AI price suggestion for {scientific_name}")
+                result = ai_assistant.get_ai_price_suggestion(
+                    scientific_name=scientific_name,
+                    pot_size=pot_size,
+                    customer_id=customer_id,
+                    cost_price=cost_price
+                )
+                
+                # If AI suggestion was successful, return it
+                if "error" not in result:
+                    return jsonify(result)
+                
+                # Log AI error but continue to fallback
+                logger.warning(f"AI price suggestion failed: {result.get('error')}, falling back to historical data")
+        
+        # Fallback to historical data-driven approach
+        logger.info(f"Using historical data price suggestion for {scientific_name}")
         price_assistant = get_price_assistant()
         
         # Get price history
