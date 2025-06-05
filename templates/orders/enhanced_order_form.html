@@ -22,6 +22,7 @@
 
     <form id="orderForm" method="POST" action="{{ url_for('orders.new_order') }}">
         {% if form %}{{ form.hidden_tag() }}{% endif %}
+        <input type="hidden" name="items" id="itemsJson" value="">
         <input type="hidden" name="items_json" id="itemsJsonField" value="">
         
         <!-- Order Header -->
@@ -470,7 +471,7 @@ function displayEnhancedSearchResults(products) {
     resultsContainer.innerHTML = html;
 }
 
-// Enhanced add product function
+// Enhanced add product function with proper event delegation
 function addProductToOrder(productId, productName, price, unit, priceListId) {
     debugLog(`Adding product: ${productName} (ID: ${productId}) - €${price} per ${unit}`);
     
@@ -504,13 +505,13 @@ function addProductToOrder(productId, productName, price, unit, priceListId) {
                 <input type="hidden" class="plant-size" value="${unit}">
             </td>
             <td>
-                <input type="number" class="form-control qty" value="1" min="1">
+                <input type="number" class="form-control qty" value="1" min="1" onchange="updateOrderTotal()">
             </td>
             <td>
-                <input type="number" class="form-control price" value="${price}" step="0.01" min="0">
+                <input type="number" class="form-control price" value="${price}" step="0.01" min="0" onchange="updateOrderTotal()">
             </td>
             <td>
-                <select class="form-select vat-rate">
+                <select class="form-select vat-rate" onchange="updateOrderTotal()">
                     <option value="5">5%</option>
                     <option value="19" selected>19%</option>
                     <option value="0">0%</option>
@@ -527,8 +528,9 @@ function addProductToOrder(productId, productName, price, unit, priceListId) {
     
     orderItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
     
-    // Update totals immediately
+    // Update totals and hidden form field
     updateOrderTotal();
+    updateHiddenItems();
     
     debugLog('Product added successfully');
     
@@ -625,8 +627,54 @@ function removeOrderItem(itemId) {
     }
 }
 
-// Update order totals when quantities or prices change
-function updateOrderTotals() {
+// Update hidden items field for form submission
+function updateHiddenItems() {
+    const orderItems = [];
+    const itemRows = document.querySelectorAll('#orderItems .order-item');
+    
+    itemRows.forEach(function(row) {
+        const productIdHidden = row.querySelector('.product-id');
+        const priceListIdHidden = row.querySelector('.price-list-id');
+        const plantNameHidden = row.querySelector('.plant-name');
+        const plantSizeHidden = row.querySelector('.plant-size');
+        const quantityInput = row.querySelector('.qty');
+        const priceInput = row.querySelector('.price');
+        const vatSelect = row.querySelector('.vat-rate');
+        
+        if (quantityInput && priceInput && vatSelect) {
+            const productId = productIdHidden ? productIdHidden.value : null;
+            const priceListId = priceListIdHidden ? priceListIdHidden.value : null;
+            const plantName = plantNameHidden ? plantNameHidden.value : '';
+            const size = plantSizeHidden ? plantSizeHidden.value : '';
+            const quantity = parseInt(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const vatRate = parseFloat(vatSelect.value) || 19;
+            
+            if (quantity > 0) {
+                orderItems.push({
+                    product_id: productId,
+                    price_list_id: priceListId,
+                    plant_name: plantName,
+                    size: size,
+                    quantity: quantity,
+                    price: price,
+                    vat_rate: vatRate
+                });
+            }
+        }
+    });
+    
+    // Update hidden field
+    const itemsJsonField = document.getElementById('itemsJson');
+    if (itemsJsonField) {
+        itemsJsonField.value = JSON.stringify(orderItems);
+    }
+    
+    debugLog('Hidden items updated', orderItems);
+}
+
+// Update order totals when quantities or prices change  
+function updateOrderTotal() {
     let totalItems = 0;
     let subtotal = 0;
     let vat19Total = 0;
@@ -635,11 +683,10 @@ function updateOrderTotals() {
     const orderItems = document.querySelectorAll('#orderItems .order-item');
     
     orderItems.forEach(function(item) {
-        const quantityInput = item.querySelector('.quantity-input');
-        const priceInput = item.querySelector('.price-input');
-        const vatSelect = item.querySelector('.vat-rate-input');
-        const totalDisplay = item.querySelector('.col-1.text-end .fw-bold');
-        const vatDisplay = item.querySelector('.col-1.text-end .text-muted');
+        const quantityInput = item.querySelector('.qty');
+        const priceInput = item.querySelector('.price');
+        const vatSelect = item.querySelector('.vat-rate');
+        const totalDisplay = item.querySelector('.line-total');
         
         if (quantityInput && priceInput && vatSelect) {
             const quantity = parseInt(quantityInput.value) || 0;
@@ -650,15 +697,6 @@ function updateOrderTotals() {
             const itemVat = itemSubtotal * (vatRate / 100);
             const itemTotal = itemSubtotal + itemVat;
             
-            // Update item display
-            if (totalDisplay) {
-                totalDisplay.textContent = `€${itemTotal.toFixed(2)}`;
-            }
-            if (vatDisplay) {
-                vatDisplay.textContent = `+€${itemVat.toFixed(2)}`;
-            }
-            
-            // Add to order totals
             totalItems += quantity;
             subtotal += itemSubtotal;
             
@@ -667,31 +705,31 @@ function updateOrderTotals() {
             } else if (vatRate === 5) {
                 vat5Total += itemVat;
             }
+            
+            // Update item total display
+            if (totalDisplay) {
+                totalDisplay.textContent = itemTotal.toFixed(2);
+            }
         }
     });
     
     const grandTotal = subtotal + vat19Total + vat5Total;
     
     // Update summary display
-    const totalItemsEl = document.getElementById('totalItems');
-    const subtotalEl = document.getElementById('subtotal');
-    const vat19El = document.getElementById('vat19');
-    const vat5El = document.getElementById('vat5');
-    const totalAmountEl = document.getElementById('totalAmount');
+    const totalItemsElement = document.querySelector('.order-summary .total-items');
+    const subtotalElement = document.querySelector('.order-summary .subtotal');
+    const vat19Element = document.querySelector('.order-summary .vat-19');
+    const vat5Element = document.querySelector('.order-summary .vat-5');
+    const grandTotalElement = document.querySelector('.order-summary .grand-total');
     
-    if (totalItemsEl) totalItemsEl.textContent = totalItems;
-    if (subtotalEl) subtotalEl.textContent = `€${subtotal.toFixed(2)}`;
-    if (vat19El) vat19El.textContent = `€${vat19Total.toFixed(2)}`;
-    if (vat5El) vat5El.textContent = `€${vat5Total.toFixed(2)}`;
-    if (totalAmountEl) totalAmountEl.textContent = `€${grandTotal.toFixed(2)}`;
+    if (totalItemsElement) totalItemsElement.textContent = totalItems;
+    if (subtotalElement) subtotalElement.textContent = '€' + subtotal.toFixed(2);
+    if (vat19Element) vat19Element.textContent = '€' + vat19Total.toFixed(2);
+    if (vat5Element) vat5Element.textContent = '€' + vat5Total.toFixed(2);
+    if (grandTotalElement) grandTotalElement.textContent = '€' + grandTotal.toFixed(2);
     
-    debugLog('Order totals updated', {
-        totalItems,
-        subtotal,
-        vat19Total,
-        vat5Total,
-        grandTotal
-    });
+    // Update hidden items
+    updateHiddenItems();
 }
 
 // Attach calculation update listeners to order items
