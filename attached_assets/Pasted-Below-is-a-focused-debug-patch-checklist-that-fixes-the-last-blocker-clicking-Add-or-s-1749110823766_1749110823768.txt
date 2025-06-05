@@ -1,0 +1,134 @@
+Below is a focused **debug + patch checklist** that fixes the last blocker — *clicking **Add** (or selecting a search hit) does nothing*.
+Follow it in order; you should have products dropping into the table in under ten minutes.
+
+---
+
+## 1  Confirm the JavaScript is loading at all
+
+```html
+<!-- At the very bottom of enhanced_order_form.html, right before </body> -->
+<script src="{{ url_for('static', filename='js/enhanced-orders.js') }}"></script>
+```
+
+*Open DevTools → Console: you should see no 404 for the script and no “Uncaught ReferenceError”.*
+
+---
+
+## 2  Make sure the HTML IDs match the JS selectors
+
+| JavaScript selector | Required element in the template                                     |
+| ------------------- | -------------------------------------------------------------------- |
+| `#customerSelect`   | `<select id="customerSelect" …>`                                     |
+| `#productSearch`    | `<input id="productSearch" …>`                                       |
+| `#searchResults`    | `<ul id="searchResults"></ul>`                                       |
+| `#manualAddBtn`     | `<button id="manualAddBtn" …>`                                       |
+| `#orderItems`       | `<tbody id="orderItems"></tbody>`<br>*(inside the Line-Items table)* |
+| `#orderForm`        | `<form id="orderForm" action="{{ url_for('orders.new_order') }}" …>` |
+
+> **Tip:** The most common culprit is `orderItems` vs `orderItemsTable`.
+> Rename the `tbody` exactly to `id="orderItems"`.
+
+---
+
+## 3  Switch the click binding to **delegation** (fixes newly injected rows)
+
+Replace the original listener in **`EnhancedOrderManager.searchProducts()`**
+
+```diff
+- this.$results.find('.result').on('click', e => { … });
++ this.$results
++   .off('click')                         // clean any old handler
++   .on('click', 'li.result', e => {      // delegated
++       const id   = Number($(e.currentTarget).data('id'));
++       const prod = this.latestResults.find(p => p.id === id);
++       this.addProductToOrder(prod);
++       this.clearSearch();
++   });
+```
+
+Add `this.latestResults = data;` right after `const data = await res.json();` so the handler can find the product again.
+
+---
+
+## 4  Persist the items array back into the form (server still expects it)
+
+1. Insert a hidden field **inside `<form id="orderForm">…`**
+
+   ```html
+   <input type="hidden" name="items" id="itemsJson">
+   ```
+
+2. Add a one-liner helper in the class:
+
+   ```js
+   updateHiddenItems() {
+     $('#itemsJson').val(JSON.stringify(this.orderItems.map(it => ({
+       product_id : it.productId,
+       plant_name : it.plantName,
+       size       : it.size,
+       quantity   : it.qty.toNumber(),
+       price      : it.price.toNumber(),
+       vat_rate   : it.vat.toNumber()
+     }))));
+   }
+   ```
+
+3. Call `this.updateHiddenItems()` **every time you mutate** `orderItems`
+   *after* `this.renderRow()` in `addProductToOrder`, inside the inline‐edit listener, after delete, etc.
+
+---
+
+## 5  Drop the experimental JSON-fetch submit (use the regular POST)
+
+If you copied the “AJAX save” block but kept the Flask route that expects `request.form`, you now have a mismatch.
+
+Either:
+
+* **Comment-out** the custom `saveOrder()` and let the browser do a normal POST, **or**
+* Keep the custom `fetch()` but replace the Flask route with `request.get_json()` parsing.
+
+For speed, comment out the custom submit handler:
+
+```diff
+- $('#orderForm').on('submit', (e) => {
+-     e.preventDefault();
+-     this.saveOrder();
+- });
++ // Let the form POST normally; Flask route expects multipart/form
+```
+
+---
+
+## 6  Hard-refresh, test, watch DevTools
+
+1. **Search** a product → click result – **Row appears?**
+2. **Click “Add Manually”** – if nothing pops you probably never wired the modal; skip for now.
+3. **Submit** – network tab should show `POST /orders/new` with `items=` JSON in payload.
+
+If the row still doesn’t show:
+
+* Look in **Console** for “`Cannot read properties of undefined`” around `addProductToOrder`.
+  Most likely `prod` is undefined ⁠→ your API isn’t returning `product.id`, `product.price`, etc.
+
+---
+
+## 7  (If needed) minimal failing trace
+
+Still stuck? Copy-paste the following to me:
+
+* Console error lines (exact text).
+* The `<li>` markup that renders in `#searchResults` (use Inspect → copy outerHTML).
+* A screenshot of the Network response JSON from `/api/products/search?q=…`.
+
+With that I can pinpoint the last mismatch in one pass.
+
+---
+
+### After these seven steps you should be able to:
+
+1. Pick a customer.
+2. Type “ros” in the product box → click “Rose 2 L”.
+3. See a new row in the order table with Qty = 1, live totals update.
+4. Submit the form without a 500, products persisted to the DB.
+
+Let me know exactly which step still misbehaves and we’ll nail it.
