@@ -567,197 +567,226 @@ editItemForm.addEventListener('submit', async e => {
     }
 });
 
-// Add Product functionality - with debugging
-console.log('[ADD PRODUCT DEBUG] Initializing add product functionality');
+// Wait for DOM and Bootstrap to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[ADD PRODUCT DEBUG] DOM loaded, initializing add product functionality');
 
-const addProductBtn = document.getElementById('addProductBtn');
-const addProductSection = document.getElementById('addProductSection');
-const cancelAddProduct = document.getElementById('cancelAddProduct');
-const productSearch = document.getElementById('productSearch');
-const productSearchResults = document.getElementById('productSearchResults');
-const confirmAddProduct = document.getElementById('confirmAddProduct');
+    const addProductBtn = document.getElementById('addProductBtn');
+    const addProductSection = document.getElementById('addProductSection');
+    const cancelAddProduct = document.getElementById('cancelAddProduct');
+    const productSearch = document.getElementById('productSearch');
+    const productSearchResults = document.getElementById('productSearchResults');
+    const confirmAddProduct = document.getElementById('confirmAddProduct');
 
-console.log('[ADD PRODUCT DEBUG] Elements found:', {
-    addProductBtn: !!addProductBtn,
-    addProductSection: !!addProductSection,
-    cancelAddProduct: !!cancelAddProduct,
-    productSearch: !!productSearch,
-    productSearchResults: !!productSearchResults,
-    confirmAddProduct: !!confirmAddProduct
-});
+    console.log('[ADD PRODUCT DEBUG] Elements found:', {
+        addProductBtn: !!addProductBtn,
+        addProductSection: !!addProductSection,
+        cancelAddProduct: !!cancelAddProduct,
+        productSearch: !!productSearch,
+        productSearchResults: !!productSearchResults,
+        confirmAddProduct: !!confirmAddProduct
+    });
 
-// Show/hide add product section
-if (addProductBtn) {
-    addProductBtn.addEventListener('click', (e) => {
-        console.log('[ADD PRODUCT DEBUG] Add product button clicked');
-        e.preventDefault();
-        e.stopPropagation();
-        
-        if (addProductSection.style.display === 'none' || addProductSection.style.display === '') {
-            addProductSection.style.display = 'block';
-            console.log('[ADD PRODUCT DEBUG] Showing add product section');
-            if (productSearch) {
-                productSearch.focus();
+    // Show/hide add product section
+    if (addProductBtn) {
+        addProductBtn.addEventListener('click', function(e) {
+            console.log('[ADD PRODUCT DEBUG] Add product button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (addProductSection.style.display === 'none' || addProductSection.style.display === '') {
+                addProductSection.style.display = 'block';
+                console.log('[ADD PRODUCT DEBUG] Showing add product section');
+                if (productSearch) {
+                    setTimeout(() => productSearch.focus(), 100);
+                }
+            } else {
+                addProductSection.style.display = 'none';
+                console.log('[ADD PRODUCT DEBUG] Hiding add product section');
             }
-        } else {
+        });
+        console.log('[ADD PRODUCT DEBUG] Click handler attached to add product button');
+    } else {
+        console.error('[ADD PRODUCT DEBUG] Add product button not found!');
+    }
+
+    if (cancelAddProduct) {
+        cancelAddProduct.addEventListener('click', function() {
             addProductSection.style.display = 'none';
-            console.log('[ADD PRODUCT DEBUG] Hiding add product section');
+            clearAddProductForm();
+        });
+    }
+
+    // Product search functionality
+    let searchTimeout;
+    if (productSearch) {
+        productSearch.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                if (productSearchResults) productSearchResults.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchProducts(query);
+            }, 300);
+        });
+    }
+
+    // Product search functions
+    async function searchProducts(query) {
+        try {
+            const response = await fetch(`/orders/api/search/products?q=${encodeURIComponent(query)}`);
+            if (!response.ok) throw new Error('Search failed');
+            
+            const products = await response.json();
+            displaySearchResults(products);
+        } catch (error) {
+            console.error('Product search error:', error);
+            if (productSearchResults) {
+                productSearchResults.innerHTML = '<div class="list-group-item text-danger">Search failed. Please try again.</div>';
+                productSearchResults.style.display = 'block';
+            }
         }
-    });
-} else {
-    console.error('[ADD PRODUCT DEBUG] Add product button not found!');
-}
-
-cancelAddProduct.addEventListener('click', () => {
-    addProductSection.style.display = 'none';
-    clearAddProductForm();
-});
-
-// Product search functionality
-let searchTimeout;
-productSearch.addEventListener('input', (e) => {
-    const query = e.target.value.trim();
-    
-    clearTimeout(searchTimeout);
-    
-    if (query.length < 2) {
-        productSearchResults.style.display = 'none';
-        return;
     }
-    
-    searchTimeout = setTimeout(() => {
-        searchProducts(query);
-    }, 300);
-});
 
-async function searchProducts(query) {
-    try {
-        const response = await fetch(`/orders/api/search/products?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Search failed');
+    function displaySearchResults(products) {
+        if (!productSearchResults) return;
         
-        const products = await response.json();
-        displaySearchResults(products);
-    } catch (error) {
-        console.error('Product search error:', error);
-        productSearchResults.innerHTML = '<div class="list-group-item text-danger">Search failed. Please try again.</div>';
+        if (products.length === 0) {
+            productSearchResults.innerHTML = '<div class="list-group-item text-muted">No products found</div>';
+            productSearchResults.style.display = 'block';
+            return;
+        }
+        
+        const resultsHTML = products.map(product => `
+            <button type="button" class="list-group-item list-group-item-action product-result" 
+                    data-id="${product.id}" 
+                    data-price-list-id="${product.price_list_id || ''}"
+                    data-name="${product.name}" 
+                    data-price="${product.price || 0}"
+                    data-size="${product.size || ''}">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">${product.name}</h6>
+                    <small>€${(product.price || 0).toFixed(2)}</small>
+                </div>
+                ${product.size ? `<small class="text-muted">Size: ${product.size}</small>` : ''}
+            </button>
+        `).join('');
+        
+        productSearchResults.innerHTML = resultsHTML;
         productSearchResults.style.display = 'block';
+        
+        // Add click handlers to result items
+        productSearchResults.querySelectorAll('.product-result').forEach(item => {
+            item.addEventListener('click', selectProduct);
+        });
     }
-}
 
-function displaySearchResults(products) {
-    if (products.length === 0) {
-        productSearchResults.innerHTML = '<div class="list-group-item text-muted">No products found</div>';
-        productSearchResults.style.display = 'block';
-        return;
+    function selectProduct(e) {
+        const button = e.currentTarget;
+        const productId = button.dataset.id;
+        const priceListId = button.dataset.priceListId;
+        const productName = button.dataset.name;
+        const price = button.dataset.price;
+        const size = button.dataset.size;
+        
+        // Fill form fields
+        const selectedProductId = document.getElementById('selectedProductId');
+        const selectedPriceListId = document.getElementById('selectedPriceListId');
+        const selectedProductName = document.getElementById('selectedProductName');
+        const newPrice = document.getElementById('newPrice');
+        const newSize = document.getElementById('newSize');
+        
+        if (selectedProductId) selectedProductId.value = productId;
+        if (selectedPriceListId) selectedPriceListId.value = priceListId;
+        if (selectedProductName) selectedProductName.value = productName;
+        if (newPrice) newPrice.value = price;
+        if (newSize) newSize.value = size;
+        
+        // Update search input
+        if (productSearch) productSearch.value = productName;
+        if (productSearchResults) productSearchResults.style.display = 'none';
     }
-    
-    const resultsHTML = products.map(product => `
-        <button type="button" class="list-group-item list-group-item-action product-result" 
-                data-id="${product.id}" 
-                data-price-list-id="${product.price_list_id || ''}"
-                data-name="${product.name}" 
-                data-price="${product.price || 0}"
-                data-size="${product.size || ''}">
-            <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">${product.name}</h6>
-                <small>€${(product.price || 0).toFixed(2)}</small>
-            </div>
-            ${product.size ? `<small class="text-muted">Size: ${product.size}</small>` : ''}
-        </button>
-    `).join('');
-    
-    productSearchResults.innerHTML = resultsHTML;
-    productSearchResults.style.display = 'block';
-    
-    // Add click handlers to result items
-    productSearchResults.querySelectorAll('.product-result').forEach(item => {
-        item.addEventListener('click', selectProduct);
-    });
-}
 
-function selectProduct(e) {
-    const button = e.currentTarget;
-    const productId = button.dataset.id;
-    const priceListId = button.dataset.priceListId;
-    const productName = button.dataset.name;
-    const price = button.dataset.price;
-    const size = button.dataset.size;
-    
-    // Fill form fields
-    document.getElementById('selectedProductId').value = productId;
-    document.getElementById('selectedPriceListId').value = priceListId;
-    document.getElementById('selectedProductName').value = productName;
-    document.getElementById('newPrice').value = price;
-    document.getElementById('newSize').value = size;
-    
-    // Update search input
-    productSearch.value = productName;
-    productSearchResults.style.display = 'none';
-}
+    // Add product to order
+    if (confirmAddProduct) {
+        confirmAddProduct.addEventListener('click', async function() {
+            const productId = document.getElementById('selectedProductId')?.value || '';
+            const priceListId = document.getElementById('selectedPriceListId')?.value || '';
+            const productName = document.getElementById('selectedProductName')?.value || productSearch.value.trim();
+            const quantity = document.getElementById('newQuantity')?.value || '';
+            const price = document.getElementById('newPrice')?.value || '';
+            const vatRate = document.getElementById('newVatRate')?.value || '19';
+            const size = document.getElementById('newSize')?.value || '';
+            const notes = document.getElementById('newNotes')?.value || '';
+            
+            // Validate required fields
+            if (!productName || !quantity || !price) {
+                alert('Please fill in product name, quantity, and price');
+                return;
+            }
+            
+            if (quantity <= 0 || price < 0) {
+                alert('Please enter valid quantity and price');
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('product_id', productId);
+            formData.append('price_list_id', priceListId);
+            formData.append('plant_name', productName);
+            formData.append('quantity', quantity);
+            formData.append('price', price);
+            formData.append('vat_rate', vatRate);
+            formData.append('size', size);
+            formData.append('notes', notes);
+            
+            try {
+                const response = await fetch(`/orders/{{ order.id }}/add_item`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    // Reload page to show the new item
+                    window.location.reload();
+                } else {
+                    const text = await response.text();
+                    throw new Error('Failed to add product');
+                }
+            } catch (error) {
+                console.error('Error adding product:', error);
+                alert('Failed to add product to order. Please try again.');
+            }
+        });
+    }
 
-// Add product to order
-confirmAddProduct.addEventListener('click', async () => {
-    const productId = document.getElementById('selectedProductId').value;
-    const priceListId = document.getElementById('selectedPriceListId').value;
-    const productName = document.getElementById('selectedProductName').value || productSearch.value.trim();
-    const quantity = document.getElementById('newQuantity').value;
-    const price = document.getElementById('newPrice').value;
-    const vatRate = document.getElementById('newVatRate').value;
-    const size = document.getElementById('newSize').value;
-    const notes = document.getElementById('newNotes').value;
-    
-    // Validate required fields
-    if (!productName || !quantity || !price) {
-        alert('Please fill in product name, quantity, and price');
-        return;
-    }
-    
-    if (quantity <= 0 || price < 0) {
-        alert('Please enter valid quantity and price');
-        return;
-    }
-    
-    // Create form data
-    const formData = new FormData();
-    formData.append('product_id', productId);
-    formData.append('price_list_id', priceListId);
-    formData.append('plant_name', productName);
-    formData.append('quantity', quantity);
-    formData.append('price', price);
-    formData.append('vat_rate', vatRate);
-    formData.append('size', size);
-    formData.append('notes', notes);
-    
-    try {
-        const response = await fetch(`/orders/{{ order.id }}/add_item`, {
-            method: 'POST',
-            body: formData
+    function clearAddProductForm() {
+        const elements = [
+            'productSearch', 'newQuantity', 'newPrice', 'newSize', 'newNotes', 
+            'selectedProductId', 'selectedPriceListId', 'selectedProductName'
+        ];
+        
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.value = '';
         });
         
-        if (response.ok) {
-            // Reload page to show the new item
-            window.location.reload();
-        } else {
-            const text = await response.text();
-            throw new Error('Failed to add product');
-        }
-    } catch (error) {
-        console.error('Error adding product:', error);
-        alert('Failed to add product to order. Please try again.');
+        const newQuantity = document.getElementById('newQuantity');
+        if (newQuantity) newQuantity.value = '1';
+        
+        const newVatRate = document.getElementById('newVatRate');
+        if (newVatRate) newVatRate.value = '19';
+        
+        if (productSearchResults) productSearchResults.style.display = 'none';
     }
-});
 
-function clearAddProductForm() {
-    document.getElementById('productSearch').value = '';
-    document.getElementById('newQuantity').value = '1';
-    document.getElementById('newPrice').value = '';
-    document.getElementById('newSize').value = '';
-    document.getElementById('newNotes').value = '';
-    document.getElementById('newVatRate').value = '19';
-    document.getElementById('selectedProductId').value = '';
-    document.getElementById('selectedPriceListId').value = '';
-    document.getElementById('selectedProductName').value = '';
-    productSearchResults.style.display = 'none';
-}
+    console.log('[ADD PRODUCT DEBUG] Initialization complete');
+});
 </script>
 {% endblock %}
