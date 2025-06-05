@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    <form id="orderForm" method="POST">
+    <form id="orderForm" method="POST" action="{{ url_for('orders.new_order') }}">
         {% if form %}{{ form.hidden_tag() }}{% endif %}
         <input type="hidden" name="items_json" id="itemsJsonField" value="">
         
