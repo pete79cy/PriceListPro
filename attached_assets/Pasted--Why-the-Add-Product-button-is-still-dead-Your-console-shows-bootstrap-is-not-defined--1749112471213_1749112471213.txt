@@ -1,0 +1,119 @@
+### Why the **“Add Product”** button is still dead
+
+Your console shows **`bootstrap is not defined`**.
+That means the global `bootstrap` object (the one with `bootstrap.Modal`, `bootstrap.Toast`, …) hasn’t been loaded **before** your custom JS tries to call it.
+Moving the code into a DOM-ready handler doesn’t help if the library itself never made it into the page.
+
+---
+
+## 1  Fix the script-loading order
+
+> **TL;DR** – load **one** “Bootstrap bundle” *after* jQuery / Popper, *before* your custom `enhanced-orders.js`.
+
+```html
+<!-- ①  jQuery (if you still use it elsewhere) -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+
+<!-- ②  Bootstrap 5 bundle = Popper + Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-6OP2…"
+        crossorigin="anonymous"></script>
+
+<!-- ③  Your custom script -->
+<script src="{{ url_for('static', filename='js/enhanced-orders.js') }}"></script>
+```
+
+* **Bundle** already contains Popper, so **do not** include Popper separately or you’ll get duplicate symbol errors.
+* Make sure no other `<script src="bootstrap.min.js">` or `bootstrap.bundle.js` appears *above* this one; otherwise you’ll redeclare the global and race conditions creep in.
+
+---
+
+## 2  ES-module / Vite setup instead?
+
+If the frontend is built with Vite/Webpack (I’ve seen `vite.config.ts` in the repo) and you compile `enhanced-orders.js`:
+
+```js
+import * as bootstrap from 'bootstrap'          // installs all JS
+window.bootstrap = bootstrap;                  // expose for inline scripts
+
+// … then the rest of your EnhancedOrderManager class …
+```
+
+**Important:** when you export `window.bootstrap`, add the tag
+`<script type="module" src="/static/js/enhanced-orders.js"></script>`
+and remove any old `<script src="bootstrap.bundle.min.js">` to avoid duplication.
+
+---
+
+## 3  Make the button actually open a modal/drop-in panel
+
+```html
+<!-- Button -->
+<button id="addProductBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+  + Add Product
+</button>
+
+<!-- Modal (Bootstrap 5 markup) -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductLbl" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+         <h5 id="addProductLbl" class="modal-title">Add product</h5>
+         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+         <!-- search box & line-item form -->
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+No JavaScript needed—Bootstrap’s data-attributes (`data-bs-toggle="modal"`) auto-wire the button once `bootstrap.bundle.js` is present.
+
+If you want to show/hide via JS instead:
+
+```js
+document.getElementById('addProductBtn').addEventListener('click', () => {
+  const modal = new bootstrap.Modal('#addProductModal');
+  modal.show();
+});
+```
+
+---
+
+## 4  Confirm it works
+
+1. **Hard-refresh** (CTRL + F5).
+2. Open DevTools → Console: the red “bootstrap is not defined” line must disappear.
+3. Click **+ Add Product**:
+
+   * Modal or search pane pops up.
+   * Any `console.log('[ADD PRODUCT DEBUG] …')` lines appear.
+
+If the error persists:
+
+* Ensure the browser’s Network tab shows **`bootstrap.bundle.min.js` (status 200)**.
+* Check that no CSP (Content-Security-Policy) header blocks inline JS.
+* Verify there’s exactly **one** copy of Bootstrap JS on the page.
+
+---
+
+## 5  Guard against future “library not loaded” bugs
+
+Add this one-liner at the very top of `enhanced-orders.js`:
+
+```js
+if (typeof bootstrap === 'undefined') {
+  console.error('Bootstrap JS not loaded - check script order!');
+}
+```
+
+You’ll get a clear early warning instead of silent failure.
+
+---
+
+### Next step
+
+Follow steps 1-3, then try the entire add-product flow again.
+If you see a *different* console error or the modal opens but "Add" still doesn’t insert a row, copy that exact message here and we’ll squash the last bug.
