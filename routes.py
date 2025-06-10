@@ -2318,6 +2318,28 @@ def register_routes(app):
         
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
+    @app.route('/quotation/<int:quotation_id>/update_internal_notes', methods=['POST'])
+    @login_required
+    @with_db_reconnect(max_retries=3)
+    def update_quotation_internal_notes(quotation_id):
+        """Update internal notes for a quotation"""
+        quotation = Quotation.query.get_or_404(quotation_id)
+        
+        try:
+            internal_notes = request.form.get('internal_notes', '').strip()
+            quotation.internal_notes = internal_notes if internal_notes else None
+            quotation.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            flash('Internal notes updated successfully!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating internal notes for quotation {quotation_id}: {str(e)}")
+            flash(f'Error updating internal notes: {str(e)}', 'danger')
+        
+        return redirect(url_for('view_quotation', quotation_id=quotation_id))
+    
     @app.route('/quotation/<int:quotation_id>/duplicate', methods=['GET'])
     @login_required
     def duplicate_quotation(quotation_id):
