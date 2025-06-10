@@ -1886,6 +1886,7 @@ def register_routes(app):
         # Handle POST request - create the quotation
         customer_id = request.form.get('customer_id')
         notes = request.form.get('notes', '')
+        internal_notes = request.form.get('internal_notes', '')
         currency = request.form.get('currency', '€')
         
         if not customer_id:
@@ -1905,6 +1906,7 @@ def register_routes(app):
                 quotation_date=datetime.now().date(),
                 currency=currency,
                 notes=notes,
+                internal_notes=internal_notes if internal_notes else None,
                 total_amount=0,
                 status=QuotationStatus.DRAFT
             )
