@@ -256,6 +256,7 @@ class Quotation(db.Model):
     total_amount = db.Column(db.Float, nullable=True)
     currency = db.Column(db.String(10), nullable=False, default='€')  # Euro is the default currency
     notes = db.Column(db.Text, nullable=True)
+    internal_notes = db.Column(db.Text, nullable=True)  # Internal notes for communication with customer
     file_path = db.Column(db.String(255), nullable=True)  # Path to the stored PDF (if generated)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
