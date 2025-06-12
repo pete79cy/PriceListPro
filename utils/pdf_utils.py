@@ -721,7 +721,7 @@ def generate_final_invoice_pdf(final_invoice):
             <table class="summary-table">
                 <tr>
                     <td><strong>Subtotal (Net Amount):</strong></td>
-                    <td class="text-right">€{{ "%.2f"|format(final_invoice.original_total) }}</td>
+                    <td class="text-right">€{{ "%.2f"|format(subtotal) }}</td>
                 </tr>
                 {% if final_invoice.adjustments_total != 0 %}
                 <tr>
@@ -735,9 +735,19 @@ def generate_final_invoice_pdf(final_invoice):
                     </td>
                 </tr>
                 {% endif %}
-                <tr class="total-row">
-                    <td><strong>Net Total:</strong></td>
-                    <td class="text-right"><strong>€{{ "%.2f"|format(final_invoice.final_total) }}</strong></td>
+                <tr>
+                    <td><strong>Net Total (before VAT):</strong></td>
+                    <td class="text-right"><strong>€{{ "%.2f"|format(net_total) }}</strong></td>
+                </tr>
+                {% for vat_item in vat_breakdown %}
+                <tr>
+                    <td><strong>VAT {{ vat_item.rate }}%:</strong></td>
+                    <td class="text-right">€{{ "%.2f"|format(vat_item.amount) }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row" style="border-top: 2px solid #007bff; background-color: #f8f9fa;">
+                    <td><strong>GRAND TOTAL (incl. VAT):</strong></td>
+                    <td class="text-right"><strong>€{{ "%.2f"|format(grand_total) }}</strong></td>
                 </tr>
             </table>
         </div>
@@ -836,8 +846,85 @@ def generate_final_invoice_pdf(final_invoice):
     """
     
     try:
-        # Render the HTML template
-        html_content = render_template_string(html_template, final_invoice=final_invoice, datetime=datetime)
+        # Calculate VAT breakdown for the final invoice
+        subtotal = 0
+        vat_dict = {}
+        
+        # Get the parent document (quotation or order)
+        parent_document = final_invoice.quotation if final_invoice.quotation else final_invoice.order
+        
+        if parent_document and parent_document.items:
+            # Calculate original subtotal and VAT from items
+            for item in parent_document.items:
+                # Get item selling price and quantity
+                if hasattr(item, 'selling_price'):
+                    item_price = item.selling_price
+                elif hasattr(item, 'price'):
+                    item_price = item.price
+                else:
+                    item_price = 0
+                
+                item_quantity = item.quantity if hasattr(item, 'quantity') else 1
+                item_subtotal = item_price * item_quantity
+                subtotal += item_subtotal
+                
+                # Get VAT rate (default to 19% if not specified)
+                vat_rate = item.vat_rate if hasattr(item, 'vat_rate') and item.vat_rate else 19
+                vat_amount = item_subtotal * (vat_rate / 100)
+                
+                # Accumulate VAT by rate
+                if vat_rate in vat_dict:
+                    vat_dict[vat_rate] += vat_amount
+                else:
+                    vat_dict[vat_rate] = vat_amount
+        
+        # Add adjustment items VAT calculation if there are delivery adjustments
+        if final_invoice.quotation and final_invoice.quotation.delivery_adjustments:
+            for adjustment in final_invoice.quotation.delivery_adjustments:
+                if adjustment.status == 'confirmed':
+                    for adj_item in adjustment.items:
+                        adj_subtotal = adj_item.quantity * adj_item.unit_price
+                        
+                        # Apply sign based on adjustment type
+                        if adjustment.adjustment_type == 'return':
+                            adj_subtotal = -adj_subtotal
+                        
+                        subtotal += adj_subtotal
+                        
+                        # Get VAT rate for adjustment item (default to 19%)
+                        vat_rate = adj_item.vat_rate if hasattr(adj_item, 'vat_rate') and adj_item.vat_rate else 19
+                        vat_amount = adj_subtotal * (vat_rate / 100)
+                        
+                        # Accumulate VAT by rate
+                        if vat_rate in vat_dict:
+                            vat_dict[vat_rate] += vat_amount
+                        else:
+                            vat_dict[vat_rate] = vat_amount
+        
+        # Convert VAT dict to sorted list for template
+        vat_breakdown = []
+        for rate in sorted(vat_dict.keys()):
+            vat_breakdown.append({
+                'rate': rate,
+                'amount': vat_dict[rate]
+            })
+        
+        # Calculate totals
+        net_total = subtotal
+        total_vat = sum(item['amount'] for item in vat_breakdown)
+        grand_total = net_total + total_vat
+        
+        # Render the HTML template with calculated values
+        html_content = render_template_string(
+            html_template, 
+            final_invoice=final_invoice, 
+            datetime=datetime,
+            subtotal=subtotal,
+            net_total=net_total,
+            vat_breakdown=vat_breakdown,
+            total_vat=total_vat,
+            grand_total=grand_total
+        )
         
         # Create temporary file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.pdf', delete=False, encoding='utf-8') as temp_file:
