@@ -593,17 +593,83 @@
     }
   });
 
+  // Inline price editing functionality
+  function editPrice(element) {
+    if (element.classList.contains('editing')) return;
+    
+    const currentPrice = element.dataset.currentPrice;
+    const priceId = element.dataset.priceId;
+    
+    element.classList.add('editing');
+    
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.step = '0.01';
+    input.min = '0';
+    input.value = currentPrice;
+    input.className = 'price-edit-input';
+    
+    element.innerHTML = '';
+    element.appendChild(input);
+    input.focus();
+    input.select();
+    
+    const savePrice = async () => {
+      const newPrice = parseFloat(input.value);
+      if (isNaN(newPrice) || newPrice < 0) {
+        element.innerHTML = `€${currentPrice}`;
+        element.classList.remove('editing');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/price-lists/${priceId}/update-price`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ price: newPrice })
+        });
+        
+        if (response.ok) {
+          element.innerHTML = `€${newPrice.toFixed(2)}`;
+          element.dataset.currentPrice = newPrice.toFixed(2);
+          element.classList.remove('editing');
+        } else {
+          throw new Error('Failed to update price');
+        }
+      } catch (error) {
+        alert('Error updating price. Please try again.');
+        element.innerHTML = `€${currentPrice}`;
+        element.classList.remove('editing');
+      }
+    };
+    
+    const cancelEdit = () => {
+      element.innerHTML = `€${currentPrice}`;
+      element.classList.remove('editing');
+    };
+    
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        savePrice();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+    
+    input.addEventListener('blur', savePrice);
+  }
+
   // Edit modal functionality (placeholder)
   function openEditModal(button) {
     const priceId = button.dataset.priceId;
     const productName = button.dataset.productName;
     const customerId = button.dataset.customerId;
     
-    // This would open an edit modal - implementation depends on your modal system
     console.log('Edit price:', { priceId, productName, customerId });
-    
-    // For now, you could redirect to an edit page
-    // window.location.href = `/price-lists/${priceId}/edit`;
   }
 
   // Initialize on page load
