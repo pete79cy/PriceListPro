@@ -41,30 +41,110 @@
             }
         }
 
-        // Form validation and submission
+        // Enhanced form validation and submission
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('.login-form');
             const button = document.querySelector('.login-button');
+            const inputs = document.querySelectorAll('.form-input');
             
+            // Form submission with loading state
             if (form && button) {
                 form.addEventListener('submit', function(e) {
+                    if (!validateForm()) {
+                        e.preventDefault();
+                        return;
+                    }
+                    
                     button.disabled = true;
-                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                    button.classList.add('loading');
+                    button.innerHTML = '<span class="spinner"></span>Signing in...';
+                    
+                    // Re-enable button after timeout to handle errors
+                    setTimeout(() => {
+                        if (button.disabled) {
+                            button.disabled = false;
+                            button.classList.remove('loading');
+                            button.innerHTML = 'Sign In';
+                        }
+                    }, 10000);
                 });
             }
 
             // Add focus/blur animation to input fields
-            const inputs = document.querySelectorAll('.form-input');
             inputs.forEach(input => {
                 input.addEventListener('focus', function() {
                     this.parentElement.classList.add('focused');
+                    clearFieldError(this);
                 });
                 
                 input.addEventListener('blur', function() {
                     this.parentElement.classList.remove('focused');
+                    validateField(this);
+                });
+                
+                // Real-time validation
+                input.addEventListener('input', function() {
+                    clearFieldError(this);
                 });
             });
+            
+            // Auto-focus first empty field
+            const firstEmptyInput = Array.from(inputs).find(input => !input.value);
+            if (firstEmptyInput) {
+                firstEmptyInput.focus();
+            }
         });
+
+        // Form validation functions
+        function validateForm() {
+            const username = document.getElementById('username');
+            const password = document.getElementById('password');
+            let isValid = true;
+            
+            if (!username.value.trim()) {
+                showFieldError(username, 'Username is required');
+                isValid = false;
+            } else if (username.value.length < 3) {
+                showFieldError(username, 'Username must be at least 3 characters');
+                isValid = false;
+            }
+            
+            if (!password.value) {
+                showFieldError(password, 'Password is required');
+                isValid = false;
+            } else if (password.value.length < 6) {
+                showFieldError(password, 'Password must be at least 6 characters');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        function validateField(field) {
+            if (field.hasAttribute('required') && !field.value.trim()) {
+                showFieldError(field, `${field.labels[0].textContent} is required`);
+                return false;
+            }
+            return true;
+        }
+        
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            field.classList.add('error');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.textContent = message;
+            field.parentElement.appendChild(errorDiv);
+        }
+        
+        function clearFieldError(field) {
+            field.classList.remove('error');
+            const existingError = field.parentElement.querySelector('.field-error');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
