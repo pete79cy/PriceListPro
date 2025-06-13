@@ -1124,7 +1124,7 @@ def register_routes(app):
         
         # GET request - show products
         products_list = Product.query.all()
-        return render_template('products.html', products=products_list)
+        return render_template('products_improved.html', products=products_list)
     
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
     @login_required
