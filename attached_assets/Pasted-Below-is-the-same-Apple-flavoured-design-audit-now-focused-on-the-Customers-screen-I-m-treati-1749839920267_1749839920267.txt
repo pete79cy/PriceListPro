@@ -1,0 +1,142 @@
+Below is the same Apple-flavoured design audit, now focused on the **Customers** screen.  I’m treating the list as a “data-heavy” view, so nearly everything revolves around clarity, breathing-room, and progressive disclosure.
+
+---
+
+## 1. Page-level Layout
+
+| Current                                                      | Apple-style Refinement                                                                                                                                                                                                                                       | Why it Helps                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Search + filters + “New Customer” all live in one dense row. | Break into a **three-zone toolbar**:<br>1. *Leading*: Back chevron + page title.<br>2. *Center*: Search field occupying the full remaining width.<br>3. *Trailing*: a grouped **segmented control** for filters, followed by a filled accent “＋ New” button. | Mirrors macOS Mail/Finder toolbars; keeps visual scan simple. |
+| “Back to Dashboard” sits **inside** content flow.            | Promote the back arrow into the toolbar (left edge).                                                                                                                                                                                                         | Avoids two competing headers.                                 |
+| Result count shown as a pill next to title.                  | Move the count into the title in subtle gray — e.g. **Customers · 37**.                                                                                                                                                                                      | Punctuation dot is Apple-HIG friendly; one focal point.       |
+
+---
+
+## 2. Search Field
+
+* **Style** – Frosted glass (backdrop-blur: 8 px, 80 % opacity) with embedded “magnifyingglass” SF Symbol.
+* **Smart tokens** – Typing `email:` or `phone:` converts to a token—just like Mail’s search on iOS/macOS.
+* **Keyboard shortcut** – Press ⌘ F (or Ctrl F) to jump focus.
+
+---
+
+## 3. Filter Chips → Segmented Control
+
+| Chip            | Segmented Control Label |
+| --------------- | ----------------------- |
+| With Price-list | 📄 Price List           |
+| Missing Email   | ✉️ Missing Email        |
+| Categories ▼    | 🏷️ Category            |
+
+Show the currently active segment in accent colour; others in 60 % white. When “Category” is active, open a pull-down sheet with a two-column checklist of categories.
+
+---
+
+## 4. Table Redesign
+
+### 4.1 Row Styling
+
+| Current                   | Suggested                                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| Flat dark rows, no hover. | Zebra 2 % tint on even rows; on hover use a 4 px shadow + 2 px scale (101 %) to hint selectability. |
+
+### 4.2 Columns & Content
+
+| Column         | Improvement                                                                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status Dot** | Use semantic colours from SF palette: Green = Active, Red = Inactive, Orange = Low credit. Add `title` tooltip for screen-reader parity.                                                            |
+| **Name**       | Make it a link that opens a side-drawer detail view (slide in from right) instead of navigating away.                                                                                               |
+| **Email**      | Display as mailto; if “Missing” show a light-red pill **Missing** not italic text.                                                                                                                  |
+| **Phone**      | Wrap in `tel:` link on mobile breakpoints.                                                                                                                                                          |
+| **Category**   | Present tags in pastel tints; clicking a tag toggles the same filter as Segmented Control.                                                                                                          |
+| **Actions**    | Collapse eye/edit/delete into a single **ellipsis button**; on click reveal a context menu inline. The trash action should be destructive red *inside* that menu, not ever-present as a red button. |
+
+### 4.3 Bulk Actions
+
+* **Row selection** – Checkbox appears on hover; once ≥ 1 selected, a sticky bottom bar surfaces “Delete”, “Assign Category”, “Download CSV” actions (macOS Photos style).
+
+---
+
+## 5. Empty & Edge States
+
+| State               | Treatment                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| No customers yet    | Centered icon + “Add Your First Customer” and a large accent button.                      |
+| Search returns zero | Magnifying glass with “No matches for ‘asdad’…” and a helpful tip “Try removing filters.” |
+| Error loading       | Red exclamation symbol and a “Retry” secondary button.                                    |
+
+---
+
+## 6. Micro-interactions
+
+1. **Row hover** – *200 ms* ease-out lift & subtle glow.
+2. **Inline edit** – Double-click name cell → fade to inline text field, ESC to cancel.
+3. **Side-drawer** – Slides over 380 ms with blur-behind; obeys `prefers-reduced-motion`.
+
+---
+
+## 7. Accessibility
+
+* **Contrast** – Status dots need 3 : 1 contrast against background; currently red on dark fails.
+* **Table headings** – `scope="col"` on `<th>` plus `aria-sort="ascending"` when active.
+* **Keyboard** – `Tab` cycles: toolbar → table headers → first cell of each row. ENTER on row opens detail drawer.
+
+---
+
+## 8. Responsive Considerations
+
+| Breakpoint | Adjustment                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| ≤ 900 px   | Switch from table to **card list** (Name + Category as subtitle, badges for Missing Email, tel & email icons inline). |
+| ≤ 600 px   | Filters collapse into a bottom sheet; “＋ New” becomes floating FAB.                                                   |
+
+---
+
+## 9. Quick CSS Snippet (Illustrative)
+
+```css
+/* Frosted search */
+.search {
+  backdrop-filter: blur(8px);
+  background: rgba(44,44,46,.7);
+  border-radius: 12px;
+  padding: 10px 14px 10px 40px;
+  background-image: url('data-sf-symbol:magnifyingglass'); /* pseudo */
+  background-size: 16px 16px;
+  background-position: 14px 50%;
+  background-repeat: no-repeat;
+}
+
+/* Zebra rows */
+tr:nth-child(even) { background:#1f1f1f; }
+tr:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+/* Pastel tag */
+.tag {
+  background: color-mix(in srgb, var(--accent) 15%, #2c2c2e);
+  color:#dfe8ff;
+  padding:2px 8px;
+  border-radius:6px;
+  font:500 12px system-ui;
+}
+
+/* Inline missing pill */
+.missing {
+  background:#3b1e1e;
+  color:#ff7b72;
+  padding:2px 8px;
+  border-radius:6px;
+  font:500 12px/1 system-ui;
+}
+```
+
+*(Replace `--accent` with `#0A84FF` or your design token.)*
+
+---
+
+### Key Takeaway
+
+Treat the Customers list like *Finder + Numbers*: tight toolbars, semantic filters, and rows that feel alive when you touch them. With cleaner actions, a responsive card layout, and improved hierarchy, the page will both **look smaller** (less clutter) and **feel larger** (more breathing room). Let me know if you’d like Figma mock-ups or a code refactor for the table component!
