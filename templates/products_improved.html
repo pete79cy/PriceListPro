@@ -1,0 +1,1278 @@
+{% extends 'layout.html' %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<!-- Apple-style Header with Search -->
+<div class="products-header">
+    <div class="header-content">
+        <div class="header-left">
+            <h1 class="page-title">Products</h1>
+            <div class="filter-controls">
+                <div class="segmented-control">
+                    <button class="segment active" data-filter="all">All</button>
+                    <button class="segment" data-filter="missing-sku">Missing SKU</button>
+                    <button class="segment dropdown-toggle" data-filter="category" data-bs-toggle="dropdown">
+                        Category ▼
+                    </button>
+                    <ul class="dropdown-menu category-dropdown">
+                        <li><a class="dropdown-item" href="#" data-category="">All Categories</a></li>
+                        <!-- Categories will be populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-field" placeholder="Search by name or SKU..." id="productSearch">
+                <span class="search-shortcut">⌘F</span>
+            </div>
+            <button class="btn-primary-accent" id="newProductBtn">
+                <i class="fas fa-plus"></i> New
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<div class="products-container">
+    {% if products %}
+    <!-- Bulk Action Bar (hidden by default) -->
+    <div class="bulk-action-bar" id="bulkActionBar" style="display: none;">
+        <div class="bulk-actions">
+            <span class="selection-count" id="selectionCount">0 selected</span>
+            <div class="action-buttons">
+                <button class="btn-secondary" id="moveToCategory">Move to Category</button>
+                <button class="btn-secondary" id="downloadCSV">Download CSV</button>
+                <button class="btn-danger" id="bulkDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="table-container">
+        <table class="products-table" id="productsTable">
+            <thead>
+                <tr>
+                    <th class="checkbox-col">
+                        <input type="checkbox" id="selectAll" class="table-checkbox">
+                    </th>
+                    <th class="id-col">ID</th>
+                    <th class="sku-col">SKU</th>
+                    <th class="name-col">Name</th>
+                    <th class="desc-col">Description</th>
+                    <th class="actions-col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr class="product-row" 
+                    data-product-id="{{ product.id }}" 
+                    data-category="{{ product.category or '' }}" 
+                    data-scientific-name="{{ product.scientific_name or '' }}" 
+                    data-pot="{{ product.pot or '' }}"
+                    data-name="{{ product.name or '' }}"
+                    data-sku="{{ product.sku or '' }}">
+                    <td>
+                        <input type="checkbox" class="table-checkbox product-checkbox" value="{{ product.id }}">
+                    </td>
+                    <td class="id-cell">{{ product.id }}</td>
+                    <td class="sku-cell">
+                        {% if product.sku %}
+                            {{ product.sku }}
+                        {% else %}
+                            <span class="missing-indicator">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="name-cell">
+                        <button class="name-link" data-product-id="{{ product.id }}">
+                            {{ product.name }}
+                        </button>
+                    </td>
+                    <td class="desc-cell">
+                        {% if product.scientific_name %}
+                            <div class="scientific-name">{{ product.scientific_name }}</div>
+                            {% if product.pot %}
+                                <span class="size-badge">{{ product.pot }}</span>
+                            {% endif %}
+                        {% else %}
+                            {% if product.description %}
+                                {{ product.description }}
+                            {% else %}
+                                <span class="missing-description">No description</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="actions-cell">
+                        <div class="dropdown">
+                            <button class="action-menu-btn" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu action-menu">
+                                <li>
+                                    <button class="dropdown-item edit-product" 
+                                            data-id="{{ product.id }}"
+                                            data-name="{{ product.name }}"
+                                            data-sku="{{ product.sku or '' }}"
+                                            data-category="{{ product.category or '' }}"
+                                            data-scientific-name="{{ product.scientific_name or '' }}"
+                                            data-pot="{{ product.pot or '' }}"
+                                            data-description="{{ product.description or '' }}">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item duplicate-product" data-id="{{ product.id }}">
+                                        <i class="fas fa-copy"></i> Duplicate
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger delete-product" 
+                                            data-id="{{ product.id }}" 
+                                            data-name="{{ product.name }}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-seedling"></i>
+        </div>
+        <h3>No products yet</h3>
+        <p>Start building your catalog by adding your first product.</p>
+        <button class="btn-primary-accent" id="addFirstProduct">
+            <i class="fas fa-plus"></i> Add your first product
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Side Drawer for Product Details -->
+<div class="side-drawer" id="productDrawer">
+    <div class="drawer-header">
+        <h3 id="drawerTitle">Product Details</h3>
+        <button class="drawer-close" id="closeDrawer">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="drawer-content">
+        <form id="productForm">
+            <input type="hidden" id="productId" name="product_id">
+            
+            <div class="form-group">
+                <label for="productName">Name *</label>
+                <input type="text" id="productName" name="name" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="productCategory">Category</label>
+                <input type="text" id="productCategory" name="category" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="productScientificName">Scientific Name</label>
+                <input type="text" id="productScientificName" name="scientific_name" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="productPot">Size</label>
+                <input type="text" id="productPot" name="pot" class="form-input" placeholder="e.g. 2L, 5L">
+            </div>
+            
+            <div class="form-group">
+                <label for="productSku">SKU</label>
+                <input type="text" id="productSku" name="sku" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="productDescription">Description</label>
+                <textarea id="productDescription" name="description" class="form-textarea" rows="3"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelEdit">Cancel</button>
+                <button type="submit" class="btn-primary-accent" id="saveProduct">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteProductName"></strong>?</p>
+                <p class="warning-text">This action cannot be undone. All price list entries associated with this product will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div class="toast-container">
+    <div class="toast success-toast" id="successToast">
+        <div class="toast-content">
+            <i class="fas fa-check-circle"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Apple-inspired Products Page Styles */
+:root {
+    --accent-color: #007AFF;
+    --success-color: #34C759;
+    --danger-color: #FF453A;
+    --warning-color: #FF9500;
+    --background-primary: #000000;
+    --background-secondary: #1C1C1E;
+    --background-tertiary: #2C2C2E;
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --text-tertiary: rgba(255, 255, 255, 0.3);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --hover-background: rgba(255, 255, 255, 0.05);
+    --overlay-background: rgba(0, 0, 0, 0.8);
+}
+
+/* Header Styles */
+.products-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--background-primary);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 24px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+.filter-controls {
+    margin-top: 8px;
+}
+
+.segmented-control {
+    display: flex;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 2px;
+    position: relative;
+}
+
+.segment {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.segment:hover {
+    color: var(--text-primary);
+    background: var(--hover-background);
+}
+
+.segment.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-field {
+    width: 300px;
+    padding: 12px 16px 12px 40px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.search-field:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.search-field::placeholder {
+    color: var(--text-secondary);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.search-shortcut {
+    position: absolute;
+    right: 12px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.btn-primary-accent {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary-accent:hover {
+    background: #0056CC;
+    transform: translateY(-1px);
+}
+
+/* Main Container */
+.products-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Bulk Action Bar */
+.bulk-action-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(28, 28, 30, 0.8);
+    backdrop-filter: blur(16px);
+    padding: 12px 24px;
+    border-top: 1px solid var(--border-color);
+    z-index: 50;
+}
+
+.bulk-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.selection-count {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-secondary {
+    background: var(--background-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--hover-background);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background: #D70015;
+}
+
+/* Table Styles */
+.table-container {
+    background: var(--background-primary);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 24px;
+}
+
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.products-table th {
+    background: var(--background-secondary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 24px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.checkbox-col { width: 50px; }
+.id-col { width: 80px; }
+.sku-col { width: 140px; }
+.name-col { width: 250px; }
+.desc-col { flex: 1; }
+.actions-col { width: 80px; }
+
+.product-row {
+    transition: all 0.1s ease;
+    cursor: pointer;
+}
+
+.product-row:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.product-row:hover {
+    background: var(--hover-background);
+    transform: scale(1.01);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.products-table td {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.table-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-color);
+}
+
+.id-cell {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.sku-cell .missing-indicator {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+.name-link {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    text-decoration: none;
+}
+
+.name-link:hover {
+    text-decoration: underline;
+}
+
+.scientific-name {
+    font-style: italic;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.size-badge {
+    background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+    color: var(--accent-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.missing-description {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+.action-menu-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-menu-btn:hover {
+    background: var(--hover-background);
+    color: var(--text-primary);
+}
+
+.action-menu {
+    background: var(--background-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 4px 0;
+    min-width: 150px;
+}
+
+.action-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-primary);
+    font-size: 14px;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-menu .dropdown-item:hover {
+    background: var(--hover-background);
+}
+
+.action-menu .dropdown-item.text-danger {
+    color: var(--danger-color);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    color: var(--text-tertiary);
+    margin-bottom: 24px;
+}
+
+.empty-state h3 {
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    font-size: 16px;
+    margin-bottom: 32px;
+}
+
+/* Side Drawer */
+.side-drawer {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: var(--background-secondary);
+    border-left: 1px solid var(--border-color);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-drawer.open {
+    right: 0;
+}
+
+.drawer-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--background-tertiary);
+}
+
+.drawer-header h3 {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.drawer-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.drawer-close:hover {
+    background: var(--hover-background);
+    color: var(--text-primary);
+}
+
+.drawer-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Modal Styles */
+.delete-modal .modal-content {
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.delete-modal .modal-header {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-tertiary);
+}
+
+.delete-modal .modal-title {
+    color: var(--text-primary);
+}
+
+.delete-modal .modal-body {
+    color: var(--text-primary);
+}
+
+.warning-text {
+    color: var(--danger-color);
+    font-size: 14px;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 24px;
+    z-index: 2000;
+}
+
+.success-toast {
+    background: var(--success-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.success-toast.show {
+    display: flex;
+    transform: translateX(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    
+    .search-field {
+        width: 100%;
+    }
+    
+    .side-drawer {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .products-table {
+        font-size: 14px;
+    }
+    
+    .products-table td {
+        padding: 12px 16px;
+    }
+}
+
+/* Focus styles for accessibility */
+.table-checkbox:focus-visible,
+.name-link:focus-visible,
+.action-menu-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Smooth animations */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Apple-inspired Products Page JavaScript
+class ProductsManager {
+    constructor() {
+        this.selectedProducts = new Set();
+        this.allProducts = [];
+        this.filteredProducts = [];
+        this.currentFilter = 'all';
+        this.searchTerm = '';
+        this.categories = new Set();
+        
+        this.init();
+    }
+    
+    init() {
+        this.cacheElements();
+        this.bindEvents();
+        this.loadCategories();
+        this.updateUI();
+        this.setupKeyboardShortcuts();
+    }
+    
+    cacheElements() {
+        // Header elements
+        this.searchField = document.getElementById('productSearch');
+        this.newProductBtn = document.getElementById('newProductBtn');
+        this.addFirstProductBtn = document.getElementById('addFirstProduct');
+        
+        // Filter elements
+        this.filterButtons = document.querySelectorAll('.segment');
+        this.categoryDropdown = document.querySelector('.category-dropdown');
+        
+        // Table elements
+        this.selectAllCheckbox = document.getElementById('selectAll');
+        this.productCheckboxes = document.querySelectorAll('.product-checkbox');
+        this.productsTable = document.getElementById('productsTable');
+        
+        // Bulk action elements
+        this.bulkActionBar = document.getElementById('bulkActionBar');
+        this.selectionCount = document.getElementById('selectionCount');
+        this.bulkDeleteBtn = document.getElementById('bulkDelete');
+        this.moveToCategory = document.getElementById('moveToCategory');
+        this.downloadCSV = document.getElementById('downloadCSV');
+        
+        // Drawer elements
+        this.productDrawer = document.getElementById('productDrawer');
+        this.closeDrawer = document.getElementById('closeDrawer');
+        this.productForm = document.getElementById('productForm');
+        this.drawerTitle = document.getElementById('drawerTitle');
+        
+        // Modal elements
+        this.deleteModal = document.getElementById('deleteModal');
+        this.confirmDelete = document.getElementById('confirmDelete');
+        this.deleteProductName = document.getElementById('deleteProductName');
+        
+        // Toast elements
+        this.successToast = document.getElementById('successToast');
+    }
+    
+    bindEvents() {
+        // Search functionality
+        this.searchField?.addEventListener('input', (e) => {
+            this.searchTerm = e.target.value.toLowerCase();
+            this.filterProducts();
+        });
+        
+        // Filter buttons
+        this.filterButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('dropdown-toggle')) {
+                    this.setActiveFilter(e.target.dataset.filter);
+                }
+            });
+        });
+        
+        // Category dropdown
+        this.categoryDropdown?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('dropdown-item')) {
+                e.preventDefault();
+                const category = e.target.dataset.category;
+                this.setActiveFilter('category', category);
+            }
+        });
+        
+        // Selection handling
+        this.selectAllCheckbox?.addEventListener('change', (e) => {
+            this.toggleSelectAll(e.target.checked);
+        });
+        
+        this.productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                this.toggleProductSelection(e.target.value, e.target.checked);
+            });
+        });
+        
+        // Product name links
+        document.querySelectorAll('.name-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const productId = e.target.dataset.productId;
+                this.openProductDrawer(productId);
+            });
+        });
+        
+        // Action menu items
+        document.querySelectorAll('.edit-product').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.editProduct(e.target);
+            });
+        });
+        
+        document.querySelectorAll('.duplicate-product').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.duplicateProduct(e.target.dataset.id);
+            });
+        });
+        
+        document.querySelectorAll('.delete-product').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.deleteProduct(e.target.dataset.id, e.target.dataset.name);
+            });
+        });
+        
+        // Drawer events
+        this.closeDrawer?.addEventListener('click', () => {
+            this.closeProductDrawer();
+        });
+        
+        this.newProductBtn?.addEventListener('click', () => {
+            this.openProductDrawer();
+        });
+        
+        this.addFirstProductBtn?.addEventListener('click', () => {
+            this.openProductDrawer();
+        });
+        
+        // Form submission
+        this.productForm?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveProduct();
+        });
+        
+        // Bulk actions
+        this.bulkDeleteBtn?.addEventListener('click', () => {
+            this.bulkDeleteProducts();
+        });
+        
+        this.downloadCSV?.addEventListener('click', () => {
+            this.downloadSelectedAsCSV();
+        });
+        
+        // Delete confirmation
+        this.confirmDelete?.addEventListener('click', () => {
+            this.executeDelete();
+        });
+        
+        // Close drawer when clicking outside
+        document.addEventListener('click', (e) => {
+            if (this.productDrawer?.classList.contains('open') && 
+                !this.productDrawer.contains(e.target) && 
+                !e.target.classList.contains('name-link')) {
+                this.closeProductDrawer();
+            }
+        });
+    }
+    
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Command/Ctrl + F to focus search
+            if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+                e.preventDefault();
+                this.searchField?.focus();
+            }
+            
+            // Escape to close drawer
+            if (e.key === 'Escape' && this.productDrawer?.classList.contains('open')) {
+                this.closeProductDrawer();
+            }
+        });
+    }
+    
+    loadCategories() {
+        // Extract categories from products
+        document.querySelectorAll('.product-row').forEach(row => {
+            const category = row.dataset.category;
+            if (category && category.trim()) {
+                this.categories.add(category.trim());
+            }
+        });
+        
+        // Populate category dropdown
+        if (this.categoryDropdown) {
+            const existingItems = this.categoryDropdown.querySelectorAll('.dropdown-item:not(:first-child)');
+            existingItems.forEach(item => item.remove());
+            
+            this.categories.forEach(category => {
+                const item = document.createElement('li');
+                item.innerHTML = `<a class="dropdown-item" href="#" data-category="${category}">${category}</a>`;
+                this.categoryDropdown.appendChild(item);
+            });
+        }
+    }
+    
+    setActiveFilter(filter, value = null) {
+        this.currentFilter = filter;
+        this.currentFilterValue = value;
+        
+        // Update button states
+        this.filterButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        
+        this.filterProducts();
+    }
+    
+    filterProducts() {
+        const rows = document.querySelectorAll('.product-row');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            let shouldShow = true;
+            
+            // Apply filter
+            if (this.currentFilter === 'missing-sku') {
+                const sku = row.dataset.sku;
+                shouldShow = !sku || sku.trim() === '';
+            } else if (this.currentFilter === 'category' && this.currentFilterValue) {
+                const category = row.dataset.category;
+                shouldShow = category === this.currentFilterValue;
+            }
+            
+            // Apply search
+            if (shouldShow && this.searchTerm) {
+                const name = row.dataset.name.toLowerCase();
+                const sku = row.dataset.sku.toLowerCase();
+                shouldShow = name.includes(this.searchTerm) || sku.includes(this.searchTerm);
+            }
+            
+            row.style.display = shouldShow ? '' : 'none';
+            if (shouldShow) visibleCount++;
+        });
+        
+        // Show/hide empty state if needed
+        if (visibleCount === 0 && (this.searchTerm || this.currentFilter !== 'all')) {
+            this.showSearchEmptyState();
+        } else {
+            this.hideSearchEmptyState();
+        }
+    }
+    
+    showSearchEmptyState() {
+        // Implementation for search empty state
+        console.log('No products match current filters');
+    }
+    
+    hideSearchEmptyState() {
+        // Implementation to hide empty state
+    }
+    
+    toggleSelectAll(checked) {
+        this.productCheckboxes.forEach(checkbox => {
+            const row = checkbox.closest('.product-row');
+            if (row.style.display !== 'none') {
+                checkbox.checked = checked;
+                this.toggleProductSelection(checkbox.value, checked);
+            }
+        });
+    }
+    
+    toggleProductSelection(productId, selected) {
+        if (selected) {
+            this.selectedProducts.add(productId);
+        } else {
+            this.selectedProducts.delete(productId);
+        }
+        
+        this.updateBulkActionBar();
+    }
+    
+    updateBulkActionBar() {
+        const count = this.selectedProducts.size;
+        
+        if (count > 0) {
+            this.bulkActionBar.style.display = 'block';
+            this.selectionCount.textContent = `${count} selected`;
+        } else {
+            this.bulkActionBar.style.display = 'none';
+        }
+    }
+    
+    openProductDrawer(productId = null) {
+        this.productDrawer.classList.add('open');
+        
+        if (productId) {
+            // Edit mode
+            this.drawerTitle.textContent = 'Edit Product';
+            this.populateForm(productId);
+        } else {
+            // Add mode
+            this.drawerTitle.textContent = 'New Product';
+            this.clearForm();
+        }
+    }
+    
+    closeProductDrawer() {
+        this.productDrawer.classList.remove('open');
+    }
+    
+    populateForm(productId) {
+        const row = document.querySelector(`[data-product-id="${productId}"]`);
+        if (!row) return;
+        
+        document.getElementById('productId').value = productId;
+        document.getElementById('productName').value = row.dataset.name || '';
+        document.getElementById('productCategory').value = row.dataset.category || '';
+        document.getElementById('productScientificName').value = row.dataset.scientificName || '';
+        document.getElementById('productPot').value = row.dataset.pot || '';
+        document.getElementById('productSku').value = row.dataset.sku || '';
+        
+        // Get description from edit button data
+        const editBtn = row.querySelector('.edit-product');
+        document.getElementById('productDescription').value = editBtn?.dataset.description || '';
+    }
+    
+    clearForm() {
+        this.productForm.reset();
+        document.getElementById('productId').value = '';
+    }
+    
+    async saveProduct() {
+        const formData = new FormData(this.productForm);
+        const productId = formData.get('product_id');
+        
+        try {
+            const response = await fetch('/products', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                this.closeProductDrawer();
+                this.showSuccessToast(productId ? 'Product updated successfully' : 'Product created successfully');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                throw new Error('Failed to save product');
+            }
+        } catch (error) {
+            console.error('Error saving product:', error);
+            alert('Error saving product. Please try again.');
+        }
+    }
+    
+    editProduct(button) {
+        const productId = button.dataset.id;
+        this.openProductDrawer(productId);
+    }
+    
+    duplicateProduct(productId) {
+        // Implementation for duplicating product
+        console.log('Duplicating product:', productId);
+    }
+    
+    deleteProduct(productId, productName) {
+        this.productToDelete = productId;
+        this.deleteProductName.textContent = productName;
+        
+        const modal = new bootstrap.Modal(this.deleteModal);
+        modal.show();
+    }
+    
+    async executeDelete() {
+        if (!this.productToDelete) return;
+        
+        try {
+            const formData = new FormData();
+            const response = await fetch(`/products/${this.productToDelete}/delete`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const modal = bootstrap.Modal.getInstance(this.deleteModal);
+                modal.hide();
+                this.showSuccessToast('Product deleted successfully');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                throw new Error('Failed to delete product');
+            }
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            alert('Error deleting product. Please try again.');
+        }
+    }
+    
+    async bulkDeleteProducts() {
+        if (this.selectedProducts.size === 0) return;
+        
+        if (!confirm(`Are you sure you want to delete ${this.selectedProducts.size} selected products? This cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/products/batch-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    product_ids: Array.from(this.selectedProducts) 
+                })
+            });
+            
+            if (response.ok) {
+                this.showSuccessToast(`${this.selectedProducts.size} products deleted successfully`);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                throw new Error('Failed to delete products');
+            }
+        } catch (error) {
+            console.error('Error deleting products:', error);
+            alert('Error deleting products. Please try again.');
+        }
+    }
+    
+    downloadSelectedAsCSV() {
+        // Implementation for CSV download
+        console.log('Downloading CSV for selected products');
+    }
+    
+    showSuccessToast(message) {
+        const toast = this.successToast;
+        const messageEl = toast.querySelector('.toast-message');
+        
+        messageEl.textContent = message;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+    
+    updateUI() {
+        // Update UI based on current state
+        this.updateBulkActionBar();
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    new ProductsManager();
+});
+</script>
+{% endblock %}
