@@ -1124,8 +1124,48 @@ def register_routes(app):
         
         # GET request - show products
         products_list = Product.query.all()
-        return render_template('products.html', products=products_list)
+        return render_template('products_apple.html', products=products_list)
     
+    @app.route('/products/batch-delete', methods=['POST'])
+    @login_required
+    def batch_delete_products():
+        """Delete multiple products at once"""
+        product_ids = request.form.getlist('product_ids')
+        
+        if not product_ids:
+            flash('No products selected for deletion.', 'warning')
+            return redirect(url_for('products'))
+        
+        try:
+            deleted_count = 0
+            product_names = []
+            
+            for product_id in product_ids:
+                product = Product.query.get(product_id)
+                if product:
+                    product_names.append(product.name)
+                    # Delete associated price list entries first
+                    PriceList.query.filter_by(product_id=product_id).delete()
+                    # Then delete the product
+                    db.session.delete(product)
+                    deleted_count += 1
+            
+            db.session.commit()
+            
+            if deleted_count > 0:
+                if deleted_count == 1:
+                    flash(f'Product "{product_names[0]}" deleted successfully!', 'success')
+                else:
+                    flash(f'{deleted_count} products deleted successfully!', 'success')
+            else:
+                flash('No products were deleted.', 'warning')
+                
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting products: {str(e)}', 'danger')
+        
+        return redirect(url_for('products'))
+
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
     @login_required
     def delete_product(product_id):
@@ -1148,26 +1188,7 @@ def register_routes(app):
         else:
             return redirect(url_for('products'))
 
-    @app.route('/products/batch-delete', methods=['POST'])
-    @login_required
-    def batch_delete_products():
-        data = request.get_json()
-        product_ids = data.get('product_ids', [])
-        
-        if not product_ids:
-            return jsonify({'error': 'No products selected'}), 400
-            
-        try:
-            # Delete associated price list entries first
-            PriceList.query.filter(PriceList.product_id.in_(product_ids)).delete(synchronize_session=False)
-            # Then delete the products
-            Product.query.filter(Product.id.in_(product_ids)).delete(synchronize_session=False)
-            db.session.commit()
-            flash(f'{len(product_ids)} products deleted successfully!', 'success')
-            return jsonify({'success': True})
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+
     
     @app.route('/search', methods=['GET'])
     @login_required
