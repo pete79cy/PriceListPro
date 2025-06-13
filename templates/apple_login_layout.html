@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Plant Pricing System{% endblock %}</title>
+    <!-- Apple-style Login CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Translucent Header -->
+    <header class="login-header">
+        <a href="{{ url_for('index') }}" class="brand">
+            <i class="fas fa-seedling"></i>
+            Plant Pricing System
+        </a>
+    </header>
+
+    <!-- Main Content -->
+    <div class="login-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- JavaScript for enhanced interactions -->
+    <script>
+        // Password visibility toggle
+        function togglePassword(button) {
+            const input = button.previousElementSibling;
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Form validation and submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('.login-form');
+            const button = document.querySelector('.login-button');
+            
+            if (form && button) {
+                form.addEventListener('submit', function(e) {
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                });
+            }
+
+            // Add focus/blur animation to input fields
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('focused');
+                });
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Enter key on form fields
+            if (e.key === 'Enter' && e.target.classList.contains('form-input')) {
+                const form = e.target.closest('form');
+                if (form) {
+                    const inputs = form.querySelectorAll('.form-input');
+                    const currentIndex = Array.from(inputs).indexOf(e.target);
+                    
+                    if (currentIndex < inputs.length - 1) {
+                        inputs[currentIndex + 1].focus();
+                    } else {
+                        form.querySelector('.login-button').click();
+                    }
+                }
+            }
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
