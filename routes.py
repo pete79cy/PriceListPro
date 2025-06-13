@@ -1370,8 +1370,8 @@ def register_routes(app):
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         price_lists = pagination.items
         
-        # Get all customers for filter dropdown
-        customers = Customer.query.all()
+        # Get all customers for filter dropdown (ordered alphabetically)
+        customers = Customer.query.order_by(Customer.name).all()
         
         # Get all existing products for add product form
         products = []
