@@ -294,14 +294,33 @@ input:checked + .slider:before {
   cursor: pointer;
   transition: all 0.15s ease;
   margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-button:hover::before {
+  left: 100%;
 }
 
 .login-button:hover {
   background: #0070e6;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
 }
 
 .login-button:active {
-  transform: scale(0.98);
+  transform: scale(0.98) translateY(0);
 }
 
 .login-button:disabled {
@@ -309,6 +328,66 @@ input:checked + .slider:before {
   color: #888;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+
+.login-button:disabled::before {
+  display: none;
+}
+
+/* Loading state */
+.login-button.loading {
+  pointer-events: none;
+}
+
+.login-button .spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Field validation styling */
+.form-input.error {
+  border: 2px solid #ff453a;
+  background: rgba(255, 69, 58, 0.1);
+  box-shadow: 0 0 0 2px rgba(255, 69, 58, 0.2);
+}
+
+.field-error {
+  color: #ff453a;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: slideInError 0.2s ease-out;
+}
+
+.field-error::before {
+  content: '⚠';
+  font-size: 0.875rem;
+}
+
+@keyframes slideInError {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Alert styling */
@@ -318,6 +397,18 @@ input:checked + .slider:before {
   margin-bottom: 24px;
   font-size: 0.875rem;
   border: 1px solid transparent;
+  animation: slideInAlert 0.3s ease-out;
+}
+
+@keyframes slideInAlert {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .alert-danger {
