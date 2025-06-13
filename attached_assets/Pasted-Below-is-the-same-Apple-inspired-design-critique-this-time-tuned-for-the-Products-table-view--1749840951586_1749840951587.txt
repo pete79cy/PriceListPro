@@ -1,0 +1,104 @@
+Below is the same Apple-inspired design critique, this time tuned for the **Products** table view.
+
+---
+
+## 1. Page-level Structure
+
+| Current                                                             | Apple-style Improvement                                                                                                                                                                  | Why                                                                     |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Section header “Products” + bright bar locked to table container.   | Promote **Products** to page title in the global toolbar, keep the bar subtle (`#1F1F1F`), then let the table scroll edge-to-edge.                                                       | Consistent header hierarchy with other modules; more content on screen. |
+| “+ Add Product” and “Delete Selected” right-aligned inside the bar. | Replace with a **primary accent “＋ New” button** (always enabled) and a **secondary “Delete” button** that appears *only* when rows are selected (or lives in a sticky bulk-action bar). | Removes a dead/inactive button, declutters when nothing is selected.    |
+
+---
+
+## 2. Bulk Selection & Actions
+
+| Now                                                                   | Suggested                                                                                                                                                                                                                                  |                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Checkboxes in first column; permanent red trash buttons on every row. | • Keep checkboxes, but when ≥ 1 box is checked, surface a **sticky bottom bar** (or toolbar banner) with “Delete”, “Move to Category”, “Download CSV”.<br>• Remove the red trash icon from each row; include “Delete” in an ellipsis menu. | Reduces colour noise; centralises destructive action. |
+
+---
+
+## 3. Table Styling
+
+### 3.1 Row Aesthetics
+
+* **Zebra tint** – 2 % lighter on even rows for fast scanning.
+* **Hover** – 100 ms scale 1.01 + subtle glow (`box-shadow: 0 4 8 rgba(0,0,0,.4)`).
+* **Column padding** – raise left/right padding to 24 px; bump row height to 44 px (8-pt grid).
+
+### 3.2 Content-specific Tweaks
+
+| Column          | Apple-friendly Touch                                                                                                                                             |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ID**          | Gray text (60 % white) to de-emphasise.                                                                                                                          |
+| **SKU**         | If “None”, show a muted pill “—” instead of text.                                                                                                                |
+| **Name**        | Link style; clicking opens a **side-drawer** detail panel (edit inline) rather than separate screen.                                                             |
+| **Description** | Use italic only when *truly* missing; otherwise regular body text.<br>Tag volume “2 L” can be a pastel badge (`color-mix(accent 12 %, white)`).                  |
+| **Actions**     | Replace cyan “edit” + red “delete” with a single **ellipsis** button; on click show contextual menu (Edit, Duplicate, Delete). Delete is red *inside* that menu. |
+
+---
+
+## 4. Toolbar & Filters
+
+If you plan to filter products (by category, availability, size):
+
+* Use a **segmented control** in the toolbar: *All | Missing SKU | Category ▼*.
+* When “Category” selected, show a pop-over checklist of categories.
+* **Search field** gets the full remaining width; backdrop-blur 8 px, `placeholder: "Search by name or SKU…"`.
+* Shortcut **⌘ F / Ctrl F** to focus search.
+
+---
+
+## 5. Empty / Edge States
+
+| State               | Visual                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| No products yet     | Centered plant-pot SF Symbol + “Add your first product” button. |
+| Search returns zero | Magnifying glass + “No matches…” with tip to clear filters.     |
+| Error               | Red exclamation and “Retry” secondary button.                   |
+
+---
+
+## 6. Micro-interactions
+
+1. **Add Product modal** – 380 ms slide & fade in, respect `prefers-reduced-motion`.
+2. **Inline duplicate** – Option-drag (⌥) on a row to duplicate, Finder-style ghost preview.
+3. **Side-drawer save** – Green checkmark flash for 800 ms on successful save.
+
+---
+
+## 7. Accessibility
+
+* **Colour contrast** – Cyan edit icon (now removed) was borderline; new ellipsis button needs ≥4.5 : 1.
+* **Row focus ring** – Use accent outline when navigating via keyboard (`:focus-visible`).
+* **ARIA** – `role="rowgroup"` for tbody sections; announce bulk-action bar when it appears.
+
+---
+
+## 8. Quick CSS Snippet
+
+```css
+/* Zebra + hover */
+tr:nth-child(even){background:#1d1d1f;}
+tr:hover{
+  transform:scale(1.01);
+  box-shadow:0 4px 8px rgba(0,0,0,.4);
+}
+
+/* Sticky bulk-action bar */
+.bulk-bar{
+  position:sticky; bottom:0; left:0; right:0;
+  backdrop-filter:blur(16px);
+  background:rgba(28,28,30,.8);
+  padding:12px 24px; display:flex; gap:12px;
+  border-top:1px solid #ffffff0a;
+}
+.bulk-bar .btn-delete{background:#ff453a;}
+```
+
+---
+
+### Key Takeaway
+
+Treat the Products list like **Finder meets Numbers**: calmer colours, single locus of destructive action, rich hover cues, and in-context editing. These tweaks will shrink perceived complexity while making the workflow unmistakably “Apple-grade.” Ping me if you’d like mock-ups or a refactor of the table component!
