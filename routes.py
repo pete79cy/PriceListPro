@@ -883,7 +883,7 @@ def register_routes(app):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers_list = Customer.query.all()
                 customer_categories = CustomerCategory.query.all()
-                return render_template('customers_enhanced.html', 
+                return render_template('customers.html', 
                                      customers=customers_list, 
                                      customer_categories=customer_categories)
             
@@ -920,7 +920,7 @@ def register_routes(app):
         # GET request - display customers
         customers_list = Customer.query.all()
         customer_categories = CustomerCategory.query.all()
-        return render_template('customers_enhanced.html', 
+        return render_template('customers.html', 
                              customers=customers_list, 
                              customer_categories=customer_categories)
     
