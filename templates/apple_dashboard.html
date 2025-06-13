@@ -1,0 +1,378 @@
+{% extends 'apple_layout.html' %}
+
+{% block title %}Dashboard - Plant Pricing System{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="welcome-card">
+    <div class="welcome-content">
+        <div class="welcome-avatar">
+            <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="welcome-text">
+            <h2>Welcome back, {% if current_user.is_admin %}Andreas Pakkoutis & Sons Ltd{% else %}{{ current_user.username }}{% endif %}</h2>
+            <p>
+                {% if current_user.is_admin %}
+                <span class="admin-badge">Admin</span>
+                {% endif %}
+                Last login: {% if current_user.last_login %}{{ current_user.last_login.strftime('%Y-%m-%d %H:%M') }}{% else %}N/A{% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Updates Alert -->
+{% if stats.pending_updates > 0 %}
+<div class="pending-alert">
+    <div class="pending-alert-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="pending-alert-content">
+        <div class="pending-alert-title">{{ stats.pending_updates }} Pending Update{% if stats.pending_updates != 1 %}s{% endif %}</div>
+        <div class="pending-alert-text">Price changes require your review</div>
+    </div>
+    <a href="{{ url_for('pending_updates') }}" class="pending-alert-button">
+        Review
+    </a>
+</div>
+{% endif %}
+
+<!-- Quick Actions Panel -->
+<div class="quick-actions">
+    <div class="section-header">
+        <i class="fas fa-bolt"></i>
+        <h3>Quick Actions</h3>
+    </div>
+    <ul class="action-list">
+        <li class="action-item" onclick="location.href='{{ url_for('uploads') }}'">
+            <div class="action-icon">
+                <i class="fas fa-upload"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Upload Files</div>
+                <div class="action-subtitle">Import price lists and documents</div>
+            </div>
+            <div class="action-chevron">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </li>
+        <li class="action-item" onclick="location.href='{{ url_for('pending_updates') }}'">
+            <div class="action-icon">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Manage Updates</div>
+                <div class="action-subtitle">Review price changes</div>
+            </div>
+            {% if stats.pending_updates > 0 %}
+            <div class="action-badge">{{ stats.pending_updates }}</div>
+            {% endif %}
+            <div class="action-chevron">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </li>
+        <li class="action-item" onclick="location.href='{{ url_for('quotations') }}'">
+            <div class="action-icon">
+                <i class="fas fa-file-contract"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">New Quotation</div>
+                <div class="action-subtitle">Create customer quotes</div>
+            </div>
+            <div class="action-chevron">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </li>
+        <li class="action-item" onclick="location.href='{{ url_for('search') }}'">
+            <div class="action-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="action-content">
+                <div class="action-title">Search Products</div>
+                <div class="action-subtitle">Find pricing information</div>
+            </div>
+            <div class="action-chevron">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<!-- KPI Tiles -->
+<div class="kpi-grid">
+    <a href="{{ url_for('customers') }}" class="kpi-tile">
+        <div class="kpi-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="kpi-label">Customers</div>
+        <div class="kpi-value">{{ stats.customers }}</div>
+    </a>
+    
+    <a href="{{ url_for('products') }}" class="kpi-tile">
+        <div class="kpi-icon">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="kpi-label">Products</div>
+        <div class="kpi-value">{{ stats.products }}</div>
+    </a>
+    
+    <a href="{{ url_for('price_lists') }}" class="kpi-tile">
+        <div class="kpi-icon">
+            <i class="fas fa-tags"></i>
+        </div>
+        <div class="kpi-label">Price Lists</div>
+        <div class="kpi-value">{{ stats.price_lists }}</div>
+    </a>
+    
+    <a href="{{ url_for('invoices') }}" class="kpi-tile">
+        <div class="kpi-icon">
+            <i class="fas fa-file-invoice"></i>
+        </div>
+        <div class="kpi-label">Invoices</div>
+        <div class="kpi-value">{{ stats.invoices }}</div>
+    </a>
+    
+    <a href="{{ url_for('quotations') }}" class="kpi-tile">
+        <div class="kpi-icon">
+            <i class="fas fa-file-contract"></i>
+        </div>
+        <div class="kpi-label">Quotations</div>
+        <div class="kpi-value">{{ stats.quotations }}</div>
+    </a>
+    
+    <a href="{{ url_for('orders') }}" class="kpi-tile">
+        <div class="kpi-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="kpi-label">Orders</div>
+        <div class="kpi-value">{{ stats.orders }}</div>
+    </a>
+</div>
+
+<!-- Two-column layout for charts and system info -->
+<div class="dashboard-grid">
+    <!-- Analytics Chart -->
+    <div class="chart-container">
+        <div class="section-header">
+            <i class="fas fa-chart-bar"></i>
+            <h3>Quotation Analytics</h3>
+        </div>
+        <canvas id="quotationChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- System Status -->
+    <div class="system-status">
+        <div class="section-header">
+            <i class="fas fa-server"></i>
+            <h3>System Status</h3>
+        </div>
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="status-label">
+                    <i class="fas fa-database"></i>
+                    Database
+                </div>
+                <div class="status-badge">
+                    <i class="fas fa-check-circle"></i>
+                    Connected
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">
+                    <i class="fas fa-code-branch"></i>
+                    Version
+                </div>
+                <div class="status-value">1.0.0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">
+                    <i class="fas fa-calendar-plus"></i>
+                    Account Created
+                </div>
+                <div class="status-value">{{ current_user.created_at.strftime('%Y-%m-%d') }}</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">
+                    <i class="fas fa-truck"></i>
+                    Suppliers
+                </div>
+                <div class="status-value">{{ stats.suppliers }}</div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="help-section">
+            <div class="help-content">
+                <div class="help-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <div class="help-title">Need Help?</div>
+            </div>
+            <div class="help-text">Questions? Check the docs.</div>
+            <button class="help-button" onclick="window.open('#', '_blank')">
+                <i class="fas fa-book"></i>
+                Documentation
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Quotation Analytics Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('quotationChart').getContext('2d');
+    
+    // Sample data - replace with actual data from backend
+    const quotationData = {
+        labels: ['Draft', 'Sent', 'Approved', 'Completed', 'Cancelled'],
+        datasets: [{
+            label: 'Quotations',
+            data: [
+                {{ stats.quotation_draft | default(0) }},
+                {{ stats.quotation_sent | default(0) }},
+                {{ stats.quotation_accepted | default(0) }},
+                {{ stats.quotation_completed | default(0) }},
+                {{ stats.quotation_created | default(0) }}
+            ],
+            backgroundColor: [
+                'rgba(255, 214, 10, 0.7)',  // Draft - System yellow
+                'rgba(10, 132, 255, 0.7)',  // Sent - System blue  
+                'rgba(52, 199, 89, 0.7)',   // Approved - System green
+                'rgba(175, 82, 222, 0.7)',  // Completed - System purple
+                'rgba(255, 69, 58, 0.7)'    // Cancelled - System red
+            ],
+            borderColor: [
+                '#ffd60a',
+                '#0a84ff', 
+                '#34c759',
+                '#af52de',
+                '#ff453a'
+            ],
+            borderWidth: 2,
+            borderRadius: 12,
+            borderSkipped: false,
+        }]
+    };
+
+    const config = {
+        type: 'bar',
+        data: quotationData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.06)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9fa3af',
+                        font: {
+                            family: 'system-ui',
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#9fa3af',
+                        font: {
+                            family: 'system-ui',
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 800,
+                easing: 'easeOutQuart'
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            onHover: (event, activeElements) => {
+                event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+            }
+        }
+    };
+
+    const chart = new Chart(ctx, config);
+    
+    // Add chart interaction
+    ctx.canvas.onclick = function(evt) {
+        const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+        if (points.length) {
+            const firstPoint = points[0];
+            const label = chart.data.labels[firstPoint.index];
+            
+            // Navigate to quotations filtered by status
+            const statusMap = {
+                'Draft': 'DRAFT',
+                'Sent': 'SENT', 
+                'Approved': 'ACCEPTED',
+                'Completed': 'COMPLETED',
+                'Cancelled': 'created'
+            };
+            
+            if (statusMap[label]) {
+                window.location.href = '{{ url_for("quotations") }}?status=' + statusMap[label];
+            }
+        }
+    };
+});
+
+// KPI tile animations
+document.querySelectorAll('.kpi-tile').forEach(tile => {
+    tile.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px) scale(1.02)';
+    });
+    
+    tile.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+    });
+});
+
+// Action item hover effects
+document.querySelectorAll('.action-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+        const icon = this.querySelector('.action-icon');
+        const chevron = this.querySelector('.action-chevron');
+        
+        if (icon) icon.style.transform = 'scale(1.1)';
+        if (chevron) chevron.style.transform = 'translateX(4px)';
+    });
+    
+    item.addEventListener('mouseleave', function() {
+        const icon = this.querySelector('.action-icon');
+        const chevron = this.querySelector('.action-chevron');
+        
+        if (icon) icon.style.transform = 'scale(1)';
+        if (chevron) chevron.style.transform = 'translateX(0)';
+    });
+});
+
+// Add subtle parallax effect to welcome section
+window.addEventListener('scroll', function() {
+    const scrolled = window.pageYOffset;
+    const welcomeCard = document.querySelector('.welcome-card');
+    
+    if (welcomeCard && scrolled < 200) {
+        welcomeCard.style.transform = `translateY(${scrolled * 0.1}px)`;
+    }
+});
+</script>
+{% endblock %}
