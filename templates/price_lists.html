@@ -1,186 +1,565 @@
-{% extends 'layout.html' %}
+{% extends 'apple_layout.html' %}
 
-{# -------------------------------------------------------------------
-   Apple‑style "Price Lists" page
-   ------------------------------------------------------------------- #}
-{% block head_extra %}
-  <style>
-    :root {
-      --accent: #0a84ff;
-      --surface: #1c1c1e;
-      --elevated: #2c2c2e;
-      --text: #f2f2f7;
-      --text-muted: #9fa3af;
-    }
-    /* reset */
-    * { box-sizing: border-box; }
-    body { background:#111; color:var(--text); }
-
-    /* ─── Frosted toolbar ─────────────────────────────────────── */
-    .toolbar-apple {
-      display:flex; gap:12px; padding:24px; flex-wrap:wrap; align-items:center;
-    }
-    .toolbar-apple .select {
-      position:relative; flex:0 1 220px;
-    }
-    .toolbar-apple select {
-      width:100%; padding:10px 38px 10px 14px; font-size:15px; color:var(--text);
-      background:rgba(44,44,46,.7); border:none; border-radius:12px; backdrop-filter:blur(8px);
-      appearance:none;
-    }
-    .toolbar-apple .select svg {
-      position:absolute; right:14px; top:50%; width:16px; height:16px; fill:var(--text-muted); transform:translateY(-50%);
-    }
-    .toolbar-apple .btn-primary { padding:10px 18px; border:none; border-radius:14px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
-    .toolbar-apple .btn-secondary { padding:10px 18px; border:none; border-radius:14px; background:var(--elevated); color:var(--text); font-weight:600; cursor:pointer; }
-
-    /* ─── Bulk selection buttons ─────────────────────────────── */
-    .select-actions { display:flex; gap:12px; padding:0 24px 12px; }
-    .select-actions button { font-size:14px; padding:6px 12px; background:var(--elevated); border:none; border-radius:12px; color:var(--text); cursor:pointer; }
-
-    /* ─── Table styling ───────────────────────────────────────── */
-    table { width:100%; border-collapse:collapse; }
-    thead { background:var(--elevated); }
-    th,td { padding:12px 24px; text-align:left; font-size:15px; }
-    th { color:var(--text-muted); font-weight:600; }
-    tbody tr:nth-child(even) { background:#1a1a1c; }
-    tbody tr:hover { transform:scale(1.01); box-shadow:0 4px 8px rgba(0,0,0,.4); }
-    tbody tr { transition:transform .1s ease-out, box-shadow .1s ease-out; }
-    input[type="checkbox"] { accent-color:var(--accent); width:16px; height:16px; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:8px; font-size:12px; background:color-mix(in srgb, var(--accent) 15%, #2c2c2e); color:#dfe8ff; }
-    .text-muted { color:var(--text-muted); }
-    .ellipsis-btn { background:none; border:none; cursor:pointer; width:32px; height:32px; border-radius:16px; display:grid; place-content:center; }
-    .ellipsis-btn:hover { background:rgba(255,255,255,.08); }
-    .ellipsis-btn svg { width:18px; height:18px; fill:var(--text); }
-
-    /* ─── Bulk bar ───────────────────────────────────────────── */
-    .bulk-bar { position:fixed; bottom:-100px; left:0; right:0; display:flex; justify-content:center; gap:12px; padding:12px 24px; background:rgba(28,28,30,.85); backdrop-filter:blur(16px); border-top:1px solid #ffffff0a; transition:bottom .2s ease-out; z-index:11; }
-    .bulk-bar.show { bottom:0; }
-    .btn-danger { background:#ff453a; color:#fff; border:none; border-radius:14px; padding:10px 18px; font-weight:600; cursor:pointer; }
-  </style>
-{% endblock %}
+{% block title %}Price Lists - Plant Pricing System{% endblock %}
 
 {% block content %}
-  <header class="toolbar-apple">
-    <h2 style="margin:0 8px 0 0">Price Lists</h2>
+<style>
+  :root {
+    --accent: #0a84ff;
+    --surface: #1c1c1e;
+    --elevated: #2c2c2e;
+    --text: #f2f2f7;
+    --text-muted: #9fa3af;
+    --success: #32d74b;
+    --warning: #ff9f0a;
+    --error: #ff453a;
+  }
+  * { box-sizing: border-box; }
+  
+  /*────────────────────  Frosted Toolbar  ────────────────────*/
+  .toolbar{ 
+    display:flex; 
+    gap:12px; 
+    padding:24px; 
+    align-items:center; 
+    background:rgba(28,28,30,.85); 
+    backdrop-filter:blur(16px); 
+    border-bottom:1px solid rgba(255,255,255,.05);
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  
+  .dropdown-modern{ 
+    position:relative; 
+    min-width:180px;
+  }
+  .dropdown-modern select{ 
+    width:100%; 
+    padding:10px 38px 10px 14px; 
+    border:none; 
+    border-radius:12px; 
+    background:rgba(44,44,46,.7); 
+    color:var(--text); 
+    font-size:15px; 
+    backdrop-filter:blur(8px);
+    appearance:none;
+    cursor:pointer;
+    transition:background .2s ease;
+  }
+  .dropdown-modern select:hover{
+    background:rgba(44,44,46,.9);
+  }
+  .dropdown-modern svg{ 
+    position:absolute; 
+    right:12px; 
+    top:50%; 
+    width:16px; 
+    height:16px; 
+    fill:var(--text-muted); 
+    transform:translateY(-50%);
+    pointer-events:none;
+  }
+  
+  .btn-accent{ 
+    padding:10px 18px; 
+    background:var(--accent); 
+    border:none; 
+    border-radius:14px; 
+    color:#fff; 
+    font-weight:600; 
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .btn-accent:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(10,132,255,.3);
+  }
+  
+  .btn-secondary{ 
+    padding:10px 18px; 
+    background:var(--elevated); 
+    border:none; 
+    border-radius:14px; 
+    color:var(--text); 
+    font-weight:600; 
+    cursor:pointer;
+    transition:background .2s ease;
+  }
+  .btn-secondary:hover{
+    background:rgba(60,60,67,.8);
+  }
+  
+  .spacer{ flex:1; }
+  
+  /*────────────────────  Enhanced Table  ─────────────────────*/
+  .table-container{ 
+    background:var(--surface); 
+    border-radius:16px; 
+    overflow:hidden; 
+    margin:0 24px; 
+    box-shadow:0 4px 20px rgba(0,0,0,.2);
+  }
+  
+  table{ width:100%; border-collapse:collapse; }
+  thead{ background:var(--elevated); }
+  th,td{ padding:14px 20px; text-align:left; font-size:15px; }
+  th{ 
+    color:var(--text-muted); 
+    font-weight:600; 
+    text-transform:uppercase; 
+    font-size:13px; 
+    letter-spacing:0.5px;
+  }
+  
+  /* Zebra striping with hover lift */
+  tbody tr:nth-child(even){ background:rgba(255,255,255,.02); }
+  tbody tr:nth-child(odd){ background:rgba(255,255,255,.01); }
+  tbody tr:hover{ 
+    transform:translateY(-2px); 
+    box-shadow:0 8px 25px rgba(0,0,0,.15);
+    background:rgba(255,255,255,.04);
+  }
+  tbody tr{ 
+    transition:all .15s cubic-bezier(0.4, 0.0, 0.2, 1); 
+    cursor:pointer;
+  }
+  
+  /* Enhanced checkboxes */
+  input[type="checkbox"]{ 
+    accent-color:var(--accent); 
+    width:18px; 
+    height:18px; 
+    cursor:pointer;
+  }
+  
+  /* Semantic pastel badges */
+  .badge{ 
+    display:inline-block; 
+    padding:4px 10px; 
+    border-radius:8px; 
+    font-size:12px; 
+    font-weight:500;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+  }
+  .badge-primary{ 
+    background:color-mix(in srgb, var(--accent) 20%, transparent); 
+    color:#7cc7ff; 
+    border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .badge-success{ 
+    background:color-mix(in srgb, var(--success) 20%, transparent); 
+    color:#7ef087; 
+    border:1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  }
+  .badge-warning{ 
+    background:color-mix(in srgb, var(--warning) 20%, transparent); 
+    color:#ffb84d; 
+    border:1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  }
+  
+  .text-muted{ color:var(--text-muted); }
+  .text-end{ text-align:right; }
+  .price-cell{ 
+    font-weight:700; 
+    color:var(--success); 
+    font-size:16px;
+  }
+  
+  /* Enhanced ellipsis button */
+  .ellipsis-btn{ 
+    background:none; 
+    border:none; 
+    cursor:pointer; 
+    width:36px; 
+    height:36px; 
+    border-radius:18px; 
+    display:grid; 
+    place-content:center;
+    transition:all .2s ease;
+  }
+  .ellipsis-btn:hover{ 
+    background:rgba(255,255,255,.1); 
+    transform:scale(1.1);
+  }
+  .ellipsis-btn svg{ width:20px; height:20px; fill:var(--text); }
+  
+  /*────────────────────  Sticky Bulk Bar  ────────────────────*/
+  .bulk-bar{ 
+    position:fixed; 
+    bottom:-100px; 
+    left:0; 
+    right:0; 
+    display:flex; 
+    justify-content:center; 
+    gap:16px; 
+    padding:16px 24px; 
+    background:rgba(28,28,30,.95); 
+    backdrop-filter:blur(20px); 
+    border-top:1px solid rgba(255,255,255,.1); 
+    transition:bottom .3s cubic-bezier(0.4, 0.0, 0.2, 1); 
+    z-index:50;
+    box-shadow:0 -8px 32px rgba(0,0,0,.3);
+  }
+  .bulk-bar.show{ bottom:0; }
+  
+  .btn-danger{ 
+    background:var(--error); 
+    color:#fff; 
+    border:none; 
+    border-radius:14px; 
+    padding:12px 20px; 
+    font-weight:600; 
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .btn-danger:hover{
+    background:#ff6b5a;
+    transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(255,69,58,.4);
+  }
+  
+  .btn-export{ 
+    background:var(--success); 
+    color:#fff; 
+    border:none; 
+    border-radius:14px; 
+    padding:12px 20px; 
+    font-weight:600; 
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .btn-export:hover{
+    background:#4ade62;
+    transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(50,215,75,.4);
+  }
+  
+  /* Empty state */
+  .empty-state{
+    text-align:center;
+    padding:60px 24px;
+    color:var(--text-muted);
+  }
+  .empty-state h3{
+    color:var(--text);
+    margin-bottom:8px;
+    font-weight:600;
+  }
+  
+  /* Selection counter in bulk bar */
+  .selection-count{
+    color:var(--text-muted);
+    font-size:14px;
+    align-self:center;
+    margin-right:8px;
+  }
+</style>
 
-    <div class="select">
-      <select id="customer-filter" name="customer_id" onchange="applyFilter()">
-        <option value="">All Customers</option>
-        {% for customer in customers %}<option value="{{ customer.id }}" {% if selected_customer_id|int == customer.id %}selected{% endif %}>{{ customer.name }}</option>{% endfor %}
-      </select>
-      <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
-    </div>
-
-    <div class="select">
-      <select id="category-filter" name="category" onchange="applyFilter()">
-        <option value="">All Categories</option>
-        {% for c in categories %}<option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
-      </select>
-      <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
-    </div>
-
-    <button class="btn-primary" onclick="applyFilter()">Filter</button>
-    <span style="flex:1"></span>
-    <button class="btn-secondary" onclick="location.href='{{ url_for('uploads') }}'">Upload New</button>
-    <button class="btn-secondary" onclick="location.href='{{ url_for('download_template') }}'">Download Template</button>
-  </header>
-
-  {% if price_lists %}
-  <div class="select-actions">
-    <button id="select-all">Select All</button>
-    <button id="deselect-all">Deselect All</button>
+{#— Frosted Toolbar with Modern Dropdowns —#}
+<section class="toolbar">
+  <h2 style="margin:0 16px 0 0; color:var(--text); font-weight:700;">Price Lists</h2>
+  
+  <div class="dropdown-modern">
+    <select id="customerFilter" onchange="applyFilters()">
+      <option value="">All Customers</option>
+      {% for customer in customers %}
+      <option value="{{ customer.id }}" {% if selected_customer_id|int == customer.id %}selected{% endif %}>
+        {{ customer.name }}
+      </option>
+      {% endfor %}
+    </select>
+    <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
   </div>
-
-  <div class="table-responsive">
-    <table>
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="master-cb" /></th>
-          <th>Product Name</th>
-          <th>Scientific Name</th>
-          <th>Category</th>
-          <th>Pot</th>
-          <th>Customer</th>
-          <th class="text-end">Price</th>
-          <th>Last Updated</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="pl-body">
-        {% for price in price_lists %}
-        <tr>
-          <td><input type="checkbox" class="row-cb" value="{{ price.id }}" /></td>
-          <td>{{ price.product.name or '-' }}</td>
-          <td>{% if price.product.scientific_name %}<em>{{ price.product.scientific_name }}</em>{% else %}<span class="text-muted">-</span>{% endif %}</td>
-          <td>{% if price.product.category %}<span class="badge">{{ price.product.category }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
-          <td>{{ price.product.pot or '-' }}</td>
-          <td>{% for customer in customers %}{% if customer.id == price.customer_id %}{{ customer.name }}{% endif %}{% endfor %}</td>
-          <td class="text-end"><strong>{{ price.price|round(2) }}€</strong></td>
-          <td><small class="text-muted">{{ price.updated_at.strftime('%Y-%m-%d') }}</small></td>
-          <td>
-            <button class="ellipsis-btn" data-price-id="{{ price.id }}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  
+  <div class="dropdown-modern">
+    <select id="categoryFilter" onchange="applyFilters()">
+      <option value="">All Categories</option>
+      {% for category in categories %}
+      <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+        {{ category }}
+      </option>
+      {% endfor %}
+    </select>
+    <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
   </div>
+  
+  <button class="btn-accent" onclick="applyFilters()">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+      <path d="M3 4.5h4l.5-1a.5.5 0 0 1 .4-.2h8.2a.5.5 0 0 1 .4.2l.5 1h4v1h-21z"/>
+      <path d="M4 7v9.5a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5V7z"/>
+    </svg>
+    Filter
+  </button>
+  
+  <div class="spacer"></div>
+  
+  <button class="btn-secondary" onclick="location.href='{{ url_for('uploads') }}'">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+      <path d="M12 2L12 14M7 9L12 4L17 9M5 19H19"/>
+    </svg>
+    Upload
+  </button>
+  
+  <button class="btn-secondary" onclick="location.href='{{ url_for('download_template') }}'">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+      <path d="M12 14L12 2M7 9L12 14L17 9M5 19H19"/>
+    </svg>
+    Download
+  </button>
+</section>
 
-  {% else %}
-  <div class="alert alert-info m-4">No price lists found. Upload a CSV template to get started.</div>
-  {% endif %}
+{#— Enhanced Table with Zebra Stripes and Hover Effects —#}
+{% if price_lists %}
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="selectAll" /></th>
+        <th>Product Name</th>
+        <th>Scientific Name</th>
+        <th>Category</th>
+        <th>Pot Size</th>
+        <th>Customer</th>
+        <th class="text-end">Price</th>
+        <th>Updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="priceListBody">
+      {% for price in price_lists %}
+      <tr>
+        <td><input type="checkbox" class="row-checkbox" value="{{ price.id }}" /></td>
+        <td><strong>{{ price.product.name or '-' }}</strong></td>
+        <td>
+          {% if price.product.scientific_name %}
+            <em style="color:var(--text-muted);">{{ price.product.scientific_name }}</em>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if price.product.category %}
+            <span class="badge badge-primary">{{ price.product.category }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if price.product.pot %}
+            <span class="badge badge-warning">{{ price.product.pot }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% for customer in customers %}
+            {% if customer.id == price.customer_id %}
+              <span class="badge badge-success">{{ customer.name }}</span>
+            {% endif %}
+          {% endfor %}
+        </td>
+        <td class="text-end">
+          <span class="price-cell">€{{ price.price|round(2) }}</span>
+        </td>
+        <td>
+          <small class="text-muted">{{ price.updated_at.strftime('%m/%d') }}</small>
+        </td>
+        <td>
+          <button class="ellipsis-btn" 
+                  data-price-id="{{ price.id }}"
+                  data-product-name="{{ price.product.name or '' }}"
+                  data-customer-id="{{ price.customer_id }}"
+                  onclick="openEditModal(this)">
+            <svg viewBox="0 0 24 24">
+              <circle cx="5" cy="12" r="2"/>
+              <circle cx="12" cy="12" r="2"/>
+              <circle cx="19" cy="12" r="2"/>
+            </svg>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  <div class="bulk-bar" id="bulk-bar">
-    <button class="btn-danger" id="bulk-delete">Delete selected</button>
-    <button class="btn-primary">Export CSV</button>
-  </div>
-{% endblock %}
+{% else %}
+<div class="empty-state">
+  <h3>No Price Lists Found</h3>
+  <p>Upload a CSV template to get started with price management.</p>
+  <button class="btn-accent" onclick="location.href='{{ url_for('uploads') }}'">
+    Upload Price List
+  </button>
+</div>
+{% endif %}
 
-{% block scripts %}
-  <script>
-    const master = document.getElementById('master-cb');
-    const body   = document.getElementById('pl-body');
-    const bulk   = document.getElementById('bulk-bar');
-    const rows   = () => Array.from(document.querySelectorAll('.row-cb'));
+{#— Sticky Bulk Action Bar —#}
+<div class="bulk-bar" id="bulkBar">
+  <span class="selection-count" id="selectionCount">0 selected</span>
+  <button class="btn-danger" id="deleteSelected">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+    </svg>
+    Delete
+  </button>
+  <button class="btn-export" id="exportSelected">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+    </svg>
+    Export CSV
+  </button>
+</div>
 
-    const updateBulk = () => {
-      const any = rows().some(cb => cb.checked);
-      bulk.classList.toggle('show', any);
-    };
+<script>
+  // Enhanced checkbox selection with bulk operations
+  const selectAll = document.getElementById('selectAll');
+  const bulkBar = document.getElementById('bulkBar');
+  const selectionCount = document.getElementById('selectionCount');
+  const deleteBtn = document.getElementById('deleteSelected');
+  const exportBtn = document.getElementById('exportSelected');
+  const rowBoxes = () => Array.from(document.querySelectorAll('.row-checkbox'));
 
-    master?.addEventListener('change', e => {
-      rows().forEach(cb => cb.checked = e.target.checked);
-      updateBulk();
-    });
+  const updateBulkBar = () => {
+    const checkedBoxes = rowBoxes().filter(cb => cb.checked);
+    const count = checkedBoxes.length;
+    const hasSelection = count > 0;
+    
+    // Show/hide bulk bar with smooth animation
+    bulkBar.classList.toggle('show', hasSelection);
+    
+    // Update selection counter
+    selectionCount.textContent = `${count} selected`;
+    
+    // Update select all checkbox state
+    const totalBoxes = rowBoxes().length;
+    selectAll.indeterminate = count > 0 && count < totalBoxes;
+    selectAll.checked = count === totalBoxes;
+  };
 
-    body?.addEventListener('change', e => {
-      if(e.target.classList.contains('row-cb')) updateBulk();
-    });
+  // Select all functionality
+  selectAll?.addEventListener('change', e => {
+    rowBoxes().forEach(cb => cb.checked = e.target.checked);
+    updateBulkBar();
+  });
 
-    document.getElementById('select-all')?.addEventListener('click', () => {
-      rows().forEach(cb => cb.checked = true); master.checked = true; updateBulk();
-    });
-    document.getElementById('deselect-all')?.addEventListener('click', () => {
-      rows().forEach(cb => cb.checked = false); master.checked = false; updateBulk();
-    });
-
-    document.getElementById('bulk-delete')?.addEventListener('click', () => {
-      const ids = rows().filter(cb => cb.checked).map(cb => cb.value);
-      if(!ids.length) return;
-      if(confirm(`Delete ${ids.length} price entries?`)){
-        fetch('/price-lists/batch-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({price_ids:ids})})
-          .then(r=>r.ok?location.reload():alert('Error'));
-      }
-    });
-
-    function applyFilter(){
-      const c = document.getElementById('customer-filter').value;
-      const k = document.getElementById('category-filter').value;
-      const searchParams = new URLSearchParams(window.location.search);
-      c ? searchParams.set('customer_id', c) : searchParams.delete('customer_id');
-      k ? searchParams.set('category', k) : searchParams.delete('category');
-      window.location.search = searchParams.toString();
+  // Individual checkbox changes
+  document.addEventListener('change', e => {
+    if (e.target.classList.contains('row-checkbox')) {
+      updateBulkBar();
     }
-  </script>
+  });
+
+  // Enhanced filter functionality
+  function applyFilters() {
+    const customerFilter = document.getElementById('customerFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Update URL parameters
+    if (customerFilter) {
+      searchParams.set('customer_id', customerFilter);
+    } else {
+      searchParams.delete('customer_id');
+    }
+    
+    if (categoryFilter) {
+      searchParams.set('category', categoryFilter);
+    } else {
+      searchParams.delete('category');
+    }
+    
+    // Navigate with updated filters
+    window.location.search = searchParams.toString();
+  }
+
+  // Bulk delete functionality
+  deleteBtn?.addEventListener('click', async () => {
+    const selectedIds = rowBoxes()
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) return;
+    
+    const confirmMessage = `Delete ${selectedIds.length} price ${selectedIds.length === 1 ? 'entry' : 'entries'}? This action cannot be undone.`;
+    
+    if (confirm(confirmMessage)) {
+      try {
+        const response = await fetch('/price-lists/batch-delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ price_ids: selectedIds })
+        });
+        
+        if (response.ok) {
+          location.reload();
+        } else {
+          alert('Error deleting entries. Please try again.');
+        }
+      } catch (error) {
+        alert('Network error. Please check your connection and try again.');
+      }
+    }
+  });
+
+  // CSV export functionality
+  exportBtn?.addEventListener('click', async () => {
+    const selectedIds = rowBoxes()
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+      alert('Please select entries to export.');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/price-lists/export-csv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ price_ids: selectedIds })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `price-lists-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Error exporting data. Please try again.');
+      }
+    } catch (error) {
+      alert('Network error. Please check your connection and try again.');
+    }
+  });
+
+  // Edit modal functionality (placeholder)
+  function openEditModal(button) {
+    const priceId = button.dataset.priceId;
+    const productName = button.dataset.productName;
+    const customerId = button.dataset.customerId;
+    
+    // This would open an edit modal - implementation depends on your modal system
+    console.log('Edit price:', { priceId, productName, customerId });
+    
+    // For now, you could redirect to an edit page
+    // window.location.href = `/price-lists/${priceId}/edit`;
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    updateBulkBar();
+  });
+</script>
 {% endblock %}
