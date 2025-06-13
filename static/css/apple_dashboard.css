@@ -295,6 +295,32 @@ body {
   background: rgba(255, 255, 255, 0.03);
 }
 
+/* Quick-action row styling */
+.q-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.q-row .icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent-color) 20%, #1c1c1e);
+  display: grid;
+  place-content: center;
+}
+
+.q-row .label {
+  color: #d0d0d0;
+  font: 500 14px/1.2 system-ui;
+}
+
+.q-row .chevron {
+  margin-left: auto;
+  opacity: .4;
+}
+
 .action-icon {
   width: 32px;
   height: 32px;
