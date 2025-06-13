@@ -30,6 +30,10 @@
     z-index:10;
   }
   
+  .toolbar h2{
+    margin-bottom:8px;
+  }
+  
   .dropdown-modern{ 
     position:relative; 
     min-width:180px;
@@ -103,7 +107,7 @@
   
   table{ width:100%; border-collapse:collapse; }
   thead{ background:var(--elevated); }
-  th,td{ padding:14px 20px; text-align:left; font-size:15px; }
+  th,td{ padding:18px 20px; text-align:left; font-size:15px; height:44px; }
   th{ 
     color:var(--text-muted); 
     font-weight:600; 
@@ -112,12 +116,12 @@
     letter-spacing:0.5px;
   }
   
-  /* Zebra striping with hover lift */
+  /* Zebra striping with enhanced hover lift */
   tbody tr:nth-child(even){ background:rgba(255,255,255,.02); }
   tbody tr:nth-child(odd){ background:rgba(255,255,255,.01); }
   tbody tr:hover{ 
     transform:translateY(-2px); 
-    box-shadow:0 8px 25px rgba(0,0,0,.15);
+    box-shadow:0 4px 9px rgba(0,0,0,.35);
     background:rgba(255,255,255,.04);
   }
   tbody tr{ 
@@ -165,6 +169,27 @@
     font-weight:700; 
     color:var(--success); 
     font-size:16px;
+    cursor:pointer;
+    padding:4px 8px;
+    border-radius:6px;
+    transition:background .2s ease;
+  }
+  .price-cell:hover{
+    background:rgba(50,215,75,.1);
+  }
+  .price-cell.editing{
+    background:var(--elevated);
+  }
+  .price-edit-input{
+    background:var(--elevated);
+    border:1px solid var(--accent);
+    color:var(--text);
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:16px;
+    font-weight:700;
+    width:80px;
+    text-align:right;
   }
   
   /* Enhanced ellipsis button */
@@ -255,6 +280,17 @@
     align-self:center;
     margin-right:8px;
   }
+  
+  /* Filter feedback animation */
+  .table-container.filter-pulse{
+    animation: filterPulse 0.3s ease-out;
+  }
+  
+  @keyframes filterPulse {
+    0% { opacity: 0.9; }
+    50% { opacity: 1; }
+    100% { opacity: 0.9; }
+  }
 </style>
 
 {#— Frosted Toolbar with Modern Dropdowns —#}
@@ -296,14 +332,14 @@
   <div class="spacer"></div>
   
   <button class="btn-secondary" onclick="location.href='{{ url_for('uploads') }}'">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:rgba(255,255,255,0.7);margin-right:6px;">
       <path d="M12 2L12 14M7 9L12 4L17 9M5 19H19"/>
     </svg>
     Upload
   </button>
   
   <button class="btn-secondary" onclick="location.href='{{ url_for('download_template') }}'">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
+    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:rgba(255,255,255,0.7);margin-right:6px;">
       <path d="M12 14L12 2M7 9L12 14L17 9M5 19H19"/>
     </svg>
     Download
@@ -361,7 +397,11 @@
           {% endfor %}
         </td>
         <td class="text-end">
-          <span class="price-cell">€{{ price.price|round(2) }}</span>
+          <span class="price-cell" 
+                data-price-id="{{ price.id }}"
+                data-current-price="{{ price.price|round(2) }}"
+                title="Double-click to edit"
+                ondblclick="editPrice(this)">€{{ price.price|round(2) }}</span>
         </td>
         <td>
           <small class="text-muted">{{ price.updated_at.strftime('%m/%d') }}</small>
@@ -451,10 +491,17 @@
     }
   });
 
-  // Enhanced filter functionality
+  // Enhanced filter functionality with visual feedback
   function applyFilters() {
     const customerFilter = document.getElementById('customerFilter').value;
     const categoryFilter = document.getElementById('categoryFilter').value;
+    
+    // Add visual feedback animation
+    const tableContainer = document.querySelector('.table-container');
+    if (tableContainer) {
+      tableContainer.classList.add('filter-pulse');
+      setTimeout(() => tableContainer.classList.remove('filter-pulse'), 300);
+    }
     
     const searchParams = new URLSearchParams(window.location.search);
     
@@ -472,7 +519,9 @@
     }
     
     // Navigate with updated filters
-    window.location.search = searchParams.toString();
+    setTimeout(() => {
+      window.location.search = searchParams.toString();
+    }, 150);
   }
 
   // Bulk delete functionality

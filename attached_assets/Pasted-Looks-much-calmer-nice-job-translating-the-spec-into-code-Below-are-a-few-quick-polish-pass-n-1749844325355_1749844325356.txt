@@ -1,0 +1,47 @@
+Looks **much** calmer—nice job translating the spec into code!
+Below are a few quick “polish-pass” notes after zooming in on the new screenshot:
+
+| What’s Working                                                  | Next 5-Minute Tweaks                                                                                                  | 20-Minute Enhancements                                                                                                                |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| • Toolbar now feels like one *strip* (dropdowns + CTA buttons). | **Dropdown chevron alignment** – they’re \~2 px low; nudge `translateY(-50%)`.                                        | **Floating bulk bar-on-select** – I don’t see it yet; wire it so Delete/CSV slides up the moment a row box is ticked.                 |
+| • Accent `Filter` button pops.                                  | **Upload/Download glyphs** – lighten icon fill to 70 % white so they’re readable in dark mode.                        | **Inline price edit** – double-click price cell → inline number input, ENTER saves. Feels “macOS Numbers”.                            |
+| • Rounded 24 px table corners look Apple-y.                     | **Row height** – bump to 44 px for a touch more breathing room; you’ll notice it on dense lists.                      | **Column resizing** – drag edge of headers to resize; store widths in `localStorage` for power users.                                 |
+| • Semantic pastel badges (blue, brown, green) read well.        | **Hover lift shadow** is subtle; add `box-shadow: 0 4px 9px rgba(0,0,0,.35)` only on hover to telegraph clickability. | **Keyboard nav** – Tab → first checkbox → Space toggles → ⌘A selects all → bulk bar appears.                                          |
+| • Nav bar icons/text now unify weight.                          | **Logo+Heading spacing** – give “Price Lists” 8 px more margin-bottom so dropdown row breathes.                       | **Animated filter feedback** – after clicking *Filter*, briefly pulse the table header (opacity flash 90 %→100 %) to confirm refresh. |
+
+---
+
+### Tiny CSS Nudge for Dropdown Alignment
+
+```css
+.toolbar-apple .select svg {
+  top: 50%;
+  transform: translateY(-50%);      /* already there */
+  pointer-events: none;             /* ensures click passes to <select> */
+}
+```
+
+---
+
+### Quick JS Hook for Bulk Bar
+
+```js
+const bulkBar = document.getElementById('bulk-bar');
+function syncBulkBar() {
+  const anyChecked = [...document.querySelectorAll('.row-cb')].some(cb => cb.checked);
+  bulkBar.classList.toggle('show', anyChecked);
+}
+document.body.addEventListener('change', e => {
+  if (e.target.classList.contains('row-cb') || e.target.id === 'master-cb') {
+    syncBulkBar();
+  }
+});
+```
+
+*(Already in the template but be sure it’s included on this page as well.)*
+
+---
+
+### Overall
+
+You’re \~90 % there—these last micro-adjustments will make the screen feel **pixel-perfect** and interaction-tight. Ping me when you’ve wired the bulk-action bar and I’ll do a last QA sweep!
