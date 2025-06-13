@@ -42,7 +42,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ 'active' if request.endpoint in ['orders', 'order_details'] }}" href="{{ url_for('orders') }}">
+                <a class="nav-link {{ 'active' if request.endpoint and 'orders' in request.endpoint }}" href="{{ url_for('orders.demo') }}">
                     <i class="fas fa-shopping-cart"></i>
                     Orders
                 </a>
