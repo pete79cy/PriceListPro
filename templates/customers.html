@@ -4,192 +4,524 @@
 {% block head %}
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-.filter-pill { 
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    border-radius: 9999px;
-    background-color: rgb(55 65 81);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    color: rgb(229 231 235);
+/* Apple-inspired frosted glass search */
+.search-field {
+    backdrop-filter: blur(8px);
+    background: rgba(44, 44, 46, 0.7);
+    border-radius: 12px;
+    padding: 12px 16px 12px 44px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.6)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z'/%3E%3C/svg%3E");
+    background-size: 18px 18px;
+    background-position: 16px 50%;
+    background-repeat: no-repeat;
+}
+.search-field:focus {
+    outline: none;
+    border-color: rgba(10, 132, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
+}
+.search-field::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Apple-style segmented control */
+.segmented-control {
+    display: flex;
+    background: rgba(44, 44, 46, 0.6);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+}
+.segment {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    user-select: none;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: none;
+    white-space: nowrap;
 }
-.filter-pill:hover {
-    background-color: rgb(75 85 99);
+.segment:hover {
+    color: rgba(255, 255, 255, 0.8);
 }
-.filter-pill input { 
-    margin-right: 0.25rem;
-    accent-color: rgb(59 130 246);
-}
-.filter-pill-active { 
-    background-color: rgb(37 99 235);
+.segment.active {
+    background: #0A84FF;
     color: white;
 }
-.btn-outline { 
-    border-radius: 0.375rem;
-    border: 1px solid rgba(156, 163, 175, 0.4);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
+
+/* Apple-style table rows with zebra and hover */
+.customer-row {
+    transition: all 0.2s ease;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.customer-row:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+.customer-row:hover {
+    transform: scale(1.005);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Status dots with semantic colors */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+.status-active { background-color: #30D158; }
+.status-inactive { background-color: #FF453A; }
+.status-warning { background-color: #FF9500; }
+
+/* Pastel category tags */
+.category-tag {
+    background: color-mix(in srgb, #0A84FF 15%, #2c2c2e);
+    color: #dfe8ff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font: 500 12px system-ui;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.category-tag:hover {
+    background: color-mix(in srgb, #0A84FF 25%, #2c2c2e);
+}
+
+/* Missing email pill */
+.missing-pill {
+    background: #3b1e1e;
+    color: #ff7b72;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font: 500 12px/1 system-ui;
+}
+
+/* Three-zone toolbar */
+.toolbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+    background: rgba(44, 44, 46, 0.6);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Back button with chevron */
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #0A84FF;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.back-button:hover {
+    color: #409CFF;
+}
+
+/* Page title with count */
+.page-title {
+    font-size: 20px;
+    font-weight: 600;
     color: white;
+    margin: 0;
 }
-.btn-outline:hover {
-    background-color: rgba(55, 65, 81, 0.4);
+.count-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 400;
 }
-.shadow-card { 
-    box-shadow: 0 1px 3px rgba(0,0,0,.3); 
+
+/* New button */
+.new-button {
+    background: #0A84FF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-.tag-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 0.25rem;
-    background-color: rgb(31 41 55);
-    border: 1px solid rgb(75 85 99);
-    border-radius: 0.375rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    z-index: 20;
-    min-width: 12rem;
+.new-button:hover {
+    background: #409CFF;
+    transform: translateY(-1px);
 }
-.dropdown-menu {
+
+/* Context menu styling */
+.context-menu {
     position: absolute;
     right: 0;
     top: 100%;
-    margin-top: 0.25rem;
-    background-color: rgb(31 41 55);
-    border: 1px solid rgb(75 85 99);
-    border-radius: 0.375rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    margin-top: 4px;
+    background: rgba(28, 28, 30, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     z-index: 20;
-    min-width: 8rem;
+    min-width: 120px;
+    overflow: hidden;
+}
+.context-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.context-menu-item.destructive {
+    color: #FF453A;
+}
+
+/* Ellipsis button */
+.ellipsis-button {
+    color: rgba(255, 255, 255, 0.6);
+    background: none;
+    border: none;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+.ellipsis-button:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Bulk actions bar */
+.bulk-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: rgba(28, 28, 30, 0.9);
+    backdrop-filter: blur(20px);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Responsive card layout */
+@media (max-width: 900px) {
+    .table-container {
+        display: none;
+    }
+    .card-list {
+        display: block;
+    }
+}
+@media (min-width: 901px) {
+    .table-container {
+        display: block;
+    }
+    .card-list {
+        display: none;
+    }
+}
+
+.customer-card {
+    background: rgba(44, 44, 46, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+.customer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: rgba(255, 255, 255, 0.6);
+}
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+.empty-state-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: white;
+}
+.empty-state-subtitle {
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        transform: none !important;
+    }
 }
 </style>
 {% endblock %}
 
-<!-- TOOLBAR -->
-<header style="display: flex; align-items: center; gap: 1rem; background-color: rgb(31 41 55); border-radius: 0.375rem; padding: 0.75rem; margin-bottom: 0.75rem;">
-  <h1 style="font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; color: white;">
-    Customers <span style="margin-left: 0.25rem; border-radius: 9999px; background-color: rgb(37 99 235); padding: 0.125rem 0.5rem; font-size: 0.75rem;">{{ customers|length }}</span>
-  </h1>
+<!-- THREE-ZONE TOOLBAR -->
+<div class="toolbar">
+  <!-- Leading: Back button and title -->
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <a href="{{ url_for('dashboard') }}" class="back-button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+      Dashboard
+    </a>
+    <h1 class="page-title">
+      Customers <span class="count-subtitle">· {{ customers|length }}</span>
+    </h1>
+  </div>
 
-  <input id="searchBox" type="search" placeholder="Search customers..."
-         style="flex: 1; border-radius: 0.375rem; background-color: rgb(17 24 39); padding: 0.375rem 0.75rem; font-size: 0.875rem; color: white; border: 1px solid rgb(75 85 99);" />
+  <!-- Center: Search field -->
+  <input 
+    id="searchBox" 
+    type="search" 
+    placeholder="Search customers..." 
+    class="search-field"
+    accesskey="f"
+  />
 
-  <div style="position: relative;">
-    <button id="newCustomerBtn" style="border-radius: 0.375rem; background-color: rgb(37 99 235); padding: 0.375rem 1rem; font-size: 0.875rem; font-weight: 500; color: white; border: none; cursor: pointer;"
-            data-bs-toggle="modal" data-bs-target="#customerModal">
+  <!-- Trailing: Filters and New button -->
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <div class="segmented-control">
+      <button class="segment" data-filter="price" title="Show customers with price lists">
+        📄 Price List
+      </button>
+      <button class="segment" data-filter="missing" title="Show customers with missing email">
+        ✉️ Missing Email
+      </button>
+      <div style="position: relative;">
+        <button class="segment" id="categorySegment" title="Filter by category">
+          🏷️ Category
+        </button>
+        <div id="categoryDropdown" class="context-menu" style="display: none; left: 0; right: auto; min-width: 200px;">
+          {% for category in customer_categories %}
+          <button class="context-menu-item category-filter" data-category="{{ category.name }}">
+            {{ category.name }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button class="new-button" data-bs-toggle="modal" data-bs-target="#customerModal">
       ＋ New
     </button>
   </div>
-</header>
-
-<!-- SMART FILTER BAR -->
-<div id="filterBar" style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-  <label class="filter-pill">
-    <input type="checkbox" data-f="price"> With Price-list
-  </label>
-  <label class="filter-pill">
-    <input type="checkbox" data-f="missing"> Missing Email
-  </label>
-  
-  <!-- Category filter -->
-  <div style="position: relative;">
-    <button id="tagBtn" class="filter-pill">Categories ▼</button>
-    <div id="tagMenu" class="tag-menu hidden">
-      <div style="padding: 0.5rem;">
-        {% for category in customer_categories %}
-        <label style="display: block; padding: 0.25rem; cursor: pointer; font-size: 0.875rem; color: rgb(229 231 235);">
-          <input type="checkbox" data-f="category" value="{{ category.name }}" style="margin-right: 0.5rem;">
-          {{ category.name }}
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
 </div>
 
-<!-- TABLE -->
-<div style="border-radius: 0.375rem; background-color: rgb(31 41 55); box-shadow: 0 1px 3px rgba(0,0,0,.3); overflow-x: auto;">
-  <table id="custTable" style="width: 100%; font-size: 0.875rem; table-layout: fixed;">
-    <thead style="background-color: rgb(55 65 81); position: sticky; top: 0; z-index: 10;">
-      <tr>
-        <th style="width: 3rem; padding: 0.5rem 1rem;"><input id="chkAll" type="checkbox" style="accent-color: rgb(59 130 246);"></th>
-        <th style="padding: 0.5rem 1rem; text-align: left; width: 15rem; color: rgb(229 231 235);">Name</th>
-        <th style="padding: 0.5rem 1rem; color: rgb(229 231 235);">Email</th>
-        <th style="padding: 0.5rem 1rem; width: 8rem; color: rgb(229 231 235);">Phone</th>
-        <th style="padding: 0.5rem 1rem; width: 5rem; color: rgb(229 231 235);">Category</th>
-        <th style="width: 2rem;"></th>
-      </tr>
-    </thead>
-    <tbody id="custBody">
-      {% for customer in customers %}
-      <tr class="row" style="border-top: 1px solid rgb(75 85 99);"
-          data-price="{{ 'yes' if customer.price_lists else 'no' }}"
-          data-email="{{ 'no' if not customer.email else 'yes' }}"
-          data-category="{{ customer.category.name if customer.category else '' }}"
-          data-id="{{ customer.id }}"
-          data-name="{{ customer.name }}"
-          data-customer-email="{{ customer.email or '' }}"
-          data-phone="{{ customer.phone or '' }}"
-          data-address="{{ customer.address or '' }}"
-          onmouseover="this.style.backgroundColor='rgba(55, 65, 81, 0.5)'"
-          onmouseout="this.style.backgroundColor='transparent'">
-        <td style="padding: 0.75rem 1rem;"><input class="chkRow" type="checkbox" style="accent-color: rgb(59 130 246);"></td>
-        <td style="padding: 0.75rem 1rem; color: white;">{{ customer.name }}</td>
-        <td style="padding: 0.75rem 1rem; color: rgb(209 213 219);">{{ customer.email or '— missing —' }}</td>
-        <td style="padding: 0.75rem 1rem; color: rgb(209 213 219);">{{ customer.phone or '–' }}</td>
-        <td style="padding: 0.75rem 1rem; color: rgb(209 213 219);">{{ customer.category.name if customer.category else '–' }}</td>
-        <td style="padding: 0.5rem;">
-          <!-- Dropdown menu -->
-          <div style="position: relative;">
-            <button style="color: rgb(156 163 175); padding: 0.25rem; background: none; border: none; cursor: pointer;" onclick="toggleDropdown(this)" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgb(156 163 175)'">⋮</button>
-            <div class="dropdown-menu hidden">
-              <div style="padding: 0.25rem;">
-                <button style="display: block; width: 100%; text-align: left; padding: 0.25rem 0.75rem; font-size: 0.875rem; color: rgb(229 231 235); background: none; border: none; cursor: pointer;" 
-                        class="edit-customer"
+<!-- TABLE CONTAINER (Desktop) -->
+<div class="table-container">
+  <div style="border-radius: 12px; background: rgba(44, 44, 46, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+    <table id="custTable" style="width: 100%; font-size: 14px;">
+      <thead style="background: rgba(55, 65, 81, 0.8); position: sticky; top: 0; z-index: 10;">
+        <tr>
+          <th scope="col" style="width: 48px; padding: 12px 16px;">
+            <input id="chkAll" type="checkbox" style="accent-color: #0A84FF;" aria-label="Select all customers">
+          </th>
+          <th scope="col" style="padding: 12px 16px; text-align: left; color: rgba(255, 255, 255, 0.9); font-weight: 600;">
+            Status & Name
+          </th>
+          <th scope="col" style="padding: 12px 16px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">
+            Email
+          </th>
+          <th scope="col" style="padding: 12px 16px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">
+            Phone
+          </th>
+          <th scope="col" style="padding: 12px 16px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">
+            Category
+          </th>
+          <th scope="col" style="width: 40px; padding: 12px 8px;"></th>
+        </tr>
+      </thead>
+      <tbody id="custBody">
+        {% for customer in customers %}
+        <tr class="customer-row" 
+            data-price="{{ 'yes' if customer.price_lists else 'no' }}"
+            data-email="{{ 'no' if not customer.email else 'yes' }}"
+            data-category="{{ customer.category.name if customer.category else '' }}"
+            data-id="{{ customer.id }}"
+            data-name="{{ customer.name }}"
+            data-customer-email="{{ customer.email or '' }}"
+            data-phone="{{ customer.phone or '' }}"
+            data-address="{{ customer.address or '' }}"
+            tabindex="0">
+          <td style="padding: 12px 16px;">
+            <input class="chkRow" type="checkbox" style="accent-color: #0A84FF;" aria-label="Select {{ customer.name }}">
+          </td>
+          <td style="padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="status-dot {{ 'status-active' if customer.email else 'status-warning' }}" 
+                    title="{{ 'Active customer' if customer.email else 'Missing email address' }}"></span>
+              <a href="#" class="customer-name-link" data-customer-id="{{ customer.id }}" 
+                 style="color: white; text-decoration: none; font-weight: 500;">
+                {{ customer.name }}
+              </a>
+            </div>
+          </td>
+          <td style="padding: 12px 16px;">
+            {% if customer.email %}
+              <a href="mailto:{{ customer.email }}" style="color: rgba(255, 255, 255, 0.8); text-decoration: none;">
+                {{ customer.email }}
+              </a>
+            {% else %}
+              <span class="missing-pill">Missing</span>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 16px;">
+            {% if customer.phone %}
+              <a href="tel:{{ customer.phone }}" style="color: rgba(255, 255, 255, 0.8); text-decoration: none;">
+                {{ customer.phone }}
+              </a>
+            {% else %}
+              <span style="color: rgba(255, 255, 255, 0.4);">–</span>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 16px;">
+            {% if customer.category %}
+              <span class="category-tag" data-category="{{ customer.category.name }}">
+                {{ customer.category.name }}
+              </span>
+            {% else %}
+              <span style="color: rgba(255, 255, 255, 0.4);">–</span>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 8px;">
+            <div style="position: relative;">
+              <button class="ellipsis-button" onclick="toggleContextMenu(this)" aria-label="Customer actions">
+                ⋯
+              </button>
+              <div class="context-menu" style="display: none;">
+                <button class="context-menu-item edit-customer"
                         data-id="{{ customer.id }}"
                         data-name="{{ customer.name }}"
-                        data-email="{{ customer.email }}"
-                        data-phone="{{ customer.phone }}"
-                        data-address="{{ customer.address }}"
-                        onmouseover="this.style.backgroundColor='rgb(55 65 81)'"
-                        onmouseout="this.style.backgroundColor='transparent'">
+                        data-email="{{ customer.email or '' }}"
+                        data-phone="{{ customer.phone or '' }}"
+                        data-address="{{ customer.address or '' }}"
+                        data-category-id="{{ customer.category.id if customer.category else '' }}">
                   Edit
                 </button>
-                <button style="display: block; width: 100%; text-align: left; padding: 0.25rem 0.75rem; font-size: 0.875rem; color: rgb(248 113 113); background: none; border: none; cursor: pointer;"
-                        class="delete-customer"
+                <button class="context-menu-item destructive delete-customer"
                         data-id="{{ customer.id }}"
-                        data-name="{{ customer.name }}"
-                        onmouseover="this.style.backgroundColor='rgb(55 65 81)'"
-                        onmouseout="this.style.backgroundColor='transparent'">
+                        data-name="{{ customer.name }}">
                   Delete
                 </button>
               </div>
             </div>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  
-  {% if not customers %}
-  <div style="padding: 2rem; text-align: center; color: rgb(156 163 175);">
-    <div style="font-size: 1.125rem; margin-bottom: 0.5rem;">No customers found</div>
-    <div style="font-size: 0.875rem;">Click the "＋ New" button to create your first customer</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  {% endif %}
 </div>
 
-<!-- BULK BAR -->
-<div id="bulkBar"
-     style="position: fixed; left: 0; right: 0; top: 4rem; z-index: 30; display: none; align-items: center; gap: 1rem; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); padding: 0.5rem 1.5rem;">
-  <span id="bulkCount" style="font-size: 0.875rem; color: white;"></span>
-  <button class="btn-outline" id="bulkExport">Export</button>
-  <button class="btn-outline" id="bulkEmail">Email</button>
-  <button class="btn-outline" id="bulkDelete" style="color: rgb(248 113 113);">Delete</button>
-  <button id="bulkClose" style="margin-left: auto; color: rgb(209 213 219); background: none; border: none; cursor: pointer;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgb(209 213 219)'">✕</button>
+<!-- CARD LIST (Mobile) -->
+<div class="card-list">
+  {% for customer in customers %}
+  <div class="customer-card" 
+       data-price="{{ 'yes' if customer.price_lists else 'no' }}"
+       data-email="{{ 'no' if not customer.email else 'yes' }}"
+       data-category="{{ customer.category.name if customer.category else '' }}"
+       data-id="{{ customer.id }}"
+       data-name="{{ customer.name }}"
+       data-customer-email="{{ customer.email or '' }}"
+       data-phone="{{ customer.phone or '' }}"
+       data-address="{{ customer.address or '' }}">
+    <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 8px;">
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span class="status-dot {{ 'status-active' if customer.email else 'status-warning' }}"></span>
+          <span style="color: white; font-weight: 600;">{{ customer.name }}</span>
+        </div>
+        {% if customer.category %}
+        <span class="category-tag" style="font-size: 11px;">{{ customer.category.name }}</span>
+        {% endif %}
+      </div>
+      <button class="ellipsis-button" onclick="toggleContextMenu(this)">⋯</button>
+    </div>
+    <div style="display: flex; gap: 16px; font-size: 13px;">
+      {% if customer.email %}
+      <a href="mailto:{{ customer.email }}" style="color: rgba(255, 255, 255, 0.8); text-decoration: none;">
+        ✉️ {{ customer.email }}
+      </a>
+      {% else %}
+      <span class="missing-pill" style="font-size: 11px;">Missing Email</span>
+      {% endif %}
+      {% if customer.phone %}
+      <a href="tel:{{ customer.phone }}" style="color: rgba(255, 255, 255, 0.8); text-decoration: none;">
+        📞 {{ customer.phone }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- EMPTY STATE -->
+{% if not customers %}
+<div class="empty-state">
+  <div class="empty-state-icon">👥</div>
+  <div class="empty-state-title">Add Your First Customer</div>
+  <div class="empty-state-subtitle">Start building your customer database by creating your first customer profile</div>
+  <button class="new-button" data-bs-toggle="modal" data-bs-target="#customerModal">
+    ＋ Add Customer
+  </button>
+</div>
+{% endif %}
+
+<!-- BULK ACTIONS BAR -->
+<div id="bulkBar" class="bulk-bar">
+  <span id="bulkCount" style="font-size: 14px; color: white; font-weight: 500;"></span>
+  <button class="context-menu-item" id="bulkExport" style="background: rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px;">
+    Export CSV
+  </button>
+  <button class="context-menu-item" id="bulkEmail" style="background: rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 12px;">
+    Send Email
+  </button>
+  <button class="context-menu-item destructive" id="bulkDelete" style="background: rgba(255, 69, 58, 0.2); border-radius: 6px; padding: 6px 12px;">
+    Delete Selected
+  </button>
+  <button id="bulkClose" style="margin-left: auto; color: rgba(255, 255, 255, 0.6); background: none; border: none; cursor: pointer; padding: 4px;" 
+          onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255, 255, 255, 0.6)'">
+    ✕
+  </button>
 </div>
 
 <!-- Add/Edit Customer Modal -->
@@ -265,21 +597,40 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filters = { price: false, missing: false, categories: [] };
-    const rows = document.querySelectorAll('#custBody .row');
+    const rows = document.querySelectorAll('.customer-row, .customer-card');
     const bulkBar = document.getElementById('bulkBar');
     const chkAll = document.getElementById('chkAll');
     const chkRows = document.querySelectorAll('.chkRow');
     const bulkCount = document.getElementById('bulkCount');
     const searchBox = document.getElementById('searchBox');
 
-    // Search functionality
+    // Smart search with tokens (CMD/Ctrl+F)
+    searchBox.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+            e.preventDefault();
+            this.focus();
+        }
+    });
+
+    // Search functionality with token support
     searchBox.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         rows.forEach(row => {
             const name = row.dataset.name.toLowerCase();
             const email = row.dataset.customerEmail.toLowerCase();
             const phone = row.dataset.phone.toLowerCase();
-            const matchesSearch = !query || name.includes(query) || email.includes(query) || phone.includes(query);
+            
+            // Smart token search
+            let matchesSearch = !query;
+            if (query) {
+                if (query.startsWith('email:')) {
+                    matchesSearch = email.includes(query.substring(6));
+                } else if (query.startsWith('phone:')) {
+                    matchesSearch = phone.includes(query.substring(6));
+                } else {
+                    matchesSearch = name.includes(query) || email.includes(query) || phone.includes(query);
+                }
+            }
             
             if (!matchesSearch) {
                 row.hidden = true;
@@ -290,22 +641,79 @@ document.addEventListener('DOMContentLoaded', function() {
         updateBulkBar();
     });
 
-    // Smart filter toggle
-    document.getElementById('filterBar').addEventListener('change', function(e) {
-        const f = e.target.dataset.f;
-        if (!f) return;
-        
-        if (f === 'category') {
-            const value = e.target.value;
-            if (e.target.checked) {
-                filters.categories.push(value);
+    // Segmented control filters
+    document.querySelectorAll('.segment[data-filter]').forEach(segment => {
+        segment.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            const isActive = this.classList.contains('active');
+            
+            // Toggle active state
+            if (isActive) {
+                this.classList.remove('active');
+                filters[filter] = false;
             } else {
-                filters.categories = filters.categories.filter(c => c !== value);
+                this.classList.add('active');
+                filters[filter] = true;
             }
-        } else {
-            filters[f] = e.target.checked;
-        }
-        applyFilters();
+            
+            applyFilters();
+        });
+    });
+
+    // Category dropdown
+    const categorySegment = document.getElementById('categorySegment');
+    const categoryDropdown = document.getElementById('categoryDropdown');
+    
+    categorySegment.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isVisible = categoryDropdown.style.display !== 'none';
+        categoryDropdown.style.display = isVisible ? 'none' : 'block';
+    });
+
+    // Category filter items
+    document.querySelectorAll('.category-filter').forEach(filter => {
+        filter.addEventListener('click', function() {
+            const category = this.dataset.category;
+            const isActive = this.style.background === 'rgba(255, 255, 255, 0.2)';
+            
+            if (isActive) {
+                this.style.background = '';
+                filters.categories = filters.categories.filter(c => c !== category);
+            } else {
+                this.style.background = 'rgba(255, 255, 255, 0.2)';
+                filters.categories.push(category);
+            }
+            
+            // Update segment state
+            categorySegment.classList.toggle('active', filters.categories.length > 0);
+            applyFilters();
+        });
+    });
+
+    // Category tag clicks
+    document.querySelectorAll('.category-tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+            const category = this.dataset.category;
+            
+            // Clear other filters and apply category filter
+            filters.price = false;
+            filters.missing = false;
+            filters.categories = [category];
+            
+            // Update UI
+            document.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+            categorySegment.classList.add('active');
+            
+            applyFilters();
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function() {
+        categoryDropdown.style.display = 'none';
+        document.querySelectorAll('.context-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
     });
 
     function applyFilters() {
@@ -318,7 +726,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = row.dataset.name.toLowerCase();
         const email = row.dataset.customerEmail.toLowerCase();
         const phone = row.dataset.phone.toLowerCase();
-        const matchesSearch = !query || name.includes(query) || email.includes(query) || phone.includes(query);
+        
+        // Search matching
+        let matchesSearch = !query;
+        if (query) {
+            if (query.startsWith('email:')) {
+                matchesSearch = email.includes(query.substring(6));
+            } else if (query.startsWith('phone:')) {
+                matchesSearch = phone.includes(query.substring(6));
+            } else {
+                matchesSearch = name.includes(query) || email.includes(query) || phone.includes(query);
+            }
+        }
         
         const show = matchesSearch &&
             (!filters.price || row.dataset.price === 'yes') &&
@@ -328,16 +747,11 @@ document.addEventListener('DOMContentLoaded', function() {
         row.hidden = !show;
     }
 
-    // Category dropdown toggle
-    document.getElementById('tagBtn').addEventListener('click', function() {
-        const menu = document.getElementById('tagMenu');
-        menu.classList.toggle('hidden');
-    });
-
     // Bulk selection
     chkAll.addEventListener('change', function() {
         chkRows.forEach(c => {
-            if (!c.closest('tr').hidden) c.checked = chkAll.checked;
+            const row = c.closest('tr') || c.closest('.customer-card');
+            if (row && !row.hidden) c.checked = chkAll.checked;
         });
         updateBulkBar();
     });
@@ -345,16 +759,50 @@ document.addEventListener('DOMContentLoaded', function() {
     chkRows.forEach(c => c.addEventListener('change', updateBulkBar));
 
     function updateBulkBar() {
-        const n = [...chkRows].filter(c => c.checked && !c.closest('tr').hidden).length;
-        bulkCount.textContent = `${n} selected`;
-        bulkBar.classList.toggle('hidden', n === 0);
+        const visibleRows = [...chkRows].filter(c => {
+            const row = c.closest('tr') || c.closest('.customer-card');
+            return row && !row.hidden;
+        });
+        const selected = visibleRows.filter(c => c.checked);
+        const n = selected.length;
+        
+        bulkCount.textContent = `${n} customer${n !== 1 ? 's' : ''} selected`;
+        bulkBar.style.display = n === 0 ? 'none' : 'flex';
+        
+        // Update "select all" state
+        chkAll.checked = visibleRows.length > 0 && selected.length === visibleRows.length;
+        chkAll.indeterminate = selected.length > 0 && selected.length < visibleRows.length;
     }
 
     // Bulk actions
     document.getElementById('bulkClose').addEventListener('click', function() {
         chkRows.forEach(c => c.checked = false);
         chkAll.checked = false;
+        chkAll.indeterminate = false;
         updateBulkBar();
+    });
+
+    // Context menu handling
+    window.toggleContextMenu = function(button) {
+        const menu = button.nextElementSibling;
+        const isVisible = menu.style.display !== 'none';
+        
+        // Close all other menus
+        document.querySelectorAll('.context-menu').forEach(m => {
+            if (m !== menu) m.style.display = 'none';
+        });
+        
+        menu.style.display = isVisible ? 'none' : 'block';
+    };
+
+    // Customer name links (future: side drawer)
+    document.querySelectorAll('.customer-name-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const customerId = this.dataset.customerId;
+            // TODO: Open side drawer with customer details
+            console.log('Open customer details for ID:', customerId);
+        });
     });
 
     // Handle edit customer modal
@@ -367,6 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('email').value = btn.dataset.email;
             document.getElementById('phone').value = btn.dataset.phone;
             document.getElementById('address').value = btn.dataset.address;
+            document.getElementById('category_id').value = btn.dataset.categoryId || '';
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('customerModal'));
@@ -384,8 +833,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Reset modal when adding a new customer
-    document.getElementById('newCustomerBtn').addEventListener('click', function() {
+    // Reset modal when adding a new customer  
+    document.querySelector('.new-button').addEventListener('click', function() {
         document.getElementById('customerModalLabel').textContent = 'Add Customer';
         document.getElementById('customer_id').value = '';
         document.getElementById('name').value = '';
@@ -395,31 +844,41 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('category_id').value = '';
     });
 
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#tagBtn') && !e.target.closest('#tagMenu')) {
-            document.getElementById('tagMenu').classList.add('hidden');
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Cmd/Ctrl + F for search
+        if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+            e.preventDefault();
+            searchBox.focus();
         }
         
-        // Close all dropdown menus
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            if (!e.target.closest(menu.parentElement)) {
-                menu.classList.add('hidden');
-            }
-        });
+        // Escape to clear search and filters
+        if (e.key === 'Escape') {
+            searchBox.value = '';
+            filters.price = false;
+            filters.missing = false;
+            filters.categories = [];
+            
+            // Reset UI
+            document.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.category-filter').forEach(f => f.style.background = '');
+            categoryDropdown.style.display = 'none';
+            
+            applyFilters();
+        }
     });
+
+    // Initialize responsive behavior
+    function handleResize() {
+        const isMobile = window.innerWidth <= 900;
+        // Additional responsive logic can be added here
+    }
+    
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
 });
 
-// Toggle dropdown menu function
-function toggleDropdown(button) {
-    const menu = button.nextElementSibling;
-    const isHidden = menu.classList.contains('hidden');
-    
-    // Close all other dropdowns
-    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
-    
-    // Toggle this dropdown
-    menu.classList.toggle('hidden', !isHidden);
-}
+// Legacy function support (remove old dropdown references)
+window.toggleDropdown = window.toggleContextMenu;
 </script>
 {% endblock %}
