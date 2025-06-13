@@ -1,0 +1,186 @@
+{% extends 'layout.html' %}
+
+{# -------------------------------------------------------------------
+   Apple‑style “Price Lists” page
+   ------------------------------------------------------------------- #}
+{% block head_extra %}
+  <style>
+    :root {
+      --accent: #0a84ff;
+      --surface: #1c1c1e;
+      --elevated: #2c2c2e;
+      --text: #f2f2f7;
+      --text-muted: #9fa3af;
+    }
+    /* reset */
+    * { box-sizing: border-box; }
+    body { background:#111; color:var(--text); }
+
+    /* ─── Frosted toolbar ─────────────────────────────────────── */
+    .toolbar-apple {
+      display:flex; gap:12px; padding:24px; flex-wrap:wrap; align-items:center;
+    }
+    .toolbar-apple .select {
+      position:relative; flex:0 1 220px;
+    }
+    .toolbar-apple select {
+      width:100%; padding:10px 38px 10px 14px; font-size:15px; color:var(--text);
+      background:rgba(44,44,46,.7); border:none; border-radius:12px; backdrop-filter:blur(8px);
+      appearance:none;
+    }
+    .toolbar-apple .select svg {
+      position:absolute; right:14px; top:50%; width:16px; height:16px; fill:var(--text-muted); transform:translateY(-50%);
+    }
+    .toolbar-apple .btn-primary { padding:10px 18px; border:none; border-radius:14px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+    .toolbar-apple .btn-secondary { padding:10px 18px; border:none; border-radius:14px; background:var(--elevated); color:var(--text); font-weight:600; cursor:pointer; }
+
+    /* ─── Bulk selection buttons ─────────────────────────────── */
+    .select-actions { display:flex; gap:12px; padding:0 24px 12px; }
+    .select-actions button { font-size:14px; padding:6px 12px; background:var(--elevated); border:none; border-radius:12px; color:var(--text); cursor:pointer; }
+
+    /* ─── Table styling ───────────────────────────────────────── */
+    table { width:100%; border-collapse:collapse; }
+    thead { background:var(--elevated); }
+    th,td { padding:12px 24px; text-align:left; font-size:15px; }
+    th { color:var(--text-muted); font-weight:600; }
+    tbody tr:nth-child(even) { background:#1a1a1c; }
+    tbody tr:hover { transform:scale(1.01); box-shadow:0 4px 8px rgba(0,0,0,.4); }
+    tbody tr { transition:transform .1s ease-out, box-shadow .1s ease-out; }
+    input[type="checkbox"] { accent-color:var(--accent); width:16px; height:16px; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:8px; font-size:12px; background:color-mix(in srgb, var(--accent) 15%, #2c2c2e); color:#dfe8ff; }
+    .text-muted { color:var(--text-muted); }
+    .ellipsis-btn { background:none; border:none; cursor:pointer; width:32px; height:32px; border-radius:16px; display:grid; place-content:center; }
+    .ellipsis-btn:hover { background:rgba(255,255,255,.08); }
+    .ellipsis-btn svg { width:18px; height:18px; fill:var(--text); }
+
+    /* ─── Bulk bar ───────────────────────────────────────────── */
+    .bulk-bar { position:fixed; bottom:-100px; left:0; right:0; display:flex; justify-content:center; gap:12px; padding:12px 24px; background:rgba(28,28,30,.85); backdrop-filter:blur(16px); border-top:1px solid #ffffff0a; transition:bottom .2s ease-out; z-index:11; }
+    .bulk-bar.show { bottom:0; }
+    .btn-danger { background:#ff453a; color:#fff; border:none; border-radius:14px; padding:10px 18px; font-weight:600; cursor:pointer; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <header class="toolbar-apple">
+    <h2 style="margin:0 8px 0 0">Price Lists</h2>
+
+    <div class="select">
+      <select id="customer-filter" name="customer_id" onchange="applyFilter()">
+        <option value="">All Customers</option>
+        {% for customer in customers %}<option value="{{ customer.id }}" {% if selected_customer_id|int == customer.id %}selected{% endif %}>{{ customer.name }}</option>{% endfor %}
+      </select>
+      <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
+    </div>
+
+    <div class="select">
+      <select id="category-filter" name="category" onchange="applyFilter()">
+        <option value="">All Categories</option>
+        {% for c in categories %}<option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
+    </div>
+
+    <button class="btn-primary" onclick="applyFilter()">Filter</button>
+    <span style="flex:1"></span>
+    <button class="btn-secondary" onclick="location.href='{{ url_for('uploads') }}'">Upload New</button>
+    <button class="btn-secondary" onclick="location.href='{{ url_for('download_template') }}'">Download Template</button>
+  </header>
+
+  {% if price_lists %}
+  <div class="select-actions">
+    <button id="select-all">Select All</button>
+    <button id="deselect-all">Deselect All</button>
+  </div>
+
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="master-cb" /></th>
+          <th>Product Name</th>
+          <th>Scientific Name</th>
+          <th>Category</th>
+          <th>Pot</th>
+          <th>Customer</th>
+          <th class="text-end">Price</th>
+          <th>Last Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="pl-body">
+        {% for price in price_lists %}
+        <tr>
+          <td><input type="checkbox" class="row-cb" value="{{ price.id }}" /></td>
+          <td>{{ price.product.name or '-' }}</td>
+          <td>{% if price.product.scientific_name %}<em>{{ price.product.scientific_name }}</em>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td>{% if price.product.category %}<span class="badge">{{ price.product.category }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td>{{ price.product.pot or '-' }}</td>
+          <td>{{ price.customer_name or '-' }}</td>
+          <td class="text-end"><strong>{{ price.price|round(2) }}€</strong></td>
+          <td><small class="text-muted">{{ price.updated_at.strftime('%Y-%m-%d') }}</small></td>
+          <td>
+            <button class="ellipsis-btn" data-price-id="{{ price.id }}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="alert alert-info m-4">No price lists found. Upload a CSV template to get started.</div>
+  {% endif %}
+
+  <div class="bulk-bar" id="bulk-bar">
+    <button class="btn-danger" id="bulk-delete">Delete selected</button>
+    <button class="btn-primary">Export CSV</button>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const master = document.getElementById('master-cb');
+    const body   = document.getElementById('pl-body');
+    const bulk   = document.getElementById('bulk-bar');
+    const rows   = () => Array.from(document.querySelectorAll('.row-cb'));
+
+    const updateBulk = () => {
+      const any = rows().some(cb => cb.checked);
+      bulk.classList.toggle('show', any);
+    };
+
+    master?.addEventListener('change', e => {
+      rows().forEach(cb => cb.checked = e.target.checked);
+      updateBulk();
+    });
+
+    body?.addEventListener('change', e => {
+      if(e.target.classList.contains('row-cb')) updateBulk();
+    });
+
+    document.getElementById('select-all')?.addEventListener('click', () => {
+      rows().forEach(cb => cb.checked = true); master.checked = true; updateBulk();
+    });
+    document.getElementById('deselect-all')?.addEventListener('click', () => {
+      rows().forEach(cb => cb.checked = false); master.checked = false; updateBulk();
+    });
+
+    document.getElementById('bulk-delete')?.addEventListener('click', () => {
+      const ids = rows().filter(cb => cb.checked).map(cb => cb.value);
+      if(!ids.length) return;
+      if(confirm(`Delete ${ids.length} price entries?`)){
+        fetch('/price-lists/batch-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({price_ids:ids})})
+          .then(r=>r.ok?location.reload():alert('Error'));
+      }
+    });
+
+    function applyFilter(){
+      const c = document.getElementById('customer-filter').value;
+      const k = document.getElementById('category-filter').value;
+      const searchParams = new URLSearchParams(window.location.search);
+      c ? searchParams.set('customer_id', c) : searchParams.delete('customer_id');
+      k ? searchParams.set('category', k) : searchParams.delete('category');
+      window.location.search = searchParams.toString();
+    }
+  </script>
+{% endblock %}
