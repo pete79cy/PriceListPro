@@ -330,6 +330,7 @@ def register_routes(app):
         if request.method == 'POST':
             username = request.form.get('username')
             password = request.form.get('password')
+            remember_me = request.form.get('remember_me') == 'on'
             
             # Validate the username and password
             user = User.query.filter_by(username=username).first()
@@ -339,8 +340,8 @@ def register_routes(app):
                 user.last_login = datetime.utcnow()
                 db.session.commit()
                 
-                # Log the user in
-                login_user(user)
+                # Log the user in with remember me option
+                login_user(user, remember=remember_me)
                 flash(f'Welcome back, {user.username}!', 'success')
                 
                 # Redirect to the page they were trying to access or the dashboard
