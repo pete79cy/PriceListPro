@@ -30,6 +30,17 @@ html, body {
     padding: 20px;
     background: #1c1c1e;
 }
+
+/* Top navigation styling */
+nav a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+nav button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
 /* Apple-inspired frosted glass search */
 .search-field {
     backdrop-filter: blur(8px);
@@ -341,6 +352,45 @@ html, body {
 
 {% block content %}
 <div id="content">
+<!-- TOP NAVIGATION BAR -->
+<nav style="background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 20px; margin: -20px -20px 20px -20px; display: flex; align-items: center; justify-content: space-between;">
+  <!-- Left: Logo/Brand -->
+  <div style="display: flex; align-items: center; gap: 16px;">
+    <a href="{{ url_for('dashboard') }}" style="color: white; text-decoration: none; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 18px;">🌱</span> Plant Pricing System
+    </a>
+  </div>
+  
+  <!-- Center: Navigation Links -->
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <a href="{{ url_for('dashboard') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;">
+      <span style="font-size: 16px;">🏠</span> Dashboard
+    </a>
+    <a href="{{ url_for('customers') }}" style="color: white; background: rgba(255, 255, 255, 0.1); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;">
+      <span style="font-size: 16px;">👥</span> Customers
+    </a>
+    <a href="{{ url_for('products') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;">
+      <span style="font-size: 16px;">📦</span> Products
+    </a>
+    <a href="{{ url_for('orders.index') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;">
+      <span style="font-size: 16px;">🛒</span> Orders
+    </a>
+  </div>
+  
+  <!-- Right: Action Buttons -->
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <a href="{{ url_for('uploads') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;">
+      <span style="font-size: 16px;">📤</span> Updates
+    </a>
+    <button style="background: #0A84FF; color: white; border: none; border-radius: 6px; padding: 8px 12px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;" data-bs-toggle="modal" data-bs-target="#customerModal" onclick="resetCustomerModal()">
+      <span style="font-size: 16px;">➕</span> New
+    </button>
+    <button style="background: transparent; color: rgba(255, 255, 255, 0.7); border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 16px;">
+      ⋯
+    </button>
+  </div>
+</nav>
+
 <!-- THREE-ZONE TOOLBAR -->
 <div class="toolbar">
   <!-- Leading: Back button and title -->
@@ -882,6 +932,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reset modal when adding a new customer  
     document.querySelector('.new-button').addEventListener('click', function() {
+        resetCustomerModal();
+    });
+    
+    // Function to reset customer modal (called from nav button too)
+    window.resetCustomerModal = function() {
         document.getElementById('customerModalLabel').textContent = 'Add Customer';
         document.getElementById('customer_id').value = '';
         document.getElementById('name').value = '';
@@ -889,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('phone').value = '';
         document.getElementById('address').value = '';
         document.getElementById('category_id').value = '';
-    });
+    };
 
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
