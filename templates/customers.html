@@ -225,14 +225,18 @@ nav button:hover {
     right: 0;
     top: 100%;
     margin-top: 4px;
-    background: rgba(28, 28, 30, 0.95);
+    background: rgba(28, 28, 30, 0.98);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    z-index: 9999;
     min-width: 120px;
     overflow: hidden;
+    display: none !important;
+}
+.context-menu.show {
+    display: block !important;
 }
 .context-menu-item {
     display: block;
@@ -908,16 +912,31 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const isVisible = menu.style.display !== 'none';
+        const isVisible = menu.classList.contains('show');
         
         // Close all other menus
         document.querySelectorAll('.context-menu').forEach(m => {
-            if (m !== menu) m.style.display = 'none';
+            if (m !== menu) m.classList.remove('show');
         });
         
-        menu.style.display = isVisible ? 'none' : 'block';
-        console.log('menu display set to:', menu.style.display);
+        // Toggle current menu
+        if (isVisible) {
+            menu.classList.remove('show');
+        } else {
+            menu.classList.add('show');
+        }
+        
+        console.log('menu visibility toggled, show class:', menu.classList.contains('show'));
     };
+
+    // Close context menus when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.ellipsis-button') && !e.target.closest('.context-menu')) {
+            document.querySelectorAll('.context-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
 
     // Customer name links (future: side drawer)
     document.querySelectorAll('.customer-name-link').forEach(link => {
