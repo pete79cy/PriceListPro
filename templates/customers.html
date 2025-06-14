@@ -571,7 +571,25 @@ nav button:hover {
         <span class="category-tag" style="font-size: 11px;">{{ customer.category.name }}</span>
         {% endif %}
       </div>
-      <button class="ellipsis-button" onclick="toggleContextMenu(this)">⋯</button>
+      <div style="position: relative;">
+        <button class="ellipsis-button" onclick="toggleContextMenu(this)">⋯</button>
+        <div class="context-menu" style="display: none;">
+          <button class="context-menu-item edit-customer"
+                  data-id="{{ customer.id }}"
+                  data-name="{{ customer.name }}"
+                  data-email="{{ customer.email or '' }}"
+                  data-phone="{{ customer.phone or '' }}"
+                  data-address="{{ customer.address or '' }}"
+                  data-category-id="{{ customer.category.id if customer.category else '' }}">
+            Edit
+          </button>
+          <button class="context-menu-item destructive delete-customer"
+                  data-id="{{ customer.id }}"
+                  data-name="{{ customer.name }}">
+            Delete
+          </button>
+        </div>
+      </div>
     </div>
     <div style="display: flex; gap: 16px; font-size: 13px;">
       {% if customer.email %}
