@@ -899,7 +899,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Context menu handling
     window.toggleContextMenu = function(button) {
+        console.log('toggleContextMenu called', button);
         const menu = button.nextElementSibling;
+        console.log('menu element:', menu);
+        
+        if (!menu) {
+            console.error('No menu found next to button');
+            return;
+        }
+        
         const isVisible = menu.style.display !== 'none';
         
         // Close all other menus
@@ -908,6 +916,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         menu.style.display = isVisible ? 'none' : 'block';
+        console.log('menu display set to:', menu.style.display);
     };
 
     // Customer name links (future: side drawer)
