@@ -1,9 +1,35 @@
 {% extends 'layout.html' %}
 
-{% block content %}
 {% block head %}
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
+/* Hide the navbar for this page to match products page */
+.navbar {
+    display: none !important;
+}
+
+/* Remove margin-bottom from container since navbar is hidden */
+body {
+    padding-top: 0 !important;
+}
+
+/* Full height container */
+.container-fluid {
+    margin-bottom: 0 !important;
+}
+
+/* Full height layout to match products page */
+html, body {
+    height: 100%;
+    background: #1c1c1e !important;
+}
+
+/* Main content container */
+#content {
+    min-height: 100vh;
+    padding: 20px;
+    background: #1c1c1e;
+}
 /* Apple-inspired frosted glass search */
 .search-field {
     backdrop-filter: blur(8px);
@@ -313,6 +339,8 @@
 </style>
 {% endblock %}
 
+{% block content %}
+<div id="content">
 <!-- THREE-ZONE TOOLBAR -->
 <div class="toolbar">
   <!-- Leading: Back button and title -->
@@ -900,4 +928,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Legacy function support (remove old dropdown references)
 window.toggleDropdown = window.toggleContextMenu;
 </script>
+
+</div> <!-- Close content div -->
 {% endblock %}
