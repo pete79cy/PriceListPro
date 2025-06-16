@@ -216,6 +216,60 @@
             background-color: yellow !important;
             border: 2px solid red !important;
         }
+        
+        /* Terms and Conditions Page Styling */
+        .terms-page {
+            font-size: 9pt;
+            color: #333;
+            line-height: 1.4;
+            page-break-inside: auto;
+        }
+        
+        .terms-page h1 {
+            font-size: 16pt;
+            font-weight: 700;
+            margin-bottom: 0.5cm;
+        }
+        
+        .terms-page h3 {
+            font-size: 11pt;
+            color: #2c3e50;
+            margin-top: 0.6cm;
+            margin-bottom: 0.3cm;
+            font-weight: 600;
+            border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 0.1cm;
+        }
+        
+        .terms-section {
+            margin-bottom: 0.5cm;
+            page-break-inside: avoid;
+        }
+        
+        .terms-section p {
+            margin: 0.2cm 0;
+            text-align: justify;
+        }
+        
+        .terms-section ul, .terms-section ol {
+            margin: 0.2cm 0;
+            padding-left: 1cm;
+        }
+        
+        .terms-section li {
+            margin-bottom: 0.15cm;
+            text-align: justify;
+        }
+        
+        .terms-section ul ul, .terms-section ol ol {
+            margin-top: 0.1cm;
+            margin-bottom: 0.1cm;
+        }
+        
+        .terms-section strong {
+            font-weight: 600;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -320,15 +374,134 @@
     </div>
     {% endif %}
 
-    <div class="terms">
-        <h2>Terms & Conditions</h2>
-        <ol>
-            <li>This quotation is valid for 30 days from the date of issue.</li>
-            <li>Prices are subject to change without prior notice after the validity period.</li>
-            <li>Delivery timeframe will be confirmed upon order placement.</li>
-            <li>Payment terms: 50% advance, balance prior to delivery.</li>
-            <li>All prices are inclusive of any applicable taxes as indicated.</li>
-        </ol>
+    <!-- Force page break before Terms & Conditions -->
+    <div style="page-break-before: always;"></div>
+    
+    <div class="terms-page">
+        <h1 style="text-align: center; margin-bottom: 1cm; color: #2c3e50;">TERMS & CONDITIONS – PLANT QUOTATIONS (B2B)</h1>
+        <p style="text-align: center; margin-bottom: 1.5cm; font-style: italic; color: #7f8c8d;">Version: June 2025</p>
+        
+        <div class="terms-section">
+            <h3>1. Definitions</h3>
+            <p>"Seller" means [Company Name] of [registered address].<br>
+            "Buyer" means the legal person identified on the quotation or purchase order.<br>
+            "Plants" means the live plant material described in the quotation.</p>
+        </div>
+
+        <div class="terms-section">
+            <h3>2. Validity of Quotation</h3>
+            <ul>
+                <li>Each quotation is open for 30 calendar days from its issue date or until the quoted stock is sold, whichever occurs first.</li>
+                <li>Orders received after expiry require a fresh quotation.</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>3. Formation of Contract</h3>
+            <ul>
+                <li>The Buyer's purchase order constitutes an offer to purchase subject to these T&C.</li>
+                <li>A binding contract arises only when the Seller issues a written Order Confirmation (email or e signature accepted).</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>4. Prices & Taxes</h3>
+            <ul>
+                <li>Prices are stated in euro (€) and are exclusive of VAT unless expressly indicated otherwise; VAT will be added at the applicable rate.</li>
+                <li>Prices are firm for the quotation validity period and for the quantities confirmed in the Order Confirmation.</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>5. Payment Terms</h3>
+            <ol>
+                <li><strong>Deposit</strong> – 50% of the total order value, non refundable, payable upon order placement.</li>
+                <li><strong>Balance</strong> – 50% payable in cleared funds before dispatch/collection.</li>
+                <li><strong>Late payment interest</strong> accrues at the higher of:
+                    <ul style="margin-top: 0.3cm;">
+                        <li>5% p.a. above the Bank of Cyprus base rate, or</li>
+                        <li>the statutory rate under the Late Payments in Commercial Transactions Law 123(I)/2012 (ECB MRO + 8%),</li>
+                    </ul>
+                    calculated daily until payment, plus the fixed €40 recovery charge.
+                </li>
+            </ol>
+        </div>
+
+        <div class="terms-section">
+            <h3>6. Delivery, Risk & Title</h3>
+            <ul>
+                <li>Delivery within Cyprus (ground floor, single location) is included in the price.</li>
+                <li>Indicative lead time is confirmed once the deposit is received.</li>
+                <li>Risk passes to the Buyer upon unloading at the delivery address or upon collection by the Buyer's carrier, whichever is earlier.</li>
+                <li>Title to the Plants remains with the Seller until the Seller receives full payment of all sums due, and the Seller may retake possession if payment is not made when due.</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>7. Inspection & Acceptance</h3>
+            <ul>
+                <li>The Buyer must inspect the Plants immediately on delivery.</li>
+                <li><strong>Visible defects/shortages:</strong> notify the Seller in writing within 2 business days.</li>
+                <li><strong>Latent defects</strong> (e.g. disease): notify within 7 days of discovery and no later than 30 days after delivery.</li>
+                <li>Failure to notify within the relevant period constitutes acceptance of the Plants.</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>8. Warranty</h3>
+            <ul>
+                <li>The Seller warrants that, at delivery, the Plants conform to the agreed species/cultivar and size and are free from quarantine pests.</li>
+                <li>All other warranties or conditions, express or implied, are excluded to the fullest extent permitted by law.</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>9. Limitation of Liability</h3>
+            <ul>
+                <li>The Seller's aggregate liability under or in connection with the contract shall not exceed the price paid for the Plants.</li>
+                <li>The Seller is not liable for indirect, special or consequential loss (including loss of profit or goodwill).</li>
+                <li>Nothing limits liability for death or personal injury caused by negligence, or for fraud.</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>10. Cancellation & Returns</h3>
+            <ul>
+                <li>Orders may not be cancelled after the Order Confirmation.</li>
+                <li>Returns are accepted only for Plants proven dead on arrival (DOA); Buyer must:
+                    <ol style="margin-top: 0.3cm;">
+                        <li>Obtain the Seller's written authorisation;</li>
+                        <li>Provide dated photographic evidence; and</li>
+                        <li>Return the Plants (or allow collection) within 3 days of delivery in their original packaging.</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h3>11. Force Majeure</h3>
+            <p>Neither party is liable for delay or failure caused by events beyond its reasonable control, including but not limited to acts of God, war, strikes, fire, flood, pest infestation or plant disease. The affected party shall notify the other without undue delay.</p>
+        </div>
+
+        <div class="terms-section">
+            <h3>12. Intellectual Property & Propagation</h3>
+            <p>Where Plants are protected by plant breeders' rights or patents, the Buyer shall not propagate, reproduce or resell propagating material without the rights holder's prior written consent.</p>
+        </div>
+
+        <div class="terms-section">
+            <h3>13. Confidentiality</h3>
+            <p>Each party shall keep confidential any non public commercial information received from the other in connection with the quotation or contract, except where disclosure is required by law.</p>
+        </div>
+
+        <div class="terms-section">
+            <h3>14. Governing Law & Jurisdiction</h3>
+            <p>This contract is governed by the laws of the Republic of Cyprus.</p>
+        </div>
+
+        <div class="terms-section">
+            <h3>15. Entire Agreement</h3>
+            <p>These T&C, together with the quotation and the Seller's Order Confirmation, constitute the entire agreement between the parties and supersede all prior discussions or correspondence.</p>
+        </div>
     </div>
 
     <div class="footer">
