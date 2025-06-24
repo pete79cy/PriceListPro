@@ -465,15 +465,59 @@ async function enhancedProductSearch(query) {
     }
 }
 
-// Enhanced results display
+// Enhanced results display with improved UI
 function displayEnhancedSearchResults(products) {
     const resultsContainer = document.getElementById('searchResults');
     
     if (products.length === 0) {
         resultsContainer.innerHTML = 
-            '<div class="alert alert-info">No products found for this search</div>';
+            '<div class="alert alert-info text-center"><i class="fas fa-search"></i> No products found</div>';
         return;
     }
+    
+    const resultsHtml = products.map(product => `
+        <div class="card mb-2 search-result-item" 
+             data-product-id="${product.id}" 
+             data-product-type="${product.type}"
+             style="cursor: pointer; transition: all 0.2s ease;"
+             onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''"
+             onclick="addProductToEnhancedOrder(this)">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-1 text-primary fw-bold">${product.name}</h6>
+                        ${product.scientific_name ? `<p class="card-text small text-muted fst-italic mb-1">${product.scientific_name}</p>` : ''}
+                        <div class="d-flex gap-1 flex-wrap">
+                            ${product.size ? `<span class="badge bg-light text-dark">${product.size}</span>` : ''}
+                            ${product.category ? `<span class="badge bg-secondary">${product.category}</span>` : ''}
+                            ${product.has_customer_price ? '<span class="badge bg-success">Custom Price</span>' : ''}
+                            ${product.type === 'supplier_product' ? '<span class="badge bg-warning text-dark">Supplier</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="h6 mb-0 text-success fw-bold">${product.price_formatted || '€' + product.price}</div>
+                        <small class="text-muted">per ${product.size || 'unit'}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    resultsContainer.innerHTML = `
+        <div class="search-results-header mb-2">
+            <small class="text-muted">Found ${products.length} product${products.length !== 1 ? 's' : ''} - Click to add</small>
+        </div>
+        ${resultsHtml}
+    `;
+    
+    // Auto-focus first result for better UX
+    setTimeout(() => {
+        const firstResult = resultsContainer.querySelector('.search-result-item');
+        if (firstResult) {
+            firstResult.style.border = '2px solid #007bff';
+        }
+    }, 100);
     
     let html = '<div class="list-group mt-2">';
     
