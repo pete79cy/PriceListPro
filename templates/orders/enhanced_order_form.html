@@ -378,7 +378,11 @@ function debugLog(message, data = null) {
     debugPanel.scrollTop = debugPanel.scrollHeight;
 }
 
-// Enhanced search function with proper error handling
+// Optimized search with caching and debouncing
+const searchCache = new Map();
+let searchTimeout = null;
+let currentSearchAbortController = null;
+
 async function enhancedProductSearch(query) {
     if (!query || query.length < 2) {
         debugLog('Query too short, clearing results');
@@ -396,27 +400,68 @@ async function enhancedProductSearch(query) {
         return;
     }
     
+    // Check cache first
+    const cacheKey = `${query}-${customerId}`;
+    if (searchCache.has(cacheKey)) {
+        debugLog('Using cached results for query');
+        displayEnhancedSearchResults(searchCache.get(cacheKey));
+        return;
+    }
+    
     debugLog(`Searching for "${query}" with customer ID: ${customerId}`);
     
+    // Cancel previous request if still pending
+    if (currentSearchAbortController) {
+        currentSearchAbortController.abort();
+    }
+    
+    // Create new abort controller for this request
+    currentSearchAbortController = new AbortController();
+    
     try {
-        const url = `/orders/api/search/products?q=${encodeURIComponent(query)}&customer_id=${customerId}&limit=10`;
+        const url = `/orders/api/search/products?q=${encodeURIComponent(query)}&customer_id=${customerId}&limit=15`;
         debugLog(`Requesting: ${url}`);
         
-        const response = await fetch(url);
-        debugLog(`Response status: ${response.status} ${response.statusText}`);
+        // Show loading indicator
+        document.getElementById('searchResults').innerHTML = 
+            '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+        
+        const startTime = performance.now();
+        const response = await fetch(url, {
+            signal: currentSearchAbortController.signal
+        });
+        const endTime = performance.now();
+        
+        debugLog(`Response status: ${response.status} ${response.statusText} (${Math.round(endTime - startTime)}ms)`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const products = await response.json();
-        debugLog(`Found ${products.length} products`, products);
+        debugLog(`Found ${products.length} products in ${Math.round(endTime - startTime)}ms`, products);
+        
+        // Cache the results
+        searchCache.set(cacheKey, products);
+        
+        // Clean cache if it gets too large (keep last 50 searches)
+        if (searchCache.size > 50) {
+            const firstKey = searchCache.keys().next().value;
+            searchCache.delete(firstKey);
+        }
+        
         displayEnhancedSearchResults(products);
         
     } catch (error) {
+        if (error.name === 'AbortError') {
+            debugLog('Search request aborted');
+            return;
+        }
         debugLog(`Search failed: ${error.message}`);
         document.getElementById('searchResults').innerHTML = 
             `<div class="alert alert-danger">Search failed: ${error.message}</div>`;
+    } finally {
+        currentSearchAbortController = null;
     }
 }
 

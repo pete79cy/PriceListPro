@@ -97,7 +97,7 @@ class EnhancedOrderManager {
     return null;
   }
 
-  /* ---------- search & add ---------- */
+  /* ---------- optimized search & add ---------- */
   async searchProducts(query) {
     if (query.length < 2) {
       this.$results.empty();
@@ -105,41 +105,60 @@ class EnhancedOrderManager {
       return;
     }
 
-    this.$results.html('<li class="loading">Searching…</li>');
+    // Show loading state immediately
+    this.$results.html('<li class="loading text-center py-2"><i class="fas fa-spinner fa-spin"></i> Searching...</li>');
     this.debugLog(`Searching for "${query}" with customer ID: ${this.currentCustomerId}`);
     
     try {
       const params = new URLSearchParams({ 
         q: query, 
         customer_id: this.currentCustomerId || '',
-        limit: 10
+        limit: 15  // Increased limit for better results
       });
       const url = `/orders/api/search/products?${params}`;
       this.debugLog(`Requesting: ${url}`);
       
+      const startTime = performance.now();
       const res = await fetch(url);
-      this.debugLog(`Response status: ${res.status} ${res.statusText}`);
+      const endTime = performance.now();
+      
+      this.debugLog(`Response status: ${res.status} ${res.statusText} (${Math.round(endTime - startTime)}ms)`);
       
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       
       const data = await res.json();
-      this.debugLog(`Found ${data.length} products`, data);
+      this.debugLog(`Found ${data.length} products in ${Math.round(endTime - startTime)}ms`, data);
 
       if (data.length === 0) {
-        this.$results.html('<li class="no-results">No products found</li>');
+        this.$results.html(`
+          <li class="no-results text-center py-3 text-muted">
+            <i class="fas fa-search"></i><br>
+            No products found for "${query}"
+          </li>
+        `);
         return;
       }
 
+      // Enhanced result display with better formatting
       this.$results.html(
         data.map(p => `
-          <li class="result list-group-item d-flex justify-content-between align-items-center" data-id="${p.id}">
-            <div>
-              <strong>${p.name}</strong>
-              ${p.size ? `<br><small class="text-muted">${p.size}</small>` : ''}
+          <li class="result list-group-item list-group-item-action d-flex justify-content-between align-items-center" 
+              data-id="${p.id}" 
+              data-type="${p.type}"
+              title="Click to add to order">
+            <div class="flex-grow-1">
+              <div class="fw-bold text-primary">${p.name}</div>
+              ${p.scientific_name ? `<small class="text-muted fst-italic">${p.scientific_name}</small><br>` : ''}
+              ${p.size ? `<small class="badge bg-light text-dark">${p.size}</small>` : ''}
+              ${p.category ? `<small class="badge bg-secondary ms-1">${p.category}</small>` : ''}
+              ${p.has_customer_price ? '<small class="badge bg-success ms-1">Custom Price</small>' : ''}
             </div>
-            <span class="badge bg-primary">${p.price_formatted || '€' + p.price}</span>
+            <div class="text-end">
+              <div class="fw-bold text-success">${p.price_formatted || '€' + p.price}</div>
+              ${p.type === 'supplier_product' ? '<small class="text-muted">Supplier</small>' : ''}
+            </div>
           </li>`).join('')
       );
 

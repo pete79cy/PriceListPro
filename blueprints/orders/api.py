@@ -16,7 +16,7 @@ from .routes import get_customer_price, update_customer_price_list
 @orders.route('/api/search/products')
 @login_required
 def api_search_products():
-    """Smart product search with fuzzy matching and customer-specific pricing"""
+    """Optimized product search with efficient database queries"""
     query = request.args.get('q', '').strip()
     customer_id = request.args.get('customer_id', type=int)
     limit = request.args.get('limit', 20, type=int)
@@ -24,87 +24,110 @@ def api_search_products():
     if not query or len(query) < 2:
         return jsonify([])
     
-    # Search in multiple fields with fuzzy matching
+    # Use a single optimized query with LEFT JOIN for price list data
+    from sqlalchemy.orm import aliased
+    
+    # Create alias for PriceList to enable LEFT JOIN
+    price_list_alias = aliased(PriceList)
+    
+    # Optimized search with single query and JOIN
     search_filter = or_(
         Product.name.ilike(f'%{query}%'),
         Product.scientific_name.ilike(f'%{query}%'),
         Product.category.ilike(f'%{query}%'),
-        Product.description.ilike(f'%{query}%'),
         Product.sku.ilike(f'%{query}%')
     )
     
-    products = Product.query.filter(search_filter).limit(limit).all()
-    
-    # Also search in supplier products for additional matches
-    supplier_products = SupplierProduct.query.filter(
-        or_(
-            SupplierProduct.product_name.ilike(f'%{query}%'),
-            SupplierProduct.scientific_name.ilike(f'%{query}%')
-        )
-    ).limit(limit).all()
+    # Single query with LEFT JOIN to get products and their price list entries
+    product_query = db.session.query(
+        Product,
+        price_list_alias.id.label('price_list_id'),
+        price_list_alias.price.label('customer_price')
+    ).outerjoin(
+        price_list_alias,
+        and_(
+            price_list_alias.product_id == Product.id,
+            price_list_alias.customer_id == customer_id
+        ) if customer_id else False
+    ).filter(search_filter).limit(limit * 2)  # Get more to account for deduplication
     
     results = []
     
-    # Add regular products
-    for product in products:
-        price = get_customer_price(customer_id, product.id) if customer_id else 0.0
-        
-        # Get customer-specific price list entry
-        price_list_entry = None
-        if customer_id:
-            price_list_entry = PriceList.query.filter_by(
-                customer_id=customer_id,
-                product_id=product.id
-            ).first()
+    # Process regular products efficiently
+    for product, price_list_id, customer_price in product_query:
+        # Use customer price if available, otherwise use base price
+        price = customer_price if customer_price is not None else (product.price or 0.0)
         
         results.append({
             'id': product.id,
             'name': product.name,
             'scientific_name': product.scientific_name or '',
             'category': product.category or '',
-            'pot': product.pot or '',
+            'size': product.pot or '',  # Using 'size' instead of 'pot' for consistency
             'sku': product.sku or '',
             'description': product.description or '',
-            'price': price,
-            'has_customer_price': price_list_entry is not None,
-            'price_list_id': price_list_entry.id if price_list_entry else None,
+            'price': float(price),
+            'price_formatted': f'€{price:.2f}',
+            'has_customer_price': price_list_id is not None,
+            'price_list_id': price_list_id,
+            'vat_rate': 5.0,  # Default VAT rate for plants
             'type': 'product'
         })
     
-    # Add supplier products that don't match existing products
-    for supplier_product in supplier_products:
-        # Check if we already have this as a regular product
-        existing = any(p['name'].lower() == supplier_product.product_name.lower() for p in results)
-        if not existing:
+    # Only search supplier products if we have fewer results than requested
+    if len(results) < limit:
+        remaining_limit = limit - len(results)
+        
+        # Efficient supplier product search with JOIN
+        supplier_query = db.session.query(SupplierProduct).join(
+            SupplierProduct.supplier, isouter=True
+        ).filter(
+            or_(
+                SupplierProduct.product_name.ilike(f'%{query}%'),
+                SupplierProduct.scientific_name.ilike(f'%{query}%')
+            )
+        ).limit(remaining_limit)
+        
+        # Get existing product names for deduplication
+        existing_names = {r['name'].lower() for r in results}
+        
+        for supplier_product in supplier_query:
+            # Skip if we already have this product
+            if supplier_product.product_name.lower() in existing_names:
+                continue
+                
             results.append({
                 'id': f'supplier_{supplier_product.id}',
                 'name': supplier_product.product_name,
                 'scientific_name': supplier_product.scientific_name or '',
                 'category': 'Supplier Product',
-                'pot': supplier_product.pot_size or '',
+                'size': supplier_product.pot_size or '',
                 'sku': '',
                 'description': f'From {supplier_product.supplier.name}' if supplier_product.supplier else '',
-                'price': supplier_product.price,
+                'price': float(supplier_product.price or 0.0),
+                'price_formatted': f'€{supplier_product.price:.2f}' if supplier_product.price else '€0.00',
                 'has_customer_price': False,
                 'price_list_id': None,
+                'vat_rate': 5.0,  # Default VAT rate for plants
                 'type': 'supplier_product',
                 'supplier_id': supplier_product.supplier_id,
                 'supplier_name': supplier_product.supplier.name if supplier_product.supplier else ''
             })
     
-    # Sort results by relevance (exact matches first, then partial matches)
+    # Optimized relevance sorting
+    query_lower = query.lower()
+    
     def relevance_score(item):
         name = item['name'].lower()
-        query_lower = query.lower()
         
         if name == query_lower:
-            return 0  # Exact match
+            return (0, name)  # Exact match
         elif name.startswith(query_lower):
-            return 1  # Starts with query
+            return (1, name)  # Starts with query
         elif query_lower in name:
-            return 2  # Contains query
+            return (2, name)  # Contains query
         else:
-            return 3  # Other matches
+            return (3, name)  # Other matches
     
     results.sort(key=relevance_score)
     
