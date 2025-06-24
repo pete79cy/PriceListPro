@@ -39,17 +39,24 @@ def api_search_products():
     )
     
     # Single query with LEFT JOIN to get products and their price list entries
-    product_query = db.session.query(
-        Product,
-        price_list_alias.id.label('price_list_id'),
-        price_list_alias.price.label('customer_price')
-    ).outerjoin(
-        price_list_alias,
-        and_(
-            price_list_alias.product_id == Product.id,
-            price_list_alias.customer_id == customer_id
-        ) if customer_id else False
-    ).filter(search_filter).limit(limit * 2)  # Get more to account for deduplication
+    if customer_id:
+        product_query = db.session.query(
+            Product,
+            price_list_alias.id.label('price_list_id'),
+            price_list_alias.price.label('customer_price')
+        ).outerjoin(
+            price_list_alias,
+            and_(
+                price_list_alias.product_id == Product.id,
+                price_list_alias.customer_id == customer_id
+            )
+        ).filter(search_filter).limit(limit * 2)
+    else:
+        product_query = db.session.query(
+            Product,
+            db.literal_column("NULL").label('price_list_id'),
+            db.literal_column("NULL").label('customer_price')
+        ).filter(search_filter).limit(limit * 2)
     
     results = []
     
