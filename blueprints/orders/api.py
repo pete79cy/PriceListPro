@@ -62,8 +62,11 @@ def api_search_products():
     
     # Process regular products efficiently
     for product, price_list_id, customer_price in product_query:
-        # Use customer price if available, otherwise use base price
-        price = customer_price if customer_price is not None else (product.price or 0.0)
+        # Use customer price if available, otherwise use default price from get_customer_price
+        if customer_price is not None:
+            price = customer_price
+        else:
+            price = get_customer_price(customer_id, product.id) if customer_id else 0.0
         
         results.append({
             'id': product.id,
