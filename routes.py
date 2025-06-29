@@ -2220,6 +2220,11 @@ def register_routes(app):
                                    f"({existing_product.scientific_name}, {existing_product.pot})")
                         product_id = existing_product.id
                 
+                # Determine pricing status
+                pricing_status = item_data.get('pricing_status', 'CONFIRMED')
+                if selling_price is None or selling_price == 0:
+                    pricing_status = 'PENDING'
+                
                 # Create quotation item
                 quotation_item = QuotationItem(
                     quotation_id=quotation.id,
@@ -2229,8 +2234,9 @@ def register_routes(app):
                     pot_size=pot_size,
                     height=height,
                     quantity=quantity,
-                    selling_price=selling_price,
+                    selling_price=selling_price if selling_price is not None else 0.0,
                     vat_rate=vat_rate,
+                    pricing_status=pricing_status,
                     supplier=supplier,
                     cost_price=cost_price,
                     total=item_total

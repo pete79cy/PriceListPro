@@ -525,8 +525,9 @@ class QuotationItem(db.Model):
     pot_size = db.Column(db.String(50), nullable=True)
     height = db.Column(db.String(50), nullable=True)  # Plant height (e.g., "30cm", "150/200cm")
     quantity = db.Column(db.Float, nullable=False, default=1)
-    selling_price = db.Column(db.Float, nullable=False)
+    selling_price = db.Column(db.Float, nullable=True)  # Allow NULL for pending pricing
     vat_rate = db.Column(db.Float, nullable=False, default=19.0)  # Default VAT rate of 19%
+    pricing_status = db.Column(db.String(20), nullable=False, default='CONFIRMED')  # CONFIRMED, PENDING, REQUESTED
     supplier = db.Column(db.String(255), nullable=True)  # Supplier name 
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)  # Link to supplier
     cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
