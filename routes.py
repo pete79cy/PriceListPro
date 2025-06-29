@@ -2220,12 +2220,14 @@ def register_routes(app):
                                    f"({existing_product.scientific_name}, {existing_product.pot})")
                         product_id = existing_product.id
                 
-                # Parse pricing status from form data
+                # Parse pricing status from form data - default to CONFIRMED
                 pricing_status = request.form.get(f'pricing_status_{i}', 'CONFIRMED')
                 
-                # If no price is provided or price is 0, and status is not explicitly set to CONFIRMED, mark as PENDING
-                if (selling_price is None or selling_price == 0) and pricing_status != 'CONFIRMED':
+                # Only mark as PENDING if no price AND user explicitly wants pending status
+                if (selling_price is None or selling_price == 0) and pricing_status == 'PENDING':
                     pricing_status = 'PENDING'
+                else:
+                    pricing_status = 'CONFIRMED'
                 
                 # Create quotation item
                 quotation_item = QuotationItem(

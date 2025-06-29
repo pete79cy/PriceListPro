@@ -117,6 +117,8 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
   - Updated edit quotation interface with pricing status controls
   - Added visual indicators for pending pricing items
   - Fixed AI price suggestion button restoration issues
+  - Set default pricing status to CONFIRMED for all new items
+  - Added enhanced JavaScript debugging for AI price suggestion buttons
 - June 24, 2025: Initial setup
 
 ## User Preferences
