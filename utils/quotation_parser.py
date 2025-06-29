@@ -451,6 +451,9 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 quantity = 1  # Default to 1 if parsing fails
                 logger.info(f"Using default quantity: {quantity}")
             
+            # Determine pricing status based on whether we have a price
+            pricing_status = 'CONFIRMED' if unit_price is not None else 'PENDING'
+            
             # Initialize product entry using our new format
             product_entry = {
                 'description': display_description,  # Use common name or description
@@ -458,8 +461,9 @@ def extract_quotation_data_from_excel(excel_path, customer_id):
                 'pot_size': pot_size,
                 'height': height,
                 'quantity': quantity,
-                'selling_price': unit_price,  # Price from the Excel file
+                'selling_price': unit_price,  # Price from the Excel file (can be None)
                 'vat_rate': 19,  # Default VAT rate of 19%, can also be 5% or 0%
+                'pricing_status': pricing_status,  # CONFIRMED or PENDING
                 'supplier': supplier,
                 'cost_price': cost_price,
                 'product_id': product.id if product else None,

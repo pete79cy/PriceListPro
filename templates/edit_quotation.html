@@ -118,7 +118,7 @@
                                             </td>
                                             <td>
                                                 <div class="input-group">
-                                                    <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
+                                                    <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" {% if product.pricing_status != 'PENDING' %}required{% endif %} onchange="updateRowTotal(this)">
                                                     <button type="button" class="btn btn-outline-primary suggest-price-btn" 
                                                             data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
                                                             data-pot-size-id="pot_size_{{ loop.index0 }}" 
@@ -126,6 +126,18 @@
                                                         <i class="fas fa-magic me-1"></i> Suggest
                                                     </button>
                                                 </div>
+                                                <div class="mt-1">
+                                                    <select class="form-select form-select-sm" name="pricing_status_{{ loop.index0 }}" onchange="togglePriceRequirement({{ loop.index0 }})">
+                                                        <option value="CONFIRMED" {% if not product.pricing_status or product.pricing_status == 'CONFIRMED' %}selected{% endif %}>Price Confirmed</option>
+                                                        <option value="PENDING" {% if product.pricing_status == 'PENDING' %}selected{% endif %}>Pending from Supplier</option>
+                                                        <option value="REQUESTED" {% if product.pricing_status == 'REQUESTED' %}selected{% endif %}>Price Requested</option>
+                                                    </select>
+                                                </div>
+                                                {% if product.pricing_status == 'PENDING' %}
+                                                <small class="text-warning"><i class="fas fa-clock"></i> Awaiting supplier pricing</small>
+                                                {% elif product.pricing_status == 'REQUESTED' %}
+                                                <small class="text-info"><i class="fas fa-paper-plane"></i> Price request sent</small>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <select class="form-select" name="vat_rate_{{ loop.index0 }}">
