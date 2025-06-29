@@ -111,7 +111,13 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
-- June 24, 2025. Initial setup
+- June 29, 2025: Added pending pricing status feature for quotation items
+  - Added pricing_status column to QuotationItem model (CONFIRMED, PENDING, REQUESTED)
+  - Enhanced quotation parser to handle items without prices
+  - Updated edit quotation interface with pricing status controls
+  - Added visual indicators for pending pricing items
+  - Fixed AI price suggestion button restoration issues
+- June 24, 2025: Initial setup
 
 ## User Preferences
 

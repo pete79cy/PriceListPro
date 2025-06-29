@@ -366,7 +366,7 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
     
     // Show AI loading indicator
     const button = document.querySelector(`[data-price-id="${sellingPriceId}"]`);
-    const originalText = button ? button.innerHTML : '';
+    const originalText = button ? button.innerHTML : '<i class="fas fa-robot me-1"></i> AI Suggest';
     if (button) {
         button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> AI Thinking...';
         button.disabled = true;
