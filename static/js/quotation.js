@@ -451,9 +451,12 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
             console.log('Restoring button state. Button exists:', !!button);
             if (button) {
                 console.log('Original text:', originalText);
-                button.innerHTML = originalText;
-                button.disabled = false;
-                console.log('Button restored successfully');
+                // Force restoration of button text and state
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-robot me-1"></i> AI Suggest';
+                    button.disabled = false;
+                    console.log('Button restored successfully');
+                }, 100);
             } else {
                 console.warn('Button not found for restoration');
             }

@@ -128,7 +128,7 @@
                                                 </div>
                                                 <div class="mt-1">
                                                     <select class="form-select form-select-sm" name="pricing_status_{{ loop.index0 }}" onchange="togglePriceRequirement({{ loop.index0 }})">
-                                                        <option value="CONFIRMED" {% if not product.pricing_status or product.pricing_status == 'CONFIRMED' %}selected{% endif %}>Price Confirmed</option>
+                                                        <option value="CONFIRMED" {% if not product.pricing_status or product.pricing_status == 'CONFIRMED' or product.pricing_status == '' %}selected{% endif %}>Price Confirmed</option>
                                                         <option value="PENDING" {% if product.pricing_status == 'PENDING' %}selected{% endif %}>Pending from Supplier</option>
                                                         <option value="REQUESTED" {% if product.pricing_status == 'REQUESTED' %}selected{% endif %}>Price Requested</option>
                                                     </select>
