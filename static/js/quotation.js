@@ -385,10 +385,12 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
     // Call the AI price assistant API
     fetch(apiUrl)
         .then(response => {
+            console.log('AI API Response status:', response.status);
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             return response.text().then(text => {
+                console.log('AI API Response text:', text);
                 try {
                     return JSON.parse(text);
                 } catch (err) {
@@ -399,12 +401,15 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
             });
         })
         .then(data => {
+            console.log('AI API Response data:', data);
             if (data.error) {
+                console.log('AI API returned error:', data.error);
                 showToast(data.error, "danger");
                 return;
             }
             
             if (data.suggested_price) {
+                console.log('AI suggested price:', data.suggested_price);
                 // Update the price field
                 document.getElementById(sellingPriceId).value = data.suggested_price.toFixed(2);
                 
@@ -417,20 +422,23 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
                 
                 // Add visual indicator that this is an AI suggestion
                 const priceField = document.getElementById(sellingPriceId);
-                priceField.style.borderColor = '#28a745';
-                priceField.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
-                
-                // Remove the visual indicator after 3 seconds
-                setTimeout(() => {
-                    priceField.style.borderColor = '';
-                    priceField.style.boxShadow = '';
-                }, 3000);
-                
-                // Trigger recalculation if the function exists
-                if (typeof updateRowTotal === 'function') {
-                    updateRowTotal(priceField);
+                if (priceField) {
+                    priceField.style.borderColor = '#28a745';
+                    priceField.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
+                    
+                    // Remove the visual indicator after 3 seconds
+                    setTimeout(() => {
+                        priceField.style.borderColor = '';
+                        priceField.style.boxShadow = '';
+                    }, 3000);
+                    
+                    // Trigger recalculation if the function exists
+                    if (typeof updateRowTotal === 'function') {
+                        updateRowTotal(priceField);
+                    }
                 }
             } else {
+                console.log('No price suggestion available');
                 showToast("No price suggestion available for this product", "warning");
             }
         })
@@ -439,10 +447,15 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
             showToast("Error retrieving AI price data: " + error.message, "danger");
         })
         .finally(() => {
-            // Restore button state
+            // Restore button state with detailed logging
+            console.log('Restoring button state. Button exists:', !!button);
             if (button) {
+                console.log('Original text:', originalText);
                 button.innerHTML = originalText;
                 button.disabled = false;
+                console.log('Button restored successfully');
+            } else {
+                console.warn('Button not found for restoration');
             }
         });
 }
