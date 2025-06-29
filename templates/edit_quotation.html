@@ -382,5 +382,20 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('vat5').textContent = '€ ' + vat5Total.toFixed(2);
         document.getElementById('total').textContent = '€ ' + (subtotal + vat19Total + vat5Total).toFixed(2);
     }
+
+    function togglePriceRequirement(index) {
+        const pricingStatusSelect = document.querySelector(`select[name="pricing_status_${index}"]`);
+        const priceInput = document.querySelector(`input[name="selling_price_${index}"]`);
+        
+        if (pricingStatusSelect && priceInput) {
+            if (pricingStatusSelect.value === 'PENDING' || pricingStatusSelect.value === 'REQUESTED') {
+                priceInput.removeAttribute('required');
+                priceInput.style.backgroundColor = '#fff3cd'; // Light yellow background
+            } else {
+                priceInput.setAttribute('required', 'required');
+                priceInput.style.backgroundColor = ''; // Reset to default
+            }
+        }
+    }
 </script>
 {% endblock %}

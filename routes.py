@@ -3000,6 +3000,9 @@ def register_routes(app):
             except (ValueError, TypeError):
                 item.vat_rate = 19  # Default VAT rate
                 logger.warning(f"Invalid VAT rate format in edit quotation item {item_id}, using default of 19%")
+            
+            # Update pricing status
+            item.pricing_status = request.form.get('pricing_status', 'CONFIRMED')
                 
             # Update supplier text field
             item.supplier = request.form.get('supplier')
