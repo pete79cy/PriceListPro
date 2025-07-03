@@ -821,3 +821,54 @@ def update_discount(order_id):
     except Exception as e:
         flash(f'Error updating discount: {str(e)}', 'danger')
         return redirect(url_for('orders.view_order', order_id=order.id))
+
+
+@orders.route('/<int:order_id>/update_total', methods=['POST'])
+@login_required
+def update_order_total(order_id):
+    """Update order total by calculating required discount"""
+    from decimal import Decimal, ROUND_HALF_UP
+    
+    order = Order.query.get_or_404(order_id)
+    new_total_str = request.form.get('new_total')
+    
+    if not new_total_str:
+        flash('No new total was provided.', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order_id))
+    
+    try:
+        # Use Decimal for precise financial calculations
+        new_total = Decimal(str(new_total_str))
+        subtotal = Decimal(str(order.subtotal))
+        
+        # Calculate VAT rate (assuming 19% for most items)
+        vat_rate = Decimal('0.19')
+        
+        # Calculate the subtotal after discount from the desired new total
+        # Formula: new_total = subtotal_after_discount * (1 + vat_rate)
+        subtotal_after_discount = new_total / (1 + vat_rate)
+        
+        # Calculate the required discount amount
+        # Formula: discount = original_subtotal - subtotal_after_discount
+        required_discount = subtotal - subtotal_after_discount
+        
+        # Validation: Ensure discount is not negative
+        if required_discount < 0:
+            flash('The new total cannot be higher than the original subtotal plus VAT.', 'danger')
+            return redirect(url_for('orders.view_order', order_id=order_id))
+        
+        # Update the order with the calculated fixed discount
+        order.discount_type = 'fixed'
+        order.discount_percentage = 0
+        order.discount_amount = float(required_discount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        
+        db.session.commit()
+        flash(f'Order total updated to €{new_total}. Discount calculated automatically as €{required_discount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)}.', 'success')
+        
+    except (ValueError, TypeError) as e:
+        flash('Invalid total amount entered. Please enter a valid number.', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating order total: {str(e)}', 'danger')
+    
+    return redirect(url_for('orders.view_order', order_id=order_id))

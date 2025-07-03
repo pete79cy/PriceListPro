@@ -407,8 +407,16 @@
                                 {# Total including VAT and discount #}
                                 <tr class="table-secondary">
                                     <th colspan="3" class="text-end">Total:</th>
-                                    <th class="text-end"><span id="total">{{ "%.2f"|format(order.total) }}</span></th>
-                                    <th></th>
+                                    <th class="text-end">
+                                        <span id="total">€{{ "%.2f"|format(order.total) }}</span>
+                                    </th>
+                                    <th class="text-center">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                data-bs-toggle="modal" data-bs-target="#editTotalModal" 
+                                                title="Edit Final Total">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </th>
                                 </tr>
                             </tfoot>
                             {% endif %}
@@ -947,6 +955,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-danger" id="removeDiscountBtn">Remove Discount</button>
                     <button type="submit" class="btn btn-primary">Update Discount</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Total Modal -->
+<div class="modal fade" id="editTotalModal" tabindex="-1" aria-labelledby="editTotalModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTotalModalLabel">Change Final Total</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTotalForm" action="{{ url_for('orders.update_order_total', order_id=order.id) }}" method="post">
+                <div class="modal-body">
+                    <p>Enter the desired final total for this order. The system will automatically calculate the fixed discount required.</p>
+                    <div class="mb-3">
+                        <label for="new_total" class="form-label">New Grand Total (€)</label>
+                        <input type="number" step="0.01" class="form-control" id="new_total" name="new_total" 
+                               placeholder="e.g., 550.00" value="{{ "%.2f"|format(order.total) }}" required>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Current Breakdown:</strong><br>
+                        Original Subtotal: €{{ "%.2f"|format(order.subtotal) }}<br>
+                        Current Discount: €{{ "%.2f"|format(order.discount_value) }}<br>
+                        Current VAT: €{{ "%.2f"|format(order.vat_amount) }}<br>
+                        Current Total: €{{ "%.2f"|format(order.total) }}
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        <small><strong>Note:</strong> The new total should typically be less than the original subtotal plus VAT (€{{ "%.2f"|format(order.subtotal * 1.19) }}).</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Total</button>
                 </div>
             </form>
         </div>
