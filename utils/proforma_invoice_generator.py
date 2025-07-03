@@ -36,104 +36,129 @@ def generate_proforma_invoice_html(order):
     vat_amount = subtotal * (vat_rate / 100)
     grand_total = subtotal + vat_amount
     
-    # Pro Forma Invoice HTML template matching the attached design
+    # Enhanced Pro Forma Invoice HTML template with improved styling and responsive design
     html_template = """
     <!DOCTYPE html>
     <html lang="el">
     <head>
       <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <title>Pro Forma Invoice {{ order.order_number }}</title>
       <style>
-        body{font-family:Arial,Helvetica,sans-serif;color:#333;margin:0;padding:40px;line-height:1.4;}
-        .invoice{max-width:800px;margin:0 auto;}
-        h1{font-size:28px;margin:0 0 24px;}
-        .flex{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;}
-        .details div{margin-bottom:4px;}
-        .items, .totals{width:100%;border-collapse:collapse;margin-top:24px;}
-        .items th, .items td, .totals td{padding:8px 6px;border-bottom:1px solid #ddd;}
-        .items th{background:#f5f5f5;font-weight:600;}
-        .right{text-align:right;}
-        .totals td{font-weight:600;}
-        .totals tr:last-child td{font-size:18px;}
-        .footer{margin-top:32px;font-size:12px;}
+        :root{
+          --accent:#0A3D62;       /* corporate accent colour */
+          --border:#d0d0d0;
+          --bg-stripe:#fafafa;    /* alt‑row background */
+          --pad:8px;
+        }
+        *{box-sizing:border-box;margin:0;padding:0;}
+
+        /* Base layout */
+        body{font-family:"Helvetica Neue",Arial,sans-serif;color:#333;background:#fff;padding:40px;line-height:1.45;}
+        .invoice{max-width:800px;margin:0 auto;border:1px solid var(--border);border-radius:6px;padding:40px;box-shadow:0 4px 16px rgba(0,0,0,.05);}
+
+        /* Headings */
+        h1{font-size:26px;font-weight:700;margin-bottom:24px;letter-spacing:.5px;text-transform:uppercase;color:var(--accent);}
+        h2{font-size:16px;font-weight:700;margin:0 0 4px;color:var(--accent);}
+
+        /* Flex utilities */
+        .flex{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+        .w-50{flex:1 1 48%;}
+
+        /* Blocks */
+        .details div{margin-bottom:4px;font-size:14px;white-space:pre;}
+
+        /* Table */
+        table{width:100%;border-collapse:collapse;margin-top:24px;font-size:14px;}
+        th,td{padding:var(--pad);text-align:left;border-bottom:1px solid var(--border);}  
+        th{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.4px;background:var(--bg-stripe);color:var(--accent);}  
+        tbody tr:nth-child(odd){background:#fdfdfd;}  /* gentle zebra striping */
+        td:last-child,th:last-child{text-align:right;}
+        td:first-child{text-align:center;}
+
+        /* Totals */
+        .totals{margin-top:12px;max-width:280px;margin-left:auto;font-size:14px;}
+        .totals div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid transparent;}
+        .totals div:not(:last-child){border-bottom:1px solid var(--border);}
+        .totals .grand{font-weight:700;font-size:16px;color:var(--accent);}
+
+        /* Footer */
+        footer{margin-top:32px;font-size:12px;line-height:1.6;}
+
+        /* Print‑friendly tweaks */
+        @media print{
+          body{padding:0;}
+          .invoice{box-shadow:none;border:none;margin:0;padding:0;}
+          a{color:inherit;text-decoration:none;}
+        }
       </style>
     </head>
     <body>
-      <div class="invoice">
+      <section class="invoice">
         <h1>Pro Forma Invoice</h1>
-
         <div class="flex">
-          <div class="from">
-            <strong>Andreas Pakkoutis &amp; Sons Ltd</strong><br/>
-            Griva Digeni 39, Avgorou 5510<br/>
-            VAT: 10034785S<br/>
-            Τηλ.: +357&nbsp;99564330
+          <div class="w-50">
+            <h2>Issued By</h2>
+            <div>Andreas Pakkoutis &amp; Sons Ltd</div>
+            <div>Griva Digeni 39, Avgorou 5510</div>
+            <div>VAT: 10034785S</div>
+            <div>Τηλ.: +357 99564330</div>
           </div>
-          <div class="details right">
-            <div><strong>Pro&nbsp;Forma&nbsp;No.:</strong> {{ order.order_number }}</div>
-            <div><strong>Issue&nbsp;Date:</strong> {{ order.created_at.strftime('%d/%m/%Y') }}</div>
+          <div class="w-50">
+            <h2>Invoice Details</h2>
+            <div>Pro Forma No.: <strong>{{ order.order_number }}</strong></div>
+            <div>Issue Date: {{ order.created_at.strftime('%d/%m/%Y') }}</div>
             {% if order.delivery_date %}
-            <div><strong>Delivery&nbsp;Date:</strong> {{ order.delivery_date.strftime('%d/%m/%Y') }}</div>
+            <div>Delivery Date: {{ order.delivery_date.strftime('%d/%m/%Y') }}</div>
             {% endif %}
           </div>
         </div>
 
         <div class="flex" style="margin-top:24px;">
-          <div>
-            <strong>Bill&nbsp;To:</strong><br/>
-            {{ order.customer.name }}
+          <div class="w-50">
+            <h2>Bill To</h2>
+            <div>{{ order.customer.name }}</div>
             {% if order.customer.address %}
-            <br/>{{ order.customer.address }}
+            <div>{{ order.customer.address }}</div>
             {% endif %}
           </div>
         </div>
 
-        <table class="items">
+        <table>
           <thead>
             <tr>
-              <th style="width:4%;">#</th>
+              <th style="width:32px;text-align:center;">#</th>
               <th>SKU / Product</th>
-              <th style="width:10%;" class="right">Qty</th>
-              <th style="width:16%;" class="right">Unit&nbsp;Price&nbsp;(€)</th>
-              <th style="width:16%;" class="right">Total&nbsp;(€)</th>
+              <th style="width:60px;text-align:right;">Qty</th>
+              <th style="width:120px;text-align:right;">Unit Price (€)</th>
+              <th style="width:120px;text-align:right;">Total (€)</th>
             </tr>
           </thead>
           <tbody>
             {% for item in order.items %}
             <tr>
-              <td class="right">{{ loop.index }}</td>
+              <td style="text-align:center;">{{ loop.index }}</td>
               <td>{{ item.plant_name }}{% if item.size %} ({{ item.size }}){% endif %}</td>
-              <td class="right">{{ item.quantity }}</td>
-              <td class="right">{{ "%.2f"|format(item.price) }}</td>
-              <td class="right">{{ "%.2f"|format(item.quantity * item.price) }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ "%.2f"|format(item.price) }}</td>
+              <td>{{ "%.2f"|format(item.quantity * item.price) }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
 
-        <table class="totals" style="margin-top:8px;">
-          <tbody>
-            <tr>
-              <td class="right" style="width:84%;">Subtotal</td>
-              <td class="right" style="width:16%;">€{{ "%.2f"|format(subtotal) }}</td>
-            </tr>
-            <tr>
-              <td class="right">VAT&nbsp;{{ vat_rate|int }}%</td>
-              <td class="right">€{{ "%.2f"|format(vat_amount) }}</td>
-            </tr>
-            <tr>
-              <td class="right">Grand&nbsp;Total</td>
-              <td class="right">€{{ "%.2f"|format(grand_total) }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="footer">
-          <strong>Payment Terms:</strong> Within 30 days<br/>
-          <strong>IBAN:</strong> CY55&nbsp;0020&nbsp;0555&nbsp;0000&nbsp;0011&nbsp;0082&nbsp;4600<br/>
-          <strong>SWIFT/BIC:</strong> BCYPCY2N
+        <div class="totals">
+          <div><span>Subtotal</span><span>€{{ "%.2f"|format(subtotal) }}</span></div>
+          <div><span>VAT {{ vat_rate|int }}%</span><span>€{{ "%.2f"|format(vat_amount) }}</span></div>
+          <div class="grand"><span>Grand Total</span><span>€{{ "%.2f"|format(grand_total) }}</span></div>
         </div>
-      </div>
+
+        <footer>
+          Payment Terms: Within 30 days<br>
+          IBAN: CY55 0020 0555 0000 0011 0082 4600<br>
+          SWIFT/BIC: BCYPCY2N
+        </footer>
+      </section>
     </body>
     </html>
     """
