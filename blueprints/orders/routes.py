@@ -826,9 +826,7 @@ def update_discount(order_id):
 @orders.route('/<int:order_id>/update_total', methods=['POST'])
 @login_required
 def update_order_total(order_id):
-    """Update order total by calculating required discount"""
-    from decimal import Decimal, ROUND_HALF_UP
-    
+    """Update order total by setting override amount"""
     order = Order.query.get_or_404(order_id)
     new_total_str = request.form.get('new_total')
     
@@ -837,33 +835,24 @@ def update_order_total(order_id):
         return redirect(url_for('orders.view_order', order_id=order_id))
     
     try:
-        # Use Decimal for precise financial calculations
-        new_total = Decimal(str(new_total_str))
-        subtotal = Decimal(str(order.subtotal))
+        # Save the user's desired total directly to the override field
+        new_total = float(new_total_str)
         
-        # Calculate VAT rate (assuming 19% for most items)
-        vat_rate = Decimal('0.19')
-        
-        # Calculate the subtotal after discount from the desired new total
-        # Formula: new_total = subtotal_after_discount * (1 + vat_rate)
-        subtotal_after_discount = new_total / (1 + vat_rate)
-        
-        # Calculate the required discount amount
-        # Formula: discount = original_subtotal - subtotal_after_discount
-        required_discount = subtotal - subtotal_after_discount
-        
-        # Validation: Ensure discount is not negative
-        if required_discount < 0:
-            flash('The new total cannot be higher than the original subtotal plus VAT.', 'danger')
+        # Validation: Ensure new total is reasonable
+        if new_total < 0:
+            flash('Total cannot be negative.', 'danger')
             return redirect(url_for('orders.view_order', order_id=order_id))
         
-        # Update the order with the calculated fixed discount
-        order.discount_type = 'fixed'
+        # Set the override amount
+        order.total_override_amount = new_total
+        
+        # Clear previous manual discounts since override takes precedence
+        order.discount_amount = 0
         order.discount_percentage = 0
-        order.discount_amount = float(required_discount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        order.discount_type = 'fixed'
         
         db.session.commit()
-        flash(f'Order total updated to €{new_total}. Discount calculated automatically as €{required_discount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)}.', 'success')
+        flash(f'Order total has been set to €{new_total:.2f}. Discount and VAT calculated automatically.', 'success')
         
     except (ValueError, TypeError) as e:
         flash('Invalid total amount entered. Please enter a valid number.', 'danger')

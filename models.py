@@ -394,6 +394,7 @@ class Order(db.Model):
     discount_percentage = db.Column(db.Float, nullable=False, default=0.0)
     discount_amount = db.Column(db.Float, nullable=False, default=0.0)
     discount_type = db.Column(db.String(20), nullable=False, default='percentage')  # 'percentage' or 'fixed'
+    total_override_amount = db.Column(db.Float, nullable=True)  # Manual override for final total
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -507,21 +508,37 @@ class Order(db.Model):
         return sum(item.quantity * item.price for item in self.items)
     
     @property
-    def discount_value(self):
-        """Calculate the actual discount amount"""
-        if self.discount_type == 'percentage':
-            return self.subtotal * (self.discount_percentage / 100)
-        else:
-            return self.discount_amount
-    
-    @property
     def total_before_vat(self):
         """Calculate total after discount but before VAT"""
+        if self.total_override_amount is not None:
+            # Work backwards from override total to find pre-VAT amount
+            # Assuming 19% VAT rate for most items
+            return round(self.total_override_amount / 1.19, 2)
+        
+        # Standard calculation: subtotal minus discount
         return self.subtotal - self.discount_value
     
     @property
+    def discount_value(self):
+        """Calculate the actual discount amount"""
+        if self.total_override_amount is not None:
+            # Calculate discount needed to reach the override total
+            return round(self.subtotal - self.total_before_vat, 2)
+        
+        # Standard calculation based on discount type
+        if self.discount_type == 'percentage':
+            return round(self.subtotal * (self.discount_percentage / 100), 2)
+        else:
+            return round(self.discount_amount, 2)
+    
+    @property
     def vat_amount(self):
-        """Calculate total VAT amount on discounted items"""
+        """Calculate VAT amount based on total after discount"""
+        if self.total_override_amount is not None:
+            # VAT is simply override total minus pre-VAT amount
+            return round(self.total_override_amount - self.total_before_vat, 2)
+        
+        # Standard calculation: VAT on discounted amount
         if self.subtotal == 0:
             return 0.0
             
@@ -536,12 +553,17 @@ class Order(db.Model):
             # Calculate VAT on discounted amount
             vat_total += item_after_discount * (item.vat_rate / 100)
         
-        return vat_total
+        return round(vat_total, 2)
     
     @property
     def total(self):
-        """Calculate final total (after discount and including VAT)"""
-        return self.total_before_vat + self.vat_amount
+        """Calculate the final total"""
+        if self.total_override_amount is not None:
+            # Override total is the source of truth
+            return round(self.total_override_amount, 2)
+        
+        # Standard calculation
+        return round(self.total_before_vat + self.vat_amount, 2)
         
 class OrderItem(db.Model):
     """Model for individual items within an order"""
