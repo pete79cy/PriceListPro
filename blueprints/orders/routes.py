@@ -778,3 +778,46 @@ def generate_proforma_invoice(order_id):
     except Exception as e:
         flash(f'Error generating Pro Forma Invoice: {str(e)}', 'danger')
         return redirect(url_for('orders.view_order', order_id=order.id))
+
+@orders.route('/<int:order_id>/discount', methods=['POST'])
+@login_required
+def update_discount(order_id):
+    """Update the discount for an order"""
+    order = Order.query.get_or_404(order_id)
+    
+    try:
+        discount_type = request.form.get('discount_type', 'percentage')
+        discount_percentage = float(request.form.get('discount_percentage', 0))
+        discount_amount = float(request.form.get('discount_amount', 0))
+        
+        # Validate inputs
+        if discount_type == 'percentage':
+            if discount_percentage < 0 or discount_percentage > 100:
+                flash('Discount percentage must be between 0 and 100%', 'danger')
+                return redirect(url_for('orders.view_order', order_id=order.id))
+        else:
+            if discount_amount < 0:
+                flash('Discount amount cannot be negative', 'danger')
+                return redirect(url_for('orders.view_order', order_id=order.id))
+        
+        # Update order discount
+        order.discount_type = discount_type
+        order.discount_percentage = discount_percentage
+        order.discount_amount = discount_amount
+        
+        db.session.commit()
+        
+        if discount_percentage == 0 and discount_amount == 0:
+            flash('Discount removed successfully', 'success')
+        else:
+            discount_desc = f"{discount_percentage}%" if discount_type == 'percentage' else f"€{discount_amount}"
+            flash(f'Discount updated to {discount_desc}', 'success')
+        
+        return redirect(url_for('orders.view_order', order_id=order.id))
+        
+    except ValueError:
+        flash('Invalid discount values provided', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
+    except Exception as e:
+        flash(f'Error updating discount: {str(e)}', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
