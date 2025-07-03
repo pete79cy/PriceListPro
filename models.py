@@ -444,13 +444,7 @@ class Order(db.Model):
         """Get the total number of items in this order"""
         return sum(item.quantity for item in self.items) if self.items else 0
     
-    @property
-    def discount_value(self):
-        """Calculate the actual discount value based on type"""
-        if self.discount_type == 'percentage':
-            return self.subtotal * (self.discount_percentage / 100)
-        else:  # fixed amount
-            return self.discount_amount
+
     
     @property
     def total_after_discount(self):
