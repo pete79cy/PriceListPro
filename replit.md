@@ -111,6 +111,14 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- July 3, 2025: Implemented Comprehensive Discount System for Orders
+  - Added discount_percentage and discount_amount fields to Order model
+  - Created complete discount calculation logic supporting both percentage and fixed amount discounts
+  - Updated order view template to display discount information with proper formatting
+  - Enhanced Pro Forma Invoice generator to include discount calculations in PDF documents
+  - Updated order totals to properly calculate subtotal, VAT, and final total after discounts
+  - Added real-time discount calculations in JavaScript for order forms
+  - Integrated discount display across all order-related views and documents
 - July 3, 2025: Created Professional Pro Forma Invoice System for Orders
   - Built new proforma_invoice_generator.py with enhanced HTML template
   - Added corporate branding with accent color (#0A3D62) and modern typography

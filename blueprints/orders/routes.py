@@ -169,6 +169,8 @@ def new_order():
         delivery_date_str = request.form.get('delivery_date')
         notes = request.form.get('notes')
         items_json = request.form.get('items')
+        discount_type = request.form.get('discount_type', 'percentage')
+        discount_value = request.form.get('discount_value', '0')
         
         # Validate required fields
         if not customer_id or customer_id == '0':
@@ -189,13 +191,22 @@ def new_order():
             except ValueError:
                 flash('Invalid delivery date format', 'warning')
         
+        # Process discount values
+        try:
+            discount_value_float = float(discount_value) if discount_value else 0.0
+        except (ValueError, TypeError):
+            discount_value_float = 0.0
+        
         # Create new order
         order = Order(
             order_number=generate_order_number(),
             customer_id=customer_id,
             status=OrderStatusEnum.NEW.value,
             notes=notes,
-            delivery_date=delivery_date
+            delivery_date=delivery_date,
+            discount_type=discount_type,
+            discount_percentage=discount_value_float if discount_type == 'percentage' else 0.0,
+            discount_amount=discount_value_float if discount_type == 'fixed' else 0.0
         )
         
         db.session.add(order)
@@ -339,6 +350,8 @@ def edit_order(order_id):
         notes = request.form.get('notes')
         status = request.form.get('status')
         items_json = request.form.get('items')
+        discount_type = request.form.get('discount_type', 'percentage')
+        discount_value = request.form.get('discount_value', '0')
         
         # Validate required fields
         if not customer_id:
@@ -353,10 +366,19 @@ def edit_order(order_id):
             except ValueError:
                 flash('Invalid delivery date format', 'warning')
         
+        # Process discount values
+        try:
+            discount_value_float = float(discount_value) if discount_value else 0.0
+        except (ValueError, TypeError):
+            discount_value_float = 0.0
+        
         # Update order fields
         order.customer_id = customer_id
         order.delivery_date = delivery_date
         order.notes = notes
+        order.discount_type = discount_type
+        order.discount_percentage = discount_value_float if discount_type == 'percentage' else 0.0
+        order.discount_amount = discount_value_float if discount_type == 'fixed' else 0.0
         order.updated_at = datetime.utcnow()
         
         # Update status if provided and valid

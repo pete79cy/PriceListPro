@@ -372,10 +372,26 @@
                                 </tr>
                                 {% endif %}
                                 
-                                {# Total including VAT #}
+                                {# Discount Information #}
+                                {% if order.discount_value > 0 %}
+                                <tr>
+                                    <th colspan="3" class="text-end">
+                                        Discount 
+                                        {% if order.discount_type == 'percentage' %}
+                                            ({{ order.discount_percentage }}%):
+                                        {% else %}
+                                            (Fixed):
+                                        {% endif %}
+                                    </th>
+                                    <th class="text-end text-danger">-<span id="discount">{{ "%.2f"|format(order.discount_value) }}</span></th>
+                                    <th></th>
+                                </tr>
+                                {% endif %}
+                                
+                                {# Total including VAT and discount #}
                                 <tr class="table-secondary">
                                     <th colspan="3" class="text-end">Total:</th>
-                                    <th class="text-end"><span id="total">{{ "%.2f"|format(subtotal.value + vat_5.value + vat_19.value) }}</span></th>
+                                    <th class="text-end"><span id="total">{{ "%.2f"|format(order.total) }}</span></th>
                                     <th></th>
                                 </tr>
                             </tfoot>

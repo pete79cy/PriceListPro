@@ -20,6 +20,9 @@ class EnhancedOrderManager {
     this.$vat5      = $('#orderVat5');
     this.$vat19     = $('#orderVat19');
     this.$grand     = $('#orderGrand');
+    this.$discountAmount = $('#discountAmount');
+    this.$discountType = $('#discountType');
+    this.$discountValue = $('#discountValue');
 
     this.init();
   }
@@ -80,6 +83,11 @@ class EnhancedOrderManager {
         this.renderRow(idx);
         this.updateOrderSummary();
       }
+    });
+
+    /* discount change */
+    $('#discountType, #discountValue').on('input change', () => {
+      this.updateOrderSummary();
     });
 
     /* remove item */
@@ -290,21 +298,49 @@ class EnhancedOrderManager {
     const subtotal = this.orderItems.reduce(
       (s, it) => s.plus(it.price.times(it.qty)), new Decimal(0));
 
+    // Calculate discount
+    const discountType = $('#discountType').val() || 'percentage';
+    const discountValue = new Decimal($('#discountValue').val() || 0);
+    let discountAmount = new Decimal(0);
+    
+    if (discountValue.greaterThan(0)) {
+      if (discountType === 'percentage') {
+        discountAmount = subtotal.times(discountValue.dividedBy(100));
+      } else {
+        discountAmount = discountValue;
+      }
+    }
+
+    // Apply discount to subtotal
+    const subtotalAfterDiscount = subtotal.minus(discountAmount);
+
+    // Calculate VAT on discounted amount
     const vat5 = this.orderItems
       .filter(it => it.vat.equals(5))
-      .reduce((s, it) => s.plus(it.price.times(it.qty).times(0.05)), new Decimal(0));
+      .reduce((s, it) => {
+        const itemTotal = it.price.times(it.qty);
+        const itemDiscount = discountAmount.times(itemTotal.dividedBy(subtotal));
+        const itemAfterDiscount = itemTotal.minus(itemDiscount);
+        return s.plus(itemAfterDiscount.times(0.05));
+      }, new Decimal(0));
 
     const vat19 = this.orderItems
       .filter(it => it.vat.equals(19))
-      .reduce((s, it) => s.plus(it.price.times(it.qty).times(0.19)), new Decimal(0));
+      .reduce((s, it) => {
+        const itemTotal = it.price.times(it.qty);
+        const itemDiscount = discountAmount.times(itemTotal.dividedBy(subtotal));
+        const itemAfterDiscount = itemTotal.minus(itemDiscount);
+        return s.plus(itemAfterDiscount.times(0.19));
+      }, new Decimal(0));
 
-    const grand = subtotal.plus(vat5).plus(vat19);
+    const grand = subtotalAfterDiscount.plus(vat5).plus(vat19);
 
     // Update summary elements if they exist
-    if (this.$subtotal.length) this.$subtotal.text(`€${subtotal.toFixed(2)}`);
-    if (this.$vat5.length) this.$vat5.text(`€${vat5.toFixed(2)}`);
-    if (this.$vat19.length) this.$vat19.text(`€${vat19.toFixed(2)}`);
-    if (this.$grand.length) this.$grand.text(`€${grand.toFixed(2)}`);
+    $('#subtotal').text(`€${subtotal.toFixed(2)}`);
+    $('#vat5').text(`€${vat5.toFixed(2)}`);
+    $('#vat19').text(`€${vat19.toFixed(2)}`);
+    $('#discountAmount').text(`-€${discountAmount.toFixed(2)}`);
+    $('#totalAmount').text(`€${grand.toFixed(2)}`);
 
     // Also update any other total displays
     $('.order-subtotal').text(`€${subtotal.toFixed(2)}`);
@@ -334,6 +370,8 @@ class EnhancedOrderManager {
       customer_id: this.currentCustomerId,
       delivery_date: $('#deliveryDate, input[name="delivery_date"]').val(),
       notes: $('#orderNotes, textarea[name="notes"]').val(),
+      discount_type: $('#discountType').val() || 'percentage',
+      discount_value: $('#discountValue').val() || '0',
       items: JSON.stringify(orderItems)
     };
 

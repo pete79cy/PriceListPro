@@ -391,6 +391,9 @@ class Order(db.Model):
     status = db.Column(db.String(20), nullable=False, default="new")  # OrderStatus.NEW.value
     delivery_date = db.Column(db.Date, nullable=True)  # Requested delivery date
     notes = db.Column(db.Text, nullable=True)
+    discount_percentage = db.Column(db.Float, nullable=False, default=0.0)
+    discount_amount = db.Column(db.Float, nullable=False, default=0.0)
+    discount_type = db.Column(db.String(20), nullable=False, default='percentage')  # 'percentage' or 'fixed'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -441,16 +444,29 @@ class Order(db.Model):
         return sum(item.quantity for item in self.items) if self.items else 0
     
     @property
+    def discount_value(self):
+        """Calculate the actual discount value based on type"""
+        if self.discount_type == 'percentage':
+            return self.subtotal * (self.discount_percentage / 100)
+        else:  # fixed amount
+            return self.discount_amount
+    
+    @property
+    def total_after_discount(self):
+        """Calculate the total after discount but before VAT"""
+        return max(0, self.subtotal - self.discount_value)
+    
+    @property
     def vat_amount(self):
-        """Calculate VAT amount (for delivery notes that include VAT)"""
-        # Default VAT rate - this could be configurable
+        """Calculate VAT amount based on total after discount"""
+        # Apply VAT to the discounted amount
         vat_rate = 0.24  # 24% VAT
-        return self.subtotal * vat_rate
+        return self.total_after_discount * vat_rate
     
     @property
     def total(self):
-        """Calculate the total with VAT for the order"""
-        return self.subtotal + self.vat_amount
+        """Calculate the final total with discount and VAT"""
+        return self.total_after_discount + self.vat_amount
         
     def transition_to(self, target_status):
         """
