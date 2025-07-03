@@ -10,6 +10,7 @@ from . import orders
 from models import db, Customer, Product, PriceList, OrderStatusEnum, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_TRANSITIONS
 from models import Order, OrderItem
 from utils.pdf_generator import generate_delivery_note_pdf, generate_charge_sheet_pdf
+from utils.proforma_invoice_generator import generate_proforma_invoice_bytes
 from utils.translations import get_translations
 from utils.orders_helpers import (
     to_decimal, validate_order_item_data, validate_status_transition,
@@ -726,3 +727,32 @@ def generate_charge_sheet(order_id):
     
     # Return a link to the generated PDF
     return redirect(url_for('static', filename=f'pdfs/{filename}'))
+
+@orders.route('/<int:order_id>/proforma_invoice')
+@login_required
+def generate_proforma_invoice(order_id):
+    """Generate and download a Pro Forma Invoice PDF for the order"""
+    from flask import Response
+    
+    order = Order.query.get_or_404(order_id)
+    
+    try:
+        # Generate PDF as bytes
+        pdf_bytes = generate_proforma_invoice_bytes(order)
+        
+        # Create filename for download
+        filename = f"proforma_invoice_{order.order_number}.pdf"
+        
+        # Return PDF as download
+        return Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Type': 'application/pdf'
+            }
+        )
+        
+    except Exception as e:
+        flash(f'Error generating Pro Forma Invoice: {str(e)}', 'danger')
+        return redirect(url_for('orders.view_order', order_id=order.id))
