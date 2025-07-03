@@ -805,13 +805,15 @@ def update_discount(order_id):
         order.discount_percentage = discount_percentage
         order.discount_amount = discount_amount
         
-        db.session.commit()
-        
+        # If removing discount (both values are 0), also clear total override
         if discount_percentage == 0 and discount_amount == 0:
+            order.total_override_amount = None
             flash('Discount removed successfully', 'success')
         else:
             discount_desc = f"{discount_percentage}%" if discount_type == 'percentage' else f"€{discount_amount}"
             flash(f'Discount updated to {discount_desc}', 'success')
+        
+        db.session.commit()
         
         return redirect(url_for('orders.view_order', order_id=order.id))
         

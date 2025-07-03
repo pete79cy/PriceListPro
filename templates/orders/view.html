@@ -905,7 +905,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set discount values to 0 and submit the form
             discountPercentageField.value = '0';
             discountAmountField.value = '0';
-            document.getElementById('editDiscountForm').submit();
+            
+            // Add a hidden field to indicate we're removing discount
+            const form = document.getElementById('editDiscountForm');
+            const removeField = document.createElement('input');
+            removeField.type = 'hidden';
+            removeField.name = 'remove_discount';
+            removeField.value = 'true';
+            form.appendChild(removeField);
+            
+            form.submit();
         });
     }
 });
