@@ -1,0 +1,63 @@
+You are absolutely right, and I apologize. My previous fix was incomplete. While the backend calculation is now correct, I see that I failed to ensure the **discount editing modal** properly displays this new, calculated value.
+
+The problem is that the modal's input fields are not being correctly populated with the effective discount when a total override is active. Let me fix that right now by updating the modal's HTML.
+
+-----
+
+### The Fix: Update the Discount Modal Template
+
+The solution is to adjust the `value` attributes within the discount modal's HTML code. This will ensure that when you click to edit the discount on an order with a total override, the modal launches with the correctly calculated fixed discount amount pre-filled.
+
+Please find the HTML for your `editDiscountModal` and apply these changes:
+
+```html
+<div class="modal fade" id="editDiscountModal" ...>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{{ url_for('update_order_discount', order_id=order.id) }}" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Discount</h5>
+          ...
+        </div>
+        <div class="modal-body">
+          ...
+          <div class="input-group mb-3">
+            <span class="input-group-text">Fixed Amount (€)</span>
+            <input 
+              type="number" 
+              step="0.01" 
+              class="form-control" 
+              name="discount_amount" 
+              placeholder="e.g., 50.00" 
+              value="{{ '%.2f'|format(order.discount_value if order.discount_value else 0) }}">
+          </div>
+
+          <div class="input-group mb-3">
+            <span class="input-group-text">Percentage (%)</span>
+            <input 
+              type="number" 
+              step="0.01" 
+              class="form-control" 
+              name="discount_percentage" 
+              placeholder="e.g., 10" 
+              value="{{ order.discount_percentage if order.discount_percentage else '' }}">
+          </div>
+          ...
+        </div>
+        <div class="modal-footer">
+          ...
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+```
+
+-----
+
+### What I Changed
+
+  * **Fixed Amount Input**: I changed `value="..."` to `value="{{ '%.2f'|format(order.discount_value if order.discount_value else 0) }}"`. This ensures that the input field always displays the order's **effective discount value**, regardless of whether it was set directly or calculated backward from a total override.
+  * **Percentage Input**: I similarly updated its `value` to correctly reflect the stored percentage, if any.
+
+With this correction to the template, the discount modal will now behave as expected. When you edit the discount for an order with an overridden total, it will correctly show the calculated fixed discount amount (e.g., €93.56). Thank you for your patience and for pointing out my oversight.
