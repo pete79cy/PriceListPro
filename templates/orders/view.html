@@ -851,24 +851,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const percentageInput = document.getElementById('percentageInput');
     const fixedInput = document.getElementById('fixedInput');
     const removeDiscountBtn = document.getElementById('removeDiscountBtn');
+    const discountPercentageField = document.getElementById('discountPercentage');
+    const discountAmountField = document.getElementById('discountAmount');
+    
+    function updateDiscountDisplay() {
+        if (discountType.value === 'percentage') {
+            percentageInput.style.display = 'block';
+            fixedInput.style.display = 'none';
+        } else {
+            percentageInput.style.display = 'none';
+            fixedInput.style.display = 'block';
+        }
+    }
     
     if (discountType) {
-        discountType.addEventListener('change', function() {
-            if (this.value === 'percentage') {
-                percentageInput.style.display = 'block';
-                fixedInput.style.display = 'none';
-            } else {
-                percentageInput.style.display = 'none';
-                fixedInput.style.display = 'block';
-            }
-        });
+        discountType.addEventListener('change', updateDiscountDisplay);
+        
+        // Auto-switch to fixed amount when user enters a value in amount field
+        if (discountAmountField) {
+            discountAmountField.addEventListener('input', function() {
+                if (this.value && parseFloat(this.value) > 0) {
+                    discountType.value = 'fixed';
+                    updateDiscountDisplay();
+                    // Clear percentage field
+                    discountPercentageField.value = '0';
+                }
+            });
+        }
+        
+        // Auto-switch to percentage when user enters a value in percentage field
+        if (discountPercentageField) {
+            discountPercentageField.addEventListener('input', function() {
+                if (this.value && parseFloat(this.value) > 0) {
+                    discountType.value = 'percentage';
+                    updateDiscountDisplay();
+                    // Clear amount field
+                    discountAmountField.value = '0';
+                }
+            });
+        }
     }
     
     if (removeDiscountBtn) {
         removeDiscountBtn.addEventListener('click', function() {
             // Set discount values to 0 and submit the form
-            document.getElementById('discountPercentage').value = '0';
-            document.getElementById('discountAmount').value = '0';
+            discountPercentageField.value = '0';
+            discountAmountField.value = '0';
             document.getElementById('editDiscountForm').submit();
         });
     }
@@ -909,6 +937,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <strong>Current Subtotal:</strong> €{{ "%.2f"|format(order.subtotal) }}<br>
                         <strong>Current Discount:</strong> €{{ "%.2f"|format(order.discount_value) }}<br>
                         <strong>Current Total:</strong> €{{ "%.2f"|format(order.total) }}
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <small><strong>Tip:</strong> Choose "Percentage (%)" for percentage discounts (e.g., 15 for 15%) or "Fixed Amount (€)" for exact amounts (e.g., 50.00 for €50).</small>
                     </div>
                 </div>
                 <div class="modal-footer">
