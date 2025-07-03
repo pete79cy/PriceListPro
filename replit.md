@@ -111,6 +111,15 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- July 3, 2025: Created Professional Pro Forma Invoice System for Orders
+  - Built new proforma_invoice_generator.py with enhanced HTML template
+  - Added corporate branding with accent color (#0A3D62) and modern typography
+  - Implemented responsive design with viewport support and flexible layout
+  - Added zebra striping, improved table headers, and professional styling
+  - Created generate_proforma_invoice route for order PDF downloads
+  - Updated order view template with Pro Forma Invoice button
+  - Added print-friendly CSS for clean document printing
+  - Integrated with existing order management system
 - June 29, 2025: Added pending pricing status feature for quotation items
   - Added pricing_status column to QuotationItem model (CONFIRMED, PENDING, REQUESTED)
   - Enhanced quotation parser to handle items without prices
