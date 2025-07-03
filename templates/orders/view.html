@@ -924,21 +924,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="mb-3">
                         <label for="discountType" class="form-label">Discount Type</label>
                         <select class="form-select" id="discountType" name="discount_type">
-                            <option value="percentage" {{ 'selected' if order.discount_type == 'percentage' else '' }}>Percentage (%)</option>
-                            <option value="fixed" {{ 'selected' if order.discount_type == 'fixed' else '' }}>Fixed Amount (€)</option>
+                            <option value="percentage" {{ 'selected' if (order.discount_type == 'percentage' and not order.total_override_amount) else '' }}>Percentage (%)</option>
+                            <option value="fixed" {{ 'selected' if (order.discount_type == 'fixed' or order.total_override_amount) else '' }}>Fixed Amount (€)</option>
                         </select>
                     </div>
                     
-                    <div class="mb-3" id="percentageInput" {{ 'style="display:none;"' if order.discount_type != 'percentage' else '' }}>
+                    <div class="mb-3" id="percentageInput" {{ 'style="display:none;"' if (order.discount_type != 'percentage' or order.total_override_amount) else '' }}>
                         <label for="discountPercentage" class="form-label">Discount Percentage (%)</label>
                         <input type="number" class="form-control" id="discountPercentage" name="discount_percentage" 
                                min="0" max="100" step="0.1" value="{{ order.discount_percentage }}">
                     </div>
                     
-                    <div class="mb-3" id="fixedInput" {{ 'style="display:none;"' if order.discount_type != 'fixed' else '' }}>
+                    <div class="mb-3" id="fixedInput" {{ 'style="display:none;"' if (order.discount_type != 'fixed' and not order.total_override_amount) else '' }}>
                         <label for="discountAmount" class="form-label">Discount Amount (€)</label>
                         <input type="number" class="form-control" id="discountAmount" name="discount_amount" 
-                               min="0" step="0.01" value="{{ order.discount_amount }}">
+                               min="0" step="0.01" value="{% if order.total_override_amount and order.discount_value > 0 %}{{ "%.2f"|format(order.discount_value) }}{% else %}{{ order.discount_amount }}{% endif %}">
                     </div>
                     
                     <div class="alert alert-info">
