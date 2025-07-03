@@ -521,17 +521,21 @@ class Order(db.Model):
     
     @property
     def vat_amount(self):
-        """Calculate total VAT amount"""
+        """Calculate total VAT amount on discounted items"""
+        if self.subtotal == 0:
+            return 0.0
+            
+        # Calculate discount ratio
+        discount_ratio = self.discount_value / self.subtotal if self.subtotal > 0 else 0
+        
         vat_total = 0.0
         for item in self.items:
             item_total = item.quantity * item.price
-            # Calculate VAT on the item total after proportional discount
-            if self.subtotal > 0:
-                discount_ratio = self.discount_value / self.subtotal
-                item_discounted = item_total * (1 - discount_ratio)
-            else:
-                item_discounted = item_total
-            vat_total += item_discounted * (item.vat_rate / 100)
+            # Apply proportional discount to this item
+            item_after_discount = item_total * (1 - discount_ratio)
+            # Calculate VAT on discounted amount
+            vat_total += item_after_discount * (item.vat_rate / 100)
+        
         return vat_total
     
     @property
