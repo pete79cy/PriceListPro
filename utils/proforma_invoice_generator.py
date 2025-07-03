@@ -33,8 +33,13 @@ def generate_proforma_invoice_html(order):
             item_total = item.quantity * item.price
             subtotal += item_total
     
-    vat_amount = subtotal * (vat_rate / 100)
-    grand_total = subtotal + vat_amount
+    # Calculate discount
+    discount_amount = order.discount_value if order.discount_value > 0 else 0.0
+    
+    # Apply discount to subtotal for VAT calculation
+    subtotal_after_discount = subtotal - discount_amount
+    vat_amount = subtotal_after_discount * (vat_rate / 100)
+    grand_total = subtotal_after_discount + vat_amount
     
     # Enhanced Pro Forma Invoice HTML template with improved styling and responsive design
     html_template = """
@@ -149,6 +154,15 @@ def generate_proforma_invoice_html(order):
 
         <div class="totals">
           <div><span>Subtotal</span><span>€{{ "%.2f"|format(subtotal) }}</span></div>
+          {% if discount_amount > 0 %}
+          <div><span>Discount 
+            {% if order.discount_type == 'percentage' %}
+              ({{ order.discount_percentage }}%)
+            {% else %}
+              (Fixed)
+            {% endif %}
+          </span><span>-€{{ "%.2f"|format(discount_amount) }}</span></div>
+          {% endif %}
           <div><span>VAT {{ vat_rate|int }}%</span><span>€{{ "%.2f"|format(vat_amount) }}</span></div>
           <div class="grand"><span>Grand Total</span><span>€{{ "%.2f"|format(grand_total) }}</span></div>
         </div>
@@ -168,6 +182,7 @@ def generate_proforma_invoice_html(order):
         html_template,
         order=order,
         subtotal=subtotal,
+        discount_amount=discount_amount,
         vat_rate=vat_rate,
         vat_amount=vat_amount,
         grand_total=grand_total

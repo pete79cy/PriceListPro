@@ -110,6 +110,31 @@
                             <div class="col-6">VAT (5%):</div>
                             <div class="col-6 text-end" id="vat5">€0.00</div>
                         </div>
+                        
+                        <!-- Discount Section -->
+                        <div class="border-top pt-3 mt-3">
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold mb-0">Discount:</label>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group input-group-sm">
+                                        <select class="form-select" id="discountType" name="discount_type">
+                                            <option value="percentage" {% if order and order.discount_type == 'percentage' %}selected{% endif %}>%</option>
+                                            <option value="fixed" {% if order and order.discount_type == 'fixed' %}selected{% endif %}>€</option>
+                                        </select>
+                                        <input type="number" class="form-control" id="discountValue" name="discount_value" 
+                                               step="0.01" min="0" placeholder="0.00"
+                                               value="{% if order %}{{ order.discount_percentage if order.discount_type == 'percentage' else order.discount_amount }}{% endif %}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6">Discount Amount:</div>
+                                <div class="col-6 text-end text-danger" id="discountAmount">-€0.00</div>
+                            </div>
+                        </div>
+                        
                         <hr>
                         <div class="row">
                             <div class="col-6 fw-bold fs-5">Total:</div>
