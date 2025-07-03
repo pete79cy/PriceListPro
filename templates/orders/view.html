@@ -943,6 +943,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     <div class="alert alert-info">
                         <strong>Current Subtotal:</strong> €{{ "%.2f"|format(order.subtotal) }}<br>
+                        <strong>Debug - Discount Value:</strong> €{{ "%.2f"|format(order.discount_value) }}<br>
+                        <strong>Debug - Override:</strong> €{{ "%.2f"|format(order.total_override_amount) if order.total_override_amount else "None" }}<br>
                         <strong>Current Discount:</strong> €{{ "%.2f"|format(order.discount_value) }}<br>
                         <strong>Current Total:</strong> €{{ "%.2f"|format(order.total) }}
                     </div>
