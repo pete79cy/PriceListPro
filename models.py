@@ -500,6 +500,44 @@ class Order(db.Model):
         today = date.today()
         next_week = today + timedelta(days=7)
         return today <= self.delivery_date <= next_week
+    
+    @property
+    def subtotal(self):
+        """Calculate subtotal (sum of all items before discounts and VAT)"""
+        return sum(item.quantity * item.price for item in self.items)
+    
+    @property
+    def discount_value(self):
+        """Calculate the actual discount amount"""
+        if self.discount_type == 'percentage':
+            return self.subtotal * (self.discount_percentage / 100)
+        else:
+            return self.discount_amount
+    
+    @property
+    def total_before_vat(self):
+        """Calculate total after discount but before VAT"""
+        return self.subtotal - self.discount_value
+    
+    @property
+    def vat_amount(self):
+        """Calculate total VAT amount"""
+        vat_total = 0.0
+        for item in self.items:
+            item_total = item.quantity * item.price
+            # Calculate VAT on the item total after proportional discount
+            if self.subtotal > 0:
+                discount_ratio = self.discount_value / self.subtotal
+                item_discounted = item_total * (1 - discount_ratio)
+            else:
+                item_discounted = item_total
+            vat_total += item_discounted * (item.vat_rate / 100)
+        return vat_total
+    
+    @property
+    def total(self):
+        """Calculate final total (after discount and including VAT)"""
+        return self.total_before_vat + self.vat_amount
         
 class OrderItem(db.Model):
     """Model for individual items within an order"""
