@@ -721,23 +721,96 @@ function addManualItem() {
 // Remove order item function
 function removeOrderItem(itemId) {
     const item = document.querySelector(`[data-item-id="${itemId}"]`);
-    if (item) {
+    if (!item) {
+        debugLog(`Item with ID ${itemId} not found`);
+        return;
+    }
+    
+    // Check if this is a temporary item (newly added, not yet saved)
+    const isTemporaryItem = itemId.toString().startsWith('temp_') || itemId.toString().startsWith('manual_');
+    
+    if (isTemporaryItem) {
+        // For temporary items, just remove from DOM
         item.remove();
-        debugLog(`Removed item: ${itemId}`);
+        debugLog(`Removed temporary item: ${itemId}`);
         updateOrderTotal();
-        
-        // Show empty message if no items left
-        const orderItemsContainer = document.getElementById('orderItems');
-        if (orderItemsContainer && orderItemsContainer.children.length === 0) {
-            orderItemsContainer.innerHTML = `
-                <tr id="emptyItemsMessage">
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
-                        <p>No items added yet. Use the search above to add products.</p>
-                    </td>
-                </tr>
-            `;
+        updateHiddenItems();
+        showEmptyMessageIfNeeded();
+    } else {
+        // For existing items, make server request to delete
+        if (confirm('Are you sure you want to remove this item from the order?')) {
+            debugLog(`Removing existing item: ${itemId}`);
+            
+            // Get the current order ID from the form
+            const orderIdInput = document.querySelector('input[name="order_id"]');
+            if (!orderIdInput) {
+                debugLog('ERROR: Order ID not found');
+                alert('Error: Unable to determine order ID. Please refresh the page.');
+                return;
+            }
+            
+            const orderId = orderIdInput.value;
+            const deleteUrl = `/orders/${orderId}/item/${itemId}/remove`;
+            
+            // Show loading state
+            const deleteButton = item.querySelector('button[onclick*="removeOrderItem"]');
+            if (deleteButton) {
+                deleteButton.disabled = true;
+                deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+            
+            // Make the deletion request
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Successfully deleted from server, remove from DOM
+                    item.remove();
+                    debugLog(`Successfully removed item: ${itemId}`);
+                    updateOrderTotal();
+                    updateHiddenItems();
+                    showEmptyMessageIfNeeded();
+                } else {
+                    // Error from server
+                    debugLog(`Error deleting item: ${response.status}`);
+                    alert('Error removing item. Please try again.');
+                    // Reset button state
+                    if (deleteButton) {
+                        deleteButton.disabled = false;
+                        deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+                    }
+                }
+            })
+            .catch(error => {
+                debugLog(`Network error deleting item: ${error}`);
+                alert('Network error. Please check your connection and try again.');
+                // Reset button state
+                if (deleteButton) {
+                    deleteButton.disabled = false;
+                    deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+                }
+            });
         }
+    }
+}
+
+// Helper function to show empty message if needed
+function showEmptyMessageIfNeeded() {
+    const orderItemsContainer = document.getElementById('orderItems');
+    if (orderItemsContainer && orderItemsContainer.children.length === 0) {
+        orderItemsContainer.innerHTML = `
+            <tr id="emptyItemsMessage">
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="fas fa-seedling fa-3x mb-3 opacity-50"></i>
+                    <p>No items added yet. Use the search above to add products.</p>
+                </td>
+            </tr>
+        `;
     }
 }
 
