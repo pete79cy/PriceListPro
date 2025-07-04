@@ -737,19 +737,26 @@ function removeOrderItem(itemId) {
         updateHiddenItems();
         showEmptyMessageIfNeeded();
     } else {
-        // For existing items, make server request to delete
+        // For existing items, make server request to delete using form submission
         if (confirm('Are you sure you want to remove this item from the order?')) {
             debugLog(`Removing existing item: ${itemId}`);
             
-            // Get the current order ID from the form
-            const orderIdInput = document.querySelector('input[name="order_id"]');
-            if (!orderIdInput) {
+            // Get the current order ID from the template context or form
+            let orderId = null;
+            {% if order %}
+                orderId = {{ order.id }};
+            {% else %}
+                const orderIdInput = document.querySelector('input[name="order_id"]');
+                if (orderIdInput) {
+                    orderId = orderIdInput.value;
+                }
+            {% endif %}
+            
+            if (!orderId) {
                 debugLog('ERROR: Order ID not found');
                 alert('Error: Unable to determine order ID. Please refresh the page.');
                 return;
             }
-            
-            const orderId = orderIdInput.value;
             const deleteUrl = `/orders/${orderId}/item/${itemId}/remove`;
             
             // Show loading state
@@ -759,42 +766,15 @@ function removeOrderItem(itemId) {
                 deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             }
             
-            // Make the deletion request
-            fetch(deleteUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (response.ok) {
-                    // Successfully deleted from server, remove from DOM
-                    item.remove();
-                    debugLog(`Successfully removed item: ${itemId}`);
-                    updateOrderTotal();
-                    updateHiddenItems();
-                    showEmptyMessageIfNeeded();
-                } else {
-                    // Error from server
-                    debugLog(`Error deleting item: ${response.status}`);
-                    alert('Error removing item. Please try again.');
-                    // Reset button state
-                    if (deleteButton) {
-                        deleteButton.disabled = false;
-                        deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
-                    }
-                }
-            })
-            .catch(error => {
-                debugLog(`Network error deleting item: ${error}`);
-                alert('Network error. Please check your connection and try again.');
-                // Reset button state
-                if (deleteButton) {
-                    deleteButton.disabled = false;
-                    deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
-                }
-            });
+            // Create and submit a hidden form (same approach as working delete buttons)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = deleteUrl;
+            form.style.display = 'none';
+            document.body.appendChild(form);
+            
+            // Submit the form
+            form.submit();
         }
     }
 }
