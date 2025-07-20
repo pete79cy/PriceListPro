@@ -1,0 +1,70 @@
+Below is a ready‑to‑paste **prompt** you can give a Replit AI agent (or any similar LLM) that will produce a one‑page Terms & Conditions section.
+
+---
+
+```
+You are a document‑formatting assistant. Produce a single‑page A4 “Terms & Conditions – Plant Quotations (B2B)” sheet, exactly as defined below.
+
+LAYOUT RULES  
+• Paper size = A4, margins = 2 cm all round  
+• Font = Arial 11 pt, single line spacing, 6 pt space after paragraphs  
+• Main heading: 14 pt bold small‑caps, centred; put a 0.5 pt horizontal rule above it  
+• Version line: 9 pt italics, right‑aligned  
+• Numbered clauses 1‑14, each with 0.5 cm hanging indent; clause titles bold.  
+• Sub‑lists use a), b), c) etc. with 0.9 cm hanging indent.  
+• Insert a centred footer (8 pt grey): “Andreas Pakkoutis & Sons Ltd — Plant Quotation T&C (v Jun 2025)”  
+• Output the finished page **as one Markdown string only** – I’ll drop it into Word/PDF myself.
+
+-----  paste‑inside‑document‑start  -----
+TERMS & CONDITIONS – PLANT QUOTATIONS (B2B)  
+Version: June 2025  
+
+1. **Definitions**  
+"Seller" means Andreas Pakkoutis & Sons Ltd of Griva Digeni 39, Avgorou 5510.  
+"Buyer" means the legal person identified on the quotation or purchase order.  
+"Plants" means the live plant material described in the quotation.  
+
+2. **Validity of Quotation**  
+Each quotation is open for 30 calendar days from its issue date or until the quoted stock is sold, whichever occurs first. Orders received after expiry require a fresh quotation.  
+
+3. **Formation of Contract**  
+The Buyer’s purchase order constitutes an offer to purchase subject to these T&C. A binding contract arises only when the Seller issues a written Order Confirmation (email or e‑signature accepted).  
+
+4. **Prices & Taxes**  
+Prices are stated in euro (€) and are exclusive of VAT unless expressly indicated otherwise; VAT will be added at the applicable rate. Prices are firm for the quotation validity period and for the quantities confirmed in the Order Confirmation.  
+
+5. **Payment Terms**  
+Deposit – 50 % of the total order value, non‑refundable, payable upon order placement.  
+Balance – 50 % payable in cleared funds before dispatch/collection.  
+Late‑payment interest accrues at the higher of (a) 5 % p.a. above the Bank of Cyprus base rate, or (b) the statutory rate under the Late Payments in Commercial Transactions Law 123(I)/2012 (ECB MRO + 8 %), calculated daily until payment, plus the fixed €40 recovery charge.  
+
+6. **Delivery, Risk & Title**  
+Delivery within Cyprus (ground floor, single location) is included in the price. Indicative lead time is confirmed once the deposit is received. Risk passes to the Buyer upon unloading at the delivery address or upon collection by the Buyer’s carrier, whichever is earlier. Title to the Plants remains with the Seller until full payment is received; the Seller may retake possession if payment is not made when due.  
+
+7. **Inspection & Acceptance**  
+The Buyer must inspect the Plants immediately on delivery. Visible defects/shortages: notify the Seller in writing within 2 business days. Latent defects (e.g. disease): notify within 7 days of discovery and no later than 30 days after delivery. Failure to notify within the relevant period constitutes acceptance of the Plants.  
+
+8. **Warranty**  
+The Seller warrants that, at delivery, the Plants conform to the agreed species/cultivar and size and are free from quarantine pests. All other warranties or conditions, express or implied, are excluded to the fullest extent permitted by law.  
+
+9. **Limitation of Liability**  
+The Seller’s aggregate liability under or in connection with the contract shall not exceed the price paid for the Plants. The Seller is not liable for indirect, special or consequential loss (including loss of profit or goodwill). Nothing limits liability for death or personal injury caused by negligence, or for fraud.  
+
+10. **Cancellation & Returns**  
+Orders may not be cancelled after the Order Confirmation. Returns are accepted only for Plants proven dead on arrival (DOA); Buyer must: (a) obtain the Seller’s written authorisation; (b) provide dated photographic evidence; and (c) return the Plants (or allow collection) within 3 days of delivery in their original packaging.  
+
+11. **Force Majeure**  
+Neither party is liable for delay or failure caused by events beyond its reasonable control, including but not limited to acts of God, war, strikes, fire, flood, pest infestation or plant disease. The affected party shall notify the other without undue delay.  
+
+12. **Confidentiality**  
+Each party shall keep confidential any non‑public commercial information received from the other in connection with the quotation or contract, except where disclosure is required by law.  
+
+13. **Governing Law & Jurisdiction**  
+This contract is governed by the laws of the Republic of Cyprus. The courts of Cyprus shall have exclusive jurisdiction.  
+
+14. **Entire Agreement**  
+These T&C, together with the quotation and the Seller’s Order Confirmation, constitute the entire agreement between the parties and supersede all prior discussions or correspondence.  
+-----  paste‑inside‑document‑end  -----
+```
+
+Just hand that block to the Replit agent; it will return the finished Markdown that fits on one page. Drop the Markdown into Word or Google Docs, save as PDF, and you’re done.&#x20;
