@@ -111,6 +111,15 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- July 20, 2025: Updated Terms & Conditions for Plant Quotations (B2B)
+  - Updated all quotation templates with comprehensive 14-clause terms and conditions
+  - Corrected section 6 "Delivery, Risk & Title" to consolidate delivery and lead time information
+  - Enhanced section 7 "Inspection & Acceptance" with specific timeframes for defect reporting
+  - Fixed section 12 "Confidentiality" to use proper non-breaking hyphen for "non‑public"
+  - Updated section 13 "Governing Law & Jurisdiction" to include exclusive jurisdiction clause
+  - Applied changes to all 6 quotation templates for consistency
+  - Updated footer format to match specification: "Andreas Pakkoutis & Sons Ltd — Plant Quotation T&C (v Jun 2025)"
+  - Added proper CSS styling for terms-page and terms-section classes
 - July 3, 2025: Implemented Comprehensive Discount System for Orders
   - Added discount_percentage and discount_amount fields to Order model
   - Created complete discount calculation logic supporting both percentage and fixed amount discounts
