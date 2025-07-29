@@ -71,7 +71,7 @@ def get_all_customer_stats(db):
     from models import Customer, Invoice, PriceList
     
     # Get all customers
-    customers = Customer.query.all()
+    customers = Customer.query.order_by(Customer.name).all()
     
     # Calculate overall statistics
     total_customers = len(customers)
