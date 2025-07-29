@@ -127,7 +127,7 @@ class CustomerStatsView(BaseView):
             flash('You need to be logged in as an admin to access that page.', 'danger')
             return redirect(url_for('login'))
         
-        customers = Customer.query.all()
+        customers = Customer.query.order_by(Customer.name).all()
         
         # Calculate stats for each customer
         stats = []

@@ -495,7 +495,7 @@ def register_routes(app):
     @app.route('/uploads', methods=['GET'])
     @login_required
     def uploads():
-        customers = Customer.query.all()
+        customers = Customer.query.order_by(Customer.name).all()
         recent_uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(10).all()
         return render_template('uploads.html', customers=customers, recent_uploads=recent_uploads)
     
@@ -918,8 +918,8 @@ def register_routes(app):
                 flash(f'Error saving customer: {str(e)}', 'danger')
         
         # GET request - display customers
-        customers_list = Customer.query.all()
-        customer_categories = CustomerCategory.query.all()
+        customers_list = Customer.query.order_by(Customer.name).all()
+        customer_categories = CustomerCategory.query.order_by(CustomerCategory.name).all()
         return render_template('customers.html', 
                              customers=customers_list, 
                              customer_categories=customer_categories)
@@ -1193,7 +1193,7 @@ def register_routes(app):
     @app.route('/search', methods=['GET'])
     @login_required
     def search():
-        customers = Customer.query.all()
+        customers = Customer.query.order_by(Customer.name).all()
         return render_template('search.html', customers=customers)
     
     @app.route('/api/search', methods=['GET'])
@@ -1647,7 +1647,7 @@ def register_routes(app):
         invoices_list = pagination.items
         
         # Get all customers for filter dropdown
-        customers = Customer.query.all()
+        customers = Customer.query.order_by(Customer.name).all()
         
         return render_template('invoices.html', 
                               invoices=invoices_list, 
@@ -1790,7 +1790,7 @@ def register_routes(app):
         updates = pagination.items
         
         # Get all customers for filter dropdown
-        customers = Customer.query.all()
+        customers = Customer.query.order_by(Customer.name).all()
         
         return render_template('pending_updates.html', 
                               updates=updates,

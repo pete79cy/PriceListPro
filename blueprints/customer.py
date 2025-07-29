@@ -10,7 +10,7 @@ customer_bp = Blueprint('customer_form', __name__, url_prefix='/customer_form')
 def create_customer():
     """Create a new customer with the provided information"""
     # Get all categories for the dropdown
-    categories = CustomerCategory.query.all()
+    categories = CustomerCategory.query.order_by(CustomerCategory.name).all()
     
     if request.method == 'POST':
         name = request.form.get('name')
