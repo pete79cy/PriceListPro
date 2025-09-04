@@ -224,9 +224,9 @@
                 </tr>
             </thead>
             <tbody>
-                {% set total_qty = 0 %}
+                {% set ns = namespace(total_qty=0) %}
                 {% for item in order.items %}
-                {% set total_qty = total_qty + (item.quantity or 0) %}
+                {% set ns.total_qty = ns.total_qty + (item.quantity|float if item.quantity else 0) %}
                 <tr>
                     <td class="item-name">
                         {% if item.product %}
@@ -243,7 +243,7 @@
             <tfoot>
                 <tr class="total-row">
                     <td></td>
-                    <td class="qty">{{ total_qty|int if total_qty == total_qty|int else total_qty }}</td>
+                    <td class="qty">{{ ns.total_qty|int if ns.total_qty == ns.total_qty|int else ns.total_qty }}</td>
                     <td class="uom">units</td>
                 </tr>
             </tfoot>
