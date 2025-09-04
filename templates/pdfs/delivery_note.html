@@ -229,8 +229,10 @@
                 {% set ns.total_qty = ns.total_qty + (item.quantity|float if item.quantity else 0) %}
                 <tr>
                     <td class="item-name">
-                        {% if item.product %}
+                        {% if item.product and item.product.name %}
                             {{ item.product.name }}
+                        {% elif item.plant_name %}
+                            {{ item.plant_name }}
                         {% else %}
                             {{ item.description or 'No description' }}
                         {% endif %}
