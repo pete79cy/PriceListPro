@@ -196,6 +196,10 @@ def register_routes(app):
     
     @app.route('/', methods=['GET'])
     def index():
+        # Handle health check requests (for deployment health checks)
+        if request.headers.get('User-Agent', '').startswith('deployment-health'):
+            return "OK", 200
+            
         # If user is already logged in, show the dashboard
         if current_user.is_authenticated:
             import json
@@ -4152,11 +4156,27 @@ def register_routes(app):
         }
         return jsonify(status)
     
+    @app.route('/health', methods=['GET'])
+    def health():
+        """Simple health check for deployment"""
+        return "OK", 200
+    
     @app.route('/healthcheck', methods=['GET'])
     def healthcheck():
-        """API healthcheck endpoint"""
-        from services.openai_utils import openai_health_check
-        return jsonify({ "openai_healthy": openai_health_check() }), 200
+        """Detailed health check endpoint"""
+        try:
+            # Basic database connectivity check
+            db.session.execute(db.text('SELECT 1'))
+            db_healthy = True
+        except Exception:
+            db_healthy = False
+        
+        # Skip OpenAI check for basic health to avoid timeouts
+        return jsonify({ 
+            "status": "healthy" if db_healthy else "unhealthy",
+            "database": db_healthy,
+            "timestamp": datetime.utcnow().isoformat()
+        }), 200 if db_healthy else 503
     
     @app.route('/test-openai-api', methods=['GET'])
     @login_required
