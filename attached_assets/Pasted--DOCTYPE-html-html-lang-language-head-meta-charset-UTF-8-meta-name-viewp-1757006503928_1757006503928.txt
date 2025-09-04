@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Note</title>
+    <style>
+        :root {
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --text-color: #333;
+            --secondary-text-color: #777;
+            --border-color: #eee;
+            --background-color: #f9f9f9;
+            --highlight-color: #007aff;
+            --highlight-text-color: #fff;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-color);
+            margin: 0;
+            padding: 40px;
+            background-color: #fff;
+            line-height: 1.6;
+            {% if language == 'ar' %}
+            direction: rtl;
+            text-align: right;
+            {% endif %}
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 50px;
+        }
+        
+        .header-left h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        /* Order Details & Customer Info */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .info-block h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            color: var(--secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-block p {
+            margin: 5px 0;
+        }
+
+        .info-block p.main-info {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        /* Item Table */
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 50px;
+        }
+
+        .item-table thead th {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary-text-color);
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+            text-align: left;
+        }
+
+        .item-table tbody td {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .item-table .item-name {
+            font-weight: 500;
+        }
+        
+        .item-table .qty, .item-table .uom {
+            text-align: right;
+        }
+        
+        .item-table .total-row {
+            font-weight: 700;
+        }
+
+        /* Summary & Signature */
+        .summary-notes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        
+        .summary-block h4, .notes-block h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+
+        .summary-line .label {
+            color: var(--secondary-text-color);
+        }
+
+        .summary-line .value {
+            font-weight: 600;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .signature-block {
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .signature-block .signature-line {
+            height: 20px;
+            margin: 40px 0 10px;
+            border-bottom: 1px solid var(--text-color);
+        }
+
+        .signature-block .label {
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+        }
+
+        /* Print-friendly styles */
+        @media print {
+            body {
+                padding: 0;
+                font-size: 11pt;
+            }
+            .container {
+                max-width: 100%;
+            }
+            .header, .info-grid, .item-table, .summary-notes-grid, .signature-grid {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Delivery Note</h1>
+                <p style="margin: 0; font-size: 1.1rem; font-weight: 500;">{{ translations.delivery_note }}</p>
+            </div>
+            <div class="header-right">
+                <p style="margin: 0;"><strong>ORDER NO.</strong> {{ order.order_number }}</p>
+                <p style="margin: 0;"><strong>DATE:</strong> {{ date }}</p>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-block">
+                <h3>Customer</h3>
+                <p class="main-info">{{ order.customer.name }}</p>
+                <p>{{ order.customer.address }}</p>
+                <p>Tel: {{ order.customer.phone }}</p>
+            </div>
+            <div class="info-block">
+                <h3>Delivery Address</h3>
+                <p class="main-info">{{ order.delivery_address }}</p>
+                {% if order.delivery_notes %}
+                <p style="color: #c00;">{{ order.delivery_notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <table class="item-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="qty">Qty</th>
+                    <th class="uom">UoM</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set total_qty = 0 %}
+                {% for item in order.items %}
+                {% set total_qty = total_qty + (item.quantity or 0) %}
+                <tr>
+                    <td class="item-name">{{ item.product.name or item.description }}</td>
+                    <td class="qty">{{ item.quantity }}</td>
+                    <td class="uom">{{ item.unit_of_measure or 'pcs' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td></td>
+                    <td class="qty">{{ total_qty }}</td>
+                    <td class="uom">units</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="signature-grid">
+            <div class="signature-block">
+                <p class="label">Driver</p>
+                <div class="signature-line"></div>
+                <p class="label">Date & Time</p>
+            </div>
+            <div class="signature-block">
+                <p class="label">Receiver</p>
+                <div class="signature-line"></div>
+                <p class="label">Date & Time</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
