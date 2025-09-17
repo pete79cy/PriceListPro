@@ -129,7 +129,7 @@
             page-break-inside: avoid;   /* Prevent splitting */
             break-inside: avoid;         /* Modern browser support */
             width: 100%;
-            padding-top: 2cm;  /* Start from top of the new page with some padding */
+            padding-top: 0.5cm;  /* Start from top of the new page with some padding */
         }
         
         .summary-block {
@@ -368,13 +368,6 @@
         </tbody>
     </table>
 
-    {% if quotation.notes %}
-    <div class="notes">
-        <h2>Additional Notes</h2>
-        <p>{{ quotation.notes }}</p>
-    </div>
-    {% endif %}
-
     <!-- Summary/Totals on its own page -->
     <div class="totals-page">
         <div class="summary-block">
@@ -398,6 +391,12 @@
         </div>
     </div>
 
+    {% if quotation.notes %}
+    <div class="notes">
+        <h2>Additional Notes</h2>
+        <p>{{ quotation.notes }}</p>
+    </div>
+    {% endif %}
 
     <!-- Force page break before Terms & Conditions -->
     <div style="page-break-before: always;"></div>
