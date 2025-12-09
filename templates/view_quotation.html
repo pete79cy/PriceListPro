@@ -562,6 +562,16 @@
                                         <td class="text-end fw-medium">{{ quotation.currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex gap-1 justify-content-center">
+                                                <button type="button" class="btn btn-ghost size-options-btn" 
+                                                        data-id="{{ item.id }}"
+                                                        data-description="{{ item.description|e }}"
+                                                        data-has-options="{{ 'true' if item.has_size_options else 'false' }}"
+                                                        title="Size Options">
+                                                    <i class="fas fa-ruler-combined {% if item.has_size_options %}text-success{% else %}text-muted{% endif %}"></i>
+                                                    {% if item.size_options|length > 0 %}
+                                                    <span class="badge bg-success rounded-pill" style="font-size: 0.6rem; position: relative; top: -8px; left: -5px;">{{ item.size_options|length }}</span>
+                                                    {% endif %}
+                                                </button>
                                                 <button type="button" class="btn btn-ghost edit-item-btn" 
                                                         data-id="{{ item.id }}"
                                                         data-description="{{ item.description|e }}"
@@ -981,6 +991,95 @@
         </div>
     </div>
 </div>
+
+<!-- Size Options Modal -->
+<div class="modal fade" id="sizeOptionsModal" tabindex="-1" aria-labelledby="sizeOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sizeOptionsModalLabel">
+                    <i class="fas fa-ruler-combined me-2"></i>Size Options
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Item:</strong> <span id="sizeOptionsItemName"></span>
+                    <br>
+                    <small>Add multiple size options with different prices. The customer can choose their preferred size.</small>
+                </div>
+                
+                <input type="hidden" id="sizeOptionsItemId">
+                
+                <!-- Size Options List -->
+                <div id="sizeOptionsList" class="mb-3">
+                    <table class="table table-sm table-hover" id="sizeOptionsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Size</th>
+                                <th class="text-end">Price ({{ quotation.currency }})</th>
+                                <th class="text-end">Cost ({{ quotation.currency }})</th>
+                                <th class="text-center">Default</th>
+                                <th>Notes</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sizeOptionsTableBody">
+                            <!-- Options will be loaded dynamically -->
+                        </tbody>
+                    </table>
+                    <div id="noSizeOptionsMessage" class="text-muted text-center py-3 d-none">
+                        <i class="fas fa-info-circle me-1"></i> No size options added yet. Add your first option below.
+                    </div>
+                </div>
+                
+                <!-- Add New Option Form -->
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Size Option</h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="addSizeOptionForm">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Size *</label>
+                                    <input type="text" class="form-control form-control-sm" id="newOptionSize" placeholder="e.g. 30cm" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Price *</label>
+                                    <input type="number" class="form-control form-control-sm" id="newOptionPrice" step="0.01" min="0" placeholder="0.00" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Cost</label>
+                                    <input type="number" class="form-control form-control-sm" id="newOptionCostPrice" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Notes</label>
+                                    <input type="text" class="form-control form-control-sm" id="newOptionNotes" placeholder="Optional notes">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        <i class="fas fa-plus me-1"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newOptionIsDefault">
+                                    <label class="form-check-label small" for="newOptionIsDefault">Set as default/recommended option</label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block head %}
@@ -1137,6 +1236,180 @@ function initExcelColumnSelectors() {
             });
         });
     }
+}
+
+// ==================== SIZE OPTIONS FUNCTIONALITY ====================
+
+// Initialize size options buttons
+document.querySelectorAll('.size-options-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const itemId = this.getAttribute('data-id');
+        const itemName = this.getAttribute('data-description');
+        openSizeOptionsModal(itemId, itemName);
+    });
+});
+
+// Open the size options modal
+function openSizeOptionsModal(itemId, itemName) {
+    document.getElementById('sizeOptionsItemId').value = itemId;
+    document.getElementById('sizeOptionsItemName').textContent = itemName;
+    
+    // Load existing options
+    loadSizeOptions(itemId);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('sizeOptionsModal'));
+    modal.show();
+}
+
+// Load size options for an item
+function loadSizeOptions(itemId) {
+    const tbody = document.getElementById('sizeOptionsTableBody');
+    const noOptionsMsg = document.getElementById('noSizeOptionsMessage');
+    const table = document.getElementById('sizeOptionsTable');
+    
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    
+    fetch(`/quotation/item/${itemId}/size_options`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderSizeOptions(data.options);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading options</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading size options:', error);
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading options</td></tr>';
+        });
+}
+
+// Render size options in the table
+function renderSizeOptions(options) {
+    const tbody = document.getElementById('sizeOptionsTableBody');
+    const noOptionsMsg = document.getElementById('noSizeOptionsMessage');
+    const table = document.getElementById('sizeOptionsTable');
+    const itemId = document.getElementById('sizeOptionsItemId').value;
+    
+    if (options.length === 0) {
+        table.classList.add('d-none');
+        noOptionsMsg.classList.remove('d-none');
+        return;
+    }
+    
+    table.classList.remove('d-none');
+    noOptionsMsg.classList.add('d-none');
+    
+    tbody.innerHTML = '';
+    options.forEach(opt => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${escapeHtml(opt.size)}</strong></td>
+            <td class="text-end">${opt.price.toFixed(2)}</td>
+            <td class="text-end">${opt.cost_price ? opt.cost_price.toFixed(2) : '-'}</td>
+            <td class="text-center">
+                ${opt.is_default ? '<span class="badge bg-success"><i class="fas fa-check"></i></span>' : ''}
+            </td>
+            <td class="small text-muted">${opt.notes ? escapeHtml(opt.notes) : ''}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteSizeOption(${itemId}, ${opt.id})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Add new size option
+document.getElementById('addSizeOptionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const itemId = document.getElementById('sizeOptionsItemId').value;
+    const formData = new FormData();
+    formData.append('size', document.getElementById('newOptionSize').value);
+    formData.append('price', document.getElementById('newOptionPrice').value);
+    formData.append('cost_price', document.getElementById('newOptionCostPrice').value || '');
+    formData.append('notes', document.getElementById('newOptionNotes').value || '');
+    formData.append('is_default', document.getElementById('newOptionIsDefault').checked ? 'true' : 'false');
+    
+    fetch(`/quotation/item/${itemId}/size_options/add`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Clear form
+            document.getElementById('newOptionSize').value = '';
+            document.getElementById('newOptionPrice').value = '';
+            document.getElementById('newOptionCostPrice').value = '';
+            document.getElementById('newOptionNotes').value = '';
+            document.getElementById('newOptionIsDefault').checked = false;
+            
+            // Reload options
+            loadSizeOptions(itemId);
+            
+            // Update button icon
+            updateSizeOptionsButtonIcon(itemId, true);
+        } else {
+            alert('Error adding option: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error adding size option:', error);
+        alert('Error adding option. Please try again.');
+    });
+});
+
+// Delete size option
+function deleteSizeOption(itemId, optionId) {
+    if (!confirm('Are you sure you want to delete this size option?')) {
+        return;
+    }
+    
+    fetch(`/quotation/item/${itemId}/size_options/${optionId}/delete`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadSizeOptions(itemId);
+        } else {
+            alert('Error deleting option: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting size option:', error);
+        alert('Error deleting option. Please try again.');
+    });
+}
+
+// Update the size options button icon
+function updateSizeOptionsButtonIcon(itemId, hasOptions) {
+    const btn = document.querySelector(`.size-options-btn[data-id="${itemId}"]`);
+    if (btn) {
+        const icon = btn.querySelector('i');
+        if (hasOptions) {
+            icon.classList.remove('text-muted');
+            icon.classList.add('text-success');
+        } else {
+            icon.classList.remove('text-success');
+            icon.classList.add('text-muted');
+        }
+    }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 </script>
 

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
 from werkzeug.utils import secure_filename
 from app import db
-from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, Supplier, SupplierProduct, CompanySettings, QuotationStatus, Order
+from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, QuotationItemSizeOption, Supplier, SupplierProduct, CompanySettings, QuotationStatus, Order
 from flask_login import login_user, logout_user, login_required, current_user
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
@@ -3214,6 +3214,235 @@ def register_routes(app):
             logger.error(f"Error adding quotation item: {str(e)}")
             return jsonify({'error': str(e)}), 500
     
+    # ==================== SIZE OPTIONS ROUTES ====================
+    
+    @app.route('/quotation/item/<int:item_id>/size_options', methods=['GET'])
+    @login_required
+    def get_size_options(item_id):
+        """Get all size options for a quotation item"""
+        item = QuotationItem.query.get_or_404(item_id)
+        
+        options = []
+        for opt in item.size_options:
+            options.append({
+                'id': opt.id,
+                'size': opt.size,
+                'price': opt.price,
+                'cost_price': opt.cost_price,
+                'is_default': opt.is_default,
+                'position': opt.position,
+                'notes': opt.notes
+            })
+        
+        return jsonify({
+            'success': True,
+            'item_id': item_id,
+            'has_size_options': item.has_size_options,
+            'options': options
+        })
+    
+    @app.route('/quotation/item/<int:item_id>/size_options/add', methods=['POST'])
+    @login_required
+    @with_db_reconnect(max_retries=3)
+    def add_size_option(item_id):
+        """Add a new size option to a quotation item"""
+        item = QuotationItem.query.get_or_404(item_id)
+        
+        try:
+            size = request.form.get('size', '').strip()
+            if not size:
+                return jsonify({'success': False, 'error': 'Size is required'}), 400
+            
+            # Parse price
+            try:
+                price_raw = request.form.get('price', '0')
+                if isinstance(price_raw, str):
+                    price_raw = price_raw.replace('€', '').replace(',', '.').strip()
+                price = float(price_raw) if price_raw else 0
+            except (ValueError, TypeError):
+                price = 0
+            
+            # Parse cost price
+            try:
+                cost_price_raw = request.form.get('cost_price', '')
+                if cost_price_raw and isinstance(cost_price_raw, str):
+                    cost_price_raw = cost_price_raw.replace('€', '').replace(',', '.').strip()
+                cost_price = float(cost_price_raw) if cost_price_raw else None
+            except (ValueError, TypeError):
+                cost_price = None
+            
+            is_default = request.form.get('is_default', 'false').lower() == 'true'
+            notes = request.form.get('notes', '').strip() or None
+            
+            # Get next position
+            position = len(item.size_options)
+            
+            # If this is set as default, unset other defaults
+            if is_default:
+                for opt in item.size_options:
+                    opt.is_default = False
+            
+            # Create the size option
+            option = QuotationItemSizeOption(
+                quotation_item_id=item_id,
+                size=size,
+                price=price,
+                cost_price=cost_price,
+                is_default=is_default,
+                position=position,
+                notes=notes
+            )
+            
+            db.session.add(option)
+            
+            # Mark item as having size options
+            item.has_size_options = True
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'option': {
+                    'id': option.id,
+                    'size': option.size,
+                    'price': option.price,
+                    'cost_price': option.cost_price,
+                    'is_default': option.is_default,
+                    'position': option.position,
+                    'notes': option.notes
+                }
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error adding size option: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/quotation/item/<int:item_id>/size_options/<int:option_id>', methods=['POST'])
+    @login_required
+    @with_db_reconnect(max_retries=3)
+    def edit_size_option(item_id, option_id):
+        """Edit an existing size option"""
+        item = QuotationItem.query.get_or_404(item_id)
+        option = QuotationItemSizeOption.query.get_or_404(option_id)
+        
+        if option.quotation_item_id != item_id:
+            return jsonify({'success': False, 'error': 'Option does not belong to this item'}), 400
+        
+        try:
+            size = request.form.get('size', '').strip()
+            if not size:
+                return jsonify({'success': False, 'error': 'Size is required'}), 400
+            
+            # Parse price
+            try:
+                price_raw = request.form.get('price', '0')
+                if isinstance(price_raw, str):
+                    price_raw = price_raw.replace('€', '').replace(',', '.').strip()
+                option.price = float(price_raw) if price_raw else 0
+            except (ValueError, TypeError):
+                pass
+            
+            # Parse cost price
+            try:
+                cost_price_raw = request.form.get('cost_price', '')
+                if cost_price_raw and isinstance(cost_price_raw, str):
+                    cost_price_raw = cost_price_raw.replace('€', '').replace(',', '.').strip()
+                option.cost_price = float(cost_price_raw) if cost_price_raw else None
+            except (ValueError, TypeError):
+                pass
+            
+            option.size = size
+            is_default = request.form.get('is_default', 'false').lower() == 'true'
+            
+            # If this is set as default, unset other defaults
+            if is_default and not option.is_default:
+                for opt in item.size_options:
+                    opt.is_default = False
+            
+            option.is_default = is_default
+            option.notes = request.form.get('notes', '').strip() or None
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'option': {
+                    'id': option.id,
+                    'size': option.size,
+                    'price': option.price,
+                    'cost_price': option.cost_price,
+                    'is_default': option.is_default,
+                    'position': option.position,
+                    'notes': option.notes
+                }
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error editing size option: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/quotation/item/<int:item_id>/size_options/<int:option_id>/delete', methods=['POST', 'GET'])
+    @login_required
+    @with_db_reconnect(max_retries=3)
+    def delete_size_option(item_id, option_id):
+        """Delete a size option"""
+        item = QuotationItem.query.get_or_404(item_id)
+        option = QuotationItemSizeOption.query.get_or_404(option_id)
+        
+        if option.quotation_item_id != item_id:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'Option does not belong to this item'}), 400
+            flash('Option does not belong to this item', 'danger')
+            return redirect(url_for('view_quotation', quotation_id=item.quotation_id))
+        
+        try:
+            db.session.delete(option)
+            
+            # Check if there are remaining options
+            remaining_options = QuotationItemSizeOption.query.filter_by(quotation_item_id=item_id).count()
+            if remaining_options <= 1:  # We're deleting this one, so check if 1 or less
+                item.has_size_options = False
+            
+            db.session.commit()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True})
+            
+            flash('Size option deleted successfully!', 'success')
+            return redirect(url_for('view_quotation', quotation_id=item.quotation_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting size option: {str(e)}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': str(e)}), 500
+            flash(f'Error deleting size option: {str(e)}', 'danger')
+            return redirect(url_for('view_quotation', quotation_id=item.quotation_id))
+    
+    @app.route('/quotation/item/<int:item_id>/toggle_size_options', methods=['POST'])
+    @login_required
+    @with_db_reconnect(max_retries=3)
+    def toggle_size_options(item_id):
+        """Toggle whether an item uses size options or not"""
+        item = QuotationItem.query.get_or_404(item_id)
+        
+        try:
+            enable = request.form.get('enable', 'true').lower() == 'true'
+            item.has_size_options = enable
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'has_size_options': item.has_size_options
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error toggling size options: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)}), 500
 
     
     @app.route('/supplier/quick_add', methods=['POST'])

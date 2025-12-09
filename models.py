@@ -607,13 +607,31 @@ class QuotationItem(db.Model):
     cost_price = db.Column(db.Float, nullable=True)  # What we pay for the item
     total = db.Column(db.Float, nullable=True)  # Total price (selling_price * quantity)
     position = db.Column(db.Integer, default=0)  # Position for ordering items in the quotation
+    has_size_options = db.Column(db.Boolean, default=False)  # Flag to indicate if this item has multiple size options
     
     # Relationships
     product = db.relationship('Product', backref='quotation_items', lazy=True)
     supplier_ref = db.relationship('Supplier', backref='quotation_items', lazy=True)
+    size_options = db.relationship('QuotationItemSizeOption', backref='quotation_item', lazy=True, 
+                                   cascade="all, delete-orphan", order_by="QuotationItemSizeOption.position")
     
     def __repr__(self):
         return f'<QuotationItem {self.description}>'
+
+
+class QuotationItemSizeOption(db.Model):
+    """Model for storing multiple size options for a quotation item"""
+    id = db.Column(db.Integer, primary_key=True)
+    quotation_item_id = db.Column(db.Integer, db.ForeignKey('quotation_item.id'), nullable=False)
+    size = db.Column(db.String(50), nullable=False)  # Size description (e.g., "30cm", "50cm", "1m")
+    price = db.Column(db.Float, nullable=False)  # Price for this size
+    cost_price = db.Column(db.Float, nullable=True)  # Cost price for this size
+    is_default = db.Column(db.Boolean, default=False)  # Mark one option as default/recommended
+    position = db.Column(db.Integer, default=0)  # Order of display
+    notes = db.Column(db.String(200), nullable=True)  # Optional notes for this option
+    
+    def __repr__(self):
+        return f'<SizeOption {self.size} @ {self.price}>'
 
 class DeliveryAdjustmentType:
     """Types of delivery adjustments"""
