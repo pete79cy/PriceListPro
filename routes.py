@@ -3229,6 +3229,7 @@ def register_routes(app):
                 'size': opt.size,
                 'price': opt.price,
                 'cost_price': opt.cost_price,
+                'supplier': opt.supplier,
                 'is_default': opt.is_default,
                 'position': opt.position,
                 'notes': opt.notes
@@ -3273,6 +3274,7 @@ def register_routes(app):
             
             is_default = request.form.get('is_default', 'false').lower() == 'true'
             notes = request.form.get('notes', '').strip() or None
+            supplier = request.form.get('supplier', '').strip() or None
             
             # Get next position
             position = len(item.size_options)
@@ -3288,6 +3290,7 @@ def register_routes(app):
                 size=size,
                 price=price,
                 cost_price=cost_price,
+                supplier=supplier,
                 is_default=is_default,
                 position=position,
                 notes=notes
@@ -3307,6 +3310,7 @@ def register_routes(app):
                     'size': option.size,
                     'price': option.price,
                     'cost_price': option.cost_price,
+                    'supplier': option.supplier,
                     'is_default': option.is_default,
                     'position': option.position,
                     'notes': option.notes
@@ -3362,6 +3366,7 @@ def register_routes(app):
             
             option.is_default = is_default
             option.notes = request.form.get('notes', '').strip() or None
+            option.supplier = request.form.get('supplier', '').strip() or None
             
             db.session.commit()
             
@@ -3372,6 +3377,7 @@ def register_routes(app):
                     'size': option.size,
                     'price': option.price,
                     'cost_price': option.cost_price,
+                    'supplier': option.supplier,
                     'is_default': option.is_default,
                     'position': option.position,
                     'notes': option.notes

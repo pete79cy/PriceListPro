@@ -626,6 +626,7 @@ class QuotationItemSizeOption(db.Model):
     size = db.Column(db.String(50), nullable=False)  # Size description (e.g., "30cm", "50cm", "1m")
     price = db.Column(db.Float, nullable=False)  # Price for this size
     cost_price = db.Column(db.Float, nullable=True)  # Cost price for this size
+    supplier = db.Column(db.String(100), nullable=True)  # Supplier name for this size option
     is_default = db.Column(db.Boolean, default=False)  # Mark one option as default/recommended
     position = db.Column(db.Integer, default=0)  # Order of display
     notes = db.Column(db.String(200), nullable=True)  # Optional notes for this option
