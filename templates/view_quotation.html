@@ -1020,6 +1020,7 @@
                                 <th>Size</th>
                                 <th class="text-end">Price ({{ quotation.currency }})</th>
                                 <th class="text-end">Cost ({{ quotation.currency }})</th>
+                                <th>Supplier</th>
                                 <th class="text-center">Default</th>
                                 <th>Notes</th>
                                 <th class="text-center">Actions</th>
@@ -1042,7 +1043,7 @@
                     <div class="card-body">
                         <form id="addSizeOptionForm">
                             <div class="row g-2">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="form-label small">Size *</label>
                                     <input type="text" class="form-control form-control-sm" id="newOptionSize" placeholder="e.g. 30cm" required>
                                 </div>
@@ -1054,9 +1055,18 @@
                                     <label class="form-label small">Cost</label>
                                     <input type="number" class="form-control form-control-sm" id="newOptionCostPrice" step="0.01" min="0" placeholder="0.00">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="form-label small">Supplier</label>
+                                    <select class="form-select form-select-sm" id="newOptionSupplier">
+                                        <option value="">-- Select --</option>
+                                        {% for supplier in all_suppliers %}
+                                        <option value="{{ supplier.name }}">{{ supplier.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <label class="form-label small">Notes</label>
-                                    <input type="text" class="form-control form-control-sm" id="newOptionNotes" placeholder="Optional notes">
+                                    <input type="text" class="form-control form-control-sm" id="newOptionNotes" placeholder="Optional">
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary btn-sm w-100">
@@ -1268,7 +1278,7 @@ function loadSizeOptions(itemId) {
     const noOptionsMsg = document.getElementById('noSizeOptionsMessage');
     const table = document.getElementById('sizeOptionsTable');
     
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
     
     fetch(`/quotation/item/${itemId}/size_options`)
         .then(response => response.json())
@@ -1276,12 +1286,12 @@ function loadSizeOptions(itemId) {
             if (data.success) {
                 renderSizeOptions(data.options);
             } else {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading options</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading options</td></tr>';
             }
         })
         .catch(error => {
             console.error('Error loading size options:', error);
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading options</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading options</td></tr>';
         });
 }
 
@@ -1308,6 +1318,7 @@ function renderSizeOptions(options) {
             <td><strong>${escapeHtml(opt.size)}</strong></td>
             <td class="text-end">${opt.price.toFixed(2)}</td>
             <td class="text-end">${opt.cost_price ? opt.cost_price.toFixed(2) : '-'}</td>
+            <td class="small">${opt.supplier ? escapeHtml(opt.supplier) : '-'}</td>
             <td class="text-center">
                 ${opt.is_default ? '<span class="badge bg-success"><i class="fas fa-check"></i></span>' : ''}
             </td>
@@ -1331,6 +1342,7 @@ document.getElementById('addSizeOptionForm').addEventListener('submit', function
     formData.append('size', document.getElementById('newOptionSize').value);
     formData.append('price', document.getElementById('newOptionPrice').value);
     formData.append('cost_price', document.getElementById('newOptionCostPrice').value || '');
+    formData.append('supplier', document.getElementById('newOptionSupplier').value || '');
     formData.append('notes', document.getElementById('newOptionNotes').value || '');
     formData.append('is_default', document.getElementById('newOptionIsDefault').checked ? 'true' : 'false');
     
@@ -1345,6 +1357,7 @@ document.getElementById('addSizeOptionForm').addEventListener('submit', function
             document.getElementById('newOptionSize').value = '';
             document.getElementById('newOptionPrice').value = '';
             document.getElementById('newOptionCostPrice').value = '';
+            document.getElementById('newOptionSupplier').value = '';
             document.getElementById('newOptionNotes').value = '';
             document.getElementById('newOptionIsDefault').checked = false;
             
