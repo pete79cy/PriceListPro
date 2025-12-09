@@ -369,6 +369,22 @@
                 <td class="numeric">{{ currency }} {{ "%.2f"|format(item.selling_price) }}</td>
                 <td class="numeric">{{ currency }} {{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
             </tr>
+            {% if item.has_size_options and item.size_options|length > 0 %}
+            {% for size_opt in item.size_options|sort(attribute='position') %}
+            <tr style="background-color: #f0f7ff;">
+                <td class="text-center" style="color: #666; font-size: 8pt;">↳</td>
+                <td colspan="3" style="padding-left: 20px; font-size: 8pt; color: #555;">
+                    <strong>Size Option:</strong> {{ size_opt.size }}
+                    {% if size_opt.notes %}<span style="color: #888;"> - {{ size_opt.notes }}</span>{% endif %}
+                    {% if size_opt.is_default %}<span style="color: #28a745; font-weight: bold;"> ✓ Default</span>{% endif %}
+                </td>
+                <td></td>
+                <td class="numeric" style="font-size: 8pt;">{{ item.quantity|int }}</td>
+                <td class="numeric" style="font-size: 8pt;">{{ currency }} {{ "%.2f"|format(size_opt.price) }}</td>
+                <td class="numeric" style="font-size: 8pt;">{{ currency }} {{ "%.2f"|format(item.quantity * size_opt.price) }}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>

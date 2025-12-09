@@ -245,6 +245,11 @@ def generate_quotation_excel(quotation, output_folder, columns=None):
     
     # Table rows - sorted by position
     items = sorted(quotation.items, key=lambda x: x.position or 0)
+    
+    # Style for size option rows
+    size_option_fill = PatternFill(start_color="F0F7FF", end_color="F0F7FF", fill_type="solid")
+    size_option_font = Font(name='Arial', size=9, italic=True)
+    
     for i, item in enumerate(items, 1):
         # Calculate item total (needed for VAT calculations)
         item_total = item.quantity * item.selling_price
@@ -281,6 +286,46 @@ def generate_quotation_excel(quotation, output_folder, columns=None):
                     cell.number_format = format_map[key]
         
         row += 1
+        
+        # Add size options if the item has them
+        if hasattr(item, 'has_size_options') and item.has_size_options and hasattr(item, 'size_options'):
+            size_options = sorted(item.size_options, key=lambda x: x.position or 0)
+            for size_opt in size_options:
+                # Write size option row
+                for col_idx, key in enumerate(column_keys, 1):
+                    cell = ws.cell(row=row, column=col_idx)
+                    cell.fill = size_option_fill
+                    cell.font = size_option_font
+                    cell.border = thin_border
+                    
+                    if key == "index":
+                        cell.value = "↳"
+                        cell.alignment = center_align
+                    elif key == "description":
+                        option_text = f"  Size Option: {size_opt.size}"
+                        if size_opt.notes:
+                            option_text += f" - {size_opt.notes}"
+                        if size_opt.is_default:
+                            option_text += " ✓ Default"
+                        cell.value = option_text
+                        cell.alignment = left_align
+                    elif key == "quantity":
+                        cell.value = item.quantity
+                        cell.alignment = center_align
+                    elif key == "unit_price":
+                        cell.value = size_opt.price
+                        cell.alignment = right_align
+                        cell.number_format = "#,##0.00"
+                    elif key == "total_price":
+                        cell.value = item.quantity * size_opt.price
+                        cell.alignment = right_align
+                        cell.number_format = "#,##0.00"
+                    else:
+                        cell.value = ""
+                        if key in alignment_map:
+                            cell.alignment = alignment_map[key]
+                
+                row += 1
     
     # SUMMARY SECTION
     # Get the number of columns and their letters
