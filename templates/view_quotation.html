@@ -1250,13 +1250,14 @@ function initExcelColumnSelectors() {
 
 // ==================== SIZE OPTIONS FUNCTIONALITY ====================
 
-// Initialize size options buttons
-document.querySelectorAll('.size-options-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const itemId = this.getAttribute('data-id');
-        const itemName = this.getAttribute('data-description');
+// Use event delegation for size options buttons (ensures it works regardless of DOM load timing)
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.size-options-btn');
+    if (btn) {
+        const itemId = btn.getAttribute('data-id');
+        const itemName = btn.getAttribute('data-description');
         openSizeOptionsModal(itemId, itemName);
-    });
+    }
 });
 
 // Open the size options modal
