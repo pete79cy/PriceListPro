@@ -3,29 +3,29 @@
 {% block title %}Dashboard - Plant Pricing System{% endblock %}
 
 {% block header_left %}
-<h2 class="text-lg font-semibold text-slate-900">Dashboard Overview</h2>
+<h2 class="text-base sm:text-lg font-semibold text-slate-900">Dashboard Overview</h2>
 {% endblock %}
 
 {% block header_actions %}
-<a href="{{ url_for('quotations') }}" class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors gap-2">
-    <span class="material-symbols-outlined text-[20px]">add</span>
-    <span>New Quote</span>
+<a href="{{ url_for('quotations') }}" class="flex items-center justify-center rounded-lg h-9 sm:h-10 px-3 sm:px-4 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors gap-1 sm:gap-2">
+    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">add</span>
+    <span class="hidden sm:inline">New Quote</span>
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto flex flex-col gap-8">
+<div class="max-w-6xl mx-auto flex flex-col gap-6 lg:gap-8">
     <!-- Welcome Section -->
-    <div class="flex flex-wrap justify-between items-end gap-4">
-        <div class="flex flex-col gap-2">
-            <h2 class="text-slate-900 text-3xl md:text-4xl font-black tracking-tight">
+    <div class="flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-end gap-2 sm:gap-4">
+        <div class="flex flex-col gap-1 sm:gap-2">
+            <h2 class="text-slate-900 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">
                 Good morning, {% if current_user.is_admin %}Admin{% else %}{{ current_user.username }}{% endif %}
             </h2>
-            <p class="text-slate-500 text-base font-normal">
+            <p class="text-slate-500 text-sm sm:text-base font-normal">
                 Here is what's happening today, {{ now.strftime('%B %d') if now else 'today' }}.
             </p>
         </div>
-        <div class="text-slate-400 text-sm">
+        <div class="text-slate-400 text-xs sm:text-sm">
             Last login: 
             {% if current_user.last_login %}
                 {{ current_user.last_login.strftime('%Y-%m-%d at %H:%M') }}
@@ -37,123 +37,127 @@
 
     <!-- Pending Updates Alert -->
     {% if stats.pending_updates > 0 %}
-    <div class="flex items-center gap-4 p-4 rounded-xl bg-red-50 border border-red-200">
-        <div class="size-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-            <span class="material-symbols-outlined text-2xl">warning</span>
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 rounded-xl bg-red-50 border border-red-200">
+        <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <div class="size-10 sm:size-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                <span class="material-symbols-outlined text-xl sm:text-2xl">warning</span>
+            </div>
+            <div class="flex-1 sm:flex-initial">
+                <p class="font-semibold text-red-800 text-sm sm:text-base">{{ stats.pending_updates }} Pending Price Update{% if stats.pending_updates != 1 %}s{% endif %}</p>
+                <p class="text-xs sm:text-sm text-red-600">Price changes need your approval.</p>
+            </div>
         </div>
-        <div class="flex-1">
-            <p class="font-semibold text-red-800">{{ stats.pending_updates }} Pending Price Update{% if stats.pending_updates != 1 %}s{% endif %}</p>
-            <p class="text-sm text-red-600">Price changes detected from recent imports need your approval.</p>
-        </div>
-        <a href="{{ url_for('pending_updates') }}" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
-            <span class="material-symbols-outlined text-[20px]">task_alt</span>
+        <a href="{{ url_for('pending_updates') }}" class="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors w-full sm:w-auto sm:ml-auto text-sm">
+            <span class="material-symbols-outlined text-[18px] sm:text-[20px]">task_alt</span>
             Review Updates
         </a>
     </div>
     {% endif %}
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <!-- Stat Card 1: Customers -->
-        <div class="flex flex-col gap-1 rounded-xl p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex flex-col gap-1 rounded-xl p-4 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <p class="text-slate-500 text-sm font-medium">Customers</p>
-                <span class="material-symbols-outlined text-primary bg-blue-50 p-1.5 rounded-md text-xl">group</span>
+                <p class="text-slate-500 text-xs sm:text-sm font-medium">Customers</p>
+                <span class="material-symbols-outlined text-primary bg-blue-50 p-1 sm:p-1.5 rounded-md text-lg sm:text-xl">group</span>
             </div>
-            <div class="flex items-baseline gap-2 mt-2">
-                <p class="text-slate-900 text-3xl font-bold">{{ stats.customers }}</p>
-                <p class="text-emerald-600 text-sm font-medium flex items-center">
-                    <span class="material-symbols-outlined text-base">trending_up</span>
+            <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2">
+                <p class="text-slate-900 text-2xl sm:text-3xl font-bold">{{ stats.customers }}</p>
+                <p class="text-emerald-600 text-xs sm:text-sm font-medium flex items-center">
+                    <span class="material-symbols-outlined text-sm sm:text-base">trending_up</span>
                     Active
                 </p>
             </div>
         </div>
 
         <!-- Stat Card 2: Products -->
-        <div class="flex flex-col gap-1 rounded-xl p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex flex-col gap-1 rounded-xl p-4 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <p class="text-slate-500 text-sm font-medium">Products</p>
-                <span class="material-symbols-outlined text-emerald-500 bg-emerald-50 p-1.5 rounded-md text-xl">inventory_2</span>
+                <p class="text-slate-500 text-xs sm:text-sm font-medium">Products</p>
+                <span class="material-symbols-outlined text-emerald-500 bg-emerald-50 p-1 sm:p-1.5 rounded-md text-lg sm:text-xl">inventory_2</span>
             </div>
-            <div class="flex items-baseline gap-2 mt-2">
-                <p class="text-slate-900 text-3xl font-bold">{{ stats.products }}</p>
-                <p class="text-slate-400 text-sm font-medium">In catalog</p>
+            <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2">
+                <p class="text-slate-900 text-2xl sm:text-3xl font-bold">{{ stats.products }}</p>
+                <p class="text-slate-400 text-xs sm:text-sm font-medium">In catalog</p>
             </div>
         </div>
 
         <!-- Stat Card 3: Quotations -->
-        <div class="flex flex-col gap-1 rounded-xl p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex flex-col gap-1 rounded-xl p-4 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <p class="text-slate-500 text-sm font-medium">Active Quotes</p>
-                <span class="material-symbols-outlined text-orange-500 bg-orange-50 p-1.5 rounded-md text-xl">description</span>
+                <p class="text-slate-500 text-xs sm:text-sm font-medium">Active Quotes</p>
+                <span class="material-symbols-outlined text-orange-500 bg-orange-50 p-1 sm:p-1.5 rounded-md text-lg sm:text-xl">description</span>
             </div>
-            <div class="flex items-baseline gap-2 mt-2">
-                <p class="text-slate-900 text-3xl font-bold">{{ stats.quotations }}</p>
-                <p class="text-slate-400 text-sm font-medium">Total</p>
+            <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2">
+                <p class="text-slate-900 text-2xl sm:text-3xl font-bold">{{ stats.quotations }}</p>
+                <p class="text-slate-400 text-xs sm:text-sm font-medium">Total</p>
             </div>
         </div>
 
         <!-- Stat Card 4: Pending Updates -->
-        <div class="flex flex-col gap-1 rounded-xl p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex flex-col gap-1 rounded-xl p-4 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between">
-                <p class="text-slate-500 text-sm font-medium">Price Updates</p>
-                <span class="material-symbols-outlined {% if stats.pending_updates > 0 %}text-red-500 bg-red-50{% else %}text-slate-400 bg-slate-100{% endif %} p-1.5 rounded-md text-xl">pending_actions</span>
+                <p class="text-slate-500 text-xs sm:text-sm font-medium">Price Updates</p>
+                <span class="material-symbols-outlined {% if stats.pending_updates > 0 %}text-red-500 bg-red-50{% else %}text-slate-400 bg-slate-100{% endif %} p-1 sm:p-1.5 rounded-md text-lg sm:text-xl">pending_actions</span>
             </div>
-            <div class="flex items-baseline gap-2 mt-2">
-                <p class="text-slate-900 text-3xl font-bold">{{ stats.pending_updates }}</p>
+            <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 mt-1 sm:mt-2">
+                <p class="text-slate-900 text-2xl sm:text-3xl font-bold">{{ stats.pending_updates }}</p>
                 {% if stats.pending_updates > 0 %}
-                <p class="text-red-500 text-sm font-medium flex items-center">
-                    <span class="material-symbols-outlined text-base">priority_high</span>
+                <p class="text-red-500 text-xs sm:text-sm font-medium flex items-center">
+                    <span class="material-symbols-outlined text-sm sm:text-base">priority_high</span>
                     Pending
                 </p>
                 {% else %}
-                <p class="text-emerald-600 text-sm font-medium">All clear</p>
+                <p class="text-emerald-600 text-xs sm:text-sm font-medium">All clear</p>
                 {% endif %}
             </div>
         </div>
     </div>
 
     <!-- Quick Actions -->
-    <div class="flex flex-col gap-4">
-        <h3 class="text-slate-900 text-lg font-bold">Quick Actions</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <a href="{{ url_for('create_manual_quotation') }}" class="group flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all shadow-sm text-left">
-                <div class="size-12 rounded-full bg-blue-50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">add</span>
+    <div class="flex flex-col gap-3 sm:gap-4">
+        <h3 class="text-slate-900 text-base sm:text-lg font-bold">Quick Actions</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <a href="{{ url_for('create_manual_quotation') }}" class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all shadow-sm text-left active:scale-[0.98]">
+                <div class="size-10 sm:size-12 rounded-full bg-blue-50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
+                    <span class="material-symbols-outlined text-[20px] sm:text-[24px]">add</span>
                 </div>
                 <div>
-                    <p class="font-semibold text-slate-900">Create Quote</p>
+                    <p class="font-semibold text-slate-900 text-sm sm:text-base">Create Quote</p>
                     <p class="text-xs text-slate-500">Start a new proposal</p>
                 </div>
             </a>
-            <a href="{{ url_for('pending_updates') }}" class="group flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all shadow-sm text-left">
-                <div class="size-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">price_change</span>
+            <a href="{{ url_for('pending_updates') }}" class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all shadow-sm text-left active:scale-[0.98]">
+                <div class="size-10 sm:size-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
+                    <span class="material-symbols-outlined text-[20px] sm:text-[24px]">price_change</span>
                 </div>
                 <div>
-                    <p class="font-semibold text-slate-900">Update Pricing</p>
+                    <p class="font-semibold text-slate-900 text-sm sm:text-base">Update Pricing</p>
                     <p class="text-xs text-slate-500">Adjust product costs</p>
                 </div>
             </a>
-            <a href="{{ url_for('customers') }}" class="group flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all shadow-sm text-left">
-                <div class="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">person_add</span>
+            <a href="{{ url_for('customers') }}" class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl border border-slate-200 hover:border-primary transition-all shadow-sm text-left active:scale-[0.98]">
+                <div class="size-10 sm:size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
+                    <span class="material-symbols-outlined text-[20px] sm:text-[24px]">person_add</span>
                 </div>
                 <div>
-                    <p class="font-semibold text-slate-900">New Client</p>
+                    <p class="font-semibold text-slate-900 text-sm sm:text-base">New Client</p>
                     <p class="text-xs text-slate-500">Add customer profile</p>
                 </div>
             </a>
         </div>
     </div>
 
-    <!-- Recent Quotes Table -->
-    <div class="flex flex-col gap-4">
+    <!-- Recent Quotes -->
+    <div class="flex flex-col gap-3 sm:gap-4">
         <div class="flex items-center justify-between">
-            <h3 class="text-slate-900 text-lg font-bold">Recent Quotes</h3>
+            <h3 class="text-slate-900 text-base sm:text-lg font-bold">Recent Quotes</h3>
             <a class="text-sm font-medium text-primary hover:text-blue-700" href="{{ url_for('quotations') }}">View All</a>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Desktop Table View -->
+        <div class="hidden sm:block bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -221,25 +225,66 @@
                 </table>
             </div>
         </div>
+
+        <!-- Mobile Card View -->
+        <div class="sm:hidden flex flex-col gap-3">
+            {% if recent_quotations %}
+                {% for quotation in recent_quotations[:5] %}
+                <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm active:bg-slate-50 transition-colors">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                                {{ quotation.customer.name[:2].upper() if quotation.customer else 'NA' }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900">{{ quotation.customer.name if quotation.customer else 'N/A' }}</p>
+                                <p class="text-xs text-slate-500">#{{ quotation.quotation_number }}</p>
+                            </div>
+                        </div>
+                        {% set status_colors = {
+                            'draft': 'bg-slate-100 text-slate-700',
+                            'sent': 'bg-blue-100 text-blue-700',
+                            'accepted': 'bg-emerald-100 text-emerald-700',
+                            'rejected': 'bg-red-100 text-red-700',
+                            'completed': 'bg-purple-100 text-purple-700'
+                        } %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ status_colors.get(quotation.status.value if quotation.status else 'draft', 'bg-slate-100 text-slate-700') }}">
+                            {{ (quotation.status.value if quotation.status else 'draft')|capitalize }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                        <span class="text-xs text-slate-500">{{ quotation.created_at.strftime('%b %d, %Y') if quotation.created_at else 'N/A' }}</span>
+                        <span class="text-sm font-semibold text-slate-900">€{{ "%.2f"|format(quotation.total_amount or 0) }}</span>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="bg-white border border-slate-200 rounded-xl p-8 text-center">
+                    <span class="material-symbols-outlined text-4xl text-slate-300">description</span>
+                    <p class="text-slate-500 mt-2">No quotations yet</p>
+                    <a href="{{ url_for('create_manual_quotation') }}" class="text-sm text-primary hover:underline mt-1 inline-block">Create your first quote</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Recent Activities -->
     {% if recent_activities %}
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-3 sm:gap-4">
         <div class="flex items-center justify-between">
-            <h3 class="text-slate-900 text-lg font-bold">Recent Activities</h3>
+            <h3 class="text-slate-900 text-base sm:text-lg font-bold">Recent Activities</h3>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
             <div class="flex flex-col divide-y divide-slate-100">
                 {% for activity in recent_activities[:5] %}
-                <div class="flex items-start gap-4 py-3 first:pt-0 last:pb-0">
-                    <div class="size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-                        <span class="material-symbols-outlined text-[20px]">
+                <div class="flex items-start gap-3 sm:gap-4 py-3 first:pt-0 last:pb-0">
+                    <div class="size-8 sm:size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                        <span class="material-symbols-outlined text-[18px] sm:text-[20px]">
                             {% if activity.type == 'upload' %}cloud_upload{% elif activity.type == 'invoice' %}receipt{% elif activity.type == 'quotation' %}description{% else %}history{% endif %}
                         </span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm text-slate-900">{{ activity.message }}</p>
+                        <p class="text-xs sm:text-sm text-slate-900">{{ activity.message }}</p>
                         <p class="text-xs text-slate-400 mt-1">
                             {{ activity.timestamp.strftime('%b %d, %Y at %H:%M') if activity.timestamp else 'N/A' }}
                         </p>
