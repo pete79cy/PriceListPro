@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quotation List - PlantManager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b8cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-[#111418] dark:text-white">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 bg-white dark:bg-[#1A2633] border-r border-[#e5e7eb] dark:border-[#2A3B4C] flex flex-col h-full shrink-0">
+<div class="flex flex-col h-full p-4 justify-between">
+<div class="flex flex-col gap-6">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 bg-primary/10 flex items-center justify-center text-primary" data-alt="PlantManager Logo abstract leaf shape">
+<span class="material-symbols-outlined text-[28px]">eco</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-[#111418] dark:text-white text-base font-bold leading-normal">PlantManager</h1>
+<p class="text-[#617589] dark:text-[#94a3b8] text-xs font-normal leading-normal">Admin Portal</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#617589] dark:text-[#94a3b8] hover:bg-gray-100 dark:hover:bg-[#243345] transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-[#111418] dark:group-hover:text-white transition-colors">dashboard</span>
+<span class="text-sm font-medium leading-normal group-hover:text-[#111418] dark:group-hover:text-white transition-colors">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary dark:text-primary" href="#">
+<span class="material-symbols-outlined text-[24px] font-variation-fill">description</span>
+<span class="text-sm font-medium leading-normal">Quotes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#617589] dark:text-[#94a3b8] hover:bg-gray-100 dark:hover:bg-[#243345] transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-[#111418] dark:group-hover:text-white transition-colors">yard</span>
+<span class="text-sm font-medium leading-normal group-hover:text-[#111418] dark:group-hover:text-white transition-colors">Plants</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#617589] dark:text-[#94a3b8] hover:bg-gray-100 dark:hover:bg-[#243345] transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-[#111418] dark:group-hover:text-white transition-colors">group</span>
+<span class="text-sm font-medium leading-normal group-hover:text-[#111418] dark:group-hover:text-white transition-colors">Clients</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#617589] dark:text-[#94a3b8] hover:bg-gray-100 dark:hover:bg-[#243345] transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-[#111418] dark:group-hover:text-white transition-colors">inventory_2</span>
+<span class="text-sm font-medium leading-normal group-hover:text-[#111418] dark:group-hover:text-white transition-colors">Inventory</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Settings -->
+<div class="flex flex-col gap-2 mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#617589] dark:text-[#94a3b8] hover:bg-gray-100 dark:hover:bg-[#243345] transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:text-[#111418] dark:group-hover:text-white transition-colors">settings</span>
+<span class="text-sm font-medium leading-normal group-hover:text-[#111418] dark:group-hover:text-white transition-colors">Settings</span>
+</a>
+<div class="flex items-center gap-3 px-3 py-4 border-t border-[#e5e7eb] dark:border-[#2A3B4C] mt-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User profile picture of a smiling man" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDx4ffNJrI2Poipg6dKS4NZNTaEP-2QDDSO0MyvfqAExrMBcN3SBN_ztkUn3upc4TUOsrOwJPZoNeCv7wINCVrjXIsu2lgMU3ev3-KlDTMGOmIaJcc2fmn39svoQTBIJ_Xh0kUeLN26UdcIdY05fGlaXmNIl5NgASVWAKnwIXJdwK3XUyvt6WzYvjfX1pY4oA_MKhh-rslEA7DKVaqM8KNJj6VCpSh2Yb2N01rBlAoFTb2E_uvG34t7cUys1QvBlBf6Mzj8Y1O7Njbq");'></div>
+<div class="flex flex-col">
+<p class="text-[#111418] dark:text-white text-sm font-medium leading-normal">James Anderson</p>
+<p class="text-[#617589] dark:text-[#94a3b8] text-xs font-normal leading-normal">Admin</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto">
+<div class="layout-content-container flex flex-col max-w-[1200px] mx-auto w-full px-6 py-8 gap-6">
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between items-end gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-[#111418] dark:text-white text-3xl font-bold leading-tight tracking-tight">Quotations</h1>
+<p class="text-[#617589] dark:text-[#94a3b8] text-base font-normal leading-normal">Manage your plant pricing and client quotes</p>
+</div>
+<button class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary hover:bg-primary/90 text-white text-sm font-bold leading-normal tracking-wide transition-colors shadow-sm gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="truncate">New Quote</span>
+</button>
+</div>
+<!-- Filters & Search Toolbar -->
+<div class="flex flex-col gap-4 bg-white dark:bg-[#1A2633] p-4 rounded-xl border border-[#dbe0e6] dark:border-[#2A3B4C] shadow-sm">
+<!-- Tabs -->
+<div class="flex overflow-x-auto border-b border-[#dbe0e6] dark:border-[#2A3B4C] pb-1 no-scrollbar">
+<div class="flex gap-6 min-w-max">
+<a class="flex items-center gap-2 border-b-[2px] border-primary text-primary pb-3 px-1 cursor-pointer" href="#">
+<span class="text-sm font-bold leading-normal">All</span>
+<span class="bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">124</span>
+</a>
+<a class="flex items-center gap-2 border-b-[2px] border-transparent text-[#617589] dark:text-[#94a3b8] hover:text-[#111418] dark:hover:text-white pb-3 px-1 cursor-pointer transition-colors" href="#">
+<span class="text-sm font-medium leading-normal">Draft</span>
+<span class="bg-[#f0f2f4] dark:bg-[#243345] text-[#617589] dark:text-[#94a3b8] text-xs font-medium px-2 py-0.5 rounded-full">12</span>
+</a>
+<a class="flex items-center gap-2 border-b-[2px] border-transparent text-[#617589] dark:text-[#94a3b8] hover:text-[#111418] dark:hover:text-white pb-3 px-1 cursor-pointer transition-colors" href="#">
+<span class="text-sm font-medium leading-normal">Sent</span>
+<span class="bg-[#f0f2f4] dark:bg-[#243345] text-[#617589] dark:text-[#94a3b8] text-xs font-medium px-2 py-0.5 rounded-full">45</span>
+</a>
+<a class="flex items-center gap-2 border-b-[2px] border-transparent text-[#617589] dark:text-[#94a3b8] hover:text-[#111418] dark:hover:text-white pb-3 px-1 cursor-pointer transition-colors" href="#">
+<span class="text-sm font-medium leading-normal">Accepted</span>
+<span class="bg-[#f0f2f4] dark:bg-[#243345] text-[#617589] dark:text-[#94a3b8] text-xs font-medium px-2 py-0.5 rounded-full">30</span>
+</a>
+<a class="flex items-center gap-2 border-b-[2px] border-transparent text-[#617589] dark:text-[#94a3b8] hover:text-[#111418] dark:hover:text-white pb-3 px-1 cursor-pointer transition-colors" href="#">
+<span class="text-sm font-medium leading-normal">Complete</span>
+<span class="bg-[#f0f2f4] dark:bg-[#243345] text-[#617589] dark:text-[#94a3b8] text-xs font-medium px-2 py-0.5 rounded-full">37</span>
+</a>
+</div>
+</div>
+<!-- Search and Date Filter -->
+<div class="flex flex-col sm:flex-row gap-3 items-center justify-between pt-2">
+<div class="relative w-full sm:max-w-md">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#617589] dark:text-[#94a3b8]">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 border-none rounded-lg bg-[#f0f2f4] dark:bg-[#243345] text-[#111418] dark:text-white placeholder-[#617589] dark:placeholder-[#94a3b8] focus:ring-2 focus:ring-primary focus:outline-none text-sm transition-shadow" placeholder="Search by client name, ID..." type="text"/>
+</div>
+<div class="flex gap-3 w-full sm:w-auto">
+<button class="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-[#1A2633] border border-[#dbe0e6] dark:border-[#2A3B4C] rounded-lg text-[#111418] dark:text-white text-sm font-medium hover:bg-gray-50 dark:hover:bg-[#243345] transition-colors w-full sm:w-auto">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span>Date Range</span>
+</button>
+<button class="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-[#1A2633] border border-[#dbe0e6] dark:border-[#2A3B4C] rounded-lg text-[#111418] dark:text-white text-sm font-medium hover:bg-gray-50 dark:hover:bg-[#243345] transition-colors w-full sm:w-auto">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>Filter</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Table -->
+<div class="w-full overflow-hidden rounded-xl border border-[#dbe0e6] dark:border-[#2A3B4C] bg-white dark:bg-[#1A2633] shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#f9fafb] dark:bg-[#243345] border-b border-[#dbe0e6] dark:border-[#2A3B4C]">
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#617589] dark:text-[#94a3b8]">ID</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#617589] dark:text-[#94a3b8]">Client Name</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#617589] dark:text-[#94a3b8] text-right">Price</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#617589] dark:text-[#94a3b8]">Date</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#617589] dark:text-[#94a3b8]">Status</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#617589] dark:text-[#94a3b8] text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#dbe0e6] dark:divide-[#2A3B4C]">
+<!-- Row 1 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-[#243345]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#111418] dark:text-white">#Q-2023-001</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center justify-center mr-3 font-bold text-xs">GL</div>
+<div class="text-sm font-medium text-[#111418] dark:text-white">GreenThumb Landscaping</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8] text-right font-mono">$4,250.00</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8]">Oct 24, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                Sent
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-red-600 dark:text-[#94a3b8] dark:hover:text-red-400 rounded-md transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-[#243345]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#111418] dark:text-white">#Q-2023-002</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center mr-3 font-bold text-xs">CP</div>
+<div class="text-sm font-medium text-[#111418] dark:text-white">City Parks Dept</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8] text-right font-mono">$12,100.00</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8]">Oct 22, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                Draft
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-red-600 dark:text-[#94a3b8] dark:hover:text-red-400 rounded-md transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-[#243345]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#111418] dark:text-white">#Q-2023-003</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 flex items-center justify-center mr-3 font-bold text-xs">RS</div>
+<div class="text-sm font-medium text-[#111418] dark:text-white">Residential - Smith</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8] text-right font-mono">$850.00</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8]">Oct 20, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                                Accepted
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-red-600 dark:text-[#94a3b8] dark:hover:text-red-400 rounded-md transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-[#243345]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#111418] dark:text-white">#Q-2023-004</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 flex items-center justify-center mr-3 font-bold text-xs">UG</div>
+<div class="text-sm font-medium text-[#111418] dark:text-white">Urban Gardens Inc.</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8] text-right font-mono">$3,400.00</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8]">Oct 18, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                                Complete
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-red-600 dark:text-[#94a3b8] dark:hover:text-red-400 rounded-md transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-[#243345]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#111418] dark:text-white">#Q-2023-005</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 flex items-center justify-center mr-3 font-bold text-xs">LR</div>
+<div class="text-sm font-medium text-[#111418] dark:text-white">Lakeside Resort</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8] text-right font-mono">$15,000.00</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8]">Oct 15, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                Sent
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-red-600 dark:text-[#94a3b8] dark:hover:text-red-400 rounded-md transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-gray-50 dark:hover:bg-[#243345]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#111418] dark:text-white">#Q-2023-006</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400 flex items-center justify-center mr-3 font-bold text-xs">MA</div>
+<div class="text-sm font-medium text-[#111418] dark:text-white">Modern Architects</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8] text-right font-mono">$6,750.00</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#617589] dark:text-[#94a3b8]">Oct 12, 2023</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                                Accepted
+                                            </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-primary dark:text-[#94a3b8] dark:hover:text-primary rounded-md transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 text-[#617589] hover:text-red-600 dark:text-[#94a3b8] dark:hover:text-red-400 rounded-md transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between px-6 py-4 border-t border-[#dbe0e6] dark:border-[#2A3B4C] bg-white dark:bg-[#1A2633]">
+<div class="flex flex-1 justify-between sm:hidden">
+<a class="relative inline-flex items-center rounded-md border border-[#dbe0e6] dark:border-[#2A3B4C] bg-white dark:bg-[#1A2633] px-4 py-2 text-sm font-medium text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#243345]" href="#">Previous</a>
+<a class="relative ml-3 inline-flex items-center rounded-md border border-[#dbe0e6] dark:border-[#2A3B4C] bg-white dark:bg-[#1A2633] px-4 py-2 text-sm font-medium text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#243345]" href="#">Next</a>
+</div>
+<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+<div>
+<p class="text-sm text-[#617589] dark:text-[#94a3b8]">
+                                        Showing <span class="font-medium text-[#111418] dark:text-white">1</span> to <span class="font-medium text-[#111418] dark:text-white">6</span> of <span class="font-medium text-[#111418] dark:text-white">124</span> results
+                                    </p>
+</div>
+<div>
+<nav aria-label="Pagination" class="isolate inline-flex -space-x-px rounded-md shadow-sm">
+<a class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[#617589] dark:text-[#94a3b8] ring-1 ring-inset ring-[#dbe0e6] dark:ring-[#2A3B4C] hover:bg-gray-50 dark:hover:bg-[#243345] focus:z-20 focus:outline-offset-0" href="#">
+<span class="sr-only">Previous</span>
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</a>
+<a aria-current="page" class="relative z-10 inline-flex items-center bg-primary px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" href="#">1</a>
+<a class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[#111418] dark:text-white ring-1 ring-inset ring-[#dbe0e6] dark:ring-[#2A3B4C] hover:bg-gray-50 dark:hover:bg-[#243345] focus:z-20 focus:outline-offset-0" href="#">2</a>
+<a class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[#111418] dark:text-white ring-1 ring-inset ring-[#dbe0e6] dark:ring-[#2A3B4C] hover:bg-gray-50 dark:hover:bg-[#243345] focus:z-20 focus:outline-offset-0" href="#">3</a>
+<span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[#111418] dark:text-white ring-1 ring-inset ring-[#dbe0e6] dark:ring-[#2A3B4C] focus:outline-offset-0">...</span>
+<a class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[#111418] dark:text-white ring-1 ring-inset ring-[#dbe0e6] dark:ring-[#2A3B4C] hover:bg-gray-50 dark:hover:bg-[#243345] focus:z-20 focus:outline-offset-0" href="#">10</a>
+<a class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[#617589] dark:text-[#94a3b8] ring-1 ring-inset ring-[#dbe0e6] dark:ring-[#2A3B4C] hover:bg-gray-50 dark:hover:bg-[#243345] focus:z-20 focus:outline-offset-0" href="#">
+<span class="sr-only">Next</span>
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</a>
+</nav>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
