@@ -1,55 +1,64 @@
-{% extends "layout.html" %}
+{% extends "side_layout.html" %}
 
 {% block title %}Create Manual Quotation{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <h1>Create New Quotation</h1>
-            <p class="text-muted">Create a quotation manually without uploading any files</p>
-        </div>
-        <div class="col-lg-4 text-end">
-            <a href="{{ url_for('upload_quotation') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Back to Create Options
-            </a>
-        </div>
-    </div>
+{% block header_left %}
+<a href="{{ url_for('upload_quotation') }}" class="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors">
+    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+    <span class="hidden sm:inline">Back</span>
+</a>
+<div class="h-6 w-[1px] bg-slate-200 mx-2 hidden sm:block"></div>
+<h1 class="text-lg font-semibold text-slate-900">Create Quotation</h1>
+{% endblock %}
 
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-plus-circle me-2"></i>
-                        Manual Quotation Details
-                    </h5>
+{% block header_actions %}
+<button type="submit" form="manualQuotationForm" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+    <span class="material-symbols-outlined text-[20px]">add_circle</span>
+    <span class="hidden sm:inline">Create Quotation</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-100 bg-green-50">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-green-600 text-[20px]">add_circle</span>
+                        <h2 class="text-sm font-semibold text-slate-900">Manual Quotation Details</h2>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('create_manual_quotation') }}">
-                        <div class="mb-3">
-                            <label for="customer_id" class="form-label">
-                                <i class="fas fa-user me-1"></i>
-                                Select Customer *
+                <div class="p-4 sm:p-6">
+                    <form id="manualQuotationForm" method="POST" action="{{ url_for('create_manual_quotation') }}" class="space-y-5">
+                        <!-- Customer Select -->
+                        <div>
+                            <label for="customer_id" class="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                                <span class="material-symbols-outlined text-[18px] text-slate-400">person</span>
+                                Select Customer <span class="text-red-500">*</span>
                             </label>
-                            <select class="form-select" id="customer_id" name="customer_id" required>
+                            <select id="customer_id" name="customer_id" required
+                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors bg-white">
                                 <option value="" selected disabled>Choose a customer...</option>
                                 {% for customer in customers %}
                                 <option value="{{ customer.id }}">{{ customer.name }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>
-                                If you don't see your customer, you can add them from the customers page first.
-                            </div>
+                            <p class="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">info</span>
+                                Don't see your customer? Add them from the customers page first.
+                            </p>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="currency" class="form-label">
-                                <i class="fas fa-euro-sign me-1"></i>
+                        <!-- Currency -->
+                        <div>
+                            <label for="currency" class="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                                <span class="material-symbols-outlined text-[18px] text-slate-400">euro</span>
                                 Currency
                             </label>
-                            <select class="form-select" id="currency" name="currency">
+                            <select id="currency" name="currency"
+                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors bg-white">
                                 <option value="€" selected>Euro (€)</option>
                                 <option value="$">US Dollar ($)</option>
                                 <option value="£">British Pound (£)</option>
@@ -57,35 +66,40 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">
-                                <i class="fas fa-sticky-note me-1"></i>
+                        <!-- Notes -->
+                        <div>
+                            <label for="notes" class="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                                <span class="material-symbols-outlined text-[18px] text-slate-400">notes</span>
                                 Initial Notes
                             </label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3" 
-                                placeholder="Add any initial notes or special instructions for this quotation..."></textarea>
-                            <div class="form-text">
-                                <i class="fas fa-lightbulb me-1"></i>
+                            <textarea id="notes" name="notes" rows="3" 
+                                placeholder="Add any initial notes or special instructions for this quotation..."
+                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none"></textarea>
+                            <p class="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">lightbulb</span>
                                 These notes will appear on the quotation PDF for the customer.
-                            </div>
+                            </p>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="internal_notes" class="form-label">
-                                <i class="fas fa-user-secret me-1"></i>
+                        <!-- Internal Notes -->
+                        <div>
+                            <label for="internal_notes" class="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                                <span class="material-symbols-outlined text-[18px] text-slate-400">lock</span>
                                 Internal Notes
                             </label>
-                            <textarea class="form-control" id="internal_notes" name="internal_notes" rows="3" 
-                                placeholder="Add internal notes about customer communication, special requirements, follow-ups..."></textarea>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Internal notes are for your team only and will not appear on customer documents.
-                            </div>
+                            <textarea id="internal_notes" name="internal_notes" rows="3" 
+                                placeholder="Add internal notes about customer communication, special requirements, follow-ups..."
+                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-none"></textarea>
+                            <p class="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">info</span>
+                                Internal notes are for your team only and won't appear on customer documents.
+                            </p>
                         </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-plus-circle me-2"></i>
+                        <!-- Mobile Submit Button -->
+                        <div class="lg:hidden pt-2">
+                            <button type="submit" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium transition-colors">
+                                <span class="material-symbols-outlined text-[20px]">add_circle</span>
                                 Create Quotation
                             </button>
                         </div>
@@ -94,93 +108,69 @@
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0">
-                        <i class="fas fa-question-circle me-1"></i>
-                        What happens next?
-                    </h6>
+        <!-- Sidebar Info -->
+        <div class="space-y-4">
+            <!-- What happens next? -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-500 text-[20px]">help</span>
+                        <h3 class="text-sm font-semibold text-slate-900">What happens next?</h3>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="timeline">
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-success"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-1">1. Create Quotation</h6>
-                                <p class="text-muted small mb-0">A new quotation will be created with a unique number</p>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <!-- Step 1 -->
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                <span class="text-xs font-bold text-green-600">1</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-900">Create Quotation</p>
+                                <p class="text-xs text-slate-500 mt-0.5">A new quotation will be created with a unique number</p>
                             </div>
                         </div>
                         
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-primary"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-1">2. Add Items</h6>
-                                <p class="text-muted small mb-0">You'll be taken to the quotation page where you can add products and services</p>
+                        <!-- Step 2 -->
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span class="text-xs font-bold text-primary">2</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-900">Add Items</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Add products and services to your quotation</p>
                             </div>
                         </div>
                         
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-warning"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-1">3. Review & Send</h6>
-                                <p class="text-muted small mb-0">Review all details and generate a PDF to send to your customer</p>
+                        <!-- Step 3 -->
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                                <span class="text-xs font-bold text-amber-600">3</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-900">Review & Send</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Review details and generate a PDF for your customer</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card mt-3">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">
-                        <i class="fas fa-lightbulb me-1"></i>
-                        Quick Tip
-                    </h6>
+            <!-- Quick Tip -->
+            <div class="bg-blue-50 rounded-xl border border-blue-200 overflow-hidden">
+                <div class="px-4 py-3 border-b border-blue-100 bg-blue-100/50">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600 text-[20px]">lightbulb</span>
+                        <h3 class="text-sm font-semibold text-blue-900">Quick Tip</h3>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p class="small mb-0">
-                        <strong>Manual quotations</strong> give you complete control over every detail. 
-                        Perfect for custom quotes or when you want to start from scratch without any file uploads.
+                <div class="p-4">
+                    <p class="text-sm text-blue-800">
+                        <strong>Manual quotations</strong> give you complete control over every detail. Perfect for custom quotes or when you want to start from scratch without file uploads.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-.timeline {
-    position: relative;
-    padding-left: 20px;
-}
-
-.timeline-item {
-    position: relative;
-    padding-bottom: 20px;
-}
-
-.timeline-item:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: -12px;
-    top: 20px;
-    height: 100%;
-    width: 2px;
-    background-color: #dee2e6;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -16px;
-    top: 4px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-}
-
-.timeline-content {
-    margin-left: 8px;
-}
-</style>
 {% endblock %}

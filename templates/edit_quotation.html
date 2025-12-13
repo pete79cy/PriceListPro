@@ -1,401 +1,454 @@
-{% extends "layout.html" %}
+{% extends "side_layout.html" %}
 
 {% block title %}Edit Quotation{% endblock %}
 
+{% block header_left %}
+<a href="{{ url_for('upload_quotation') }}" class="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors">
+    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+    <span class="hidden sm:inline">Back</span>
+</a>
+<div class="h-6 w-[1px] bg-slate-200 mx-2 hidden sm:block"></div>
+<h1 class="text-lg font-semibold text-slate-900">Edit Quotation</h1>
+{% endblock %}
+
+{% block header_actions %}
+<button type="submit" form="quotationForm" class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+    <span class="material-symbols-outlined text-[20px]">save</span>
+    <span class="hidden sm:inline">Save Quotation</span>
+</button>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <h1>Edit Quotation</h1>
-            <p class="text-muted">Review and edit the quotation details before finalizing</p>
-        </div>
-        <div class="col-lg-4 text-end">
-            <a href="{{ url_for('upload_quotation') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Back to Upload
-            </a>
-        </div>
-    </div>
+<form id="quotationForm" method="POST" action="{{ url_for('save_quotation') }}">
+    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+    <input type="hidden" id="customer-id" value="{{ customer.id }}">
+    <input type="hidden" name="product_count" value="{{ products|length }}">
 
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Quotation Details</h5>
+    <!-- Customer & Quotation Info Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <!-- Customer Information Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">person</span>
+                    <h2 class="text-sm font-semibold text-slate-900">Customer Information</h2>
                 </div>
-                <div class="card-body">
-                    <form id="quotationForm" method="POST" action="{{ url_for('save_quotation') }}">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <h6 class="card-title">Customer Information</h6>
-                                        <p><strong>{{ customer.name }}</strong></p>
-                                        {% if customer.address %}
-                                        <p>{{ customer.address }}</p>
-                                        {% endif %}
-                                        <div class="row">
-                                            {% if customer.email %}
-                                            <div class="col-md-6">
-                                                <p><small><i class="fas fa-envelope me-2"></i>{{ customer.email }}</small></p>
-                                            </div>
-                                            {% endif %}
-                                            {% if customer.phone %}
-                                            <div class="col-md-6">
-                                                <p><small><i class="fas fa-phone me-2"></i>{{ customer.phone }}</small></p>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
-                                        <!-- Hidden input for the customer ID to be used by the price assistant -->
-                                        <input type="hidden" id="customer-id" value="{{ customer.id }}">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <h6 class="card-title">Quotation Information</h6>
-                                        <div class="mb-3">
-                                            <label for="quotation_number" class="form-label">Quotation Number</label>
-                                            <input type="text" class="form-control" id="quotation_number" name="quotation_number" value="{{ quotation_number }}" required>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="quotation_date" class="form-label">Quotation Date</label>
-                                                    <input type="date" class="form-control" id="quotation_date" name="quotation_date" value="{{ quotation_date }}" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="currency" class="form-label">Currency</label>
-                                                    <input type="text" class="form-control" id="currency" name="currency" value="€" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            </div>
+            <div class="p-4">
+                <p class="text-base font-semibold text-slate-900 mb-1">{{ customer.name }}</p>
+                {% if customer.address %}
+                <p class="text-sm text-slate-600 mb-3">{{ customer.address }}</p>
+                {% endif %}
+                <div class="flex flex-wrap gap-4 text-sm text-slate-500">
+                    {% if customer.email %}
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">mail</span>
+                        <span>{{ customer.email }}</span>
+                    </div>
+                    {% endif %}
+                    {% if customer.phone %}
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">phone</span>
+                        <span>{{ customer.phone }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
-                        <h5 class="mb-3">Product Information</h5>
-                        
-                        <!-- Desktop version (hidden on small screens) -->
-                        <div class="d-none d-lg-block">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="productTable">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Description</th>
-                                            <th>Scientific Name</th>
-                                            <th>Actual Size</th>
-                                            <th>Asked Size</th>
-                                            <th class="text-center">Quantity</th>
-                                            <th class="text-center">Selling Price (€)</th>
-                                            <th class="text-center">VAT (%)</th>
-                                            <th>Supplier</th>
-                                            <th class="text-center">Cost Price (€)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for product in products %}
-                                        <tr>
-                                            <td>
-                                                <input type="text" class="form-control" name="description_{{ loop.index0 }}" value="{{ product.description }}" required>
-                                                <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
-                                            </td>
-                                            <td>
-                                                <input type="text" class="form-control" id="scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}">
-                                            </td>
-                                            <td>
-                                                <input type="text" class="form-control" id="pot_size_{{ loop.index0 }}" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="e.g. P9, C3L">
-                                            </td>
-                                            <td>
-                                                <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30-40, 120/150cm">
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
-                                            </td>
-                                            <td>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" {% if product.pricing_status != 'PENDING' %}required{% endif %} onchange="updateRowTotal(this)">
-                                                    <button type="button" class="btn btn-outline-primary suggest-price-btn" 
-                                                            data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
-                                                            data-pot-size-id="pot_size_{{ loop.index0 }}" 
-                                                            data-price-id="selling_price_{{ loop.index0 }}">
-                                                        <i class="fas fa-magic me-1"></i> Suggest
-                                                    </button>
-                                                </div>
-                                                <div class="mt-1">
-                                                    <select class="form-select form-select-sm" name="pricing_status_{{ loop.index0 }}" onchange="togglePriceRequirement({{ loop.index0 }})">
-                                                        <option value="CONFIRMED" {% if not product.pricing_status or product.pricing_status == 'CONFIRMED' or product.pricing_status == '' %}selected{% endif %}>Price Confirmed</option>
-                                                        <option value="PENDING" {% if product.pricing_status == 'PENDING' %}selected{% endif %}>Pending from Supplier</option>
-                                                        <option value="REQUESTED" {% if product.pricing_status == 'REQUESTED' %}selected{% endif %}>Price Requested</option>
-                                                    </select>
-                                                </div>
-                                                {% if product.pricing_status == 'PENDING' %}
-                                                <small class="text-warning"><i class="fas fa-clock"></i> Awaiting supplier pricing</small>
-                                                {% elif product.pricing_status == 'REQUESTED' %}
-                                                <small class="text-info"><i class="fas fa-paper-plane"></i> Price request sent</small>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <select class="form-select" name="vat_rate_{{ loop.index0 }}">
-                                                    <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
-                                                    <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
-                                                    <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <select class="form-select" name="supplier_{{ loop.index0 }}">
-                                                    {% for supplier in suppliers %}
-                                                    <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
-                                                    {% endfor %}
-                                                    <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control text-end" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0">
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+        <!-- Quotation Information Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">description</span>
+                    <h2 class="text-sm font-semibold text-slate-900">Quotation Details</h2>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="space-y-3">
+                    <div>
+                        <label for="quotation_number" class="block text-sm font-medium text-slate-700 mb-1">Quotation Number</label>
+                        <input type="text" id="quotation_number" name="quotation_number" value="{{ quotation_number }}" required
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="quotation_date" class="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                            <input type="date" id="quotation_date" name="quotation_date" value="{{ quotation_date }}" required
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors">
                         </div>
-                        
-                        <!-- Mobile version (visible only on small screens) -->
-                        <div class="d-block d-lg-none">
-                            {% for product in products %}
-                            <div class="card mb-3 product-card">
-                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">Product #{{ loop.index }}</h6>
-                                </div>
-                                <div class="card-body">
-                                    <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Description</label>
-                                        <input type="text" class="form-control" name="description_{{ loop.index0 }}" value="{{ product.description }}" required>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Scientific Name</label>
-                                        <input type="text" class="form-control" id="scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}">
-                                    </div>
-                                    
-                                    <div class="row mb-3">
-                                        <div class="col-6">
-                                            <label class="form-label">Actual Size</label>
-                                            <input type="text" class="form-control" id="pot_size_{{ loop.index0 }}" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="e.g. P9, C3L">
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="form-label">Asked Size</label>
-                                            <input type="text" class="form-control" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="e.g. 30-40, 120/150cm">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mb-3">
-                                        <div class="col-6">
-                                            <label class="form-label">Quantity</label>
-                                            <input type="number" class="form-control text-center quantity-input" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" step="0.01" min="0.01" required onchange="updateRowTotal(this)">
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="form-label">VAT Rate</label>
-                                            <select class="form-select" name="vat_rate_{{ loop.index0 }}">
-                                                <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
-                                                <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
-                                                <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Selling Price (€)</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control text-end price-input" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" step="0.01" min="0" required onchange="updateRowTotal(this)">
-                                            <button type="button" class="btn btn-outline-primary suggest-price-btn" 
-                                                    data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
-                                                    data-pot-size-id="pot_size_{{ loop.index0 }}" 
-                                                    data-cost-price-id="cost_price_{{ loop.index0 }}"
-                                                    data-price-id="selling_price_{{ loop.index0 }}"
-                                                    title="AI-powered price suggestion based on historical data and market analysis">
-                                                <i class="fas fa-robot me-1"></i> AI Suggest
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Supplier</label>
-                                        <select class="form-select" name="supplier_{{ loop.index0 }}">
-                                            {% for supplier in suppliers %}
-                                            <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
-                                            {% endfor %}
-                                            <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Cost Price (€)</label>
-                                        <input type="number" class="form-control text-end" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
+                        <div>
+                            <label for="currency" class="block text-sm font-medium text-slate-700 mb-1">Currency</label>
+                            <input type="text" id="currency" name="currency" value="€" required
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors">
                         </div>
-
-                        <div class="row mt-4">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="notes" class="form-label">Notes</label>
-                                    <textarea class="form-control" id="notes" name="notes" rows="4"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0">Summary</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span>Subtotal:</span>
-                                            <span id="subtotal">€ 0.00</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span>VAT (19%):</span>
-                                            <span id="vat19">€ 0.00</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span>VAT (5%):</span>
-                                            <span id="vat5">€ 0.00</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between font-weight-bold">
-                                            <strong>Total:</strong>
-                                            <strong id="total">€ 0.00</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <input type="hidden" name="product_count" value="{{ products|length }}">
-
-                        <div class="mt-4 d-flex justify-content-end">
-                            <a href="{{ url_for('upload_quotation') }}" class="btn btn-secondary me-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Save Quotation</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Products Section -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
+                    <h2 class="text-sm font-semibold text-slate-900">Products ({{ products|length }})</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block overflow-x-auto">
+            <table class="w-full" id="productTable">
+                <thead>
+                    <tr class="bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <th class="px-4 py-3">Description</th>
+                        <th class="px-4 py-3">Scientific Name</th>
+                        <th class="px-4 py-3">Actual Size</th>
+                        <th class="px-4 py-3">Asked Size</th>
+                        <th class="px-4 py-3 text-center">Qty</th>
+                        <th class="px-4 py-3 text-center">Selling Price (€)</th>
+                        <th class="px-4 py-3 text-center">VAT</th>
+                        <th class="px-4 py-3">Supplier</th>
+                        <th class="px-4 py-3 text-center">Cost (€)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for product in products %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 py-3">
+                            <input type="text" name="description_{{ loop.index0 }}" value="{{ product.description }}" required
+                                class="w-full min-w-[140px] px-2 py-1.5 rounded border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="text" id="scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}"
+                                class="w-full min-w-[120px] px-2 py-1.5 rounded border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="text" id="pot_size_{{ loop.index0 }}" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="P9, C3L"
+                                class="w-full min-w-[80px] px-2 py-1.5 rounded border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="text" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="30-40cm"
+                                class="w-full min-w-[80px] px-2 py-1.5 rounded border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="number" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" 
+                                step="0.01" min="0.01" required onchange="updateRowTotal(this)"
+                                class="w-20 px-2 py-1.5 rounded border border-slate-300 text-sm text-center quantity-input focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" 
+                                    step="0.01" min="0" {% if product.pricing_status != 'PENDING' %}required{% endif %} onchange="updateRowTotal(this)"
+                                    class="w-20 px-2 py-1.5 rounded border border-slate-300 text-sm text-right price-input focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                <button type="button" class="suggest-price-btn p-1.5 text-primary hover:bg-primary/10 rounded transition-colors" 
+                                    data-scientific-name-id="scientific_name_{{ loop.index0 }}" 
+                                    data-pot-size-id="pot_size_{{ loop.index0 }}" 
+                                    data-price-id="selling_price_{{ loop.index0 }}"
+                                    title="AI Price Suggestion">
+                                    <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                                </button>
+                            </div>
+                            <select name="pricing_status_{{ loop.index0 }}" onchange="togglePriceRequirement({{ loop.index0 }})"
+                                class="mt-1 w-full px-2 py-1 rounded border border-slate-200 text-xs focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                <option value="CONFIRMED" {% if not product.pricing_status or product.pricing_status == 'CONFIRMED' or product.pricing_status == '' %}selected{% endif %}>Confirmed</option>
+                                <option value="PENDING" {% if product.pricing_status == 'PENDING' %}selected{% endif %}>Pending</option>
+                                <option value="REQUESTED" {% if product.pricing_status == 'REQUESTED' %}selected{% endif %}>Requested</option>
+                            </select>
+                            {% if product.pricing_status == 'PENDING' %}
+                            <span class="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                                <span class="material-symbols-outlined text-[14px]">schedule</span>
+                                Awaiting price
+                            </span>
+                            {% elif product.pricing_status == 'REQUESTED' %}
+                            <span class="text-xs text-blue-600 flex items-center gap-1 mt-1">
+                                <span class="material-symbols-outlined text-[14px]">send</span>
+                                Request sent
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <select name="vat_rate_{{ loop.index0 }}"
+                                class="w-full px-2 py-1.5 rounded border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
+                                <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
+                                <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-3">
+                            <select name="supplier_{{ loop.index0 }}"
+                                class="w-full min-w-[100px] px-2 py-1.5 rounded border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
+                                {% endfor %}
+                                <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="number" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0"
+                                class="w-20 px-2 py-1.5 rounded border border-slate-300 text-sm text-right focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="lg:hidden divide-y divide-slate-100">
+            {% for product in products %}
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
+                        <span class="material-symbols-outlined text-[14px]">tag</span>
+                        Product #{{ loop.index }}
+                    </span>
+                    {% if product.pricing_status == 'PENDING' %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-xs font-medium text-amber-700">
+                        <span class="material-symbols-outlined text-[14px]">schedule</span>
+                        Pending
+                    </span>
+                    {% elif product.pricing_status == 'REQUESTED' %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-xs font-medium text-blue-700">
+                        <span class="material-symbols-outlined text-[14px]">send</span>
+                        Requested
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <input type="hidden" name="product_id_{{ loop.index0 }}" value="{{ product.product_id }}">
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Description</label>
+                        <input type="text" name="description_{{ loop.index0 }}" value="{{ product.description }}" required
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Scientific Name</label>
+                        <input type="text" id="mobile_scientific_name_{{ loop.index0 }}" name="scientific_name_{{ loop.index0 }}" value="{{ product.scientific_name or '' }}"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Actual Size</label>
+                            <input type="text" id="mobile_pot_size_{{ loop.index0 }}" name="pot_size_{{ loop.index0 }}" value="{{ product.pot_size or '' }}" placeholder="P9, C3L"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Asked Size</label>
+                            <input type="text" name="height_{{ loop.index0 }}" value="{{ product.height or '' }}" placeholder="30-40cm"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Quantity</label>
+                            <input type="number" name="quantity_{{ loop.index0 }}" value="{{ product.quantity|int if product.quantity == product.quantity|int else product.quantity }}" 
+                                step="0.01" min="0.01" required onchange="updateRowTotal(this)"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-center quantity-input focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">VAT Rate</label>
+                            <select name="vat_rate_{{ loop.index0 }}"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                <option value="19" {% if not product.vat_rate or product.vat_rate == 19 %}selected{% endif %}>19%</option>
+                                <option value="5" {% if product.vat_rate == 5 %}selected{% endif %}>5%</option>
+                                <option value="0" {% if product.vat_rate == 0 %}selected{% endif %}>0%</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Selling Price (€)</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="mobile_selling_price_{{ loop.index0 }}" name="selling_price_{{ loop.index0 }}" value="{{ product.selling_price or '' }}" 
+                                step="0.01" min="0" {% if product.pricing_status != 'PENDING' %}required{% endif %} onchange="updateRowTotal(this)"
+                                class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-right price-input focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            <button type="button" class="suggest-price-btn flex items-center gap-1.5 px-3 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors" 
+                                data-scientific-name-id="mobile_scientific_name_{{ loop.index0 }}" 
+                                data-pot-size-id="mobile_pot_size_{{ loop.index0 }}" 
+                                data-price-id="mobile_selling_price_{{ loop.index0 }}"
+                                title="AI Price Suggestion">
+                                <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                                <span>Suggest</span>
+                            </button>
+                        </div>
+                        <select name="pricing_status_{{ loop.index0 }}" onchange="togglePriceRequirement({{ loop.index0 }})"
+                            class="mt-2 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            <option value="CONFIRMED" {% if not product.pricing_status or product.pricing_status == 'CONFIRMED' or product.pricing_status == '' %}selected{% endif %}>Price Confirmed</option>
+                            <option value="PENDING" {% if product.pricing_status == 'PENDING' %}selected{% endif %}>Pending from Supplier</option>
+                            <option value="REQUESTED" {% if product.pricing_status == 'REQUESTED' %}selected{% endif %}>Price Requested</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Supplier</label>
+                        <select name="supplier_{{ loop.index0 }}"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.name }}" {% if product.supplier == supplier.name %}selected{% endif %}>{{ supplier.name }}{% if supplier.is_inhouse %} (In-house){% endif %}</option>
+                            {% endfor %}
+                            <option value="Other" {% if product.supplier and not product.supplier in suppliers|map(attribute='name')|list %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Cost Price (€)</label>
+                        <input type="number" name="cost_price_{{ loop.index0 }}" value="{{ product.cost_price or '' }}" step="0.01" min="0"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-right focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Notes & Summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <!-- Notes -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">notes</span>
+                    <h2 class="text-sm font-semibold text-slate-900">Notes</h2>
+                </div>
+            </div>
+            <div class="p-4">
+                <textarea id="notes" name="notes" rows="4" placeholder="Add notes for this quotation..."
+                    class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none"></textarea>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">calculate</span>
+                    <h2 class="text-sm font-semibold text-slate-900">Summary</h2>
+                </div>
+            </div>
+            <div class="p-4 space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600">Subtotal</span>
+                    <span id="subtotal" class="font-medium text-slate-900">€ 0.00</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600">VAT (19%)</span>
+                    <span id="vat19" class="font-medium text-slate-900">€ 0.00</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600">VAT (5%)</span>
+                    <span id="vat5" class="font-medium text-slate-900">€ 0.00</span>
+                </div>
+                <div class="pt-3 border-t border-slate-200">
+                    <div class="flex justify-between items-center">
+                        <span class="text-base font-semibold text-slate-900">Total</span>
+                        <span id="total" class="text-lg font-bold text-primary">€ 0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Save Button -->
+    <div class="lg:hidden sticky bottom-4 mt-4">
+        <button type="submit" class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-medium shadow-lg transition-colors">
+            <span class="material-symbols-outlined text-[20px]">save</span>
+            Save Quotation
+        </button>
+    </div>
+</form>
 {% endblock %}
 
 {% block scripts %}
-<!-- Include the quotation.js script -->
 <script src="{{ url_for('static', filename='js/quotation.js') }}"></script>
-<!-- Temporarily disabled: <script src="{{ url_for('static', filename='js/fix_quotation_form.js') }}"></script> -->
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Get the form element
-    const form = document.getElementById('quotationForm');
+function updateRowTotal(input) {
+    calculateSummary();
+}
+
+function togglePriceRequirement(index) {
+    const statusSelect = document.querySelector(`select[name="pricing_status_${index}"]`);
+    const priceInput = document.getElementById(`selling_price_${index}`);
+    const mobilePriceInput = document.getElementById(`mobile_selling_price_${index}`);
     
-    // Add click event to submit button as a fallback method
-    const submitButton = document.querySelector('button[type="submit"]');
-    if (submitButton) {
-        submitButton.addEventListener('click', function(event) {
-            // Prevent the default action
-            event.preventDefault();
-            
-            console.log('Submit button clicked - forcing direct form submission');
-            
-            // Directly submit the form using standard HTML form submission
-            form.submit();
-        });
+    if (statusSelect && statusSelect.value === 'PENDING') {
+        if (priceInput) priceInput.removeAttribute('required');
+        if (mobilePriceInput) mobilePriceInput.removeAttribute('required');
+    } else {
+        if (priceInput) priceInput.setAttribute('required', 'required');
+        if (mobilePriceInput) mobilePriceInput.setAttribute('required', 'required');
     }
-});
-</script>
+}
 
-<script>
-    // Add the missing updateRowTotal function
-    function updateRowTotal(input) {
-        calculateSummary();
-    }
+function calculateSummary() {
+    let subtotal = 0;
+    let vat19Total = 0;
+    let vat5Total = 0;
 
-    // Calculate row and total values when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        calculateSummary();
-        
-        // Add event listeners to all suggest price buttons
-        const suggestPriceButtons = document.querySelectorAll('.suggest-price-btn');
-        suggestPriceButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const scientificNameId = this.getAttribute('data-scientific-name-id');
-                const potSizeId = this.getAttribute('data-pot-size-id');
-                const priceId = this.getAttribute('data-price-id');
-                getPriceSuggestion(scientificNameId, potSizeId, priceId);
-            });
-        });
-    });
+    const rows = document.querySelectorAll('#productTable tbody tr');
 
-    function updateRowTotal(input) {
-        calculateSummary();
-    }
+    rows.forEach(row => {
+        const quantityInput = row.querySelector('.quantity-input');
+        const priceInput = row.querySelector('.price-input');
+        const vatSelect = row.querySelector('select[name^="vat_rate_"]');
 
-    function calculateSummary() {
-        let subtotal = 0;
-        let vat19Total = 0;
-        let vat5Total = 0;
-        let vat0Total = 0;
+        if (quantityInput && priceInput && vatSelect) {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const vatRate = parseFloat(vatSelect.value) || 0;
 
-        const rows = document.querySelectorAll('#productTable tbody tr');
+            const rowSubtotal = quantity * price;
+            subtotal += rowSubtotal;
 
-        rows.forEach(row => {
-            const quantityInput = row.querySelector('.quantity-input');
-            const priceInput = row.querySelector('.price-input');
-            const vatSelect = row.querySelector('select[name^="vat_rate_"]');
-
-            if (quantityInput && priceInput && vatSelect) {
-                const quantity = parseFloat(quantityInput.value) || 0;
-                const price = parseFloat(priceInput.value) || 0;
-                const vatRate = parseFloat(vatSelect.value) || 0;
-
-                const rowSubtotal = quantity * price;
-                subtotal += rowSubtotal;
-
-                // Add to the appropriate VAT total
-                if (vatRate === 19) {
-                    vat19Total += rowSubtotal * 0.19;
-                } else if (vatRate === 5) {
-                    vat5Total += rowSubtotal * 0.05;
-                } else if (vatRate === 0) {
-                    vat0Total += 0; // No VAT
-                }
-            }
-        });
-
-        // Update the summary display
-        document.getElementById('subtotal').textContent = '€ ' + subtotal.toFixed(2);
-        document.getElementById('vat19').textContent = '€ ' + vat19Total.toFixed(2);
-        document.getElementById('vat5').textContent = '€ ' + vat5Total.toFixed(2);
-        document.getElementById('total').textContent = '€ ' + (subtotal + vat19Total + vat5Total).toFixed(2);
-    }
-
-    function togglePriceRequirement(index) {
-        const pricingStatusSelect = document.querySelector(`select[name="pricing_status_${index}"]`);
-        const priceInput = document.querySelector(`input[name="selling_price_${index}"]`);
-        
-        if (pricingStatusSelect && priceInput) {
-            if (pricingStatusSelect.value === 'PENDING' || pricingStatusSelect.value === 'REQUESTED') {
-                priceInput.removeAttribute('required');
-                priceInput.style.backgroundColor = '#fff3cd'; // Light yellow background
-            } else {
-                priceInput.setAttribute('required', 'required');
-                priceInput.style.backgroundColor = ''; // Reset to default
+            if (vatRate === 19) {
+                vat19Total += rowSubtotal * 0.19;
+            } else if (vatRate === 5) {
+                vat5Total += rowSubtotal * 0.05;
             }
         }
-    }
+    });
+
+    const total = subtotal + vat19Total + vat5Total;
+
+    document.getElementById('subtotal').textContent = '€ ' + subtotal.toFixed(2);
+    document.getElementById('vat19').textContent = '€ ' + vat19Total.toFixed(2);
+    document.getElementById('vat5').textContent = '€ ' + vat5Total.toFixed(2);
+    document.getElementById('total').textContent = '€ ' + total.toFixed(2);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    calculateSummary();
+    
+    const suggestPriceButtons = document.querySelectorAll('.suggest-price-btn');
+    suggestPriceButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const scientificNameId = this.getAttribute('data-scientific-name-id');
+            const potSizeId = this.getAttribute('data-pot-size-id');
+            const priceId = this.getAttribute('data-price-id');
+            if (typeof getPriceSuggestion === 'function') {
+                getPriceSuggestion(scientificNameId, potSizeId, priceId);
+            }
+        });
+    });
+    
+    const form = document.getElementById('quotationForm');
+    const submitButtons = document.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            form.submit();
+        });
+    });
+});
 </script>
 {% endblock %}
