@@ -489,12 +489,17 @@ def register_routes(app):
             # Log error but continue with default values
             logger.error(f"Error getting quotation status counts: {str(e)}")
         
-        # Use the Apple-style dashboard template
-        return render_template('apple_dashboard.html', 
+        # Get recent quotations for the dashboard
+        recent_quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(5).all()
+        
+        # Use the new modern dashboard template
+        return render_template('dashboard_new.html', 
                               stats=stats,
                               card_classes=card_classes,
                               pending_update_count=pending_update_count,
-                              recent_activities=recent_activities)
+                              recent_activities=recent_activities,
+                              recent_quotations=recent_quotations,
+                              now=datetime.now())
     
     @app.route('/uploads', methods=['GET'])
     @login_required
@@ -1845,6 +1850,8 @@ def register_routes(app):
         date_to = request.args.get('date_to')
         status = request.args.get('status')
         search = request.args.get('search', '').strip()
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
         
         # Build the query
         query = Quotation.query
@@ -1882,17 +1889,30 @@ def register_routes(app):
         # Get customer list for filter dropdown
         customers = Customer.query.order_by(Customer.name).all()
         
-        # Execute the query
-        quotations = query.order_by(Quotation.created_at.desc()).all()
+        # Get quotation counts by status for tabs
+        quotation_counts = {
+            'all': Quotation.query.count(),
+            'draft': Quotation.query.filter(Quotation.status == 'draft').count(),
+            'sent': Quotation.query.filter(Quotation.status == 'sent').count(),
+            'accepted': Quotation.query.filter(Quotation.status == 'accepted').count(),
+            'completed': Quotation.query.filter(Quotation.status == 'completed').count(),
+        }
         
-        return render_template('quotations.html', 
-                              quotations=quotations,
+        # Execute the query with pagination
+        pagination = query.order_by(Quotation.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        quotations_list = pagination.items
+        
+        return render_template('quotations_new.html', 
+                              quotations=quotations_list,
                               customers=customers,
                               selected_customer_id=customer_id,
                               selected_status=status,
                               date_from=date_from,
                               date_to=date_to,
-                              search=search)
+                              search_query=search,
+                              status_filter=status,
+                              quotation_counts=quotation_counts,
+                              pagination=pagination)
     
     @app.route('/upload-quotation')
     @login_required
