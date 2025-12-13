@@ -66,8 +66,8 @@
             <span class="material-symbols-outlined text-[20px]">more_vert</span>
         </button>
         <div id="moreActionsDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
-            <a href="{{ url_for('edit_quotation', quotation_id=quotation.id) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                <span class="material-symbols-outlined text-[18px]">edit</span> Edit Quotation
+            <a href="#items-section" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                <span class="material-symbols-outlined text-[18px]">edit</span> Edit Items
             </a>
             <a href="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate
@@ -338,7 +338,7 @@
     <input type="hidden" id="customer-id" value="{{ quotation.customer_id }}">
     
     <!-- Quotation Items -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+    <div id="items-section" class="bg-white rounded-xl border border-slate-200 shadow-sm scroll-mt-4">
         <div class="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 class="text-base font-semibold text-slate-900">Quotation Items</h3>
             <button type="button" onclick="openModal('addItemModal')" class="flex items-center gap-1.5 h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
@@ -721,7 +721,7 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <form action="{{ url_for('quotation.export_excel', quotation_id=quotation.id) }}" method="POST">
+            <form action="{{ url_for('export_quotation_excel', quotation_id=quotation.id) }}" method="POST">
                 <div class="p-6">
                     <p class="text-sm text-slate-600 mb-4">Select columns to include in Excel export:</p>
                     <div class="flex gap-2 mb-4">
