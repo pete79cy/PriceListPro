@@ -442,6 +442,16 @@
                         {% if item.scientific_name %}<p class="text-xs text-slate-500 italic mt-0.5">{{ item.scientific_name }}</p>{% endif %}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" class="size-options-btn relative p-2 rounded-lg {% if item.has_size_options %}bg-emerald-50 text-emerald-600{% else %}bg-slate-50 text-slate-400{% endif %} hover:bg-emerald-100 hover:text-emerald-600 transition-colors" 
+                                data-id="{{ item.id }}"
+                                data-description="{{ item.description|e }}"
+                                data-has-options="{{ 'true' if item.has_size_options else 'false' }}"
+                                title="Size Options">
+                            <span class="material-symbols-outlined text-[18px]">straighten</span>
+                            {% if item.size_options|length > 0 %}
+                            <span class="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold bg-emerald-500 text-white rounded-full flex items-center justify-center">{{ item.size_options|length }}</span>
+                            {% endif %}
+                        </button>
                         <button type="button" class="edit-item-btn p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" 
                                 data-id="{{ item.id }}"
                                 data-description="{{ item.description|e }}"
