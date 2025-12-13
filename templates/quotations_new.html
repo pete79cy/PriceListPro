@@ -3,82 +3,82 @@
 {% block title %}Quotations - Plant Pricing System{% endblock %}
 
 {% block header_left %}
-<h2 class="text-lg font-semibold text-slate-900">Quotations</h2>
+<h2 class="text-base sm:text-lg font-semibold text-slate-900">Quotations</h2>
 {% endblock %}
 
 {% block header_actions %}
-<a href="{{ url_for('create_manual_quotation') }}" class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors gap-2">
-    <span class="material-symbols-outlined text-[20px]">add</span>
-    <span>New Quote</span>
+<a href="{{ url_for('create_manual_quotation') }}" class="flex items-center justify-center rounded-lg h-9 sm:h-10 px-3 sm:px-4 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors gap-1 sm:gap-2">
+    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">add</span>
+    <span class="hidden sm:inline">New Quote</span>
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1200px] mx-auto flex flex-col gap-6">
+<div class="max-w-[1200px] mx-auto flex flex-col gap-4 sm:gap-6">
     <!-- Page Header -->
-    <div class="flex flex-wrap justify-between items-end gap-4">
-        <div class="flex flex-col gap-2">
-            <h1 class="text-slate-900 text-3xl font-bold leading-tight tracking-tight">Quotations</h1>
-            <p class="text-slate-500 text-base font-normal">Manage your plant pricing and client quotes</p>
+    <div class="flex flex-wrap justify-between items-end gap-2 sm:gap-4">
+        <div class="flex flex-col gap-1 sm:gap-2">
+            <h1 class="text-slate-900 text-2xl sm:text-3xl font-bold leading-tight tracking-tight">Quotations</h1>
+            <p class="text-slate-500 text-sm sm:text-base font-normal">Manage your plant pricing and client quotes</p>
         </div>
     </div>
 
     <!-- Filters & Search Toolbar -->
-    <div class="flex flex-col gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <!-- Status Tabs -->
-        <div class="flex overflow-x-auto border-b border-slate-200 pb-1">
-            <div class="flex gap-6 min-w-max">
-                <a class="flex items-center gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if not status_filter or status_filter == 'all' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations') }}">
-                    <span class="text-sm {% if not status_filter or status_filter == 'all' %}font-bold{% else %}font-medium{% endif %}">All</span>
-                    <span class="{% if not status_filter or status_filter == 'all' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-2 py-0.5 rounded-full">{{ quotation_counts.get('all', 0) }}</span>
+    <div class="flex flex-col gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
+        <!-- Status Tabs - Scrollable on mobile -->
+        <div class="flex overflow-x-auto border-b border-slate-200 pb-1 -mx-3 sm:mx-0 px-3 sm:px-0">
+            <div class="flex gap-4 sm:gap-6 min-w-max">
+                <a class="flex items-center gap-1.5 sm:gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if not status_filter or status_filter == 'all' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations') }}">
+                    <span class="text-xs sm:text-sm {% if not status_filter or status_filter == 'all' %}font-bold{% else %}font-medium{% endif %}">All</span>
+                    <span class="{% if not status_filter or status_filter == 'all' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full">{{ quotation_counts.get('all', 0) }}</span>
                 </a>
-                <a class="flex items-center gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'draft' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='draft') }}">
-                    <span class="text-sm {% if status_filter == 'draft' %}font-bold{% else %}font-medium{% endif %}">Draft</span>
-                    <span class="{% if status_filter == 'draft' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-2 py-0.5 rounded-full">{{ quotation_counts.get('draft', 0) }}</span>
+                <a class="flex items-center gap-1.5 sm:gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'draft' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='draft') }}">
+                    <span class="text-xs sm:text-sm {% if status_filter == 'draft' %}font-bold{% else %}font-medium{% endif %}">Draft</span>
+                    <span class="{% if status_filter == 'draft' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full">{{ quotation_counts.get('draft', 0) }}</span>
                 </a>
-                <a class="flex items-center gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'sent' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='sent') }}">
-                    <span class="text-sm {% if status_filter == 'sent' %}font-bold{% else %}font-medium{% endif %}">Sent</span>
-                    <span class="{% if status_filter == 'sent' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-2 py-0.5 rounded-full">{{ quotation_counts.get('sent', 0) }}</span>
+                <a class="flex items-center gap-1.5 sm:gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'sent' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='sent') }}">
+                    <span class="text-xs sm:text-sm {% if status_filter == 'sent' %}font-bold{% else %}font-medium{% endif %}">Sent</span>
+                    <span class="{% if status_filter == 'sent' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full">{{ quotation_counts.get('sent', 0) }}</span>
                 </a>
-                <a class="flex items-center gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'accepted' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='accepted') }}">
-                    <span class="text-sm {% if status_filter == 'accepted' %}font-bold{% else %}font-medium{% endif %}">Accepted</span>
-                    <span class="{% if status_filter == 'accepted' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-2 py-0.5 rounded-full">{{ quotation_counts.get('accepted', 0) }}</span>
+                <a class="flex items-center gap-1.5 sm:gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'accepted' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='accepted') }}">
+                    <span class="text-xs sm:text-sm {% if status_filter == 'accepted' %}font-bold{% else %}font-medium{% endif %}">Accepted</span>
+                    <span class="{% if status_filter == 'accepted' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full">{{ quotation_counts.get('accepted', 0) }}</span>
                 </a>
-                <a class="flex items-center gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'completed' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='completed') }}">
-                    <span class="text-sm {% if status_filter == 'completed' %}font-bold{% else %}font-medium{% endif %}">Complete</span>
-                    <span class="{% if status_filter == 'completed' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-2 py-0.5 rounded-full">{{ quotation_counts.get('completed', 0) }}</span>
+                <a class="flex items-center gap-1.5 sm:gap-2 border-b-[2px] pb-3 px-1 cursor-pointer transition-colors {% if status_filter == 'completed' %}border-primary text-primary{% else %}border-transparent text-slate-500 hover:text-slate-900{% endif %}" href="{{ url_for('quotations', status='completed') }}">
+                    <span class="text-xs sm:text-sm {% if status_filter == 'completed' %}font-bold{% else %}font-medium{% endif %}">Complete</span>
+                    <span class="{% if status_filter == 'completed' %}bg-primary/10 text-primary{% else %}bg-slate-100 text-slate-500{% endif %} text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full">{{ quotation_counts.get('completed', 0) }}</span>
                 </a>
             </div>
         </div>
 
         <!-- Search and Filters -->
-        <form method="GET" action="{{ url_for('quotations') }}" class="flex flex-col sm:flex-row gap-3 items-center justify-between pt-2">
+        <form method="GET" action="{{ url_for('quotations') }}" class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between pt-2">
             {% if status_filter %}
             <input type="hidden" name="status" value="{{ status_filter }}">
             {% endif %}
             <div class="relative w-full sm:max-w-md">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span class="material-symbols-outlined text-slate-400">search</span>
+                    <span class="material-symbols-outlined text-slate-400 text-[20px]">search</span>
                 </div>
                 <input name="search" value="{{ search_query or '' }}" class="block w-full pl-10 pr-3 py-2.5 border-none rounded-lg bg-slate-100 text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-primary focus:outline-none text-sm transition-shadow" placeholder="Search by client name, ID..." type="text">
             </div>
-            <div class="flex gap-3 w-full sm:w-auto">
-                <button type="submit" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">search</span>
+            <div class="flex gap-2 sm:gap-3">
+                <button type="submit" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">search</span>
                     <span>Search</span>
                 </button>
                 {% if search_query %}
                 <a href="{{ url_for('quotations', status=status_filter) if status_filter else url_for('quotations') }}" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">close</span>
-                    <span>Clear</span>
+                    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">close</span>
+                    <span class="hidden sm:inline">Clear</span>
                 </a>
                 {% endif %}
             </div>
         </form>
     </div>
 
-    <!-- Table -->
-    <div class="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <!-- Desktop Table View -->
+    <div class="hidden md:block w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -153,7 +153,7 @@
             </table>
         </div>
 
-        <!-- Pagination -->
+        <!-- Desktop Pagination -->
         {% if quotations and pagination %}
         <div class="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
             <p class="text-sm text-slate-500">
@@ -183,6 +183,101 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="md:hidden flex flex-col gap-3">
+        {% if quotations %}
+            {% for quotation in quotations %}
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            {% set initials = quotation.customer.name[:2].upper() if quotation.customer else 'NA' %}
+                            {% set colors = ['green', 'blue', 'purple', 'orange', 'pink'] %}
+                            {% set color = colors[loop.index0 % 5] %}
+                            <div class="h-10 w-10 rounded-full bg-{{ color }}-100 text-{{ color }}-700 flex items-center justify-center font-bold text-sm shrink-0">{{ initials }}</div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900">{{ quotation.customer.name if quotation.customer else 'N/A' }}</p>
+                                <p class="text-xs text-slate-500">#{{ quotation.quotation_number }}</p>
+                            </div>
+                        </div>
+                        {% set status_value = quotation.status.value if quotation.status else 'draft' %}
+                        {% set status_styles = {
+                            'draft': 'bg-slate-100 text-slate-700',
+                            'sent': 'bg-blue-100 text-blue-800',
+                            'accepted': 'bg-emerald-100 text-emerald-800',
+                            'rejected': 'bg-red-100 text-red-800',
+                            'completed': 'bg-purple-100 text-purple-800'
+                        } %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ status_styles.get(status_value, 'bg-slate-100 text-slate-700') }} shrink-0">
+                            {{ status_value|capitalize }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                        <span class="text-xs text-slate-500">{{ quotation.created_at.strftime('%b %d, %Y') if quotation.created_at else 'N/A' }}</span>
+                        <span class="text-sm font-semibold text-slate-900 font-mono">€{{ "%.2f"|format(quotation.total_amount or 0) }}</span>
+                    </div>
+                </div>
+                <!-- Mobile Actions -->
+                <div class="flex border-t border-slate-100 divide-x divide-slate-100">
+                    <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="flex-1 flex items-center justify-center gap-2 py-3 text-slate-600 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">visibility</span>
+                        <span class="text-xs font-medium">View</span>
+                    </a>
+                    <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="flex-1 flex items-center justify-center gap-2 py-3 text-slate-600 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">edit</span>
+                        <span class="text-xs font-medium">Edit</span>
+                    </a>
+                    <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="flex-1 flex items-center justify-center gap-2 py-3 text-slate-600 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">download</span>
+                        <span class="text-xs font-medium">PDF</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Mobile Pagination -->
+            {% if pagination %}
+            <div class="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <p class="text-xs text-slate-500">
+                    <span class="font-medium">{{ ((pagination.page - 1) * pagination.per_page) + 1 }}</span>-<span class="font-medium">{{ [pagination.page * pagination.per_page, pagination.total]|min }}</span> of <span class="font-medium text-primary">{{ pagination.total }}</span>
+                </p>
+                <div class="flex items-center gap-1">
+                    {% if pagination.has_prev %}
+                    <a href="{{ url_for('quotations', page=pagination.page - 1, status=status_filter, search=search_query) }}" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </a>
+                    {% else %}
+                    <span class="p-2 text-slate-300">
+                        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </span>
+                    {% endif %}
+                    
+                    <span class="h-8 min-w-[2rem] flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium px-2">{{ pagination.page }}</span>
+                    
+                    {% if pagination.has_next %}
+                    <a href="{{ url_for('quotations', page=pagination.page + 1, status=status_filter, search=search_query) }}" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </a>
+                    {% else %}
+                    <span class="p-2 text-slate-300">
+                        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm">
+                <span class="material-symbols-outlined text-5xl text-slate-300">description</span>
+                <p class="text-slate-500 mt-3">No quotations found</p>
+                <a href="{{ url_for('create_manual_quotation') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors mt-4">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                    Create New Quote
+                </a>
+            </div>
         {% endif %}
     </div>
 </div>
