@@ -4,7 +4,7 @@ import re
 import traceback
 import time
 from datetime import datetime, timedelta
-from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response
+from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response, Response
 from werkzeug.utils import secure_filename
 from app import db
 from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, QuotationItemSizeOption, Supplier, SupplierProduct, CompanySettings, QuotationStatus, Order
@@ -1622,6 +1622,87 @@ def register_routes(app):
             flash(f'Price update request created. Current price: {old_price}€, Requested price: {new_price}€. This change requires approval.', 'info')
         
         return redirect(url_for('price_lists', customer_id=customer_id))
+    
+    @app.route('/price-lists/<int:price_id>/update-price', methods=['POST'])
+    @login_required
+    def update_price_list_inline(price_id):
+        """Update a price list entry via AJAX (inline editing)"""
+        data = request.get_json()
+        new_price = data.get('price')
+        
+        if new_price is None:
+            return jsonify({'error': 'Price is required'}), 400
+            
+        try:
+            new_price = float(new_price)
+            if new_price < 0:
+                return jsonify({'error': 'Price cannot be negative'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid price format'}), 400
+            
+        price_list = PriceList.query.get_or_404(price_id)
+        old_price = price_list.price
+        price_list.price = new_price
+        price_list.updated_at = datetime.utcnow()
+        
+        try:
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'message': f'Price updated from €{old_price:.2f} to €{new_price:.2f}',
+                'new_price': new_price
+            })
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating price list {price_id}: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+    
+    @app.route('/price-lists/export-csv', methods=['POST'])
+    @login_required
+    def export_price_lists_csv():
+        """Export selected price list entries to CSV"""
+        import io
+        import csv
+        
+        data = request.get_json()
+        price_ids = data.get('price_ids', [])
+        
+        if not price_ids:
+            return jsonify({'error': 'No entries selected for export'}), 400
+            
+        try:
+            # Get the selected price list entries
+            price_lists = PriceList.query.filter(PriceList.id.in_(price_ids)).all()
+            
+            # Create CSV in memory
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow(['Product Name', 'Scientific Name', 'Category', 'Pot Size', 'Customer', 'Price', 'Updated'])
+            
+            # Write data
+            for price in price_lists:
+                writer.writerow([
+                    price.product.name if price.product else '',
+                    price.product.scientific_name if price.product else '',
+                    price.product.category if price.product else '',
+                    price.product.pot if price.product else '',
+                    price.customer.name if price.customer else '',
+                    f'{price.price:.2f}',
+                    price.updated_at.strftime('%Y-%m-%d') if price.updated_at else ''
+                ])
+            
+            # Create response
+            output.seek(0)
+            return Response(
+                output.getvalue(),
+                mimetype='text/csv',
+                headers={'Content-Disposition': f'attachment; filename=price-lists-{datetime.now().strftime("%Y-%m-%d")}.csv'}
+            )
+        except Exception as e:
+            logger.error(f"Error exporting price lists: {str(e)}")
+            return jsonify({'error': str(e)}), 500
                               
     @app.route('/invoices')
     @login_required

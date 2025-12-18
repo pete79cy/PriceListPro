@@ -1,680 +1,498 @@
-{% extends 'apple_layout.html' %}
+{% extends 'side_layout.html' %}
 
 {% block title %}Price Lists - Plant Pricing System{% endblock %}
 
+{% block header_left %}
+<h2 class="text-base sm:text-lg font-semibold text-slate-900">Price Lists</h2>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('uploads') }}" class="flex items-center justify-center rounded-lg h-9 sm:h-10 px-3 sm:px-4 bg-primary text-white text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors gap-1 sm:gap-2">
+    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">upload</span>
+    <span class="hidden sm:inline">Upload</span>
+</a>
+{% endblock %}
+
 {% block content %}
+<div class="max-w-[1400px] mx-auto flex flex-col gap-4 sm:gap-6">
+    
+    <!-- Page Header -->
+    <div class="flex flex-wrap justify-between items-end gap-2 sm:gap-4">
+        <div class="flex flex-col gap-1 sm:gap-2">
+            <h1 class="text-slate-900 text-2xl sm:text-3xl font-bold leading-tight tracking-tight">Price Lists</h1>
+            <p class="text-slate-500 text-sm sm:text-base font-normal">Manage customer-specific pricing for your products</p>
+        </div>
+    </div>
+    
+    <!-- Filters Card -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <form method="GET" action="{{ url_for('price_lists') }}" class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
+            
+            <!-- Customer Filter -->
+            <div class="flex-1 min-w-0 sm:max-w-[250px]">
+                <label for="customerFilter" class="block text-xs font-medium text-slate-500 mb-1.5">Customer</label>
+                <select id="customerFilter" name="customer_id" 
+                        class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white">
+                    <option value="">All Customers</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if selected_customer_id|int == customer.id %}selected{% endif %}>
+                        {{ customer.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Category Filter -->
+            <div class="flex-1 min-w-0 sm:max-w-[200px]">
+                <label for="categoryFilter" class="block text-xs font-medium text-slate-500 mb-1.5">Category</label>
+                <select id="categoryFilter" name="category"
+                        class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                        {{ category }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Filter Button -->
+            <button type="submit" class="px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                Filter
+            </button>
+            
+            <!-- Spacer -->
+            <div class="hidden sm:block flex-1"></div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+                <a href="{{ url_for('download_template') }}" class="px-3 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    <span class="hidden sm:inline">Template</span>
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-[20px]">list_alt</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-900">{{ price_lists|length if price_lists else 0 }}</p>
+                    <p class="text-xs text-slate-500">Total Entries</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-emerald-600 text-[20px]">groups</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-900">{{ customers|length }}</p>
+                    <p class="text-xs text-slate-500">Customers</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-amber-600 text-[20px]">category</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-900">{{ categories|length }}</p>
+                    <p class="text-xs text-slate-500">Categories</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-purple-600 text-[20px]">euro</span>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500">Double-click price to edit</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Inline editing enabled</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Price Lists Table -->
+    {% if price_lists %}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        <!-- Desktop Table -->
+        <div class="hidden lg:block overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="w-12 px-4 py-3">
+                            <input type="checkbox" id="selectAll" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Product</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Scientific Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Pot Size</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Updated</th>
+                        <th class="w-16 px-4 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody id="priceListBody" class="divide-y divide-slate-100">
+                    {% for price in price_lists %}
+                    <tr class="hover:bg-slate-50 transition-colors group">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" class="row-checkbox w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20" value="{{ price.id }}">
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-sm font-medium text-slate-900">{{ price.product.name or '-' }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if price.product.scientific_name %}
+                            <span class="text-sm text-slate-500 italic">{{ price.product.scientific_name }}</span>
+                            {% else %}
+                            <span class="text-sm text-slate-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if price.product.category %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                {{ price.product.category }}
+                            </span>
+                            {% else %}
+                            <span class="text-sm text-slate-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if price.product.pot %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                {{ price.product.pot }}
+                            </span>
+                            {% else %}
+                            <span class="text-sm text-slate-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% for customer in customers %}
+                                {% if customer.id == price.customer_id %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                    {{ customer.name }}
+                                </span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <span class="price-cell cursor-pointer px-2 py-1 rounded-lg hover:bg-emerald-50 text-sm font-semibold text-slate-900 transition-colors" 
+                                  data-price-id="{{ price.id }}"
+                                  data-current-price="{{ price.price|round(2) }}"
+                                  title="Double-click to edit"
+                                  ondblclick="editPrice(this)">€{{ price.price|round(2) }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-xs text-slate-500">{{ price.updated_at.strftime('%d/%m/%y') }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <button class="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    data-price-id="{{ price.id }}"
+                                    data-product-name="{{ price.product.name or '' }}"
+                                    data-customer-id="{{ price.customer_id }}"
+                                    onclick="openEditModal(this)">
+                                <span class="material-symbols-outlined text-[18px]">more_vert</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Mobile Card View -->
+        <div class="lg:hidden">
+            <!-- Mobile Select All -->
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
+                <input type="checkbox" id="selectAllMobile" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20">
+                <span class="text-xs font-medium text-slate-500">Select All</span>
+            </div>
+            
+            <div class="divide-y divide-slate-100">
+                {% for price in price_lists %}
+                <div class="p-4 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" class="row-checkbox mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20" value="{{ price.id }}">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-900">{{ price.product.name or '-' }}</p>
+                                    {% if price.product.scientific_name %}
+                                    <p class="text-xs text-slate-500 italic mt-0.5">{{ price.product.scientific_name }}</p>
+                                    {% endif %}
+                                </div>
+                                <span class="price-cell cursor-pointer px-2 py-1 rounded-lg bg-emerald-50 text-sm font-bold text-emerald-700 shrink-0"
+                                      data-price-id="{{ price.id }}"
+                                      data-current-price="{{ price.price|round(2) }}"
+                                      title="Tap to edit"
+                                      ondblclick="editPrice(this)">€{{ price.price|round(2) }}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 mb-2">
+                                {% if price.product.category %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                    {{ price.product.category }}
+                                </span>
+                                {% endif %}
+                                {% if price.product.pot %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                    {{ price.product.pot }}
+                                </span>
+                                {% endif %}
+                                {% for customer in customers %}
+                                    {% if customer.id == price.customer_id %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                        {{ customer.name }}
+                                    </span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-xs text-slate-400">Updated: {{ price.updated_at.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-slate-400 text-[32px]">list_alt</span>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">No Price Lists Found</h3>
+        <p class="text-sm text-slate-500 mb-6">Upload a CSV or Excel file to get started with price management.</p>
+        <a href="{{ url_for('uploads') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">upload</span>
+            Upload Price List
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Bulk Action Bar -->
+<div id="bulkBar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg transform translate-y-full transition-transform duration-300 z-50">
+    <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+            <span id="selectionCount" class="text-sm font-medium text-slate-700">0 selected</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="exportSelected" class="px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">download</span>
+                <span class="hidden sm:inline">Export CSV</span>
+            </button>
+            <button id="deleteSelected" class="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+                <span class="hidden sm:inline">Delete</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <style>
-  :root {
-    --accent: #0a84ff;
-    --surface: #1c1c1e;
-    --elevated: #2c2c2e;
-    --text: #f2f2f7;
-    --text-muted: #9fa3af;
-    --success: #32d74b;
-    --warning: #ff9f0a;
-    --error: #ff453a;
-  }
-  * { box-sizing: border-box; }
-  
-  /*────────────────────  Frosted Toolbar  ────────────────────*/
-  .toolbar{ 
-    display:flex; 
-    gap:12px; 
-    padding:24px; 
-    align-items:center; 
-    background:rgba(28,28,30,.85); 
-    backdrop-filter:blur(16px); 
-    border-bottom:1px solid rgba(255,255,255,.05);
-    position:sticky;
-    top:0;
-    z-index:10;
-  }
-  
-  .toolbar h2{
-    margin-bottom:8px;
-  }
-  
-  .dropdown-modern{ 
-    position:relative; 
-    min-width:180px;
-  }
-  .dropdown-modern select{ 
-    width:100%; 
-    padding:10px 38px 10px 14px; 
-    border:none; 
-    border-radius:12px; 
-    background:rgba(44,44,46,.7); 
-    color:var(--text); 
-    font-size:15px; 
-    backdrop-filter:blur(8px);
-    appearance:none;
-    cursor:pointer;
-    transition:background .2s ease;
-  }
-  .dropdown-modern select:hover{
-    background:rgba(44,44,46,.9);
-  }
-  .dropdown-modern svg{ 
-    position:absolute; 
-    right:12px; 
-    top:50%; 
-    width:16px; 
-    height:16px; 
-    fill:var(--text-muted); 
-    transform:translateY(-50%);
-    pointer-events:none;
-  }
-  
-  .btn-accent{ 
-    padding:10px 18px; 
-    background:var(--accent); 
-    border:none; 
-    border-radius:14px; 
-    color:#fff; 
-    font-weight:600; 
-    cursor:pointer;
-    transition:transform .1s ease, box-shadow .1s ease;
-  }
-  .btn-accent:hover{
-    transform:translateY(-1px);
-    box-shadow:0 4px 12px rgba(10,132,255,.3);
-  }
-  
-  .btn-secondary{ 
-    padding:10px 18px; 
-    background:var(--elevated); 
-    border:none; 
-    border-radius:14px; 
-    color:var(--text); 
-    font-weight:600; 
-    cursor:pointer;
-    transition:background .2s ease;
-  }
-  .btn-secondary:hover{
-    background:rgba(60,60,67,.8);
-  }
-  
-  .spacer{ flex:1; }
-  
-  /*────────────────────  Enhanced Table  ─────────────────────*/
-  .table-container{ 
-    background:var(--surface); 
-    border-radius:16px; 
-    overflow:hidden; 
-    margin:0 24px; 
-    box-shadow:0 4px 20px rgba(0,0,0,.2);
-  }
-  
-  table{ width:100%; border-collapse:collapse; }
-  thead{ background:var(--elevated); }
-  th,td{ padding:18px 20px; text-align:left; font-size:15px; height:44px; }
-  th{ 
-    color:var(--text-muted); 
-    font-weight:600; 
-    text-transform:uppercase; 
-    font-size:13px; 
-    letter-spacing:0.5px;
-  }
-  
-  /* Zebra striping with enhanced hover lift */
-  tbody tr:nth-child(even){ background:rgba(255,255,255,.02); }
-  tbody tr:nth-child(odd){ background:rgba(255,255,255,.01); }
-  tbody tr:hover{ 
-    transform:translateY(-2px); 
-    box-shadow:0 4px 9px rgba(0,0,0,.35);
-    background:rgba(255,255,255,.04);
-  }
-  tbody tr{ 
-    transition:all .15s cubic-bezier(0.4, 0.0, 0.2, 1); 
-    cursor:pointer;
-  }
-  
-  /* Enhanced checkboxes */
-  input[type="checkbox"]{ 
-    accent-color:var(--accent); 
-    width:18px; 
-    height:18px; 
-    cursor:pointer;
-  }
-  
-  /* Semantic pastel badges */
-  .badge{ 
-    display:inline-block; 
-    padding:4px 10px; 
-    border-radius:8px; 
-    font-size:12px; 
-    font-weight:500;
-    text-transform:uppercase;
-    letter-spacing:0.3px;
-  }
-  .badge-primary{ 
-    background:color-mix(in srgb, var(--accent) 20%, transparent); 
-    color:#7cc7ff; 
-    border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  }
-  .badge-success{ 
-    background:color-mix(in srgb, var(--success) 20%, transparent); 
-    color:#7ef087; 
-    border:1px solid color-mix(in srgb, var(--success) 30%, transparent);
-  }
-  .badge-warning{ 
-    background:color-mix(in srgb, var(--warning) 20%, transparent); 
-    color:#ffb84d; 
-    border:1px solid color-mix(in srgb, var(--warning) 30%, transparent);
-  }
-  
-  .text-muted{ color:var(--text-muted); }
-  .text-end{ text-align:right; }
-  .price-cell{ 
-    font-weight:700; 
-    color:var(--success); 
-    font-size:16px;
-    cursor:pointer;
-    padding:4px 8px;
-    border-radius:6px;
-    transition:background .2s ease;
-  }
-  .price-cell:hover{
-    background:rgba(50,215,75,.1);
-  }
-  .price-cell.editing{
-    background:var(--elevated);
-  }
-  .price-edit-input{
-    background:var(--elevated);
-    border:1px solid var(--accent);
-    color:var(--text);
-    border-radius:6px;
-    padding:4px 8px;
-    font-size:16px;
-    font-weight:700;
-    width:80px;
-    text-align:right;
-  }
-  
-  /* Enhanced ellipsis button */
-  .ellipsis-btn{ 
-    background:none; 
-    border:none; 
-    cursor:pointer; 
-    width:36px; 
-    height:36px; 
-    border-radius:18px; 
-    display:grid; 
-    place-content:center;
-    transition:all .2s ease;
-  }
-  .ellipsis-btn:hover{ 
-    background:rgba(255,255,255,.1); 
-    transform:scale(1.1);
-  }
-  .ellipsis-btn svg{ width:20px; height:20px; fill:var(--text); }
-  
-  /*────────────────────  Sticky Bulk Bar  ────────────────────*/
-  .bulk-bar{ 
-    position:fixed; 
-    bottom:-100px; 
-    left:0; 
-    right:0; 
-    display:flex; 
-    justify-content:center; 
-    gap:16px; 
-    padding:16px 24px; 
-    background:rgba(28,28,30,.95); 
-    backdrop-filter:blur(20px); 
-    border-top:1px solid rgba(255,255,255,.1); 
-    transition:bottom .3s cubic-bezier(0.4, 0.0, 0.2, 1); 
-    z-index:50;
-    box-shadow:0 -8px 32px rgba(0,0,0,.3);
-  }
-  .bulk-bar.show{ bottom:0; }
-  
-  .btn-danger{ 
-    background:var(--error); 
-    color:#fff; 
-    border:none; 
-    border-radius:14px; 
-    padding:12px 20px; 
-    font-weight:600; 
-    cursor:pointer;
-    transition:all .2s ease;
-  }
-  .btn-danger:hover{
-    background:#ff6b5a;
-    transform:translateY(-1px);
-    box-shadow:0 4px 12px rgba(255,69,58,.4);
-  }
-  
-  .btn-export{ 
-    background:var(--success); 
-    color:#fff; 
-    border:none; 
-    border-radius:14px; 
-    padding:12px 20px; 
-    font-weight:600; 
-    cursor:pointer;
-    transition:all .2s ease;
-  }
-  .btn-export:hover{
-    background:#4ade62;
-    transform:translateY(-1px);
-    box-shadow:0 4px 12px rgba(50,215,75,.4);
-  }
-  
-  /* Empty state */
-  .empty-state{
-    text-align:center;
-    padding:60px 24px;
-    color:var(--text-muted);
-  }
-  .empty-state h3{
-    color:var(--text);
-    margin-bottom:8px;
-    font-weight:600;
-  }
-  
-  /* Selection counter in bulk bar */
-  .selection-count{
-    color:var(--text-muted);
-    font-size:14px;
-    align-self:center;
-    margin-right:8px;
-  }
-  
-  /* Filter feedback animation */
-  .table-container.filter-pulse{
-    animation: filterPulse 0.3s ease-out;
-  }
-  
-  @keyframes filterPulse {
-    0% { opacity: 0.9; }
-    50% { opacity: 1; }
-    100% { opacity: 0.9; }
-  }
+    .price-cell.editing {
+        background-color: #f1f5f9;
+    }
+    .price-edit-input {
+        width: 80px;
+        padding: 4px 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: right;
+        border: 1px solid #2b8cee;
+        border-radius: 6px;
+        outline: none;
+    }
+    #bulkBar.show {
+        transform: translateY(0);
+    }
 </style>
 
-{#— Frosted Toolbar with Modern Dropdowns —#}
-<section class="toolbar">
-  <h2 style="margin:0 16px 0 0; color:var(--text); font-weight:700;">Price Lists</h2>
-  
-  <div class="dropdown-modern">
-    <select id="customerFilter" onchange="applyFilters()">
-      <option value="">All Customers</option>
-      {% for customer in customers %}
-      <option value="{{ customer.id }}" {% if selected_customer_id|int == customer.id %}selected{% endif %}>
-        {{ customer.name }}
-      </option>
-      {% endfor %}
-    </select>
-    <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
-  </div>
-  
-  <div class="dropdown-modern">
-    <select id="categoryFilter" onchange="applyFilters()">
-      <option value="">All Categories</option>
-      {% for category in categories %}
-      <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
-        {{ category }}
-      </option>
-      {% endfor %}
-    </select>
-    <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
-  </div>
-  
-  <button class="btn-accent" onclick="applyFilters()">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
-      <path d="M3 4.5h4l.5-1a.5.5 0 0 1 .4-.2h8.2a.5.5 0 0 1 .4.2l.5 1h4v1h-21z"/>
-      <path d="M4 7v9.5a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5V7z"/>
-    </svg>
-    Filter
-  </button>
-  
-  <div class="spacer"></div>
-  
-  <button class="btn-secondary" onclick="location.href='{{ url_for('uploads') }}'">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:rgba(255,255,255,0.7);margin-right:6px;">
-      <path d="M12 2L12 14M7 9L12 4L17 9M5 19H19"/>
-    </svg>
-    Upload
-  </button>
-  
-  <button class="btn-secondary" onclick="location.href='{{ url_for('download_template') }}'">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:rgba(255,255,255,0.7);margin-right:6px;">
-      <path d="M12 14L12 2M7 9L12 14L17 9M5 19H19"/>
-    </svg>
-    Download
-  </button>
-</section>
-
-{#— Enhanced Table with Zebra Stripes and Hover Effects —#}
-{% if price_lists %}
-<div class="table-container">
-  <table>
-    <thead>
-      <tr>
-        <th><input type="checkbox" id="selectAll" /></th>
-        <th>Product Name</th>
-        <th>Scientific Name</th>
-        <th>Category</th>
-        <th>Pot Size</th>
-        <th>Customer</th>
-        <th class="text-end">Price</th>
-        <th>Updated</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="priceListBody">
-      {% for price in price_lists %}
-      <tr>
-        <td><input type="checkbox" class="row-checkbox" value="{{ price.id }}" /></td>
-        <td><strong>{{ price.product.name or '-' }}</strong></td>
-        <td>
-          {% if price.product.scientific_name %}
-            <em style="color:var(--text-muted);">{{ price.product.scientific_name }}</em>
-          {% else %}
-            <span class="text-muted">—</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if price.product.category %}
-            <span class="badge badge-primary">{{ price.product.category }}</span>
-          {% else %}
-            <span class="text-muted">—</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if price.product.pot %}
-            <span class="badge badge-warning">{{ price.product.pot }}</span>
-          {% else %}
-            <span class="text-muted">—</span>
-          {% endif %}
-        </td>
-        <td>
-          {% for customer in customers %}
-            {% if customer.id == price.customer_id %}
-              <span class="badge badge-success">{{ customer.name }}</span>
-            {% endif %}
-          {% endfor %}
-        </td>
-        <td class="text-end">
-          <span class="price-cell" 
-                data-price-id="{{ price.id }}"
-                data-current-price="{{ price.price|round(2) }}"
-                title="Double-click to edit"
-                ondblclick="editPrice(this)">€{{ price.price|round(2) }}</span>
-        </td>
-        <td>
-          <small class="text-muted">{{ price.updated_at.strftime('%m/%d') }}</small>
-        </td>
-        <td>
-          <button class="ellipsis-btn" 
-                  data-price-id="{{ price.id }}"
-                  data-product-name="{{ price.product.name or '' }}"
-                  data-customer-id="{{ price.customer_id }}"
-                  onclick="openEditModal(this)">
-            <svg viewBox="0 0 24 24">
-              <circle cx="5" cy="12" r="2"/>
-              <circle cx="12" cy="12" r="2"/>
-              <circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{% else %}
-<div class="empty-state">
-  <h3>No Price Lists Found</h3>
-  <p>Upload a CSV template to get started with price management.</p>
-  <button class="btn-accent" onclick="location.href='{{ url_for('uploads') }}'">
-    Upload Price List
-  </button>
-</div>
-{% endif %}
-
-{#— Sticky Bulk Action Bar —#}
-<div class="bulk-bar" id="bulkBar">
-  <span class="selection-count" id="selectionCount">0 selected</span>
-  <button class="btn-danger" id="deleteSelected">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
-      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-    </svg>
-    Delete
-  </button>
-  <button class="btn-export" id="exportSelected">
-    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;margin-right:6px;">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-    </svg>
-    Export CSV
-  </button>
-</div>
-
 <script>
-  // Enhanced checkbox selection with bulk operations
-  const selectAll = document.getElementById('selectAll');
-  const bulkBar = document.getElementById('bulkBar');
-  const selectionCount = document.getElementById('selectionCount');
-  const deleteBtn = document.getElementById('deleteSelected');
-  const exportBtn = document.getElementById('exportSelected');
-  const rowBoxes = () => Array.from(document.querySelectorAll('.row-checkbox'));
+    // Checkbox selection and bulk operations
+    const selectAll = document.getElementById('selectAll');
+    const selectAllMobile = document.getElementById('selectAllMobile');
+    const bulkBar = document.getElementById('bulkBar');
+    const selectionCount = document.getElementById('selectionCount');
+    const deleteBtn = document.getElementById('deleteSelected');
+    const exportBtn = document.getElementById('exportSelected');
+    const rowBoxes = () => Array.from(document.querySelectorAll('.row-checkbox'));
 
-  const updateBulkBar = () => {
-    const checkedBoxes = rowBoxes().filter(cb => cb.checked);
-    const count = checkedBoxes.length;
-    const hasSelection = count > 0;
-    
-    // Show/hide bulk bar with smooth animation
-    bulkBar.classList.toggle('show', hasSelection);
-    
-    // Update selection counter
-    selectionCount.textContent = `${count} selected`;
-    
-    // Update select all checkbox state
-    const totalBoxes = rowBoxes().length;
-    selectAll.indeterminate = count > 0 && count < totalBoxes;
-    selectAll.checked = count === totalBoxes;
-  };
-
-  // Select all functionality
-  selectAll?.addEventListener('change', e => {
-    rowBoxes().forEach(cb => cb.checked = e.target.checked);
-    updateBulkBar();
-  });
-
-  // Individual checkbox changes
-  document.addEventListener('change', e => {
-    if (e.target.classList.contains('row-checkbox')) {
-      updateBulkBar();
-    }
-  });
-
-  // Enhanced filter functionality with visual feedback
-  function applyFilters() {
-    const customerFilter = document.getElementById('customerFilter').value;
-    const categoryFilter = document.getElementById('categoryFilter').value;
-    
-    // Add visual feedback animation
-    const tableContainer = document.querySelector('.table-container');
-    if (tableContainer) {
-      tableContainer.classList.add('filter-pulse');
-      setTimeout(() => tableContainer.classList.remove('filter-pulse'), 300);
-    }
-    
-    const searchParams = new URLSearchParams(window.location.search);
-    
-    // Update URL parameters
-    if (customerFilter) {
-      searchParams.set('customer_id', customerFilter);
-    } else {
-      searchParams.delete('customer_id');
-    }
-    
-    if (categoryFilter) {
-      searchParams.set('category', categoryFilter);
-    } else {
-      searchParams.delete('category');
-    }
-    
-    // Navigate with updated filters
-    setTimeout(() => {
-      window.location.search = searchParams.toString();
-    }, 150);
-  }
-
-  // Bulk delete functionality
-  deleteBtn?.addEventListener('click', async () => {
-    const selectedIds = rowBoxes()
-      .filter(cb => cb.checked)
-      .map(cb => cb.value);
-    
-    if (selectedIds.length === 0) return;
-    
-    const confirmMessage = `Delete ${selectedIds.length} price ${selectedIds.length === 1 ? 'entry' : 'entries'}? This action cannot be undone.`;
-    
-    if (confirm(confirmMessage)) {
-      try {
-        const response = await fetch('/price-lists/batch-delete', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ price_ids: selectedIds })
-        });
+    const updateBulkBar = () => {
+        const checkedBoxes = rowBoxes().filter(cb => cb.checked);
+        const count = checkedBoxes.length;
+        const hasSelection = count > 0;
         
-        if (response.ok) {
-          location.reload();
-        } else {
-          alert('Error deleting entries. Please try again.');
-        }
-      } catch (error) {
-        alert('Network error. Please check your connection and try again.');
-      }
-    }
-  });
-
-  // CSV export functionality
-  exportBtn?.addEventListener('click', async () => {
-    const selectedIds = rowBoxes()
-      .filter(cb => cb.checked)
-      .map(cb => cb.value);
-    
-    if (selectedIds.length === 0) {
-      alert('Please select entries to export.');
-      return;
-    }
-    
-    try {
-      const response = await fetch('/price-lists/export-csv', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ price_ids: selectedIds })
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `price-lists-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      } else {
-        alert('Error exporting data. Please try again.');
-      }
-    } catch (error) {
-      alert('Network error. Please check your connection and try again.');
-    }
-  });
-
-  // Inline price editing functionality
-  function editPrice(element) {
-    if (element.classList.contains('editing')) return;
-    
-    const currentPrice = element.dataset.currentPrice;
-    const priceId = element.dataset.priceId;
-    
-    element.classList.add('editing');
-    
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.step = '0.01';
-    input.min = '0';
-    input.value = currentPrice;
-    input.className = 'price-edit-input';
-    
-    element.innerHTML = '';
-    element.appendChild(input);
-    input.focus();
-    input.select();
-    
-    const savePrice = async () => {
-      const newPrice = parseFloat(input.value);
-      if (isNaN(newPrice) || newPrice < 0) {
-        element.innerHTML = `€${currentPrice}`;
-        element.classList.remove('editing');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`/price-lists/${priceId}/update-price`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ price: newPrice })
-        });
+        bulkBar.classList.toggle('show', hasSelection);
+        selectionCount.textContent = `${count} selected`;
         
-        if (response.ok) {
-          element.innerHTML = `€${newPrice.toFixed(2)}`;
-          element.dataset.currentPrice = newPrice.toFixed(2);
-          element.classList.remove('editing');
-        } else {
-          throw new Error('Failed to update price');
+        const totalBoxes = rowBoxes().length;
+        if (selectAll) {
+            selectAll.indeterminate = count > 0 && count < totalBoxes;
+            selectAll.checked = count === totalBoxes && totalBoxes > 0;
         }
-      } catch (error) {
-        alert('Error updating price. Please try again.');
-        element.innerHTML = `€${currentPrice}`;
-        element.classList.remove('editing');
-      }
+        if (selectAllMobile) {
+            selectAllMobile.indeterminate = count > 0 && count < totalBoxes;
+            selectAllMobile.checked = count === totalBoxes && totalBoxes > 0;
+        }
     };
-    
-    const cancelEdit = () => {
-      element.innerHTML = `€${currentPrice}`;
-      element.classList.remove('editing');
-    };
-    
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        savePrice();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancelEdit();
-      }
+
+    // Select all functionality
+    [selectAll, selectAllMobile].forEach(el => {
+        el?.addEventListener('change', e => {
+            rowBoxes().forEach(cb => cb.checked = e.target.checked);
+            updateBulkBar();
+        });
     });
-    
-    input.addEventListener('blur', savePrice);
-  }
 
-  // Edit modal functionality (placeholder)
-  function openEditModal(button) {
-    const priceId = button.dataset.priceId;
-    const productName = button.dataset.productName;
-    const customerId = button.dataset.customerId;
-    
-    console.log('Edit price:', { priceId, productName, customerId });
-  }
+    // Individual checkbox changes
+    document.addEventListener('change', e => {
+        if (e.target.classList.contains('row-checkbox')) {
+            updateBulkBar();
+        }
+    });
 
-  // Initialize on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    updateBulkBar();
-  });
+    // Bulk delete
+    deleteBtn?.addEventListener('click', async () => {
+        const selectedIds = rowBoxes().filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedIds.length === 0) return;
+        
+        if (confirm(`Delete ${selectedIds.length} price ${selectedIds.length === 1 ? 'entry' : 'entries'}? This cannot be undone.`)) {
+            try {
+                const response = await fetch('/price-lists/batch-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price_ids: selectedIds })
+                });
+                if (response.ok) location.reload();
+                else alert('Error deleting entries.');
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+    });
+
+    // CSV export
+    exportBtn?.addEventListener('click', async () => {
+        const selectedIds = rowBoxes().filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedIds.length === 0) {
+            alert('Please select entries to export.');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/price-lists/export-csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ price_ids: selectedIds })
+            });
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `price-lists-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } else {
+                alert('Error exporting data.');
+            }
+        } catch (error) {
+            alert('Network error. Please try again.');
+        }
+    });
+
+    // Inline price editing
+    function editPrice(element) {
+        if (element.classList.contains('editing')) return;
+        
+        const currentPrice = element.dataset.currentPrice;
+        const priceId = element.dataset.priceId;
+        
+        element.classList.add('editing');
+        
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.step = '0.01';
+        input.min = '0';
+        input.value = currentPrice;
+        input.className = 'price-edit-input';
+        
+        element.innerHTML = '';
+        element.appendChild(input);
+        input.focus();
+        input.select();
+        
+        const savePrice = async () => {
+            const newPrice = parseFloat(input.value);
+            if (isNaN(newPrice) || newPrice < 0) {
+                element.innerHTML = `€${currentPrice}`;
+                element.classList.remove('editing');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/price-lists/${priceId}/update-price`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price: newPrice })
+                });
+                
+                if (response.ok) {
+                    element.innerHTML = `€${newPrice.toFixed(2)}`;
+                    element.dataset.currentPrice = newPrice.toFixed(2);
+                    element.classList.remove('editing');
+                } else {
+                    throw new Error('Failed to update');
+                }
+            } catch (error) {
+                alert('Error updating price.');
+                element.innerHTML = `€${currentPrice}`;
+                element.classList.remove('editing');
+            }
+        };
+        
+        const cancelEdit = () => {
+            element.innerHTML = `€${currentPrice}`;
+            element.classList.remove('editing');
+        };
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); savePrice(); }
+            else if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+        });
+        
+        input.addEventListener('blur', savePrice);
+    }
+
+    // Edit modal placeholder
+    function openEditModal(button) {
+        const priceId = button.dataset.priceId;
+        const productName = button.dataset.productName;
+        console.log('Edit price:', { priceId, productName });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', updateBulkBar);
 </script>
 {% endblock %}
