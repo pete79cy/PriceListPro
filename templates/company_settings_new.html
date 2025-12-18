@@ -1,0 +1,132 @@
+{% extends 'side_layout.html' %}
+
+{% block title %}Company Settings - Plant Pricing System{% endblock %}
+
+{% block header_left %}
+<div class="flex flex-col">
+    <h1 class="text-xl font-bold text-slate-900">Company Settings</h1>
+    <p class="text-sm text-slate-500">Configure your company information</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <form action="{{ url_for('save_company_settings') }}" method="post" enctype="multipart/form-data" class="space-y-6">
+        <!-- Company Information Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <h2 class="font-semibold text-slate-900 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px] text-primary">business</span>
+                    Company Information
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Left Column - Form Fields -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
+                                <input type="text" id="name" name="name" value="{{ company.name }}"
+                                       class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
+                            <div>
+                                <label for="pdf_orientation" class="block text-sm font-medium text-slate-700 mb-1">PDF Orientation</label>
+                                <select id="pdf_orientation" name="pdf_orientation" 
+                                        class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <option value="portrait" {% if company.pdf_orientation == 'portrait' %}selected{% endif %}>Portrait</option>
+                                    <option value="landscape" {% if company.pdf_orientation == 'landscape' %}selected{% endif %}>Landscape (Recommended)</option>
+                                </select>
+                                <p class="text-xs text-slate-500 mt-1">Landscape allows more items per page for quotations</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="address_line1" class="block text-sm font-medium text-slate-700 mb-1">Address Line 1</label>
+                                <input type="text" id="address_line1" name="address_line1" value="{{ company.address_line1 }}"
+                                       class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
+                            <div>
+                                <label for="address_line2" class="block text-sm font-medium text-slate-700 mb-1">Address Line 2</label>
+                                <input type="text" id="address_line2" name="address_line2" value="{{ company.address_line2 }}"
+                                       class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
+                        </div>
+                        
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">call</span>
+                                    <input type="text" id="phone" name="phone" value="{{ company.phone }}"
+                                           class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">mail</span>
+                                    <input type="email" id="email" name="email" value="{{ company.email }}"
+                                           class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column - Logo Upload -->
+                    <div>
+                        <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                            <h3 class="text-sm font-medium text-slate-700 mb-3">Company Logo</h3>
+                            <div class="text-center">
+                                {% if company.logo_path %}
+                                <div class="mb-4 p-4 bg-white rounded-lg border border-slate-200">
+                                    <img src="{{ url_for('static', filename='uploads/' + company.logo_path.split('/')[-1]) }}" 
+                                         alt="Company Logo" class="max-h-24 mx-auto object-contain">
+                                </div>
+                                {% else %}
+                                <div class="mb-4 p-6 bg-white rounded-lg border border-slate-200">
+                                    <span class="material-symbols-outlined text-[48px] text-slate-300">image</span>
+                                    <p class="text-xs text-slate-500 mt-2">No logo uploaded</p>
+                                </div>
+                                {% endif %}
+                                
+                                <label for="logo" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                                    <span class="material-symbols-outlined text-[18px]">upload</span>
+                                    <span id="logo-label">Upload New Logo</span>
+                                    <input type="file" id="logo" name="logo" accept="image/*" class="hidden">
+                                </label>
+                                <p class="text-xs text-slate-500 mt-2">Recommended: 300x100px</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3">
+            <a href="{{ url_for('dashboard') }}" 
+               class="px-6 py-2.5 border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">save</span>
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('logo').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name || 'Upload New Logo';
+        const displayName = fileName.length > 20 ? fileName.substring(0, 17) + '...' : fileName;
+        document.getElementById('logo-label').textContent = displayName;
+    });
+</script>
+{% endblock %}

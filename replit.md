@@ -15,9 +15,11 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 - **File Processing**: pandas, openpyxl, xlrd for Excel parsing; PyPDF2 for PDF extraction
 
 ### Frontend Architecture
-- **Templates**: Jinja2 template engine with Bootstrap-based UI
+- **Templates**: Jinja2 template engine with modern Tailwind CSS design
+- **Design System**: Tailwind CSS with primary color #2b8cee, rounded-xl cards, Material Symbols icons
+- **Layout**: Side layout (side_layout.html) with responsive sidebar navigation
 - **JavaScript**: Vanilla JS with AJAX for dynamic interactions
-- **CSS**: Custom styles with responsive design
+- **CSS**: Tailwind CSS with custom configuration for responsive design
 - **File Uploads**: Secure file handling with validation
 
 ### External Integrations
@@ -111,6 +113,15 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- December 18, 2025: Major UI Redesign with Tailwind CSS
+  - Migrated from Bootstrap/legacy layouts to modern Tailwind CSS design system
+  - Created side_layout.html as main layout template with responsive sidebar navigation
+  - Redesigned all major pages: customers, products, orders, suppliers, addenda, pending updates, uploads, search, company settings
+  - Added Material Symbols Outlined icons across all pages
+  - Implemented responsive design with desktop table view and mobile card view patterns
+  - Added modern filter bars, search functionality, and batch action capabilities
+  - Created consistent modal dialogs for add/edit/delete operations
+  - Primary color theme: #2b8cee with slate color palette
 - July 20, 2025: Updated Terms & Conditions for Plant Quotations (B2B)
   - Updated all quotation templates with comprehensive 14-clause terms and conditions
   - Corrected section 6 "Delivery, Risk & Title" to consolidate delivery and lead time information

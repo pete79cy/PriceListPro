@@ -28,7 +28,7 @@ def list_addenda():
         page=page, per_page=per_page, error_out=False
     )
     
-    return render_template('addenda/list.html', addenda=addenda)
+    return render_template('addenda/list_new.html', addenda=addenda)
 
 @addenda_bp.route('/new', methods=['GET', 'POST'])
 @login_required

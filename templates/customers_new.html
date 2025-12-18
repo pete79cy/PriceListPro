@@ -1,0 +1,505 @@
+{% extends 'side_layout.html' %}
+
+{% block title %}Customers - Plant Pricing System{% endblock %}
+
+{% block header_left %}
+<div class="flex flex-col">
+    <h1 class="text-xl font-bold text-slate-900">Customers</h1>
+    <p class="text-sm text-slate-500">{{ customers|length }} total customers</p>
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<button onclick="openCustomerModal()" class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+    <span class="material-symbols-outlined text-[20px]">add</span>
+    <span class="hidden sm:inline">New Customer</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filters Bar -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="flex flex-col lg:flex-row gap-4">
+            <!-- Search -->
+            <div class="flex-1 relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+                <input type="text" id="searchBox" placeholder="Search customers..." 
+                       class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+            </div>
+            
+            <!-- Category Filter -->
+            <div class="w-full lg:w-48">
+                <select id="categoryFilter" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="">All Categories</option>
+                    {% for category in customer_categories %}
+                    <option value="{{ category.name }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Quick Filters -->
+            <div class="flex gap-2">
+                <button id="filterPrice" class="flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" data-active="false">
+                    <span class="material-symbols-outlined text-[18px]">list_alt</span>
+                    Has Price List
+                </button>
+                <button id="filterMissing" class="flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" data-active="false">
+                    <span class="material-symbols-outlined text-[18px]">warning</span>
+                    Missing Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="hidden lg:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="w-12 px-4 py-3">
+                            <input type="checkbox" id="selectAll" class="rounded border-slate-300 text-primary focus:ring-primary/20">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Email</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Phone</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="customerTableBody">
+                    {% for customer in customers %}
+                    <tr class="customer-row hover:bg-slate-50/50 transition-colors"
+                        data-price="{{ 'yes' if customer.price_lists else 'no' }}"
+                        data-email="{{ 'no' if not customer.email else 'yes' }}"
+                        data-category="{{ customer.category.name if customer.category else '' }}"
+                        data-name="{{ customer.name|lower }}"
+                        data-id="{{ customer.id }}">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" class="customer-checkbox rounded border-slate-300 text-primary focus:ring-primary/20" value="{{ customer.id }}">
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full {{ 'bg-green-500' if customer.email else 'bg-amber-500' }}"></div>
+                                <a href="#" class="font-medium text-slate-900 hover:text-primary transition-colors" 
+                                   onclick="viewCustomer({{ customer.id }}); return false;">
+                                    {{ customer.name }}
+                                </a>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if customer.email %}
+                            <a href="mailto:{{ customer.email }}" class="text-slate-600 hover:text-primary transition-colors text-sm">
+                                {{ customer.email }}
+                            </a>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
+                                <span class="material-symbols-outlined text-[14px]">warning</span>
+                                Missing
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if customer.phone %}
+                            <a href="tel:{{ customer.phone }}" class="text-slate-600 hover:text-primary transition-colors text-sm">
+                                {{ customer.phone }}
+                            </a>
+                            {% else %}
+                            <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if customer.category %}
+                            <span class="inline-flex items-center px-2.5 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                                {{ customer.category.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <button onclick="editCustomer({{ customer.id }}, '{{ customer.name|e }}', '{{ customer.email or '' }}', '{{ customer.phone or '' }}', '{{ customer.address or ''|e }}', '{{ customer.category.id if customer.category else '' }}')" 
+                                        class="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                                </button>
+                                <a href="{{ url_for('price_lists', customer_id=customer.id) }}" 
+                                   class="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Price Lists">
+                                    <span class="material-symbols-outlined text-[20px]">list_alt</span>
+                                </a>
+                                <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name|e }}')" 
+                                        class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not customers %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-[64px] text-slate-300 mb-4">group</span>
+            <h3 class="text-lg font-semibold text-slate-900 mb-2">No Customers Yet</h3>
+            <p class="text-slate-500 mb-4">Start by adding your first customer</p>
+            <button onclick="openCustomerModal()" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Add Customer
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="lg:hidden space-y-3" id="customerCardList">
+        {% for customer in customers %}
+        <div class="customer-row bg-white rounded-xl border border-slate-200 shadow-sm p-4"
+             data-price="{{ 'yes' if customer.price_lists else 'no' }}"
+             data-email="{{ 'no' if not customer.email else 'yes' }}"
+             data-category="{{ customer.category.name if customer.category else '' }}"
+             data-name="{{ customer.name|lower }}">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full {{ 'bg-green-500' if customer.email else 'bg-amber-500' }}"></div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">{{ customer.name }}</h3>
+                        {% if customer.category %}
+                        <span class="inline-flex items-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full mt-1">
+                            {{ customer.category.name }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="relative">
+                    <button onclick="toggleMobileMenu(this)" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                        <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                    <div class="mobile-menu hidden absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
+                        <button onclick="editCustomer({{ customer.id }}, '{{ customer.name|e }}', '{{ customer.email or '' }}', '{{ customer.phone or '' }}', '{{ customer.address or ''|e }}', '{{ customer.category.id if customer.category else '' }}')" 
+                                class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                            Edit
+                        </button>
+                        <a href="{{ url_for('price_lists', customer_id=customer.id) }}" 
+                           class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">list_alt</span>
+                            Price Lists
+                        </a>
+                        <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name|e }}')" 
+                                class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+                {% if customer.email %}
+                <a href="mailto:{{ customer.email }}" class="flex items-center gap-1.5 hover:text-primary">
+                    <span class="material-symbols-outlined text-[16px]">mail</span>
+                    {{ customer.email }}
+                </a>
+                {% else %}
+                <span class="flex items-center gap-1.5 text-amber-600">
+                    <span class="material-symbols-outlined text-[16px]">warning</span>
+                    Missing Email
+                </span>
+                {% endif %}
+                {% if customer.phone %}
+                <a href="tel:{{ customer.phone }}" class="flex items-center gap-1.5 hover:text-primary">
+                    <span class="material-symbols-outlined text-[16px]">call</span>
+                    {{ customer.phone }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not customers %}
+        <div class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <span class="material-symbols-outlined text-[64px] text-slate-300 mb-4">group</span>
+            <h3 class="text-lg font-semibold text-slate-900 mb-2">No Customers Yet</h3>
+            <p class="text-slate-500 mb-4">Start by adding your first customer</p>
+            <button onclick="openCustomerModal()" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Add Customer
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Actions Bar -->
+<div id="bulkBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-4 z-50 hidden">
+    <span id="bulkCount" class="text-sm font-medium">0 selected</span>
+    <div class="w-px h-6 bg-slate-700"></div>
+    <button onclick="bulkExport()" class="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">download</span>
+        Export
+    </button>
+    <button onclick="bulkDelete()" class="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 text-red-300 rounded-lg text-sm hover:bg-red-500/30 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+        Delete
+    </button>
+    <button onclick="clearSelection()" class="p-1 text-slate-400 hover:text-white transition-colors">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+    </button>
+</div>
+
+<!-- Customer Modal -->
+<div id="customerModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-primary text-white">
+            <h3 id="modalTitle" class="text-lg font-semibold">Add Customer</h3>
+            <button onclick="closeCustomerModal()" class="text-white/80 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[24px]">close</span>
+            </button>
+        </div>
+        <form id="customerForm" action="{{ url_for('customers') }}" method="post" class="p-6 space-y-4 overflow-y-auto">
+            <input type="hidden" name="customer_id" id="customerId">
+            
+            <div>
+                <label for="customerName" class="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+                <input type="text" id="customerName" name="name" required 
+                       class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="customerEmail" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" id="customerEmail" name="email" 
+                           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+                <div>
+                    <label for="customerPhone" class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                    <input type="text" id="customerPhone" name="phone" 
+                           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+            </div>
+            
+            <div>
+                <label for="customerAddress" class="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                <textarea id="customerAddress" name="address" rows="2" 
+                          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+            </div>
+            
+            <div>
+                <label for="customerCategory" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <select id="customerCategory" name="category_id" 
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="">No Category</option>
+                    {% for category in customer_categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="button" onclick="closeCustomerModal()" 
+                        class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                    Save Customer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                <span class="material-symbols-outlined text-[28px]">warning</span>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Delete Customer</h3>
+                <p class="text-sm text-slate-500">This action cannot be undone</p>
+            </div>
+        </div>
+        <p class="text-slate-600 mb-6">Are you sure you want to delete <strong id="deleteCustomerName"></strong>? All associated data including price lists will also be deleted.</p>
+        <div class="flex gap-3">
+            <button onclick="closeDeleteModal()" 
+                    class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                Cancel
+            </button>
+            <form id="deleteForm" method="post" class="flex-1">
+                <button type="submit" 
+                        class="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Search and Filter functionality
+    const searchBox = document.getElementById('searchBox');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const filterPrice = document.getElementById('filterPrice');
+    const filterMissing = document.getElementById('filterMissing');
+    
+    function filterCustomers() {
+        const searchTerm = searchBox.value.toLowerCase();
+        const category = categoryFilter.value;
+        const priceActive = filterPrice.dataset.active === 'true';
+        const missingActive = filterMissing.dataset.active === 'true';
+        
+        document.querySelectorAll('.customer-row').forEach(row => {
+            const name = row.dataset.name || '';
+            const rowCategory = row.dataset.category || '';
+            const hasPrice = row.dataset.price === 'yes';
+            const hasMissing = row.dataset.email === 'no';
+            
+            let show = true;
+            
+            if (searchTerm && !name.includes(searchTerm)) show = false;
+            if (category && rowCategory !== category) show = false;
+            if (priceActive && !hasPrice) show = false;
+            if (missingActive && !hasMissing) show = false;
+            
+            row.style.display = show ? '' : 'none';
+        });
+    }
+    
+    searchBox.addEventListener('input', filterCustomers);
+    categoryFilter.addEventListener('change', filterCustomers);
+    
+    filterPrice.addEventListener('click', () => {
+        const isActive = filterPrice.dataset.active === 'true';
+        filterPrice.dataset.active = !isActive;
+        filterPrice.classList.toggle('bg-primary/10', !isActive);
+        filterPrice.classList.toggle('text-primary', !isActive);
+        filterPrice.classList.toggle('border-primary', !isActive);
+        filterCustomers();
+    });
+    
+    filterMissing.addEventListener('click', () => {
+        const isActive = filterMissing.dataset.active === 'true';
+        filterMissing.dataset.active = !isActive;
+        filterMissing.classList.toggle('bg-amber-50', !isActive);
+        filterMissing.classList.toggle('text-amber-700', !isActive);
+        filterMissing.classList.toggle('border-amber-300', !isActive);
+        filterCustomers();
+    });
+    
+    // Bulk selection
+    const selectAll = document.getElementById('selectAll');
+    const bulkBar = document.getElementById('bulkBar');
+    const bulkCount = document.getElementById('bulkCount');
+    
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            document.querySelectorAll('.customer-checkbox').forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+            updateBulkBar();
+        });
+    }
+    
+    document.querySelectorAll('.customer-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+    });
+    
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.customer-checkbox:checked').length;
+        if (checked > 0) {
+            bulkBar.classList.remove('hidden');
+            bulkBar.classList.add('flex');
+            bulkCount.textContent = checked + ' selected';
+        } else {
+            bulkBar.classList.add('hidden');
+            bulkBar.classList.remove('flex');
+        }
+    }
+    
+    function clearSelection() {
+        document.querySelectorAll('.customer-checkbox').forEach(cb => cb.checked = false);
+        if (selectAll) selectAll.checked = false;
+        updateBulkBar();
+    }
+    
+    // Modal functions
+    function openCustomerModal() {
+        document.getElementById('customerModal').classList.remove('hidden');
+        document.getElementById('customerModal').classList.add('flex');
+        document.getElementById('modalTitle').textContent = 'Add Customer';
+        document.getElementById('customerForm').reset();
+        document.getElementById('customerId').value = '';
+    }
+    
+    function closeCustomerModal() {
+        document.getElementById('customerModal').classList.add('hidden');
+        document.getElementById('customerModal').classList.remove('flex');
+    }
+    
+    function editCustomer(id, name, email, phone, address, categoryId) {
+        document.getElementById('customerModal').classList.remove('hidden');
+        document.getElementById('customerModal').classList.add('flex');
+        document.getElementById('modalTitle').textContent = 'Edit Customer';
+        document.getElementById('customerId').value = id;
+        document.getElementById('customerName').value = name;
+        document.getElementById('customerEmail').value = email;
+        document.getElementById('customerPhone').value = phone;
+        document.getElementById('customerAddress').value = address;
+        document.getElementById('customerCategory').value = categoryId;
+    }
+    
+    function viewCustomer(id) {
+        window.location.href = `/price-lists?customer_id=${id}`;
+    }
+    
+    function confirmDelete(id, name) {
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.getElementById('deleteModal').classList.add('flex');
+        document.getElementById('deleteCustomerName').textContent = name;
+        document.getElementById('deleteForm').action = `/customers/${id}/delete`;
+    }
+    
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        document.getElementById('deleteModal').classList.remove('flex');
+    }
+    
+    // Mobile menu toggle
+    function toggleMobileMenu(button) {
+        const menu = button.nextElementSibling;
+        document.querySelectorAll('.mobile-menu').forEach(m => {
+            if (m !== menu) m.classList.add('hidden');
+        });
+        menu.classList.toggle('hidden');
+    }
+    
+    // Close mobile menus when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.relative')) {
+            document.querySelectorAll('.mobile-menu').forEach(m => m.classList.add('hidden'));
+        }
+    });
+    
+    // Close modals on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeCustomerModal();
+            closeDeleteModal();
+        }
+    });
+    
+    // Close modals on backdrop click
+    document.getElementById('customerModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeCustomerModal();
+    });
+    document.getElementById('deleteModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeDeleteModal();
+    });
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@ from datetime import datetime, date
 import json
 
 from app import db
-from models import Customer, Product, Order, OrderItem, PriceList, PriceListItem, OrderStatus
+from models import Customer, Product, Order, OrderItem, PriceList, PriceListItem, OrderStatus, ORDER_STATUS_COLORS
 from utils.translations import translate_to_language
 from utils.pdf_generator import generate_delivery_note_pdf
 
@@ -36,12 +36,13 @@ def index():
     today = date.today()
     today_deliveries = Order.query.filter(Order.delivery_date == today).all()
     
-    return render_template('orders/index.html', 
+    return render_template('orders/index_new.html', 
                            orders=orders,
                            status_counts=status_counts,
                            customers=customers,
                            today_deliveries=today_deliveries,
-                           OrderStatus=OrderStatus)
+                           OrderStatus=OrderStatus,
+                           ORDER_STATUS_COLORS=ORDER_STATUS_COLORS)
 
 @orders_bp.route('/new', methods=['GET', 'POST'])
 @login_required

@@ -511,7 +511,7 @@ def register_routes(app):
     def uploads():
         customers = Customer.query.order_by(Customer.name).all()
         recent_uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(10).all()
-        return render_template('uploads.html', customers=customers, recent_uploads=recent_uploads)
+        return render_template('uploads_new.html', customers=customers, recent_uploads=recent_uploads)
     
     @app.route('/upload/excel', methods=['POST'])
     @login_required
@@ -897,7 +897,7 @@ def register_routes(app):
                 flash('Invalid email address format. Please check and try again.', 'danger')
                 customers_list = Customer.query.all()
                 customer_categories = CustomerCategory.query.all()
-                return render_template('customers.html', 
+                return render_template('customers_new.html', 
                                      customers=customers_list, 
                                      customer_categories=customer_categories)
             
@@ -934,7 +934,7 @@ def register_routes(app):
         # GET request - display customers
         customers_list = Customer.query.order_by(Customer.name).all()
         customer_categories = CustomerCategory.query.order_by(CustomerCategory.name).all()
-        return render_template('customers.html', 
+        return render_template('customers_new.html', 
                              customers=customers_list, 
                              customer_categories=customer_categories)
     
@@ -1138,7 +1138,7 @@ def register_routes(app):
         
         # GET request - show products
         products_list = Product.query.all()
-        return render_template('products_apple.html', products=products_list)
+        return render_template('products_new.html', products=products_list)
     
     @app.route('/products/batch-delete', methods=['POST'])
     @login_required
@@ -1208,7 +1208,7 @@ def register_routes(app):
     @login_required
     def search():
         customers = Customer.query.order_by(Customer.name).all()
-        return render_template('search.html', customers=customers)
+        return render_template('search_new.html', customers=customers)
     
     @app.route('/api/search', methods=['GET'])
     @login_required
@@ -1887,7 +1887,7 @@ def register_routes(app):
         # Get all customers for filter dropdown
         customers = Customer.query.order_by(Customer.name).all()
         
-        return render_template('pending_updates.html', 
+        return render_template('pending_updates_new.html', 
                               updates=updates,
                               customers=customers,
                               pagination=pagination,
@@ -3642,7 +3642,7 @@ def register_routes(app):
         external_count = total_count - inhouse_count
         
         return render_template(
-            'suppliers.html', 
+            'suppliers_new.html', 
             suppliers=suppliers_list,
             search_query=search_query,
             supplier_type=supplier_type,
@@ -4389,7 +4389,7 @@ def register_routes(app):
             db.session.add(company)
             db.session.commit()
             
-        return render_template('company_settings.html', company=company)
+        return render_template('company_settings_new.html', company=company)
         
     @app.route('/save_company_settings', methods=['POST'])
     @login_required

@@ -1,0 +1,454 @@
+{% extends 'side_layout.html' %}
+
+{% block title %}Products - Plant Pricing System{% endblock %}
+
+{% block header_left %}
+<div class="flex flex-col">
+    <h1 class="text-xl font-bold text-slate-900">Products</h1>
+    <p class="text-sm text-slate-500">{{ products|length }} total products</p>
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<button onclick="openProductModal()" class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+    <span class="material-symbols-outlined text-[20px]">add</span>
+    <span class="hidden sm:inline">New Product</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filters Bar -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="flex flex-col lg:flex-row gap-4">
+            <!-- Search -->
+            <div class="flex-1 relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+                <input type="text" id="searchBox" placeholder="Search products by name, SKU, or scientific name..." 
+                       class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+            </div>
+            
+            <!-- Category Filter -->
+            <div class="w-full lg:w-48">
+                <select id="categoryFilter" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="">All Categories</option>
+                    {% set categories = products|map(attribute='category')|select|unique|sort %}
+                    {% for category in categories %}
+                    {% if category %}
+                    <option value="{{ category }}">{{ category }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Batch Actions -->
+            <button id="batchDeleteBtn" disabled 
+                    class="flex items-center gap-2 px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+                Delete Selected
+            </button>
+        </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="hidden lg:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="w-12 px-4 py-3">
+                            <input type="checkbox" id="selectAll" class="rounded border-slate-300 text-primary focus:ring-primary/20">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">SKU</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Details</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="productTableBody">
+                    {% for product in products %}
+                    <tr class="product-row hover:bg-slate-50/50 transition-colors"
+                        data-id="{{ product.id }}"
+                        data-name="{{ product.name|lower }}"
+                        data-sku="{{ (product.sku or '')|lower }}"
+                        data-scientific="{{ (product.scientific_name or '')|lower }}"
+                        data-category="{{ product.category or '' }}">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" class="product-checkbox rounded border-slate-300 text-primary focus:ring-primary/20" value="{{ product.id }}">
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-500">{{ product.id }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700 text-xs font-mono rounded">
+                                {{ product.sku or '—' }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="font-medium text-slate-900">{{ product.name }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if product.scientific_name %}
+                            <div class="text-sm text-slate-600 italic">{{ product.scientific_name }}</div>
+                            {% endif %}
+                            {% if product.pot %}
+                            <span class="inline-flex items-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded mt-1">
+                                {{ product.pot }}
+                            </span>
+                            {% endif %}
+                            {% if not product.scientific_name and product.description %}
+                            <div class="text-sm text-slate-500 truncate max-w-xs">{{ product.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if product.category %}
+                            <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full">
+                                {{ product.category }}
+                            </span>
+                            {% else %}
+                            <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <button onclick="editProduct({{ product.id }}, '{{ product.name|e }}', '{{ product.sku or '' }}', '{{ product.description or ''|e }}', '{{ product.category or '' }}', '{{ product.scientific_name or '' }}', '{{ product.pot or '' }}')" 
+                                        class="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                                </button>
+                                <button onclick="confirmDelete({{ product.id }}, '{{ product.name|e }}')" 
+                                        class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not products %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-[64px] text-slate-300 mb-4">inventory_2</span>
+            <h3 class="text-lg font-semibold text-slate-900 mb-2">No Products Yet</h3>
+            <p class="text-slate-500 mb-4">Add products manually or upload a price list</p>
+            <div class="flex justify-center gap-3">
+                <button onclick="openProductModal()" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                    Add Product
+                </button>
+                <a href="{{ url_for('uploads') }}" class="inline-flex items-center gap-2 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">upload_file</span>
+                    Upload Price List
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="lg:hidden space-y-3" id="productCardList">
+        {% for product in products %}
+        <div class="product-row bg-white rounded-xl border border-slate-200 shadow-sm p-4"
+             data-name="{{ product.name|lower }}"
+             data-sku="{{ (product.sku or '')|lower }}"
+             data-scientific="{{ (product.scientific_name or '')|lower }}"
+             data-category="{{ product.category or '' }}">
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <div>
+                    <h3 class="font-semibold text-slate-900">{{ product.name }}</h3>
+                    {% if product.scientific_name %}
+                    <p class="text-sm text-slate-500 italic">{{ product.scientific_name }}</p>
+                    {% endif %}
+                </div>
+                <div class="relative">
+                    <button onclick="toggleMobileMenu(this)" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                        <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                    <div class="mobile-menu hidden absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                        <button onclick="editProduct({{ product.id }}, '{{ product.name|e }}', '{{ product.sku or '' }}', '{{ product.description or ''|e }}', '{{ product.category or '' }}', '{{ product.scientific_name or '' }}', '{{ product.pot or '' }}')" 
+                                class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                            Edit
+                        </button>
+                        <button onclick="confirmDelete({{ product.id }}, '{{ product.name|e }}')" 
+                                class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% if product.sku %}
+                <span class="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700 text-xs font-mono rounded">
+                    {{ product.sku }}
+                </span>
+                {% endif %}
+                {% if product.pot %}
+                <span class="inline-flex items-center px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
+                    {{ product.pot }}
+                </span>
+                {% endif %}
+                {% if product.category %}
+                <span class="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded">
+                    {{ product.category }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not products %}
+        <div class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <span class="material-symbols-outlined text-[64px] text-slate-300 mb-4">inventory_2</span>
+            <h3 class="text-lg font-semibold text-slate-900 mb-2">No Products Yet</h3>
+            <p class="text-slate-500 mb-4">Add products manually or upload a price list</p>
+            <button onclick="openProductModal()" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Add Product
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Product Modal -->
+<div id="productModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-primary text-white">
+            <h3 id="modalTitle" class="text-lg font-semibold">Add Product</h3>
+            <button onclick="closeProductModal()" class="text-white/80 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[24px]">close</span>
+            </button>
+        </div>
+        <form id="productForm" action="{{ url_for('products') }}" method="post" class="p-6 space-y-4 overflow-y-auto">
+            <input type="hidden" name="product_id" id="productId">
+            
+            <div>
+                <label for="productName" class="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+                <input type="text" id="productName" name="name" required 
+                       class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="productCategory" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                    <input type="text" id="productCategory" name="category" 
+                           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+                <div>
+                    <label for="productSku" class="block text-sm font-medium text-slate-700 mb-1">SKU</label>
+                    <input type="text" id="productSku" name="sku" 
+                           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="productScientific" class="block text-sm font-medium text-slate-700 mb-1">Scientific Name</label>
+                    <input type="text" id="productScientific" name="scientific_name" 
+                           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+                <div>
+                    <label for="productPot" class="block text-sm font-medium text-slate-700 mb-1">Actual Size</label>
+                    <input type="text" id="productPot" name="pot" placeholder="e.g. 2L, 5L"
+                           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+            </div>
+            
+            <div>
+                <label for="productDescription" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea id="productDescription" name="description" rows="2" 
+                          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+            </div>
+            
+            <div class="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="button" onclick="closeProductModal()" 
+                        class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                    Save Product
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                <span class="material-symbols-outlined text-[28px]">warning</span>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Delete Product</h3>
+                <p class="text-sm text-slate-500">This action cannot be undone</p>
+            </div>
+        </div>
+        <p class="text-slate-600 mb-6">Are you sure you want to delete <strong id="deleteProductName"></strong>? All associated price list entries will also be deleted.</p>
+        <div class="flex gap-3">
+            <button onclick="closeDeleteModal()" 
+                    class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                Cancel
+            </button>
+            <form id="deleteForm" method="post" class="flex-1">
+                <button type="submit" 
+                        class="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Search and Filter functionality
+    const searchBox = document.getElementById('searchBox');
+    const categoryFilter = document.getElementById('categoryFilter');
+    
+    function filterProducts() {
+        const searchTerm = searchBox.value.toLowerCase();
+        const category = categoryFilter.value;
+        
+        document.querySelectorAll('.product-row').forEach(row => {
+            const name = row.dataset.name || '';
+            const sku = row.dataset.sku || '';
+            const scientific = row.dataset.scientific || '';
+            const rowCategory = row.dataset.category || '';
+            
+            let show = true;
+            
+            if (searchTerm && !name.includes(searchTerm) && !sku.includes(searchTerm) && !scientific.includes(searchTerm)) {
+                show = false;
+            }
+            if (category && rowCategory !== category) show = false;
+            
+            row.style.display = show ? '' : 'none';
+        });
+    }
+    
+    searchBox.addEventListener('input', filterProducts);
+    categoryFilter.addEventListener('change', filterProducts);
+    
+    // Batch selection
+    const selectAll = document.getElementById('selectAll');
+    const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+    
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            document.querySelectorAll('.product-checkbox').forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+            updateBatchButton();
+        });
+    }
+    
+    document.querySelectorAll('.product-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBatchButton);
+    });
+    
+    function updateBatchButton() {
+        const checked = document.querySelectorAll('.product-checkbox:checked').length;
+        batchDeleteBtn.disabled = checked === 0;
+        batchDeleteBtn.textContent = checked > 0 ? `Delete Selected (${checked})` : 'Delete Selected';
+    }
+    
+    batchDeleteBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to delete the selected products? This cannot be undone.')) return;
+        
+        const ids = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+        
+        try {
+            const response = await fetch('/products/batch-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_ids: ids })
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Error deleting products');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error deleting products');
+        }
+    });
+    
+    // Modal functions
+    function openProductModal() {
+        document.getElementById('productModal').classList.remove('hidden');
+        document.getElementById('productModal').classList.add('flex');
+        document.getElementById('modalTitle').textContent = 'Add Product';
+        document.getElementById('productForm').reset();
+        document.getElementById('productId').value = '';
+    }
+    
+    function closeProductModal() {
+        document.getElementById('productModal').classList.add('hidden');
+        document.getElementById('productModal').classList.remove('flex');
+    }
+    
+    function editProduct(id, name, sku, description, category, scientific, pot) {
+        document.getElementById('productModal').classList.remove('hidden');
+        document.getElementById('productModal').classList.add('flex');
+        document.getElementById('modalTitle').textContent = 'Edit Product';
+        document.getElementById('productId').value = id;
+        document.getElementById('productName').value = name;
+        document.getElementById('productSku').value = sku;
+        document.getElementById('productDescription').value = description;
+        document.getElementById('productCategory').value = category;
+        document.getElementById('productScientific').value = scientific;
+        document.getElementById('productPot').value = pot;
+    }
+    
+    function confirmDelete(id, name) {
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.getElementById('deleteModal').classList.add('flex');
+        document.getElementById('deleteProductName').textContent = name;
+        document.getElementById('deleteForm').action = `/products/${id}/delete`;
+    }
+    
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        document.getElementById('deleteModal').classList.remove('flex');
+    }
+    
+    // Mobile menu toggle
+    function toggleMobileMenu(button) {
+        const menu = button.nextElementSibling;
+        document.querySelectorAll('.mobile-menu').forEach(m => {
+            if (m !== menu) m.classList.add('hidden');
+        });
+        menu.classList.toggle('hidden');
+    }
+    
+    // Close modals on escape/backdrop
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeProductModal();
+            closeDeleteModal();
+        }
+    });
+    
+    document.getElementById('productModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeProductModal();
+    });
+    document.getElementById('deleteModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeDeleteModal();
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.relative')) {
+            document.querySelectorAll('.mobile-menu').forEach(m => m.classList.add('hidden'));
+        }
+    });
+</script>
+{% endblock %}
