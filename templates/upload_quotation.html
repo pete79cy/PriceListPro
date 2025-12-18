@@ -1,165 +1,198 @@
-{% extends "layout.html" %}
+{% extends "side_layout.html" %}
 
 {% block title %}Create Quotation{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <h1>Create New Quotation</h1>
-            <p class="text-muted">Upload a file to generate a quotation for your customer</p>
-        </div>
-        <div class="col-lg-4 text-end">
-            <a href="{{ url_for('quotations') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Back to Quotations
-            </a>
-        </div>
+{% block header_left %}
+<a href="{{ url_for('quotations') }}" class="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors">
+    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+    <span class="text-sm font-medium">Quotations</span>
+</a>
+<div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined text-white text-[22px]">upload_file</span>
     </div>
+    <div>
+        <h1 class="text-xl font-bold text-slate-900">Create New Quotation</h1>
+        <p class="text-sm text-slate-500">Upload a file or start manually</p>
+    </div>
+</div>
+{% endblock %}
 
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Upload File for Quotation</h5>
+{% block header_actions %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- Upload Options Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Excel Upload Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="bg-primary px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-white text-[24px]">table_view</span>
+                    <h3 class="font-semibold text-white">Upload Excel File</h3>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0">Upload Excel File</h6>
-                                </div>
-                                <div class="card-body">
-                                    <form action="{{ url_for('upload_quotation_file') }}" method="post" enctype="multipart/form-data">
-                                        <input type="hidden" name="file_type" value="excel">
-                                        <div class="mb-3">
-                                            <label for="excel-customer" class="form-label">Select Customer</label>
-                                            <select class="form-select" id="excel-customer" name="customer_id" required>
-                                                <option value="" selected disabled>Choose a customer</option>
-                                                {% for customer in customers %}
-                                                <option value="{{ customer.id }}">{{ customer.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="excel-file" class="form-label">Excel File</label>
-                                            <input class="form-control" type="file" id="excel-file" name="file" accept=".xlsx,.xls" required>
-                                            <div class="form-text">Upload an Excel file with product information.</div>
-                                        </div>
-                                        <div class="d-grid">
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="fas fa-upload me-2"></i> Upload Excel
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div class="card-footer bg-light">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i> Download our Excel template for quotations:
-                                        <a href="{{ url_for('download_template', type='quotation') }}" class="link-primary">Download quotation template</a>.
-                                    </small>
-                                </div>
-                            </div>
+            </div>
+            <div class="p-5 flex-1 flex flex-col">
+                <form action="{{ url_for('upload_quotation_file') }}" method="post" enctype="multipart/form-data" class="flex-1 flex flex-col">
+                    <input type="hidden" name="file_type" value="excel">
+                    
+                    <div class="space-y-4 flex-1">
+                        <div>
+                            <label for="excel-customer" class="block text-sm font-medium text-slate-700 mb-2">Select Customer</label>
+                            <select id="excel-customer" name="customer_id" required
+                                    class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+                                <option value="" selected disabled>Choose a customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         
-                        <div class="col-lg-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0">Upload PDF File</h6>
-                                </div>
-                                <div class="card-body">
-                                    <form action="{{ url_for('upload_quotation_file') }}" method="post" enctype="multipart/form-data">
-                                        <input type="hidden" name="file_type" value="pdf">
-                                        <div class="mb-3">
-                                            <label for="pdf-customer" class="form-label">Select Customer</label>
-                                            <select class="form-select" id="pdf-customer" name="customer_id" required>
-                                                <option value="" selected disabled>Choose a customer</option>
-                                                {% for customer in customers %}
-                                                <option value="{{ customer.id }}">{{ customer.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="pdf-file" class="form-label">PDF File</label>
-                                            <input class="form-control" type="file" id="pdf-file" name="file" accept=".pdf" required>
-                                            <div class="form-text">Upload a PDF file with product information.</div>
-                                        </div>
-                                        <div class="d-grid">
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="fas fa-upload me-2"></i> Upload PDF
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div class="card-footer bg-light">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i> The system will attempt to extract product information from the PDF.
-                                    </small>
-                                </div>
+                        <div>
+                            <label for="excel-file" class="block text-sm font-medium text-slate-700 mb-2">Excel File</label>
+                            <div class="relative">
+                                <input type="file" id="excel-file" name="file" accept=".xlsx,.xls" required
+                                       class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
                             </div>
-                        </div>
-                        
-                        <div class="col-lg-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-success text-white">
-                                    <h6 class="mb-0">Create Manual Quotation</h6>
-                                </div>
-                                <div class="card-body d-flex flex-column">
-                                    <div class="mb-3">
-                                        <i class="fas fa-plus-circle fa-3x text-success mb-3"></i>
-                                        <p class="mb-3">Start from scratch without uploading any files. Perfect for custom quotes or when you want complete control.</p>
-                                    </div>
-                                    <div class="mt-auto">
-                                        <div class="d-grid">
-                                            <a href="{{ url_for('create_manual_quotation') }}" class="btn btn-success">
-                                                <i class="fas fa-plus-circle me-2"></i> Create Manual Quotation
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-footer bg-light">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i> You'll be able to add items manually after creating the quotation.
-                                    </small>
-                                </div>
-                            </div>
+                            <p class="text-xs text-slate-500 mt-1.5">Accepted formats: .xlsx, .xls</p>
                         </div>
                     </div>
+                    
+                    <button type="submit" class="w-full mt-4 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">upload</span>
+                        Upload Excel
+                    </button>
+                </form>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-100">
+                <p class="text-xs text-slate-600">
+                    <span class="material-symbols-outlined text-[14px] align-middle mr-1">download</span>
+                    <a href="{{ url_for('download_template', type='quotation') }}" class="text-primary hover:underline">Download quotation template</a>
+                </p>
+            </div>
+        </div>
+        
+        <!-- PDF Upload Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="bg-amber-500 px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-white text-[24px]">picture_as_pdf</span>
+                    <h3 class="font-semibold text-white">Upload PDF File</h3>
                 </div>
+            </div>
+            <div class="p-5 flex-1 flex flex-col">
+                <form action="{{ url_for('upload_quotation_file') }}" method="post" enctype="multipart/form-data" class="flex-1 flex flex-col">
+                    <input type="hidden" name="file_type" value="pdf">
+                    
+                    <div class="space-y-4 flex-1">
+                        <div>
+                            <label for="pdf-customer" class="block text-sm font-medium text-slate-700 mb-2">Select Customer</label>
+                            <select id="pdf-customer" name="customer_id" required
+                                    class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+                                <option value="" selected disabled>Choose a customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="pdf-file" class="block text-sm font-medium text-slate-700 mb-2">PDF File</label>
+                            <div class="relative">
+                                <input type="file" id="pdf-file" name="file" accept=".pdf" required
+                                       class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-amber-500/10 file:text-amber-600 hover:file:bg-amber-500/20">
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1.5">Accepted format: .pdf</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full mt-4 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">upload</span>
+                        Upload PDF
+                    </button>
+                </form>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-100">
+                <p class="text-xs text-slate-600">
+                    <span class="material-symbols-outlined text-[14px] align-middle mr-1">info</span>
+                    System will extract product info from PDF
+                </p>
+            </div>
+        </div>
+        
+        <!-- Manual Creation Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="bg-emerald-500 px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-white text-[24px]">edit_note</span>
+                    <h3 class="font-semibold text-white">Create Manual Quotation</h3>
+                </div>
+            </div>
+            <div class="p-5 flex-1 flex flex-col">
+                <div class="flex-1">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-emerald-600 text-[32px]">add_circle</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600 text-center mb-4">
+                        Start from scratch without uploading any files. Perfect for custom quotes or when you want complete control.
+                    </p>
+                </div>
+                
+                <a href="{{ url_for('create_manual_quotation') }}" class="w-full mt-4 px-4 py-2.5 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                    Create Manual Quotation
+                </a>
+            </div>
+            <div class="px-5 py-3 bg-slate-50 border-t border-slate-100">
+                <p class="text-xs text-slate-600">
+                    <span class="material-symbols-outlined text-[14px] align-middle mr-1">info</span>
+                    Add items manually after creating
+                </p>
             </div>
         </div>
     </div>
-
-    <div class="row mt-4">
-        <div class="col-lg-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">How Quotations Work</h5>
+    
+    <!-- How It Works Section -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary text-[22px]">help_outline</span>
+                <h3 class="font-semibold text-slate-900">How Quotations Work</h3>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">1</span>
+                        Creating a Quotation
+                    </h4>
+                    <ol class="text-sm text-slate-600 space-y-2 ml-8 list-decimal">
+                        <li>Upload an Excel file or PDF containing the products your customer has requested</li>
+                        <li>The system will parse the file and extract product information</li>
+                        <li>Products will be matched with your product catalog when possible</li>
+                        <li>For each product, the system will check if it exists in the customer's price list</li>
+                        <li>If found, pricing information will be auto-populated</li>
+                        <li>You'll be able to review and edit all details before finalizing</li>
+                    </ol>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Creating a Quotation:</h6>
-                            <ol class="small">
-                                <li>Upload an Excel file or PDF containing the products your customer has requested</li>
-                                <li>The system will parse the file and extract product information</li>
-                                <li>Products will be matched with your product catalog when possible</li>
-                                <li>For each product, the system will check if it exists in the customer's price list</li>
-                                <li>If found, pricing information will be auto-populated</li>
-                                <li>You'll be able to review and edit all details before finalizing</li>
-                            </ol>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Editing and Finalizing:</h6>
-                            <ol class="small">
-                                <li>After upload, you'll be presented with an editable interface</li>
-                                <li>You can adjust selling prices, VAT rates, suppliers, and cost prices</li>
-                                <li>For each product, you can specify if it's sourced from a supplier or produced in-house</li>
-                                <li>Once finalized, you can generate a PDF quotation to send to your customer</li>
-                                <li>You can also create supplier-specific order reports by grouping products by supplier</li>
-                            </ol>
-                        </div>
-                    </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">2</span>
+                        Editing and Finalizing
+                    </h4>
+                    <ol class="text-sm text-slate-600 space-y-2 ml-8 list-decimal">
+                        <li>After upload, you'll be presented with an editable interface</li>
+                        <li>You can adjust selling prices, VAT rates, suppliers, and cost prices</li>
+                        <li>For each product, you can specify if it's sourced from a supplier or produced in-house</li>
+                        <li>Once finalized, you can generate a PDF quotation to send to your customer</li>
+                        <li>You can also create supplier-specific order reports by grouping products by supplier</li>
+                    </ol>
                 </div>
             </div>
         </div>
