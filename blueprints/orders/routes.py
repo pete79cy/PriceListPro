@@ -149,7 +149,7 @@ def index():
     products = Product.query.order_by(Product.name).all()
     
     return render_template(
-        'orders/index.html',
+        'orders/index_new.html',
         orders=orders_list,
         today_deliveries=today_deliveries,
         status_counts=status_counts,
