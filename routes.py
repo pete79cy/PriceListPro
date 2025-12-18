@@ -316,12 +316,17 @@ def register_routes(app):
                 # Log error but continue with default values
                 logger.error(f"Error getting quotation status counts: {str(e)}")
             
-            # Use the Apple-style dashboard template
-            return render_template('apple_dashboard.html', 
+            # Get recent quotations for the dashboard
+            recent_quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(5).all()
+            
+            # Use the new modern dashboard template
+            return render_template('dashboard_new.html', 
                                   stats=stats,
                                   card_classes=card_classes,
                                   pending_update_count=pending_update_count,
-                                  recent_activities=recent_activities)
+                                  recent_activities=recent_activities,
+                                  recent_quotations=recent_quotations,
+                                  now=datetime.now())
         # Otherwise show the login page
         return render_template('index.html')
         
