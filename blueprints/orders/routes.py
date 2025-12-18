@@ -177,7 +177,7 @@ def new_order():
             flash('Please select a valid customer', 'danger')
             form = EnhancedOrderForm()
             customers = Customer.query.order_by(Customer.name).all()
-            return render_template('orders/enhanced_order_form.html', 
+            return render_template('orders/enhanced_order_form_new.html', 
                                  form=form, 
                                  order=None,
                                  status_choices=[],
@@ -253,7 +253,7 @@ def new_order():
     # GET request - display the enhanced form
     form = EnhancedOrderForm()
     customers = Customer.query.order_by(Customer.name).all()
-    return render_template('orders/enhanced_order_form.html', 
+    return render_template('orders/enhanced_order_form_new.html', 
                          form=form, 
                          order=None,
                          status_choices=[],
@@ -440,7 +440,7 @@ def edit_order(order_id):
     for status_value in ORDER_STATUS_TRANSITIONS.get(order.status, []):
         status_choices.append((status_value, ORDER_STATUS_LABELS.get(status_value, status_value)))
     
-    return render_template('orders/enhanced_order_form.html', 
+    return render_template('orders/enhanced_order_form_new.html', 
                          form=form, 
                          order=order,
                          status_choices=status_choices,
