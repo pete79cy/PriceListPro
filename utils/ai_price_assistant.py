@@ -381,7 +381,7 @@ Last public price from competitors, marketplaces, or catalogues: {market_str}
                 return "Error: OpenAI client not initialized"
                 
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5",
                 messages=[
                     {"role": "system", "content": prompt}
                 ],
