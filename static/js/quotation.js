@@ -413,18 +413,39 @@ function getPriceSuggestion(scientificNameId, potSizeId, sellingPriceId, costPri
                 // Update the price field
                 document.getElementById(sellingPriceId).value = data.suggested_price.toFixed(2);
                 
-                // Show AI rationale if available
-                if (data.rationale) {
-                    showToast('AI Suggestion: €' + data.suggested_price.toFixed(2) + ' - ' + data.rationale, "success");
+                // Detect if using Tier 1 (customer data) or Tier 2 (global fallback)
+                const rationale = data.rationale || '';
+                const isGlobalFallback = rationale.toUpperCase().includes('NO CUSTOMER HISTORY') || 
+                                         rationale.toUpperCase().includes('GLOBAL') ||
+                                         rationale.toUpperCase().includes('FALLBACK');
+                
+                // Build enhanced toast message with tier indicator
+                let tierBadge = '';
+                let toastType = 'success';
+                let borderColor = '#28a745'; // Green for customer data
+                let shadowColor = 'rgba(40, 167, 69, 0.25)';
+                
+                if (isGlobalFallback) {
+                    tierBadge = '⚠️ [Global Fallback] ';
+                    toastType = 'warning';
+                    borderColor = '#ffc107'; // Yellow for global fallback
+                    shadowColor = 'rgba(255, 193, 7, 0.25)';
                 } else {
-                    showToast('AI Price suggestion: €' + data.suggested_price.toFixed(2) + ' (based on ' + data.source + ')', "success");
+                    tierBadge = '✓ [Customer History] ';
+                }
+                
+                // Show AI rationale with tier badge
+                if (rationale) {
+                    showToast(tierBadge + '€' + data.suggested_price.toFixed(2) + ' - ' + rationale, toastType);
+                } else {
+                    showToast(tierBadge + '€' + data.suggested_price.toFixed(2) + ' (based on ' + data.source + ')', toastType);
                 }
                 
                 // Add visual indicator that this is an AI suggestion
                 const priceField = document.getElementById(sellingPriceId);
                 if (priceField) {
-                    priceField.style.borderColor = '#28a745';
-                    priceField.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
+                    priceField.style.borderColor = borderColor;
+                    priceField.style.boxShadow = '0 0 0 0.2rem ' + shadowColor;
                     
                     // Remove the visual indicator after 3 seconds
                     setTimeout(() => {
