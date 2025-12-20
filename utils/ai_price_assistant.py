@@ -313,13 +313,29 @@ class AIPriceAssistant:
     def _build_pricing_prompt(self, context):
         """Build the AI prompt for pricing analysis"""
         
-        # Format historical pricing
-        historical_str = ""
+        # Format customer-specific history (Tier 1)
+        customer_history_str = ""
         if context["historical_pricing"]:
-            for item in context["historical_pricing"][:5]:  # Limit to 5 most recent
-                historical_str += f"• Date: {item['date']} | Customer: {item['customer']} | Qty: {item['quantity']} | Sold @ €{item['unit_price']:.2f}\n"
+            customer_items = [item for item in context["historical_pricing"] if item.get('is_same_customer')]
+            if customer_items:
+                for item in customer_items[:5]:
+                    customer_history_str += f"  Date: {item['date']} | Qty: {item['quantity']} | Price: €{item['unit_price']:.2f}\n"
+            else:
+                customer_history_str = "  None"
         else:
-            historical_str = "No historical pricing data available.\n"
+            customer_history_str = "  None"
+        
+        # Format global history (Tier 2 - other customers)
+        global_history_str = ""
+        if context["historical_pricing"]:
+            global_items = [item for item in context["historical_pricing"] if not item.get('is_same_customer')]
+            if global_items:
+                for item in global_items[:5]:
+                    global_history_str += f"  Date: {item['date']} | Qty: {item['quantity']} | Price: €{item['unit_price']:.2f}\n"
+            else:
+                global_history_str = "  None"
+        else:
+            global_history_str = "  None"
         
         # Format price list
         price_list_str = "None"
@@ -327,50 +343,43 @@ class AIPriceAssistant:
             price_list_str = f"€{context['price_list']['price']:.2f} (last updated {context['price_list']['updated_at']})"
         
         # Format market data
-        market_str = "n/a"
+        market_avg_str = "n/a"
         if context["market_data"]:
-            market_str = f"€{context['market_data']['average_market_price']:.2f} (avg from {context['market_data']['sample_size']} transactions)"
+            market_avg_str = f"{context['market_data']['average_market_price']:.2f}"
         
-        prompt = f"""You are a pricing assistant for a wholesale plant nursery.
+        prompt = f"""You are an expert Wholesale Pricing Analyst. Determine the unit price (Ex-VAT) for a specific inquiry.
 
-=== Context ===
-• Business currency: EUR  
-• Default VAT rate: 19% (unless an item has a specific VAT override)  
-• Minimum target margin: 25% over cost (unless the customer's history allows lower)
+=== 1. PRICING LOGIC & HIERARCHY ===
+1. **PRIORITY - CUSTOMER DATA:** - Check "Customer Price List" and "Customer Past Transactions" first.
+   - If valid data exists here, use it to ensure consistency with their history.
+   
+2. **FALLBACK - GLOBAL DATA:**
+   - ONLY if the customer has NO price list and NO past transactions for this product, look at "Global Sales History" (sales to other people) or "Market Data".
+   - **CRITICAL REQUIREMENT:** If you use this fallback, your rationale MUST explicitly state that this is a generic price because no customer history exists.
 
-=== Customer ===
-ID: {context['customer']['id']}
-Name: {context['customer']['name']}
-Segment: {context['customer']['segment']}
-Annual spend: €{context['customer']['lifetime_value']}
-Credit terms: {context['customer']['credit_terms']}
+3. **MARGIN FLOOR:** Ensure price > Cost + 25% (unless Customer Segment = "VIP", then Cost + 15%).
 
-=== Product ===
-ID: {context['product']['id']}
-Plant / SKU: {context['product']['name']}
-Pot / Size: {context['product']['size']}
-Cost basis: €{context['product']['cost_price']:.2f} per unit
-Stock on hand: {context['product']['stock_qty']}
+=== 2. INPUT DATA ===
 
-=== Historical Pricing (most recent first) ===
-{historical_str}
+--- CONTEXT ---
+• Customer: {context['customer']['name']} (ID: {context['customer']['id']}) | Segment: {context['customer']['segment']}
+• Product: {context['product']['name']} | Cost: €{context['product']['cost_price']:.2f} | Stock: {context['product']['stock_qty']}
+• Inquired Qty: 1
 
-=== Customer-specific Price List ===
-{price_list_str}
+--- TIER 1: CUSTOMER SPECIFIC DATA ---
+• Contract Price List: {price_list_str}
+• Customer Past Transactions (This Product):
+{customer_history_str}
 
-=== Market Data ===
-Last public price from competitors, marketplaces, or catalogues: {market_str}
+--- TIER 2: GLOBAL DATA (FALLBACK) ---
+• Global Sales History (Other Customers):
+{global_history_str}
+• Market Competitor Avg: €{market_avg_str}
 
-=== Task ===
-1. Propose a **recommended unit price** for this product for the customer above.  
-2. Give a **one-sentence rationale** that references at least one of:  
-   • recent transactions with this customer  
-   • prevailing market price  
-   • target margin vs. cost  
-   • stock considerations.  
-3. Output **ONLY** in this JSON schema (no extra keys, no markdown):
+=== 3. OUTPUT FORMAT ===
+Return ONLY valid JSON. No markdown.
 
-{{"recommended_price": 0.00, "rationale": ""}}"""
+{{"recommended_price": 0.00, "rationale": "If Tier 1 data used: 'Matches their last purchase in Oct.' || If Tier 2 used: 'NO CUSTOMER HISTORY: Price derived from global sales average and margin targets.'"}}"""
         
         return prompt
     
