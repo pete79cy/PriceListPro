@@ -10,59 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup AJAX form submission for edit item form
     setupAjaxFormSubmission();
     
-    var editButtons = document.querySelectorAll('.edit-item-btn');
-    editButtons.forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var description = this.getAttribute('data-description');
-            var scientificName = this.getAttribute('data-scientific-name');
-            var potSize = this.getAttribute('data-pot-size');
-            var height = this.getAttribute('data-height');
-            var quantity = this.getAttribute('data-quantity');
-            var sellingPrice = this.getAttribute('data-selling-price');
-            var vatRate = this.getAttribute('data-vat-rate');
-            var supplier = this.getAttribute('data-supplier');
-            var costPrice = this.getAttribute('data-cost-price');
-            var supplierId = this.getAttribute('data-supplier-id');
-            
-            // Store the item ID for later use (highlighting)
-            document.getElementById('editItemForm').setAttribute('data-item-id', id);
-            
-            // Set form action URL
-            var quotationId = document.getElementById('quotation-id').value;
-            document.getElementById('editItemForm').action = "/quotation/" + quotationId + "/item/" + id;
-            
-            // Fill the form fields with the item data
-            document.getElementById('edit_description').value = description;
-            document.getElementById('edit_scientific_name').value = scientificName;
-            document.getElementById('edit_pot_size').value = potSize;
-            document.getElementById('edit_height').value = height;
-            document.getElementById('edit_quantity').value = quantity;
-            document.getElementById('edit_selling_price').value = sellingPrice;
-            document.getElementById('edit_vat_rate').value = vatRate;
-            document.getElementById('edit_supplier').value = supplier;
-            document.getElementById('edit_cost_price').value = costPrice;
-            
-            // Handle supplier selection
-            var supplierIdSelect = document.getElementById('edit_supplier_id');
-            if (supplierIdSelect) {
-                if (supplierId) {
-                    supplierIdSelect.value = supplierId;
-                } else {
-                    supplierIdSelect.value = "";
-                }
-                
-                // If supplier exists but not in dropdown, select "custom" option
-                if (supplier && !supplierId) {
-                    document.getElementById('edit_manual_supplier_container').classList.remove('d-none');
-                }
-            }
-            
-            // Show the modal
-            var editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
-            editModal.show();
-        });
-    });
+    // Note: Edit button click handlers are now managed in the template's inline JS
+    // using the Tailwind-based modal system (initEditItemButtons function)
 });
 
 // Setup AJAX form submission
@@ -74,16 +23,20 @@ function setupAjaxFormSubmission() {
             const itemId = this.getAttribute('data-item-id');
             const formData = new FormData(this);
             
-            // Show processing indicator
-            const submitBtn = document.querySelector('#editItemModal .btn-primary');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            submitBtn.disabled = true;
+            // Show processing indicator - find button by type=submit in the form
+            const submitBtn = editItemForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Saving...';
+                submitBtn.disabled = true;
+            }
             
             // Create a function to reset button state that we can call in multiple places
             const resetButton = function() {
-                submitBtn.innerHTML = originalBtnText;
-                submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
             };
             
             fetch(this.action, {
@@ -115,9 +68,14 @@ function setupAjaxFormSubmission() {
                     throw new Error(data?.error || 'Unknown server error');
                 }
                 
-                // Close the modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                modal.hide();
+                // Close the modal using the Tailwind modal system
+                if (typeof closeModal === 'function') {
+                    closeModal('editItemModal');
+                } else {
+                    // Fallback: hide the modal manually
+                    const modal = document.getElementById('editItemModal');
+                    if (modal) modal.classList.add('hidden');
+                }
                 
                 // Show success message
                 showToast(data.message || 'Item updated successfully!', 'success');
@@ -157,8 +115,12 @@ function setupAjaxFormSubmission() {
                 if (errorMessage.includes('parsing server response')) {
                     setTimeout(() => {
                         try {
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-                            if (modal) modal.hide();
+                            if (typeof closeModal === 'function') {
+                                closeModal('editItemModal');
+                            } else {
+                                const modal = document.getElementById('editItemModal');
+                                if (modal) modal.classList.add('hidden');
+                            }
                         } catch (e) {
                             console.error('Error closing modal:', e);
                         }
@@ -253,48 +215,71 @@ function updateQuotationTotal() {
     }
 }
 
-// Show toast notification
+// Show toast notification (Tailwind-compatible)
 function showToast(message, type) {
     // Create toast container if it doesn't exist
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
         toastContainer.id = 'toast-container';
-        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
         document.body.appendChild(toastContainer);
     }
     
-    // Create toast element
-    const toastId = 'toast-' + Date.now();
-    const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0';
-    toast.id = toastId;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
+    // Map type to Tailwind color classes
+    const typeStyles = {
+        'success': 'bg-emerald-500 text-white',
+        'danger': 'bg-red-500 text-white',
+        'warning': 'bg-amber-500 text-white',
+        'info': 'bg-blue-500 text-white',
+        'primary': 'bg-primary text-white'
+    };
+    const colorClass = typeStyles[type] || typeStyles['info'];
     
-    toast.innerHTML = '<div class="d-flex">' +
-                       '<div class="toast-body">' + message + '</div>' +
-                       '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
-                       '</div>';
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `${colorClass} px-4 py-3 rounded-lg shadow-lg flex items-center justify-between gap-3 min-w-[280px] transform transition-all duration-300 translate-x-full`;
+    toast.setAttribute('role', 'alert');
+    
+    toast.innerHTML = `
+        <span class="text-sm font-medium">${message}</span>
+        <button type="button" class="text-white/80 hover:text-white transition-colors" aria-label="Close">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+    `;
     
     toastContainer.appendChild(toast);
     
-    // Show the toast
-    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
-    bsToast.show();
-    
-    // Remove it after it's hidden
-    toast.addEventListener('hidden.bs.toast', function() {
-        toast.remove();
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-x-full');
+        toast.classList.add('translate-x-0');
     });
+    
+    // Close button handler
+    toast.querySelector('button').addEventListener('click', function() {
+        closeToast(toast);
+    });
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => closeToast(toast), 5000);
+    
+    function closeToast(toastEl) {
+        toastEl.classList.add('translate-x-full');
+        toastEl.classList.remove('translate-x-0');
+        setTimeout(() => toastEl.remove(), 300);
+    }
 }
 
 // Confirmation for deleting items
 function confirmDelete(deleteUrl) {
     document.getElementById('confirmDeleteBtn').href = deleteUrl;
-    var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    deleteModal.show();
+    if (typeof openModal === 'function') {
+        openModal('deleteConfirmModal');
+    } else {
+        const modal = document.getElementById('deleteConfirmModal');
+        if (modal) modal.classList.remove('hidden');
+    }
 }
 
 // Add AI price suggestion handlers

@@ -1009,7 +1009,9 @@ function initEditItemButtons() {
     document.querySelectorAll('.edit-item-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.dataset.id;
-            document.getElementById('editItemForm').action = `/quotation/item/${id}/edit`;
+            const form = document.getElementById('editItemForm');
+            form.action = `/quotation/{{ quotation.id }}/item/${id}`;
+            form.setAttribute('data-item-id', id);
             document.getElementById('edit_description').value = this.dataset.description || '';
             document.getElementById('edit_scientific_name').value = this.dataset.scientificName || '';
             document.getElementById('edit_pot_size').value = this.dataset.potSize || '';
