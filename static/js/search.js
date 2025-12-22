@@ -26,10 +26,14 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    // Show loading spinner
-    searchSpinner.classList.remove('d-none');
-    searchResults.classList.add('d-none');
-    noResults.classList.add('d-none');
+    // Hide initial state if present
+    const initialState = document.getElementById('initial-state');
+    if (initialState) initialState.classList.add('hidden');
+
+    // Show loading spinner (Tailwind uses 'hidden' class)
+    searchSpinner.classList.remove('hidden');
+    searchResults.classList.add('hidden');
+    noResults.classList.add('hidden');
 
     // Make AJAX request to search API
     fetch(`/api/search?q=${encodeURIComponent(query)}&customer_id=${customerId}`)
@@ -46,29 +50,29 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .then(data => {
         // Hide spinner
-        searchSpinner.classList.add('d-none');
+        searchSpinner.classList.add('hidden');
 
         if (data.results && data.results.length > 0) {
           // Show results
           renderSearchResults(data);
-          searchResults.classList.remove('d-none');
+          searchResults.classList.remove('hidden');
         } else {
           // Show no results message
-          noResults.classList.remove('d-none');
+          noResults.classList.remove('hidden');
         }
       })
       .catch(error => {
         console.error('Search error:', error);
-        searchSpinner.classList.add('d-none');
+        searchSpinner.classList.add('hidden');
 
-        // Show error message
+        // Show error message (Tailwind styled)
         resultsContainer.innerHTML = `
-          <div class="alert alert-danger">
-            <i class="fas fa-exclamation-triangle me-2"></i>
+          <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <span class="material-symbols-outlined text-red-500">error</span>
             An error occurred while searching. Please try again.
           </div>
         `;
-        searchResults.classList.remove('d-none');
+        searchResults.classList.remove('hidden');
       });
   }
 
@@ -84,16 +88,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const customerName = customerSelect.value ? customerSelect.options[customerSelect.selectedIndex].text : 'All Customers';
     const isGeneralSearch = !customerSelect.value;
 
-    // Create header
+    // Create header (Tailwind styled)
     let html = `
-      <div class="alert alert-success mb-4">
-        <i class="fas fa-check-circle me-2"></i>
+      <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg flex items-center gap-2 mb-6">
+        <span class="material-symbols-outlined text-emerald-500">check_circle</span>
         Found ${data.results.length} matching products${isGeneralSearch ? ' (general search)' : ' for <strong>' + customerName + '</strong>'}
       </div>
     `;
 
-    // Create cards for each result
-    html += '<div class="row">';
+    // Create cards for each result (Tailwind grid)
+    html += '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">';
 
     data.results.forEach(result => {
       // Handle pricing display for different search types
@@ -105,70 +109,60 @@ document.addEventListener('DOMContentLoaded', function() {
         }).format(result.current_price);
         
         priceDisplay = `
-          <div class="text-center mb-3">
-            <span class="display-6">${formattedPrice}</span>
-            <div class="text-muted small">${result.customer_specific ? 'Customer Price' : 'General Price'}</div>
-            ${result.price_note ? `<div class="text-info small">${result.price_note}</div>` : ''}
+          <div class="text-center py-4">
+            <span class="text-3xl font-bold text-slate-900">${formattedPrice}</span>
+            <div class="text-sm text-slate-500 mt-1">${result.customer_specific ? 'Customer Price' : 'General Price'}</div>
+            ${result.price_note ? `<div class="text-sm text-blue-600 mt-1">${result.price_note}</div>` : ''}
           </div>
         `;
       } else {
         priceDisplay = `
-          <div class="text-center mb-3">
-            <span class="text-muted">No Price Available</span>
-            <div class="text-muted small">Select a customer for pricing</div>
+          <div class="text-center py-4">
+            <span class="text-slate-400">No Price Available</span>
+            <div class="text-sm text-slate-400 mt-1">Select a customer for pricing</div>
           </div>
         `;
       }
 
       html += `
-        <div class="col-md-6 col-lg-4 mb-4">
-          <div class="card h-100">
-            <div class="card-header ${result.customer_specific ? 'bg-primary' : 'bg-secondary'} text-white">
-              <h5 class="mb-0">${result.product_name}</h5>
-            </div>
-            <div class="card-body">
-              ${result.sku ? `<p class="mb-2"><strong>SKU:</strong> ${result.sku}</p>` : ''}
-              ${result.description ? `<p class="mb-3"><strong>Description:</strong> ${result.description}</p>` : ''}
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col">
+          <div class="${result.customer_specific ? 'bg-primary' : 'bg-slate-500'} text-white px-4 py-3">
+            <h5 class="font-semibold text-sm">${result.product_name}</h5>
+          </div>
+          <div class="p-4 flex-1 flex flex-col">
+            ${result.sku ? `<p class="text-sm text-slate-600 mb-2"><span class="font-medium">SKU:</span> ${result.sku}</p>` : ''}
+            ${result.description ? `<p class="text-sm text-slate-600 mb-3"><span class="font-medium">Description:</span> ${result.description}</p>` : ''}
 
-              ${priceDisplay}
+            ${priceDisplay}
 
-              ${result.price_history && result.price_history.length > 1 ? `
-                <div class="accordion" id="priceHistory${result.product_id}">
-                  <div class="accordion-item">
-                    <h2 class="accordion-header">
-                      <button class="accordion-button collapsed" type="button" 
-                              data-bs-toggle="collapse" 
-                              data-bs-target="#priceCollapse${result.product_id}">
-                        Price History (${result.price_history.length} entries)
-                      </button>
-                    </h2>
-                    <div id="priceCollapse${result.product_id}" class="accordion-collapse collapse">
-                      <div class="accordion-body p-0">
-                        <table class="table table-sm mb-0">
-                          <thead>
-                            <tr>
-                              <th>Price</th>
-                              <th>Effective Date</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${result.price_history.map(price => `
-                              <tr>
-                                <td>${new Intl.NumberFormat('de-DE', {
-                                  style: 'currency',
-                                  currency: 'EUR'
-                                }).format(price.price)}</td>
-                                <td>${price.effective_date || 'N/A'}</td>
-                              </tr>
-                            `).join('')}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
+            ${result.price_history && result.price_history.length > 1 ? `
+              <details class="mt-auto border-t border-slate-100 pt-3">
+                <summary class="text-sm font-medium text-slate-700 cursor-pointer hover:text-primary">
+                  Price History (${result.price_history.length} entries)
+                </summary>
+                <div class="mt-2 overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-slate-100">
+                        <th class="text-left py-2 text-slate-600 font-medium">Price</th>
+                        <th class="text-left py-2 text-slate-600 font-medium">Effective Date</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                      ${result.price_history.map(price => `
+                        <tr>
+                          <td class="py-2 text-slate-900">${new Intl.NumberFormat('de-DE', {
+                            style: 'currency',
+                            currency: 'EUR'
+                          }).format(price.price)}</td>
+                          <td class="py-2 text-slate-500">${price.effective_date || 'N/A'}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
                 </div>
-              ` : ''}
-            </div>
+              </details>
+            ` : ''}
           </div>
         </div>
       `;
