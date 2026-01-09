@@ -236,6 +236,39 @@
                     <td class="text-right">{{ '%.2f'|format(item.selling_price * item.quantity) }} {{ quotation.currency }}</td>
                     {% endif %}
                 </tr>
+                {% if item.size_options and item.size_options|length > 0 %}
+                {% for option in item.size_options %}
+                <tr style="background-color: #fafafa;">
+                    {% if item_fields.product_name %}
+                    <td style="padding-left: 20px; font-style: italic; color: #666; font-size: 9pt; border-bottom: 1px dashed #ddd;">↳ Size Option: {{ option.size }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_scientific_name %}
+                    <td style="border-bottom: 1px dashed #ddd;"></td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_pot_size %}
+                    <td style="font-style: italic; color: #666; font-size: 9pt; border-bottom: 1px dashed #ddd;">{{ option.size }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_height %}
+                    <td style="border-bottom: 1px dashed #ddd;"></td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_quantity %}
+                    <td style="font-style: italic; color: #666; font-size: 9pt; border-bottom: 1px dashed #ddd;">{{ item.quantity|int }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_price %}
+                    <td class="text-right" style="font-style: italic; color: #666; font-size: 9pt; border-bottom: 1px dashed #ddd;">{{ '%.2f'|format(option.price) }} {{ quotation.currency }}</td>
+                    {% endif %}
+                    
+                    {% if item_fields.product_total %}
+                    <td class="text-right" style="font-style: italic; color: #666; font-size: 9pt; border-bottom: 1px dashed #ddd;">{{ '%.2f'|format(option.price * item.quantity) }} {{ quotation.currency }}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+                {% endif %}
                 {% endfor %}
                 
                 <!-- Totals Section -->
