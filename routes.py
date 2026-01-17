@@ -164,6 +164,27 @@ logger.info("Routes module loaded")
 
 def register_routes(app):
     
+    # ===============================
+    # PWA Routes
+    # ===============================
+    
+    @app.get("/manifest.webmanifest")
+    def pwa_manifest():
+        return send_from_directory("static/pwa", "manifest.webmanifest", mimetype="application/manifest+json")
+
+    @app.get("/sw.js")
+    def service_worker():
+        return send_from_directory("static/pwa", "sw.js", mimetype="application/javascript")
+
+    @app.get("/offline")
+    def offline_page():
+        return render_template("offline.html")
+
+    @app.get("/version.json")
+    def version_json():
+        build_id = app.config.get("BUILD_ID") or "dev"
+        return jsonify({"build_id": build_id})
+    
     # Direct access to database backup
     @app.route('/database-backup')
     def database_backup_redirect():

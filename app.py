@@ -69,6 +69,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     },
 }
 
+# Configure BUILD_ID for PWA cache busting
+app.config["BUILD_ID"] = os.environ.get("BUILD_ID", "dev")
+
 # Configure session cookie security (P1 security hardening)
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protect against CSRF via cross-site requests
