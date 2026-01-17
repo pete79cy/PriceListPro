@@ -128,7 +128,7 @@
                                     <a href="{{ url_for('view_quotation', quotation_id=quotation.id) }}" class="p-2 text-slate-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
                                         <span class="material-symbols-outlined text-[20px]">edit</span>
                                     </a>
-                                    <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" class="p-2 text-slate-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Download PDF">
+                                    <a href="{{ url_for('export_quotation', quotation_id=quotation.id) }}" onclick="return openPdfSafely(this.href, 'Quotation_{{ quotation.quotation_number }}.pdf')" class="p-2 text-slate-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Download PDF">
                                         <span class="material-symbols-outlined text-[20px]">download</span>
                                     </a>
                                 </div>
