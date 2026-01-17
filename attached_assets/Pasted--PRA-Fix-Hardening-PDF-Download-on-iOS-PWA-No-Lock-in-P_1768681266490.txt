@@ -1,0 +1,237 @@
+# PRA — Fix & Hardening: PDF Download on iOS PWA (No “Lock” in PDF Viewer)
+
+## Στόχος
+Στο iOS (ιδίως σε PWA/standalone mode), όταν ο χρήστης πατά “Download PDF”, το app **δεν πρέπει να πλοηγείται** μακριά από τη σελίδα (π.χ. quotations list / quotation view) και να “κολλάει” στον PDF viewer.  
+Η λύση είναι **blob-based download** (fetch → blob → objectURL) με fallback σε νέο tab.
+
+---
+
+## Πρόβλημα (Symptom)
+- Σε iOS PWA, το άνοιγμα URL που σερβίρει `application/pdf` οδηγεί σε **inline PDF viewer** στο ίδιο context.
+- Ο χρήστης μένει εκεί χωρίς εύκολη επιστροφή στη λίστα quotations (ειδικά σε standalone).
+
+---
+
+## Αποδεκτή Συμπεριφορά (Expected)
+- Πατώντας “Download PDF”:
+  - Η σελίδα **μένει όπως είναι** (no navigation).
+  - Το PDF κατεβαίνει ως αρχείο.
+  - Αν κάτι αποτύχει (offline, fetch error), ανοίγει **σε νέο tab** ως fallback.
+  - Προαιρετικά εμφανίζεται loader/toast κατά τη διάρκεια.
+
+---
+
+## Implementation Overview
+1. Προσθήκη helper `openPdfSafely(url, filename)` στο **base template** ώστε να είναι διαθέσιμο παντού.
+2. Αντικατάσταση των PDF links/buttons σε:
+   - `quotations_new.html`
+   - `view_quotation.html`
+3. (Αν υπάρχει PWA caching) bump cache/service-worker version ώστε οι PWA users να πάρουν άμεσα το fix.
+4. Server hardening: headers + exclude PDF routes από cache.
+
+---
+
+## 1) Frontend — `openPdfSafely` στο base template
+
+### Πού μπαίνει
+Στο `base.html` (ή αντίστοιχο layout template), **πριν κλείσει το `</body>`**.
+
+### Code
+```html
+<script>
+  function isIos() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  function isStandalonePwa() {
+    // iOS Safari: navigator.standalone
+    // Modern: display-mode media query
+    return (window.navigator.standalone === true) ||
+           (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+
+  async function openPdfSafely(url, filename) {
+    // Optional: show loader
+    if (window.showGlobalLoader) window.showGlobalLoader("Downloading PDF...");
+
+    try {
+      // Always include credentials for session cookies
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("PDF fetch failed: " + res.status);
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Try download via anchor click
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename || "document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(blobUrl);
+
+    } catch (err) {
+      console.warn("openPdfSafely fallback:", err);
+
+      // Fallback: open in new tab (still avoids replacing current page)
+      window.open(url, "_blank", "noopener,noreferrer");
+    } finally {
+      if (window.hideGlobalLoader) window.hideGlobalLoader();
+    }
+  }
+</script>
+
+Notes
+	•	Το fetch(..., { credentials: "include" }) είναι κρίσιμο αν το PDF route απαιτεί session cookie.
+	•	Το blob download αποφεύγει την πλοήγηση σε iOS PWA.
+
+⸻
+
+2) Update buttons/links to use openPdfSafely
+
+A) quotations_new.html
+
+Αν έχεις κουμπί:
+
+<a href="{{ url_for('quotation_pdf', quotation_id=q.id) }}" class="btn btn-primary">
+  Download PDF
+</a>
+
+Αντικατέστησέ το με:
+
+<button type="button"
+        class="btn btn-primary"
+        onclick="openPdfSafely('{{ url_for('quotation_pdf', quotation_id=q.id) }}', 'Quotation-{{ q.number }}.pdf')">
+  Download PDF
+</button>
+
+B) view_quotation.html
+
+Για links τύπου Modern PDF / Custom PDF / Delivery Note:
+
+<button type="button"
+        class="btn btn-outline"
+        onclick="openPdfSafely('{{ url_for('quotation_pdf_modern', quotation_id=quotation.id) }}', 'Quotation-{{ quotation.number }}.pdf')">
+  Modern PDF
+</button>
+
+<button type="button"
+        class="btn btn-outline"
+        onclick="openPdfSafely('{{ url_for('quotation_pdf_custom', quotation_id=quotation.id) }}', 'Quotation-{{ quotation.number }}.pdf')">
+  Custom PDF
+</button>
+
+<button type="button"
+        class="btn btn-outline"
+        onclick="openPdfSafely('{{ url_for('delivery_note_pdf', quotation_id=quotation.id) }}', 'DeliveryNote-{{ quotation.number }}.pdf')">
+  Delivery Note
+</button>
+
+
+⸻
+
+3) Optional UX — loader/toast (recommended)
+
+Αν έχεις ήδη global loader, πρόσθεσε helpers:
+
+<script>
+  window.showGlobalLoader = function (text) {
+    const el = document.getElementById("globalLoader");
+    if (!el) return;
+    el.querySelector(".loader-text").textContent = text || "Loading...";
+    el.classList.remove("hidden");
+  };
+
+  window.hideGlobalLoader = function () {
+    const el = document.getElementById("globalLoader");
+    if (!el) return;
+    el.classList.add("hidden");
+  };
+</script>
+
+Και στο HTML:
+
+<div id="globalLoader" class="hidden fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
+  <div class="bg-white rounded-lg px-4 py-3 shadow">
+    <div class="flex items-center gap-2">
+      <span class="spinner"></span>
+      <span class="loader-text">Loading...</span>
+    </div>
+  </div>
+</div>
+
+
+⸻
+
+4) Server Hardening — send correct headers
+
+Flask (example)
+
+from flask import send_file
+
+@app.get("/quotations/<int:quotation_id>/pdf")
+def quotation_pdf(quotation_id):
+    pdf_path, filename = build_pdf_for_quotation(quotation_id)
+    return send_file(
+        pdf_path,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=filename
+    )
+
+Why
+	•	as_attachment=True βοηθά να κατεβαίνει ως file, όχι inline viewer.
+	•	Το frontend blob-download λειτουργεί ανεξάρτητα, αλλά τα σωστά headers κάνουν το σύστημα πιο σταθερό σε διάφορους browsers.
+
+⸻
+
+5) PWA / Service Worker — never cache PDF routes (critical)
+
+Αν χρησιμοποιείται service worker caching:
+	•	Exclude paths όπως:
+	•	/quotations/*/pdf
+	•	/delivery-note/*
+	•	/api/* που παράγει PDFs
+
+Example rule concept
+	•	Αν έχεις Workbox ή custom fetch handler, βάλε early return network-only για PDF endpoints.
+
+Pseudo:
+
+if (url.pathname.includes("/pdf") || url.pathname.includes("/delivery-note")) {
+  return fetch(event.request);
+}
+
+
+⸻
+
+6) Cache Busting — bump SW/cache version
+
+Για να πάρουν οι υπάρχοντες PWA users το fix:
+	•	Αύξησε cache version (π.χ. v10 -> v11) ή BUILD_ID.
+	•	Επιβεβαίωσε ότι γίνεται SW update και καθαρίζει παλιά cached assets.
+
+⸻
+
+7) QA Checklist (must pass)
+	•	iPhone Safari (not installed):
+	•	Download PDF: stays on page, file downloads.
+	•	iPhone PWA (installed / standalone):
+	•	Download PDF: stays on page, no “lock” in viewer.
+	•	Offline/Fail scenario:
+	•	εμφανίζεται fallback (new tab) ή εμφανές μήνυμα αποτυχίας.
+	•	Security:
+	•	PDF endpoints require session as expected.
+	•	No caching of PDFs via SW.
+
+⸻
+
+Deliverables
+	•	base.html: added openPdfSafely helper
+	•	quotations_new.html: replaced PDF link with openPdfSafely(...)
+	•	view_quotation.html: same for all PDF actions
+	•	service-worker.js (optional): exclude pdf routes from cache
+	•	(optional) backend: send_file(..., as_attachment=True) for PDFs
+
