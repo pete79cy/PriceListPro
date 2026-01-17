@@ -113,6 +113,16 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- January 17, 2026: PriceListPro Stabilization - Cyprus VAT & Money Precision
+  - P0: Fixed dashboard template crash by replacing quotation.status.value with quotation.status
+  - P0: Fixed Order model duplicate properties and implemented Cyprus VAT rates (19% standard, 5% reduced)
+  - P0: Secured API token - removed insecure default, requires token in production
+  - P0: Added money() helper function for Decimal-safe calculations with ROUND_HALF_UP
+  - P0: Updated OrderItem with Decimal properties (unit_price_dec, quantity_dec, net_total, vat_amount, gross_total)
+  - P1: Added CSRF protection with Flask-WTF CSRFProtect, exempted API endpoints
+  - P1: Improved logger fallback to always exist (uses pricelistpro logger if custom logger fails)
+  - P2: Added database indexes for performance (Quotation, Invoice, PriceList)
+  - Added Cyprus VAT constants: CYPRUS_VAT_STANDARD=19, CYPRUS_VAT_REDUCED=5, CYPRUS_VAT_ZERO=0
 - December 18, 2025: Major UI Redesign with Tailwind CSS
   - Migrated from Bootstrap/legacy layouts to modern Tailwind CSS design system
   - Created side_layout.html as main layout template with responsive sidebar navigation
