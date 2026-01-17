@@ -106,6 +106,7 @@
                                                                           action="{{ url_for('orders.update_item', order_id=order.id, item_id=item.id) }}" 
                                                                           method="POST" 
                                                                           class="d-inline-block">
+                                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                                         <input type="hidden" name="unit_price" value="{{ item.price }}">
                                                                         <div class="input-group input-group-sm">
                                                                             <input type="number" 
@@ -145,6 +146,7 @@
                                                                                 <div class="modal-footer">
                                                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                                                                     <form action="{{ url_for('orders.remove_item', order_id=order.id, item_id=item.id) }}" method="POST">
+                                                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                                                         <button type="submit" class="btn btn-danger">Delete</button>
                                                                                     </form>
                                                                                 </div>
@@ -170,6 +172,7 @@
                                                 </div>
                                                 <div class="card-body">
                                                     <form action="{{ url_for('orders.add_item', order_id=order.id) }}" method="POST">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                         <div class="row g-3">
                                                             <div class="col-md-5">
                                                                 <label for="product_id" class="form-label">Product</label>

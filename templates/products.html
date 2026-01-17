@@ -191,6 +191,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
                 },
                 body: JSON.stringify({ product_ids: selectedIds })
             });

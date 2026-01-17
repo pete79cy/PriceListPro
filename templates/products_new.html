@@ -223,6 +223,7 @@
             </button>
         </div>
         <form id="productForm" action="{{ url_for('products') }}" method="post" class="p-6 space-y-4 overflow-y-auto">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="product_id" id="productId">
             
             <div>
@@ -296,6 +297,7 @@
                 Cancel
             </button>
             <form id="deleteForm" method="post" class="flex-1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" 
                         class="w-full px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
                     Delete

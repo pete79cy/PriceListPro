@@ -82,6 +82,7 @@
                             <h5 class="card-title mb-0">Potential Duplicates ({{ duplicates|length }} pairs)</h5>
                             {% if openai_available %}
                             <form method="post" action="{{ url_for('analyze_supplier_duplicates', supplier_id=current_supplier.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="threshold" value="{{ threshold }}">
                                 <button type="submit" class="btn btn-success">
                                     <i class="fas fa-brain me-1"></i> Analyze with AI

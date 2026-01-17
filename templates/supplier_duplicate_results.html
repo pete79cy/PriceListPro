@@ -26,6 +26,7 @@
 
     {% if results|length > 0 %}
     <form method="post" action="{{ url_for('flag_supplier_duplicates', supplier_id=supplier.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="row mb-3">
             <div class="col-12 text-end">
                 <button type="submit" class="btn btn-success">

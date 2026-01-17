@@ -82,6 +82,7 @@
             </h6>
             <div class="d-flex">
                 <form id="batch-delete-form" method="post" action="{{ url_for('batch_delete_supplier_products') }}" class="me-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="button" id="batch-delete-btn" class="btn btn-danger btn-sm" disabled>
                         <i class="fas fa-trash me-1"></i> Delete Selected
                     </button>
@@ -290,6 +291,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form id="delete-form" method="post" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
             </div>
