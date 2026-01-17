@@ -33,6 +33,7 @@
                         <div class="col-md-8">
                             <h5 class="mb-3">Configure OpenAI API Key</h5>
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <div class="mb-3">
                                     <label for="openai_api_key" class="form-label">OpenAI API Key</label>
                                     <div class="input-group">

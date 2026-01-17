@@ -4,7 +4,7 @@ import re
 import traceback
 import time
 from datetime import datetime, timedelta
-from flask import render_template, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response, Response
+from flask import render_template, render_template_string, request, redirect, url_for, jsonify, flash, send_from_directory, session, make_response, Response
 from werkzeug.utils import secure_filename
 from app import db
 from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, QuotationItemSizeOption, Supplier, SupplierProduct, CompanySettings, QuotationStatus, Order
@@ -181,6 +181,126 @@ def register_routes(app):
     # ===============================
     # System Health Routes (Admin)
     # ===============================
+    
+    @app.route('/admin/csrf-audit', methods=['GET'])
+    @login_required
+    def csrf_audit():
+        """CSRF coverage audit report for security review."""
+        if not current_user.is_admin:
+            flash('Admin access required.', 'danger')
+            return redirect(url_for('dashboard'))
+        
+        from flask_wtf.csrf import CSRFProtect
+        
+        routes_audit = []
+        mutating_methods = {'POST', 'PUT', 'PATCH', 'DELETE'}
+        
+        for rule in app.url_map.iter_rules():
+            route_methods = set(rule.methods) - {'HEAD', 'OPTIONS'}
+            is_mutating = bool(route_methods & mutating_methods)
+            
+            if not is_mutating:
+                continue
+                
+            endpoint = rule.endpoint
+            is_exempt = False
+            used_by = 'browser'
+            
+            if endpoint.startswith('api.') or '/api/' in rule.rule:
+                is_exempt = True
+                used_by = 'api'
+            
+            routes_audit.append({
+                'route': rule.rule,
+                'methods': ', '.join(sorted(route_methods & mutating_methods)),
+                'endpoint': endpoint,
+                'exempt': is_exempt,
+                'used_by': used_by,
+                'status': 'OK' if (not is_exempt or used_by == 'api') else 'REVIEW'
+            })
+        
+        routes_audit.sort(key=lambda x: (x['exempt'], x['route']))
+        
+        exempt_count = sum(1 for r in routes_audit if r['exempt'])
+        protected_count = sum(1 for r in routes_audit if not r['exempt'])
+        
+        return render_template_string('''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CSRF Audit Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <h1 class="mb-4">CSRF Coverage Audit Report</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Protected Routes</h5>
+                    <p class="card-text display-6">{{ protected_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Exempt Routes (API)</h5>
+                    <p class="card-text display-6">{{ exempt_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Total Mutating</h5>
+                    <p class="card-text display-6">{{ routes|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Mutating Routes (POST/PUT/PATCH/DELETE)</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Route</th>
+                        <th>Methods</th>
+                        <th>Endpoint</th>
+                        <th>Exempt?</th>
+                        <th>Used By</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in routes %}
+                    <tr>
+                        <td><code>{{ r.route }}</code></td>
+                        <td>{{ r.methods }}</td>
+                        <td>{{ r.endpoint }}</td>
+                        <td>{% if r.exempt %}<span class="badge bg-warning">Yes</span>{% else %}<span class="badge bg-success">No</span>{% endif %}</td>
+                        <td>{{ r.used_by }}</td>
+                        <td>{% if r.status == 'OK' %}<span class="badge bg-success">OK</span>{% else %}<span class="badge bg-danger">Review</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('system_health') }}" class="btn btn-secondary">Back to System Health</a>
+    </div>
+</div>
+</body>
+</html>
+        ''', routes=routes_audit, protected_count=protected_count, exempt_count=exempt_count)
     
     @app.route('/admin/system-health', methods=['GET'])
     @login_required
@@ -2616,10 +2736,10 @@ def register_routes(app):
         
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
-    @app.route('/quotation/<int:quotation_id>/duplicate', methods=['GET'])
+    @app.route('/quotation/<int:quotation_id>/duplicate', methods=['POST'])
     @login_required
     def duplicate_quotation(quotation_id):
-        """Duplicate a quotation to create a new one with the same items"""
+        """Duplicate a quotation to create a new one with the same items (POST required for CSRF protection)"""
         original = Quotation.query.get_or_404(quotation_id)
         
         try:
@@ -3627,11 +3747,11 @@ def register_routes(app):
             logger.error(f"Error editing size option: {str(e)}")
             return jsonify({'success': False, 'error': str(e)}), 500
     
-    @app.route('/quotation/item/<int:item_id>/size_options/<int:option_id>/delete', methods=['POST', 'GET'])
+    @app.route('/quotation/item/<int:item_id>/size_options/<int:option_id>/delete', methods=['POST'])
     @login_required
     @with_db_reconnect(max_retries=3)
     def delete_size_option(item_id, option_id):
-        """Delete a size option"""
+        """Delete a size option (POST only for CSRF protection)"""
         item = QuotationItem.query.get_or_404(item_id)
         option = QuotationItemSizeOption.query.get_or_404(option_id)
         
@@ -4852,11 +4972,11 @@ def register_routes(app):
             supplier_mapping=VIBER_SUPPLIER_MAPPING
         )
         
-    @app.route('/viber-set-webhook', methods=['GET'])
+    @app.route('/viber-set-webhook', methods=['POST'])
     @login_required
     def viber_set_webhook():
         """
-        Set the Viber webhook URL
+        Set the Viber webhook URL (POST required for CSRF protection)
         """
         if not current_user.is_admin:
             flash('You do not have permission to access this page.', 'danger')

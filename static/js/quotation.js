@@ -39,11 +39,13 @@ function setupAjaxFormSubmission() {
                 }
             };
             
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             fetch(this.action, {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
                 }
             })
             .then(response => {
