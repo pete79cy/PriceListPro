@@ -27,6 +27,7 @@ from utils.supplier_duplicate_detector import find_supplier_duplicates, ask_open
 def get_recent_activities(limit=5):
     """
     Get a list of recent activities from various sources.
+    Optimized to use eager loading to avoid N+1 query problem.
     
     Args:
         limit (int): Maximum number of activities to return
@@ -34,26 +35,20 @@ def get_recent_activities(limit=5):
     Returns:
         list: List of activity dictionaries with timestamp and message
     """
+    from sqlalchemy.orm import joinedload
     activities = []
     
     try:
-        # Add recent file uploads
+        # Add recent file uploads - eager load customer
         try:
-            uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(limit).all()
+            uploads = FileUpload.query.options(
+                joinedload(FileUpload.customer)
+            ).order_by(FileUpload.upload_date.desc()).limit(limit).all()
             for upload in uploads:
                 try:
                     timestamp = upload.upload_date
                     file_type = upload.file_type.capitalize() if upload.file_type else "File"
-                    customer_name = "N/A"
-                    
-                    # Safely try to get customer name
-                    if upload.customer_id:
-                        try:
-                            customer = Customer.query.get(upload.customer_id)
-                            if customer:
-                                customer_name = customer.name
-                        except Exception as e:
-                            logger.error(f"Error getting customer for activity log: {str(e)}")
+                    customer_name = upload.customer.name if upload.customer else "N/A"
                     
                     activities.append({
                         'timestamp': timestamp,
@@ -63,20 +58,18 @@ def get_recent_activities(limit=5):
                     })
                 except Exception as e:
                     logger.error(f"Error processing upload for activity log: {str(e)}")
-                    continue  # Skip this upload but continue with others
+                    continue
         except Exception as e:
             logger.error(f"Error getting uploads for activity log: {str(e)}")
         
-        # Add recent invoices with error handling
+        # Add recent invoices - eager load customer
         try:
-            invoices = Invoice.query.order_by(Invoice.created_at.desc()).limit(limit).all()
+            invoices = Invoice.query.options(
+                joinedload(Invoice.customer)
+            ).order_by(Invoice.created_at.desc()).limit(limit).all()
             for invoice in invoices:
                 try:
-                    customer_name = "Unknown Customer"
-                    if invoice.customer_id:
-                        customer = Customer.query.get(invoice.customer_id)
-                        if customer:
-                            customer_name = customer.name
+                    customer_name = invoice.customer.name if invoice.customer else "Unknown Customer"
                     
                     activities.append({
                         'timestamp': invoice.created_at,
@@ -86,21 +79,18 @@ def get_recent_activities(limit=5):
                     })
                 except Exception as e:
                     logger.error(f"Error processing invoice for activity log: {str(e)}")
-                    continue  # Skip this invoice but continue with others
+                    continue
         except Exception as e:
             logger.error(f"Error getting invoices for activity log: {str(e)}")
         
-        # Add recent price update requests with error handling
+        # Add recent price update requests - eager load product
         try:
-            updates = ProductUpdateRequest.query.order_by(ProductUpdateRequest.created_at.desc()).limit(limit).all()
+            updates = ProductUpdateRequest.query.options(
+                joinedload(ProductUpdateRequest.product)
+            ).order_by(ProductUpdateRequest.created_at.desc()).limit(limit).all()
             for update in updates:
                 try:
-                    product_name = "Unknown Product"
-                    if update.product_id:
-                        product = Product.query.get(update.product_id)
-                        if product:
-                            product_name = product.name
-                    
+                    product_name = update.product.name if update.product else "Unknown Product"
                     status = update.status.capitalize() if update.status else "Unknown"
                     old_price = update.old_price if hasattr(update, 'old_price') else "0.00"
                     new_price = update.new_price if hasattr(update, 'new_price') else "0.00"
@@ -117,17 +107,14 @@ def get_recent_activities(limit=5):
         except Exception as e:
             logger.error(f"Error getting price updates for activity log: {str(e)}")
         
-        # Add recent quotations with error handling
+        # Add recent quotations - eager load customer
         try:
-            quotations = Quotation.query.order_by(Quotation.created_at.desc()).limit(limit).all()
+            quotations = Quotation.query.options(
+                joinedload(Quotation.customer)
+            ).order_by(Quotation.created_at.desc()).limit(limit).all()
             for quotation in quotations:
                 try:
-                    customer_name = "Unknown Customer"
-                    if quotation.customer_id:
-                        customer = Customer.query.get(quotation.customer_id)
-                        if customer:
-                            customer_name = customer.name
-                            
+                    customer_name = quotation.customer.name if quotation.customer else "Unknown Customer"
                     quotation_number = quotation.quotation_number if hasattr(quotation, 'quotation_number') else "Unknown"
                     
                     activities.append({
@@ -143,9 +130,7 @@ def get_recent_activities(limit=5):
             logger.error(f"Error getting quotations for activity log: {str(e)}")
     
     except Exception as e:
-        # Top-level error handler for activities
         logger.error(f"Error generating activity log: {str(e)}")
-        # Return an empty activities list as fallback
         return []
         
     # Sort all activities by timestamp (newest first) and limit the total
@@ -154,7 +139,6 @@ def get_recent_activities(limit=5):
         return activities[:limit]
     except Exception as e:
         logger.error(f"Error sorting activities: {str(e)}")
-        # Return unsorted if there's a sorting error
         return activities[:limit] if activities else []
 
 # Simple redirect for backup testing - will be registered with app in register_routes
