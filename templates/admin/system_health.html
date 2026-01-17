@@ -9,7 +9,28 @@
         <p class="text-slate-600 mt-1">Monitor system status, security configuration, and data integrity.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center mb-4">
+                <span class="material-symbols-outlined text-2xl text-green-500 mr-3">install_mobile</span>
+                <h3 class="text-lg font-semibold text-slate-800">PWA Status</h3>
+            </div>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-slate-600">Build ID:</span>
+                    <span id="pwa-build-id" class="text-slate-800 font-mono">Loading...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-600">SW Status:</span>
+                    <span id="pwa-sw-status" class="text-slate-800">Checking...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-600">Online:</span>
+                    <span id="pwa-online-status" class="text-green-600">Yes</span>
+                </div>
+            </div>
+        </div>
+        
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div class="flex items-center mb-4">
                 <span class="material-symbols-outlined text-2xl text-blue-500 mr-3">key</span>
@@ -246,4 +267,51 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+    try {
+        const res = await fetch('/version.json');
+        const data = await res.json();
+        document.getElementById('pwa-build-id').textContent = data.build_id || 'unknown';
+    } catch (e) {
+        document.getElementById('pwa-build-id').textContent = 'Error';
+    }
+    
+    if ('serviceWorker' in navigator) {
+        try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+                let status = 'Active';
+                if (reg.waiting) status = 'Waiting (update available)';
+                else if (reg.installing) status = 'Installing';
+                document.getElementById('pwa-sw-status').textContent = status;
+            } else {
+                document.getElementById('pwa-sw-status').textContent = 'Not registered';
+            }
+        } catch (e) {
+            document.getElementById('pwa-sw-status').textContent = 'Error';
+        }
+    } else {
+        document.getElementById('pwa-sw-status').textContent = 'Not supported';
+    }
+    
+    function updateOnlineStatus() {
+        const el = document.getElementById('pwa-online-status');
+        if (navigator.onLine) {
+            el.textContent = 'Yes';
+            el.className = 'text-green-600';
+        } else {
+            el.textContent = 'No';
+            el.className = 'text-red-600';
+        }
+    }
+    
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+})();
+</script>
 {% endblock %}

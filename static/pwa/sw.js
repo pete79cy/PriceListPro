@@ -1,5 +1,5 @@
 /* static/pwa/sw.js */
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -10,6 +10,12 @@ const PRECACHE_URLS = [
   "/static/pwa/icons/icon-512.png"
 ];
 
+const NO_CACHE_PATHS = ["/login", "/logout", "/admin", "/api"];
+
+function shouldCacheHTML(pathname) {
+  return !NO_CACHE_PATHS.some(p => pathname.startsWith(p));
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
@@ -19,15 +25,33 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
         keys
           .filter((k) => ![STATIC_CACHE, RUNTIME_CACHE].includes(k))
           .map((k) => caches.delete(k))
-      )
-    )
+      );
+      
+      const runtimeCache = await caches.open(RUNTIME_CACHE);
+      const cachedRequests = await runtimeCache.keys();
+      await Promise.all(
+        cachedRequests
+          .filter((req) => {
+            const url = new URL(req.url);
+            return !shouldCacheHTML(url.pathname);
+          })
+          .map((req) => runtimeCache.delete(req))
+      );
+    })()
   );
   self.clients.claim();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 function isStaticAsset(url) {
@@ -58,11 +82,16 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, copy));
+          if (shouldCacheHTML(url.pathname)) {
+            const copy = res.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, copy));
+          }
           return res;
         })
         .catch(async () => {
+          if (!shouldCacheHTML(url.pathname)) {
+            return caches.match("/offline");
+          }
           const cached = await caches.match(req);
           return cached || caches.match("/offline");
         })

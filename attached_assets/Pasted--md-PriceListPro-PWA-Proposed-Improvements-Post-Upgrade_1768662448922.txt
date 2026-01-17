@@ -1,0 +1,262 @@
+````md
+# PriceListPro PWA — Proposed Improvements (Post-Upgrade Hardening)
+**Date:** 2026-01-17  
+**Scope:** Improve reliability of the PWA (updates, caching safety, iOS quirks), and add minimal operational endpoints/tools.
+
+---
+
+## 1) Objectives
+1. Prevent stale/incorrect cached pages (especially auth pages).
+2. Ensure service worker scope covers the whole app.
+3. Make updates predictable (no “stuck on old version”).
+4. Improve observability: quick diagnostics for support/debugging.
+5. Reduce noisy logs from health checks.
+
+---
+
+## 2) Improvements Overview (Priority Order)
+
+### P0 — Ensure Service Worker is served from root scope
+**Why:** If `/sw.js` is not at the root, the SW won’t control all routes, causing install/offline inconsistencies.
+
+**Implementation**
+- Confirm SW is accessible at:
+  - `GET /sw.js` (200)
+- Confirm scope in DevTools:
+  - Application → Service Workers → Scope should be `/`
+
+**Flask Route (recommended)**
+```python
+@app.get("/sw.js")
+def service_worker():
+    return send_from_directory("static/pwa", "sw.js", mimetype="application/javascript")
+````
+
+---
+
+### P0 — Don’t cache auth-sensitive HTML incorrectly
+
+**Risk:** If the SW caches HTML for authenticated pages and serves it later, users can see stale content after logout/login or session expiry.
+
+**Fix Strategy**
+
+* For navigation requests:
+
+  * Use Network First
+  * Cache only “safe” pages
+  * Never cache `/login`, `/logout`, `/admin/*`, or any endpoint that can vary per user/session
+
+**Service Worker change**
+In `fetch` handler for `req.mode === "navigate"`:
+
+* Skip caching for:
+
+  * `/login`
+  * `/logout`
+  * `/admin`
+  * `/api`
+  * any route you consider sensitive
+
+**Example allow/deny logic (conceptual)**
+
+```js
+const NO_CACHE_PATHS = ["/login", "/logout", "/admin", "/api"];
+
+function shouldCacheHTML(pathname) {
+  return !NO_CACHE_PATHS.some(p => pathname.startsWith(p));
+}
+```
+
+Then only `cache.put()` if `shouldCacheHTML(url.pathname)` is true.
+
+---
+
+### P0 — Add a controlled update flow (“Update available” prompt)
+
+**Why:** Users get stuck with old cached versions after deploy unless SW update is handled cleanly.
+
+**Recommended behavior**
+
+* If a new SW is waiting:
+
+  * Show a banner/toast: “New version available — Refresh”
+  * On click: send `SKIP_WAITING` message to SW, then reload
+
+**Service Worker**
+Add message handler:
+
+```js
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+```
+
+**Client (base template)**
+
+* Detect `reg.waiting` and show UI
+* On confirmation: `reg.waiting.postMessage({ type: "SKIP_WAITING" })`
+* Listen for `controllerchange` and reload
+
+---
+
+## 3) Operational Hardening
+
+### P1 — Add `/health` endpoint
+
+**Why:** Prevent confusing 404 logs from health checks and simplify uptime monitoring.
+
+**Flask**
+
+```python
+@app.get("/health")
+def health():
+    return {"ok": True}, 200
+```
+
+---
+
+### P1 — Add `/version.json` and expose Build ID in UI
+
+**Why:** Support/debug becomes easy when you can see “which version is running” and whether SW updated.
+
+**Flask**
+
+```python
+@app.get("/version.json")
+def version_json():
+    build_id = current_app.config.get("BUILD_ID") or "dev"
+    return jsonify({"build_id": build_id})
+```
+
+**Config**
+
+```python
+app.config["BUILD_ID"] = os.environ.get("BUILD_ID", "dev")
+```
+
+**UI (System Health page or footer)**
+Show:
+
+* Build ID (from `/version.json`)
+* Service worker status (Active/Waiting)
+* Cache version (from SW constant)
+
+---
+
+### P1 — Add “System Info” panel (recommended)
+
+**Location options:**
+
+* `/admin/system-health` (best, since you already have it)
+* or a small “System Info” section in the app footer (admin only)
+
+**Include**
+
+* Build ID
+* SW status: registered? active? waiting?
+* Last update time (client-side)
+* Online/offline indicator
+
+---
+
+## 4) Cache Strategy Improvements
+
+### P2 — Cache versioning based on BUILD_ID (optional upgrade)
+
+**Why:** Manual `CACHE_VERSION = "v1"` is easy to forget on deploy.
+
+**Better approach**
+
+* Fetch `/version.json` and use `build_id` to name caches
+* Or inject build id into SW at build time (if you add a build step later)
+
+**Minimum viable**
+
+* Keep manual bumping for now, but add a checklist item in deploy process:
+
+  * “Bump CACHE_VERSION” or “Update BUILD_ID”
+
+---
+
+### P2 — Add explicit offline support boundaries
+
+**Goal:** Make it clear what works offline and what doesn’t.
+
+* Offline fallback page for all navigation routes
+* Static assets cached
+* No promise of offline CRUD unless explicitly implemented later
+
+Update documentation (`replit.md`) with:
+
+* Offline capability scope
+* iOS limitations
+
+---
+
+## 5) Security Considerations (PWA-specific)
+
+1. Ensure cookies remain:
+
+   * `SESSION_COOKIE_HTTPONLY=True`
+   * `SESSION_COOKIE_SAMESITE='Lax'`
+   * `SESSION_COOKIE_SECURE=True` in production (HTTPS)
+
+2. Avoid caching responses that include sensitive headers or data.
+
+3. Consider adding `Cache-Control: no-store` for login/logout pages to discourage browser caching too.
+
+---
+
+## 6) Testing Plan (Quick + Practical)
+
+### 6.1 Desktop (Chrome)
+
+* DevTools → Application:
+
+  * Manifest present
+  * SW registered and controlling the page
+* Go Offline:
+
+  * Refresh `/` and deep routes → offline page appears
+* Deploy update:
+
+  * Confirm “Update available” appears (if implemented)
+  * Confirm refresh loads new build
+
+### 6.2 Android
+
+* Install from Chrome
+* Airplane mode:
+
+  * offline fallback page works
+* Update test:
+
+  * old version → deploy → app prompts refresh → new version
+
+### 6.3 iOS (Safari)
+
+* Add to Home Screen
+* Offline fallback:
+
+  * works when storage not purged
+* Confirm icons + standalone display
+
+---
+
+## 7) Definition of Done
+
+* SW scope is root-wide (`/`)
+* Auth-sensitive routes are not cached as HTML
+* Updates are user-friendly (no “stuck on old version”)
+* `/health` endpoint returns 200 JSON
+* `/version.json` returns build id and is visible on System Health page
+* PWA works installably on Android + iOS with predictable offline fallback
+
+---
+
+```
+
+If you want, the next iteration can be a **Replit-agent-ready** MD that includes exact patch blocks for your current file names (`static/pwa/sw.js`, `templates/side_layout.html`, etc.) and the UI snippet for the “Update available” toast.
+```

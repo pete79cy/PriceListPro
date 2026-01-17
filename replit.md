@@ -123,6 +123,18 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
   - Added iOS PWA support (apple-mobile-web-app-capable, apple-touch-icon)
   - Generated PWA icons: icon-192.png, icon-512.png, icon-512-maskable.png
   - Added BUILD_ID config for cache busting in production
+  - PWA Hardening (P0-P2):
+    - P0: Auth-sensitive routes excluded from caching (/login, /logout, /admin, /api)
+    - P0: Added controlled update flow with "Update available" toast notification
+    - P0: Added SKIP_WAITING message handler in service worker
+    - P1: Added /health endpoint for uptime monitoring (returns {"ok": true})
+    - P1: Added PWA Status card to System Health page (Build ID, SW Status, Online status)
+  - Offline Capability Scope:
+    - Offline fallback page works for navigation requests
+    - Static assets cached with Cache First strategy
+    - HTML pages use Network First strategy with offline fallback
+    - No offline CRUD support (requires online connection for data operations)
+    - iOS limitations: Background tasks restricted, storage may be purged by OS
 - January 17, 2026: Post-Stabilization Quality Gate Implementation
   - Deliverable A: Created pytest test suite (tests/test_money.py, tests/test_vat_totals.py) with 30 tests for money/VAT correctness
   - Deliverable B: Implemented IntegrityChecker utility (utils/integrity_checker.py) to scan Orders for data integrity issues
