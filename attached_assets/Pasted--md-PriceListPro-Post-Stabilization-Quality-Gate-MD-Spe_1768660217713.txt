@@ -1,0 +1,225 @@
+````md
+# PriceListPro — Post-Stabilization Quality Gate (MD Spec)
+**Date:** 2026-01-17  
+**Scope:** Add a “Quality Gate” layer to ensure the recent stabilization work stays correct over time (VAT, rounding, CSRF, token auth, templates).  
+**Goal:** Make correctness **provable** and regressions **unlikely**.
+
+---
+
+## 1) Why this exists
+Stabilization is complete, but finance apps fail in two ways:
+1) **Silent drift** (rounding, float storage, period boundaries)
+2) **Regression** (future code changes break totals or security)
+
+This Quality Gate adds:
+- deterministic test cases
+- integrity checker utilities
+- minimal admin UI for verification
+- CI hooks (optional, but recommended)
+
+---
+
+## 2) Definitions (authoritative rules)
+
+### 2.1 VAT (Cyprus defaults)
+Allowed VAT rates:
+- `19` (standard)
+- `5` (reduced)
+- `0` (exempt)
+
+**VAT is line-item based.**  
+Order totals are computed as:
+- `subtotal = Σ line.net_total`
+- `vat_amount = Σ line.vat_amount`
+- `total = subtotal + vat_amount`
+
+### 2.2 Rounding
+- Use `Decimal` everywhere for calculations.
+- Use `ROUND_HALF_UP` quantized to 2 decimals via `money()` helper.
+- Rounding must be **consistent**: same rounding stage for UI, PDF, Excel.
+
+**Recommended rounding stage:** round each of:
+- line net total
+- line VAT amount
+- line gross total  
+Then sum already-rounded line values for the order.
+
+---
+
+## 3) Deliverables
+
+### Deliverable A — Unit test suite for money/VAT correctness
+Add a small pytest suite with **10–15 assertions** that run fast.
+
+#### A1) Test cases (must pass)
+1) **Single line 19%**
+- Unit price: 100.00, qty: 1, VAT: 19
+- Net: 100.00, VAT: 19.00, Gross: 119.00
+
+2) **Single line 5%**
+- Unit: 100.00, qty: 1, VAT: 5
+- Net: 100.00, VAT: 5.00, Gross: 105.00
+
+3) **Single line 0%**
+- Unit: 100.00, qty: 1, VAT: 0
+- Net: 100.00, VAT: 0.00, Gross: 100.00
+
+4) **Mixed basket (19 + 5 + 0)**
+- Line1: 9.99 x 3 @ 19
+- Line2: 12.50 x 2 @ 5
+- Line3: 100.00 x 1 @ 0
+Assert:
+- order subtotal equals sum(line net)
+- order vat equals sum(line vat)
+- order total equals subtotal + vat
+
+5) **Rounding edge**
+- Unit: 0.03 x 1 @ 19
+- Ensure rounding matches `money()` policy (HALF_UP to 2dp)
+
+6) **Quantity decimals (only if allowed by your business rules)**
+- qty: 2.5, unit: 10.00 @ 19  
+If decimals not allowed, assert it is rejected in form validation.
+
+7) **Validation**
+- VAT rate not in {0,5,19} must be rejected.
+- Negative qty must be rejected.
+- Negative unit price must be rejected.
+
+#### A2) Test structure (suggested)
+- `tests/test_money.py` for `money()` rounding behavior
+- `tests/test_vat_totals.py` for line totals + order totals
+
+---
+
+### Deliverable B — “Integrity Checker” utility (backend)
+A function that scans Orders (and optionally Invoices/Quotations) and flags any record where:
+- stored totals (if you store them) ≠ computed totals
+- or computed totals produce NaNs/None/invalid VAT rates
+- or line item VAT rate not allowed
+
+#### B1) Output schema (JSON)
+Return a JSON report:
+```json
+{
+  "checked": 120,
+  "flagged": 3,
+  "flags": [
+    {
+      "order_id": 55,
+      "issue": "TOTAL_MISMATCH",
+      "stored": {"subtotal": "100.00", "vat": "19.00", "total": "119.00"},
+      "computed": {"subtotal": "100.01", "vat": "19.00", "total": "119.01"},
+      "diff": {"subtotal": "0.01", "vat": "0.00", "total": "0.01"}
+    }
+  ]
+}
+````
+
+#### B2) Rules
+
+* Compute using the same logic as production (Decimal + money()).
+* Do not mutate data unless a “repair” mode is explicitly invoked.
+
+---
+
+### Deliverable C — Admin UI page: “System Health”
+
+Add an admin-only route + page that shows:
+
+* Build/changelog entry (already in `replit.md`)
+* Token status: “Configured” vs “Missing” (do not show token value)
+* CSRF status: “Enabled”
+* Integrity checker: Run scan button + results table
+* Quick totals test: runs the 3–5 core fixtures in-app and shows PASS/FAIL
+
+#### C1) Route suggestion
+
+* `GET /admin/system-health` (view)
+* `POST /admin/system-health/integrity-scan` (run scan, CSRF protected)
+* Optionally: `POST /admin/system-health/integrity-repair` (only if you add repair; strongly gated)
+
+---
+
+## 4) Database money types (Recommended next hardening step)
+
+Even with Decimal-safe calculations, if DB stores floats you still persist imprecision.
+
+### 4.1 Migration plan (safe)
+
+1. Add new Numeric columns alongside float columns:
+
+* `*_amount NUMERIC(12,2)` or replace floats directly if you can safely migrate.
+
+2. Backfill with rounding (2 decimals).
+3. Update code to use new columns.
+4. Remove old float columns once verified.
+
+### 4.2 Tables to prioritize
+
+* PriceList price
+* OrderItem unit_price
+* Invoice totals & line prices
+* Any derived totals stored in DB
+
+---
+
+## 5) CSRF & API hardening checklist
+
+* CSRF enabled for all HTML forms (done)
+* API endpoints exempted only where necessary (confirm minimal list)
+* API endpoints require token auth:
+
+  * Reject missing token
+  * Reject bad token
+* Production cookie settings:
+
+  * `SESSION_COOKIE_HTTPONLY = True`
+  * `SESSION_COOKIE_SECURE = True` (HTTPS)
+  * `SESSION_COOKIE_SAMESITE = "Lax"` (or stricter as needed)
+
+---
+
+## 6) Acceptance Criteria (Definition of Done)
+
+### Must pass
+
+* Unit tests pass locally (and ideally in CI)
+* Integrity checker runs and returns JSON report
+* System Health page loads and shows:
+
+  * Token configured status
+  * CSRF enabled
+  * Integrity scan results
+* Mixed VAT basket test passes in UI
+* Rounding edge test matches `money()` behavior
+
+### Optional but strongly recommended
+
+* Money columns migrated to `Numeric(12,2)` (or integer cents)
+* Basic CI workflow running tests on each deploy
+
+---
+
+## 7) Suggested task breakdown
+
+1. Add pytest tests (A)
+2. Implement integrity checker (B)
+3. Add admin UI “System Health” (C)
+4. (Optional) Money type migrations to Numeric (4)
+5. (Optional) Add CI test job
+
+---
+
+## 8) Notes
+
+* Keep all math in one place: **single source of truth** (helpers + model properties).
+* Exports (PDF/Excel) must use the same totals source (computed or stored) consistently.
+* If you later store totals for audit, keep computed properties as a cross-check and add a “recalc legacy data” tool.
+
+---
+
+```
+
+If you want the next MD to be even more “Replit-agent-ready,” I can generate a version that includes **exact file paths**, **code snippets per file**, and **copy/paste-ready** Flask routes + templates for the System Health page.
+```

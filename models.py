@@ -8,28 +8,12 @@ from uuid import uuid4
 from sqlalchemy.dialects.postgresql import UUID
 from decimal import Decimal, ROUND_HALF_UP
 
-
-# Cyprus VAT rates (as percentages)
-CYPRUS_VAT_STANDARD = 19  # Standard rate
-CYPRUS_VAT_REDUCED = 5    # Reduced rate
-CYPRUS_VAT_ZERO = 0       # Zero rate (for exports, etc.)
-ALLOWED_VAT_RATES = [CYPRUS_VAT_STANDARD, CYPRUS_VAT_REDUCED, CYPRUS_VAT_ZERO]
-
-# Decimal precision for money calculations
-TWOPLACES = Decimal("0.01")
-
-
-def money(value) -> Decimal:
-    """
-    Convert a value to a Decimal with 2 decimal places.
-    Uses ROUND_HALF_UP for consistent rounding.
-    Prevents float precision issues in money calculations.
-    """
-    if value is None:
-        return Decimal("0.00")
-    if not isinstance(value, Decimal):
-        value = Decimal(str(value))
-    return value.quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+# Import money utilities from standalone module (avoids circular imports in tests)
+from utils.money import (
+    money, TWOPLACES, 
+    CYPRUS_VAT_STANDARD, CYPRUS_VAT_REDUCED, CYPRUS_VAT_ZERO, ALLOWED_VAT_RATES,
+    validate_vat_rate, calculate_vat, calculate_gross
+)
 
 
 class OrderStatusEnum(str, Enum):
