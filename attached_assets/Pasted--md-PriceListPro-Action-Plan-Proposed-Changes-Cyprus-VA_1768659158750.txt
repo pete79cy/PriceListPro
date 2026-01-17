@@ -1,0 +1,467 @@
+````md
+# PriceListPro — Action Plan & Proposed Changes (Cyprus VAT: 19% standard, 5% reduced)
+
+This document is a **step-by-step implementation plan** to stabilize PriceListPro and make it correct, maintainable, and audit-friendly — with **Cyprus VAT defaults**:
+- **19% (standard)**
+- **5% (reduced)**
+
+It includes:
+- P0/P1 bug fixes
+- VAT policy + data model changes
+- money precision fixes (remove floats)
+- migration plan (Flask-Migrate/Alembic)
+- security hardening (API token + CSRF)
+- UI consolidation guidance
+- testing checklist
+
+---
+
+## 0) Goals (non-negotiables)
+
+1. **Totals must be deterministic**  
+   Totals must be calculated by the app (not AI), always reproducible from stored numbers.
+
+2. **Money must not use float**  
+   Store money as `Numeric(12,2)` (or integer cents). Use Decimal in calculations.
+
+3. **VAT must follow Cyprus defaults**  
+   Default VAT selection: **19%**, with option for **5%** per line item (and optionally 0% if needed later).
+
+4. **Status values must be consistent**  
+   No `.value` calls on plain string fields.
+
+---
+
+## 1) Priority Fixes (P0 → P2)
+
+### P0 — Fix dashboard template crash/misrender
+**Problem:** `Quotation.status` is a string but template uses `quotation.status.value`.
+
+**Change**
+- In `templates/dashboard_new.html`, replace:
+  - `quotation.status.value` → `quotation.status`
+
+Optionally normalize for display:
+```jinja2
+{{ quotation.status|capitalize }}
+````
+
+---
+
+### P0 — Fix duplicated Order calculation properties & conflicting VAT logic
+
+**Problem:** `Order` has duplicated properties (`subtotal`, `vat_amount`, `total`) and conflicting VAT logic (24% vs per-item).
+
+**Outcome required:** one single calculation logic with Cyprus VAT.
+
+**Rules**
+
+* Each `OrderItem` has a `vat_rate` that must be `19` or `5` (optionally `0`)
+* Default for items: `19`
+* Order totals = sum of line totals
+* VAT amount per line = `net * rate`
+* Final totals are rounded to 2 decimals in a controlled way
+
+---
+
+### P0 — Remove insecure default API token
+
+**Problem:** `API_TOKEN` falls back to `"test_api_token"` if env missing.
+
+**Change**
+
+* Require token in production; no default.
+* If missing, disable API endpoints or raise startup error.
+
+---
+
+### P0 — Replace float money types
+
+**Problem:** prices/totals stored as float → rounding bugs.
+
+**Change**
+
+* Convert all money columns to `Numeric(12,2)`
+* Use `Decimal` in calculations
+
+---
+
+### P1 — Add CSRF protection for all POST forms
+
+Use Flask-WTF CSRF or a global CSRF approach.
+
+---
+
+### P1 — Stop using `db.create_all()` in app startup
+
+Move to migrations using Flask-Migrate.
+
+---
+
+### P1 — Logger fallback must always exist
+
+If `utils.logger` import fails, fallback to Python logging.
+
+---
+
+### P2 — Indexes + query shape improvements
+
+Add indexes on common filters:
+
+* quotation status/date/customer
+* invoice customer/date
+* price list customer/product
+
+---
+
+## 2) VAT Design (Cyprus)
+
+### 2.1 VAT rates
+
+Define canonical VAT options (basis points are safest, but percentage is ok):
+
+* Standard: **19%**
+* Reduced: **5%**
+* (Optional) Zero: **0%**
+
+### 2.2 Default behavior
+
+* When creating a new product price or invoice line: default VAT = **19**
+* Allow user to pick **5** if that product qualifies
+* Store the chosen VAT rate on the **line item**, not just order-level
+
+Why line-level? Because real invoices often mix VAT rates.
+
+---
+
+## 3) Proposed Model Changes (SQLAlchemy)
+
+### 3.1 Money column standard
+
+Use:
+
+* `db.Numeric(12, 2)` for amounts
+* `Decimal` for calculations
+
+Create a helper for rounding:
+
+```python
+from decimal import Decimal, ROUND_HALF_UP
+
+TWOPLACES = Decimal("0.01")
+
+def money(value) -> Decimal:
+    if value is None:
+        return Decimal("0.00")
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+    return value.quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+```
+
+---
+
+### 3.2 VAT rate on line items
+
+In `OrderItem` (and similarly `InvoiceItem`, `QuotationItem` if applicable):
+
+```python
+vat_rate = db.Column(db.Integer, nullable=False, default=19)  # allowed: 19, 5 (optionally 0)
+```
+
+Validation: enforce allowed values in app layer (forms) and optionally DB CHECK constraint (if your DB supports it cleanly).
+
+---
+
+### 3.3 Remove duplicate Order properties (keep one set only)
+
+In `models.py` → `Order`:
+
+```python
+from decimal import Decimal
+
+@property
+def subtotal(self):
+    return money(sum((item.net_total for item in self.items), Decimal("0.00")))
+
+@property
+def vat_amount(self):
+    return money(sum((item.vat_amount for item in self.items), Decimal("0.00")))
+
+@property
+def total(self):
+    return money(self.subtotal + self.vat_amount)
+```
+
+And in `OrderItem`:
+
+```python
+@property
+def unit_price_dec(self):
+    return money(self.unit_price)
+
+@property
+def quantity_dec(self):
+    return Decimal(str(self.quantity or 0))
+
+@property
+def net_total(self):
+    return money(self.unit_price_dec * self.quantity_dec)
+
+@property
+def vat_amount(self):
+    rate = Decimal(str(self.vat_rate)) / Decimal("100")
+    return money(self.net_total * rate)
+
+@property
+def gross_total(self):
+    return money(self.net_total + self.vat_amount)
+```
+
+**Important:** decide what you store:
+
+* Either store computed totals on save (net/vat/gross) for audit/performance
+* Or compute on demand.
+  Recommended: **store line totals at creation/update**, and keep computed properties as a cross-check.
+
+---
+
+## 4) Store amounts (recommended for audit + speed)
+
+### 4.1 Add stored totals to line items (recommended)
+
+Add to `OrderItem` (and similarly `InvoiceItem` / `QuotationItem` if they exist):
+
+* `net_total_amount Numeric(12,2)`
+* `vat_amount Numeric(12,2)`
+* `gross_total_amount Numeric(12,2)`
+
+Then enforce recalculation on:
+
+* item create
+* item update (qty/unit/vat_rate)
+* order finalize
+
+Example method:
+
+```python
+def recalc(self):
+    net = money(self.unit_price_dec * self.quantity_dec)
+    vat = money(net * (Decimal(self.vat_rate) / Decimal("100")))
+    gross = money(net + vat)
+    self.net_total_amount = net
+    self.vat_amount = vat
+    self.gross_total_amount = gross
+```
+
+Then Order totals can sum these stored fields.
+
+### 4.2 Why store?
+
+* You can always reproduce totals at any time
+* Faster reporting (no heavy recalculation)
+* Better audit trail
+
+---
+
+## 5) Migration Plan (Flask-Migrate/Alembic)
+
+### 5.1 Install & setup
+
+1. Add dependency: `flask-migrate`
+2. In `app.py`:
+
+```python
+from flask_migrate import Migrate
+migrate = Migrate(app, db)
+```
+
+3. Remove `db.create_all()` from startup.
+
+4. Initialize:
+
+```bash
+flask db init
+flask db migrate -m "init migrations"
+flask db upgrade
+```
+
+### 5.2 Convert float → Numeric
+
+Migration steps:
+
+* Add new Numeric columns alongside old float columns (safe path)
+* Backfill using SQL cast/rounding
+* Swap usage in code
+* Drop old float columns later
+
+Example approach for a column:
+
+* Old: `price Float`
+* New: `price_amount Numeric(12,2)`
+
+Backfill:
+
+```sql
+UPDATE price_list SET price_amount = ROUND(price::numeric, 2);
+```
+
+Then update code to use `price_amount`.
+Finally remove `price` after you confirm.
+
+**Do this for:**
+
+* PriceList.price
+* Invoice.total_amount
+* InvoiceItem.price
+* any other float money fields
+
+---
+
+## 6) Security Changes
+
+### 6.1 API token enforcement
+
+In `app.py`:
+
+* Remove default `"test_api_token"`
+* If missing token in non-dev, raise error
+
+Example:
+
+```python
+token = os.environ.get("API_TOKEN")
+if not token and not app.debug:
+    raise RuntimeError("API_TOKEN is required in production")
+app.config["API_TOKEN"] = token
+```
+
+### 6.2 CSRF protection
+
+Use Flask-WTF:
+
+* `CSRFProtect(app)`
+* Ensure every form includes CSRF token
+
+For JSON APIs, exempt only those endpoints explicitly.
+
+---
+
+## 7) UI Consistency (Bootstrap + Tailwind conflict)
+
+### Recommendation
+
+* Keep Tailwind layout (`side_layout.html`) as the **new standard**
+* Gradually migrate Bootstrap pages, don’t mix on same page
+
+Immediate steps:
+
+1. Identify pages using `base.html` vs `side_layout.html`
+2. Choose one for admin area (prefer Tailwind)
+3. Remove duplicated JS/CSS includes that cause conflicts
+
+---
+
+## 8) Fix Logger fallback
+
+Ensure `logger` always exists:
+
+```python
+import logging
+logger = logging.getLogger("pricelistpro")
+logging.basicConfig(level=logging.INFO)
+
+try:
+    from utils.logger import logger as custom_logger
+    logger = custom_logger
+except Exception:
+    logger.warning("Using fallback logger")
+```
+
+---
+
+## 9) Indexes (performance hardening)
+
+Add indexes in models or migration:
+
+* `Quotation(status)`
+* `Quotation(customer_id, created_at)`
+* `Invoice(customer_id, invoice_date)`
+* `PriceList(customer_id, product_id)`
+
+---
+
+## 10) Testing Plan (minimum viable, but real)
+
+### 10.1 Unit tests for VAT totals
+
+Add pytest tests:
+
+* item net = unit * qty
+* vat = net * rate
+* totals sum correctly across mixed VAT rates
+
+Cases:
+
+1. Single item 19%
+2. Single item 5%
+3. Mixed items 19% + 5%
+4. Quantity with decimals (if allowed) or integer only (enforce!)
+5. Rounding edge cases: 0.01 * qty, etc.
+
+### 10.2 Integration tests for report totals
+
+* Create order with items
+* Ensure PDF/export uses stored totals (not recalculated with float)
+* Validate totals match expected Decimal math
+
+---
+
+## 11) Implementation Checklist (copy/paste to task tracker)
+
+### P0
+
+* [ ] Fix `quotation.status.value` in templates
+* [ ] Remove duplicate `Order` properties; implement single VAT logic (19/5)
+* [ ] Enforce API_TOKEN (no default)
+* [ ] Replace float money fields strategy (start with PriceList + Order/Invoice core)
+
+### P1
+
+* [ ] Add CSRF protection
+* [ ] Remove `db.create_all()` and introduce migrations
+* [ ] Logger fallback
+
+### P2
+
+* [ ] Add indexes
+* [ ] UI consolidation plan (Tailwind first)
+
+---
+
+## 12) Notes on Cyprus VAT Usage
+
+This plan sets **technical defaults** only:
+
+* Default: 19%
+* Allowed reduced: 5%
+
+The app should allow manual selection per line item because VAT eligibility depends on product category and legislation. The system should store what the user selected for that transaction to keep invoices legally consistent and auditable.
+
+---
+
+## 13) Deliverables after implementing this plan
+
+1. Correct totals across all screens and exports (Decimal-safe)
+2. VAT correct and consistent (19/5 line-based)
+3. No more “random cents” errors
+4. Stable dashboard rendering
+5. Migration-based DB evolution (no create_all drift)
+6. Improved security posture (CSRF + token discipline)
+7. Faster queries as data grows
+
+---
+
+```
+
+If you want to go one notch deeper next, the cleanest “enterprise-ish” approach is: **store line totals at save time** + keep computed properties as an integrity cross-check + add a “recalculate order” admin tool to repair legacy records that were created when floats were used. That gives you both accuracy and maintainability as your dataset grows.
+```
