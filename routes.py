@@ -169,6 +169,129 @@ def register_routes(app):
     def database_backup_redirect():
         return redirect(url_for('backup.index'))
     
+    # ===============================
+    # System Health Routes (Admin)
+    # ===============================
+    
+    @app.route('/admin/system-health', methods=['GET'])
+    @login_required
+    def system_health():
+        """Display system health page with security and integrity status."""
+        from utils.integrity_checker import IntegrityChecker
+        from utils.money import money, ALLOWED_VAT_RATES
+        from decimal import Decimal
+        
+        # Check if API token is configured
+        token_configured = bool(os.environ.get('API_TOKEN'))
+        
+        # CSRF is always enabled (we added it in app.py)
+        csrf_enabled = True
+        
+        # Get cookie security settings
+        cookie_settings = {
+            'httponly': app.config.get('SESSION_COOKIE_HTTPONLY', True),
+            'secure': app.config.get('SESSION_COOKIE_SECURE', False),
+            'samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
+        }
+        
+        # Get any previous scan results from session
+        scan_result = session.get('integrity_scan_result')
+        test_results = session.get('vat_test_results')
+        
+        return render_template('admin/system_health.html',
+            token_configured=token_configured,
+            csrf_enabled=csrf_enabled,
+            cookie_settings=cookie_settings,
+            scan_result=scan_result,
+            test_results=test_results
+        )
+    
+    @app.route('/admin/system-health/scan', methods=['POST'])
+    @login_required
+    def system_health_scan():
+        """Run integrity scan and store results in session."""
+        from utils.integrity_checker import IntegrityChecker
+        
+        try:
+            checker = IntegrityChecker()
+            result = checker.scan_all()
+            session['integrity_scan_result'] = result
+            flash('Integrity scan completed.', 'success')
+        except Exception as e:
+            flash(f'Error running integrity scan: {str(e)}', 'error')
+            logger.error(f"Integrity scan error: {str(e)}")
+        
+        return redirect(url_for('system_health'))
+    
+    @app.route('/admin/system-health/test', methods=['POST'])
+    @login_required
+    def system_health_test():
+        """Run quick VAT calculation tests."""
+        from utils.money import money, calculate_vat, calculate_gross
+        from decimal import Decimal
+        
+        test_results = []
+        
+        # Test 1: 19% VAT on 100.00
+        expected = Decimal("19.00")
+        actual = calculate_vat(Decimal("100.00"), 19)
+        test_results.append({
+            'name': '19% VAT on €100.00',
+            'expected': str(expected),
+            'actual': str(actual),
+            'passed': actual == expected
+        })
+        
+        # Test 2: 5% VAT on 100.00
+        expected = Decimal("5.00")
+        actual = calculate_vat(Decimal("100.00"), 5)
+        test_results.append({
+            'name': '5% VAT on €100.00',
+            'expected': str(expected),
+            'actual': str(actual),
+            'passed': actual == expected
+        })
+        
+        # Test 3: 0% VAT on 100.00
+        expected = Decimal("0.00")
+        actual = calculate_vat(Decimal("100.00"), 0)
+        test_results.append({
+            'name': '0% VAT on €100.00',
+            'expected': str(expected),
+            'actual': str(actual),
+            'passed': actual == expected
+        })
+        
+        # Test 4: Gross total at 19%
+        expected = Decimal("119.00")
+        actual = calculate_gross(Decimal("100.00"), 19)
+        test_results.append({
+            'name': 'Gross total (€100 + 19% VAT)',
+            'expected': str(expected),
+            'actual': str(actual),
+            'passed': actual == expected
+        })
+        
+        # Test 5: Rounding edge case (0.03 @ 19%)
+        expected = Decimal("0.01")  # 0.0057 rounds to 0.01
+        actual = calculate_vat(Decimal("0.03"), 19)
+        test_results.append({
+            'name': 'Rounding: VAT on €0.03 @ 19%',
+            'expected': str(expected),
+            'actual': str(actual),
+            'passed': actual == expected
+        })
+        
+        session['vat_test_results'] = test_results
+        
+        all_passed = all(t['passed'] for t in test_results)
+        if all_passed:
+            flash('All VAT calculation tests passed!', 'success')
+        else:
+            flash('Some VAT calculation tests failed.', 'error')
+        
+        return redirect(url_for('system_health'))
+    
     # Ensure upload directory exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
