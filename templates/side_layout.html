@@ -355,8 +355,13 @@
                 if (!link) return;
                 
                 const href = link.getAttribute('href');
+                const onclick = link.getAttribute('onclick') || '';
+                
+                // Skip loader for: anchors, javascript, new tabs, downloads, special keys, PDF handlers
                 if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
                     link.hasAttribute('target') || link.hasAttribute('download') ||
+                    onclick.includes('openPdfSafely') || onclick.includes('window.open') ||
+                    link.dataset.noLoader === '1' ||
                     e.ctrlKey || e.metaKey || e.shiftKey) {
                     return;
                 }
