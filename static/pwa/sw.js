@@ -1,5 +1,5 @@
 /* static/pwa/sw.js */
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -26,6 +26,10 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
+      if (self.registration.navigationPreload) {
+        await self.registration.navigationPreload.enable();
+      }
+      
       const keys = await caches.keys();
       await Promise.all(
         keys
@@ -79,22 +83,51 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (shouldCacheHTML(url.pathname)) {
-            const copy = res.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, copy));
-          }
-          return res;
-        })
-        .catch(async () => {
-          if (!shouldCacheHTML(url.pathname)) {
+    if (!shouldCacheHTML(url.pathname)) {
+      event.respondWith(
+        (async () => {
+          try {
+            const preloadResponse = event.preloadResponse;
+            const networkResponse = preloadResponse ? await preloadResponse : await fetch(req);
+            return networkResponse;
+          } catch (e) {
             return caches.match("/offline");
           }
-          const cached = await caches.match(req);
-          return cached || caches.match("/offline");
-        })
+        })()
+      );
+      return;
+    }
+    
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(RUNTIME_CACHE);
+        const cachedResponse = await cache.match(req);
+        
+        const fetchPromise = (async () => {
+          try {
+            const preloadResponse = event.preloadResponse;
+            const networkResponse = preloadResponse ? await preloadResponse : await fetch(req);
+            if (networkResponse.ok) {
+              cache.put(req, networkResponse.clone());
+            }
+            return networkResponse;
+          } catch (e) {
+            return null;
+          }
+        })();
+        
+        if (cachedResponse) {
+          fetchPromise.catch(() => {});
+          return cachedResponse;
+        }
+        
+        const networkResponse = await fetchPromise;
+        if (networkResponse) {
+          return networkResponse;
+        }
+        
+        return caches.match("/offline");
+      })()
     );
     return;
   }
