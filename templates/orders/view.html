@@ -29,6 +29,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <form method="POST" action="{{ url_for('orders.update_status', order_id=order.id) }}" class="mb-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <label for="status" class="form-label">Change Status</label>
                             <div class="input-group">
                                 <select name="status" id="status" class="form-select">
@@ -247,6 +248,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
                                                     <form method="POST" action="/orders/{{ order.id }}/item/{{ item.id }}/update">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                         <div class="modal-body">
                                                             <div class="mb-3">
                                                                 <label for="item{{ item.id }}_name" class="form-label">Plant/Product</label>
@@ -312,6 +314,7 @@
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                                         <form method="POST" action="{{ url_for('orders.remove_item', order_id=order.id, item_id=item.id) }}">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                             <button type="submit" class="btn btn-danger">Remove</button>
                                                         </form>
                                                     </div>
@@ -577,7 +580,8 @@ editItemForm.addEventListener('submit', async e => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCSRFToken()
             },
             body: JSON.stringify({
                 quantity: parseInt(formData.get('quantity')),
@@ -810,6 +814,9 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('size', size);
             formData.append('notes', notes);
             
+            // Add CSRF token to form data
+            formData.append('csrf_token', getCSRFToken());
+            
             try {
                 const response = await fetch(`/orders/{{ order.id }}/add_item`, {
                     method: 'POST',
@@ -929,6 +936,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editDiscountForm" method="POST" action="/orders/{{ order.id }}/discount">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="discountType" class="form-label">Discount Type</label>
@@ -981,6 +989,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editTotalForm" action="{{ url_for('orders.update_order_total', order_id=order.id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <p>Enter the desired final total for this order. The system will automatically calculate the fixed discount required.</p>
                     <div class="mb-3">

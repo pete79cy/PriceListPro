@@ -113,6 +113,13 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- January 17, 2026: Comprehensive CSRF Security Hardening
+  - Added CSRF meta tags to all base templates (side_layout.html, layout.html, base.html, apple_layout.html)
+  - Added getCSRFToken() and csrfFetch() helper functions for JavaScript AJAX requests
+  - Added hidden CSRF tokens to 40+ POST forms across all templates
+  - Fixed JavaScript fetch calls to include X-CSRFToken headers for batch delete, price updates, orders, etc.
+  - Templates fixed: customers, products, suppliers, uploads, quotations, orders, invoices, price_lists, company_settings
+  - Bumped service worker cache version to v8 for security update propagation
 - January 17, 2026: PWA (Progressive Web App) Upgrade
   - Made app installable on Android and iOS as a standalone app
   - Added manifest.webmanifest with app metadata and icons

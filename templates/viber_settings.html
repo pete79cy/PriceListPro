@@ -188,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
             },
             body: JSON.stringify({ token: token }),
         })
@@ -349,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
             },
             body: JSON.stringify(currentMappings),
         })
