@@ -1,0 +1,110 @@
+From the screenshot: the Preview panel shows a **white page with the “🚫 / prohibited” icon** while it keeps saying **“Loading your page…”**. In browsers, that icon inside an embedded preview almost always means:
+
+**Your app is refusing to be displayed inside an iframe** (the Replit preview is an iframe).
+
+The two usual culprits are response headers:
+
+* `X-Frame-Options: DENY` (or sometimes `SAMEORIGIN`)
+* `Content-Security-Policy: frame-ancestors 'none'` (or too strict)
+
+### 1) Confirm in 20 seconds
+
+Open DevTools for the Preview frame (or open the app in a new tab and check console). You’ll typically see an error like:
+
+* **“Refused to display … in a frame because it set ‘X-Frame-Options’ to ‘deny’.”**
+  or
+* **“Refused to frame … because an ancestor violates CSP: frame-ancestors …”**
+
+Also, try Replit’s **“Open in new tab”** button — if it works there but not in Preview, that’s basically proof it’s iframe-blocking headers.
+
+---
+
+## 2) Fix (recommended): allow iframe only in development / Replit preview
+
+### If you’re using Flask-Talisman
+
+Search for something like:
+
+```python
+from flask_talisman import Talisman
+Talisman(app, ...)
+```
+
+Then adjust:
+
+**Option A (easy): disable frame protection in dev**
+
+```python
+if app.debug:
+    Talisman(app, frame_options=None)
+else:
+    Talisman(app)  # or your stricter prod config
+```
+
+**Option B (better): allow SAMEORIGIN**
+
+```python
+Talisman(app, frame_options="SAMEORIGIN")
+```
+
+**Option C (best for Replit Preview): set CSP frame-ancestors**
+
+```python
+csp = {
+  "default-src": ["'self'"],
+  "frame-ancestors": ["'self'", "https://*.replit.dev", "https://*.replit.app"]
+}
+Talisman(app, content_security_policy=csp, frame_options=None)
+```
+
+---
+
+### If you’re manually setting headers
+
+Search your code for `X-Frame-Options` or `Content-Security-Policy`.
+
+If you have something like:
+
+```python
+@app.after_request
+def add_headers(resp):
+    resp.headers["X-Frame-Options"] = "DENY"
+    return resp
+```
+
+Change to:
+
+```python
+@app.after_request
+def add_headers(resp):
+    # Allow Replit preview iframe (dev only)
+    if app.debug:
+        resp.headers.pop("X-Frame-Options", None)
+        # or: resp.headers["X-Frame-Options"] = "SAMEORIGIN"
+    return resp
+```
+
+If you have CSP with `frame-ancestors 'none'`, replace it with an allow list as shown above.
+
+---
+
+## 3) Secondary cause (less common): forced HTTPS redirects inside preview
+
+If you added “force HTTPS” logic, the embedded preview sometimes hits HTTP → HTTPS redirects and Replit preview can act weird. In that case:
+
+* only force HTTPS in production (`if not app.debug`)
+* don’t force it on `*.replit.dev` preview URLs
+
+---
+
+## 4) Quick “it should work now” checklist
+
+After the change:
+
+* Restart the Replit run
+* Hard refresh Preview
+* You should see the page render immediately (no 🚫 icon)
+
+---
+
+If you paste the snippet where you configure **security headers / Talisman / after_request**, I can tell you the exact one-line change that’s blocking the iframe and what to set for Replit-safe dev behavior.
