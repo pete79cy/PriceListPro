@@ -69,6 +69,13 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     },
 }
 
+# Configure session cookie security (P1 security hardening)
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protect against CSRF via cross-site requests
+# SESSION_COOKIE_SECURE should be True in production (HTTPS only)
+# Set to False for development to allow HTTP
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
+
 # Configure file uploads
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
 app.config['TEMPLATES_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates/sample_files')
