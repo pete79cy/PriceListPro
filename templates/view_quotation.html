@@ -69,9 +69,12 @@
             <a href="#items-section" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">edit</span> Edit Items
             </a>
-            <a href="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                <span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate
-            </a>
+            <form action="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" method="post" class="w-full">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors w-full text-left">
+                    <span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate
+                </button>
+            </form>
             <a href="{{ url_for('quotation.customize_fields', quotation_id=quotation.id) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">tune</span> Customize Fields
             </a>
@@ -216,9 +219,12 @@
                 
                 {% if quotation.status == 'REJECTED' %}
                 <div class="mt-3 pt-3 border-t border-slate-200">
-                    <a href="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors">
-                        <span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate Quotation
-                    </a>
+                    <form action="{{ url_for('duplicate_quotation', quotation_id=quotation.id) }}" method="post" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate Quotation
+                        </button>
+                    </form>
                 </div>
                 {% endif %}
                 

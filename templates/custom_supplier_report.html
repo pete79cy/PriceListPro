@@ -17,6 +17,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card h-100">

@@ -2,12 +2,12 @@ import os
 import logging
 import traceback
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
-from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
+from flask_login import LoginManager, current_user
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 # Set up logging - this will be replaced by the custom logger
 logging.basicConfig(level=logging.DEBUG)
@@ -25,6 +25,46 @@ except ImportError as e:
     logger.warning(f"Using fallback logger: {e}")
 
 def register_error_handlers(app):
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        user_id = current_user.id if current_user.is_authenticated else 'anonymous'
+        referrer = request.headers.get('Referer', 'unknown')
+        logger.warning(f"CSRF Error: {e.description}")
+        logger.warning(f"  Route: {request.path} | Method: {request.method}")
+        logger.warning(f"  User ID: {user_id} | Referrer: {referrer}")
+        logger.warning(f"  User-Agent: {request.headers.get('User-Agent', 'unknown')[:100]}")
+        
+        if request.headers.get('Accept', '').find('application/json') >= 0 or \
+           request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'error': 'CSRF token missing or invalid',
+                'message': 'Your session may have expired. Please refresh the page and try again.'
+            }), 400
+        
+        from flask import render_template_string
+        return render_template_string('''
+<!DOCTYPE html>
+<html>
+<head><title>Session Expired</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+h1 { color: #e74c3c; margin-bottom: 1rem; }
+p { color: #666; margin-bottom: 1.5rem; }
+a { display: inline-block; padding: 0.75rem 1.5rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px; }
+a:hover { background: #2980b9; }
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Session Expired</h1>
+<p>Your session has expired or the security token is invalid. Please refresh the page and try again.</p>
+<a href="javascript:window.location.reload()">Refresh Page</a>
+</div>
+</body>
+</html>
+        '''), 400
+    
     @app.errorhandler(500)
     def internal_error(error):
         logger.error(f"500 Internal Server Error: {str(error)}")
@@ -78,6 +118,9 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protect against CSRF via cross-
 # SESSION_COOKIE_SECURE should be True in production (HTTPS only)
 # Set to False for development to allow HTTP
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
+
+# Configure CSRF protection settings
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # CSRF token valid for 1 hour (prevents random expiries)
 
 # Configure file uploads
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'

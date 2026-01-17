@@ -1,213 +1,53 @@
 # Plant Pricing System
 
 ## Overview
+This project is a Flask-based plant pricing system designed to streamline business operations for plant nurseries and distributors. It manages customer quotations, supplier relationships, and invoice processing, featuring automated PDF generation, Excel and PDF parsing, AI-powered insights for duplicate detection and pricing, and real-time supplier communication via Viber. The system aims to enhance efficiency, reduce manual errors, and provide a comprehensive solution for managing the complex workflows associated with plant sales and procurement.
 
-A comprehensive Flask-based plant pricing system that manages customer quotations, supplier relationships, invoice processing, and automated PDF generation. The system supports Excel file imports, PDF invoice parsing, AI-powered insights, and Viber integration for real-time supplier communication.
+## User Preferences
+Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Backend Architecture
-- **Framework**: Flask 3.1.0 with SQLAlchemy 2.0.40 ORM
-- **Database**: PostgreSQL 16 with psycopg2-binary connector
-- **Authentication**: Flask-Login with werkzeug password hashing
-- **Admin Interface**: Flask-Admin for data management
-- **PDF Generation**: WeasyPrint 65.0 for quotation and report generation
-- **File Processing**: pandas, openpyxl, xlrd for Excel parsing; PyPDF2 for PDF extraction
+### Backend
+- **Framework**: Flask with SQLAlchemy ORM
+- **Database**: PostgreSQL
+- **Authentication**: Flask-Login
+- **Admin Interface**: Flask-Admin
+- **PDF Generation**: WeasyPrint
+- **File Processing**: pandas, openpyxl, xlrd, PyPDF2
+- **AI Integration**: OpenAI API for insights and duplicate detection
+- **Communication**: Viber Bot API for supplier updates
 
-### Frontend Architecture
-- **Templates**: Jinja2 template engine with modern Tailwind CSS design
-- **Design System**: Tailwind CSS with primary color #2b8cee, rounded-xl cards, Material Symbols icons
-- **Layout**: Side layout (side_layout.html) with responsive sidebar navigation
-- **JavaScript**: Vanilla JS with AJAX for dynamic interactions
-- **CSS**: Tailwind CSS with custom configuration for responsive design
-- **File Uploads**: Secure file handling with validation
+### Frontend
+- **Templates**: Jinja2 with Tailwind CSS
+- **Design System**: Modern Tailwind CSS with a primary color of #2b8cee, rounded-xl cards, and Material Symbols icons. Features a responsive side layout.
+- **Interactivity**: Vanilla JavaScript with AJAX for dynamic updates.
+- **PWA**: Progressive Web App capabilities for installability and offline support (offline fallback, caching strategies).
 
-### External Integrations
-- **OpenAI API**: For duplicate detection and AI insights
-- **Viber Bot API**: Real-time supplier product updates
-- **WeasyPrint**: Professional PDF generation with custom CSS
-
-## Key Components
-
-### Database Models
-- **User**: Authentication and admin roles
-- **Customer/Supplier**: Business relationship management
-- **Product/SupplierProduct**: Plant inventory with scientific names
-- **Quotation/QuotationItem**: Quote generation with line items
-- **Invoice/InvoiceItem**: Invoice processing and tracking
-- **PriceList**: Customer-specific pricing structures
-- **FileUpload**: Upload tracking and processing status
-
-### PDF Generation System
-- **Enhanced PDF Generator**: Fixes for missing items and layout issues
-- **Template System**: Modern quotation templates with proper CSS handling
-- **Debug Mode**: Visual debugging for PDF generation issues
-- **Multi-format Support**: Quotations, invoices, delivery notes, supplier catalogs
-
-### File Processing Pipeline
-- **Excel Parser**: Flexible column mapping for price lists
-- **PDF Parser**: Invoice data extraction with metadata
-- **Quotation Parser**: Automated quotation file processing
-- **Validation**: Data integrity checks and error handling
-
-### AI Integration
-- **Duplicate Detection**: OpenAI-powered supplier product duplicate analysis
-- **Document Insights**: AI analysis of quotations and invoices
-- **Price Recommendations**: Intelligent pricing suggestions
-
-## Data Flow
-
-### Quotation Workflow
-1. **Creation**: Manual quotation creation or file import
-2. **Item Management**: Add/edit line items with pricing
-3. **PDF Generation**: Enhanced PDF export with fixed positioning
-4. **Status Tracking**: Workflow management through quotation lifecycle
-
-### File Import Process
-1. **Upload**: Secure file upload with validation
-2. **Processing**: Background parsing of Excel/PDF files
-3. **Data Extraction**: Product and pricing information extraction
-4. **Validation**: Data integrity and format validation
-5. **Integration**: Merge with existing database records
-
-### Supplier Integration
-1. **Viber Messages**: Real-time product updates via Viber webhook
-2. **Product Parsing**: Automatic extraction of plant details
-3. **Duplicate Detection**: AI-powered duplicate identification
-4. **Catalog Generation**: PDF catalog creation for suppliers
+### Core Features
+- **Database Models**: Comprehensive models for Users, Customers, Suppliers, Products, Quotations, Invoices, PriceLists, and FileUploads.
+- **PDF Generation**: Robust system for generating quotations, invoices, delivery notes, and supplier catalogs with custom templates and CSS.
+- **File Processing**: Automated parsing of Excel and PDF files for product and pricing data, with flexible column mapping and data validation.
+- **AI Integration**: AI-driven duplicate detection for supplier products, document analysis, and intelligent price recommendations.
+- **Quotation Workflow**: Supports manual creation, item management, PDF generation, and status tracking.
+- **Supplier Integration**: Real-time product updates via Viber and automated product catalog generation.
+- **Security**: Implements CSRF protection, secure session management, and API security (Bearer token authentication).
+- **Quality Gates**: Includes pytest suite for money/VAT calculations, data integrity checker, and a System Health admin page.
+- **Discount System**: Comprehensive discount calculation logic for orders (percentage and fixed amount).
+- **Pro Forma Invoicing**: Professional Pro Forma Invoice generation with corporate branding.
+- **Pending Pricing Status**: Tracks pricing status for quotation items (CONFIRMED, PENDING, REQUESTED).
 
 ## External Dependencies
 
 ### Python Packages
-- **Flask Stack**: flask, flask-sqlalchemy, flask-login, flask-admin, flask-wtf
+- **Web**: flask, flask-sqlalchemy, flask-login, flask-admin, flask-wtf
 - **Database**: psycopg2-binary, sqlalchemy
-- **File Processing**: pandas, openpyxl, xlrd, pypdf2
-- **PDF Generation**: weasyprint, reportlab, fpdf2
-- **AI Integration**: openai
-- **Communication**: viberbot, requests, slack-sdk
+- **File Handling**: pandas, openpyxl, xlrd, pypdf2
+- **PDF**: weasyprint, reportlab, fpdf2
+- **AI**: openai
+- **Communication**: viberbot, requests
 - **Utilities**: pillow, qrcode, email-validator
 
 ### System Dependencies
-- **PostgreSQL 16**: Primary database server
-- **System Fonts**: fontconfig, freetype for PDF rendering
-- **Graphics Libraries**: ghostscript, pango, harfbuzz for PDF generation
-
-## Deployment Strategy
-
-### Environment Configuration
-- **Runtime**: Python 3.11 with Nix package management
-- **Database**: PostgreSQL 16 with connection pooling
-- **Server**: Gunicorn WSGI server with autoscaling deployment
-- **Storage**: Local file system for uploads and generated PDFs
-
-### Deployment Settings
-- **Target**: Autoscale deployment on Replit infrastructure
-- **Port**: 5000 internal, 80 external
-- **Process**: Gunicorn with bind 0.0.0.0:5000 and reload capability
-- **Workflows**: Parallel task execution with package installation
-
-### Database Management
-- **Migrations**: Custom migration scripts for schema updates
-- **Backups**: Automated backup system with retention policies
-- **Health Checks**: Database connection monitoring
-
-## Changelog
-
-- January 17, 2026: Comprehensive CSRF Security Hardening
-  - Added CSRF meta tags to all base templates (side_layout.html, layout.html, base.html, apple_layout.html)
-  - Added getCSRFToken() and csrfFetch() helper functions for JavaScript AJAX requests
-  - Added hidden CSRF tokens to 40+ POST forms across all templates
-  - Fixed JavaScript fetch calls to include X-CSRFToken headers for batch delete, price updates, orders, etc.
-  - Templates fixed: customers, products, suppliers, uploads, quotations, orders, invoices, price_lists, company_settings
-  - Bumped service worker cache version to v8 for security update propagation
-- January 17, 2026: PWA (Progressive Web App) Upgrade
-  - Made app installable on Android and iOS as a standalone app
-  - Added manifest.webmanifest with app metadata and icons
-  - Created service worker (sw.js) for offline support and caching
-  - Added offline fallback page (templates/offline.html)
-  - Added PWA routes: /manifest.webmanifest, /sw.js, /offline, /version.json
-  - Updated side_layout.html with PWA meta tags and service worker registration
-  - Added iOS PWA support (apple-mobile-web-app-capable, apple-touch-icon)
-  - Generated PWA icons: icon-192.png, icon-512.png, icon-512-maskable.png
-  - Added BUILD_ID config for cache busting in production
-  - PWA Hardening (P0-P2):
-    - P0: Auth-sensitive routes excluded from caching (/login, /logout, /admin, /api)
-    - P0: Added controlled update flow with "Update available" toast notification
-    - P0: Added SKIP_WAITING message handler in service worker
-    - P1: Added /health endpoint for uptime monitoring (returns {"ok": true})
-    - P1: Added PWA Status card to System Health page (Build ID, SW Status, Online status)
-  - Offline Capability Scope:
-    - Offline fallback page works for navigation requests
-    - Static assets cached with Cache First strategy
-    - HTML pages use Network First strategy with offline fallback
-    - No offline CRUD support (requires online connection for data operations)
-    - iOS limitations: Background tasks restricted, storage may be purged by OS
-- January 17, 2026: Post-Stabilization Quality Gate Implementation
-  - Deliverable A: Created pytest test suite (tests/test_money.py, tests/test_vat_totals.py) with 30 tests for money/VAT correctness
-  - Deliverable B: Implemented IntegrityChecker utility (utils/integrity_checker.py) to scan Orders for data integrity issues
-  - Deliverable C: Added Admin UI System Health page (/admin/system-health) with:
-    - API Token configuration status
-    - CSRF protection status
-    - Cookie security settings display
-    - Data Integrity Scanner with run button and results table
-    - Quick VAT Calculation Tests (5 core tests run in-app)
-  - Extracted money utilities to utils/money.py to avoid circular imports in tests
-  - Added session cookie security: SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE='Lax', SESSION_COOKIE_SECURE (production only)
-- January 17, 2026: PriceListPro Stabilization - Cyprus VAT & Money Precision
-  - P0: Fixed dashboard template crash by replacing quotation.status.value with quotation.status
-  - P0: Fixed Order model duplicate properties and implemented Cyprus VAT rates (19% standard, 5% reduced)
-  - P0: Secured API token - removed insecure default, requires token in production
-  - P0: Added money() helper function for Decimal-safe calculations with ROUND_HALF_UP
-  - P0: Updated OrderItem with Decimal properties (unit_price_dec, quantity_dec, net_total, vat_amount, gross_total)
-  - P1: Added CSRF protection with Flask-WTF CSRFProtect, exempted API endpoints
-  - P1: Improved logger fallback to always exist (uses pricelistpro logger if custom logger fails)
-  - P2: Added database indexes for performance (Quotation, Invoice, PriceList)
-  - Added Cyprus VAT constants: CYPRUS_VAT_STANDARD=19, CYPRUS_VAT_REDUCED=5, CYPRUS_VAT_ZERO=0
-- December 18, 2025: Major UI Redesign with Tailwind CSS
-  - Migrated from Bootstrap/legacy layouts to modern Tailwind CSS design system
-  - Created side_layout.html as main layout template with responsive sidebar navigation
-  - Redesigned all major pages: customers, products, orders, suppliers, addenda, pending updates, uploads, search, company settings
-  - Added Material Symbols Outlined icons across all pages
-  - Implemented responsive design with desktop table view and mobile card view patterns
-  - Added modern filter bars, search functionality, and batch action capabilities
-  - Created consistent modal dialogs for add/edit/delete operations
-  - Primary color theme: #2b8cee with slate color palette
-- July 20, 2025: Updated Terms & Conditions for Plant Quotations (B2B)
-  - Updated all quotation templates with comprehensive 14-clause terms and conditions
-  - Corrected section 6 "Delivery, Risk & Title" to consolidate delivery and lead time information
-  - Enhanced section 7 "Inspection & Acceptance" with specific timeframes for defect reporting
-  - Fixed section 12 "Confidentiality" to use proper non-breaking hyphen for "non‑public"
-  - Updated section 13 "Governing Law & Jurisdiction" to include exclusive jurisdiction clause
-  - Applied changes to all 6 quotation templates for consistency
-  - Updated footer format to match specification: "Andreas Pakkoutis & Sons Ltd — Plant Quotation T&C (v Jun 2025)"
-  - Added proper CSS styling for terms-page and terms-section classes
-- July 3, 2025: Implemented Comprehensive Discount System for Orders
-  - Added discount_percentage and discount_amount fields to Order model
-  - Created complete discount calculation logic supporting both percentage and fixed amount discounts
-  - Updated order view template to display discount information with proper formatting
-  - Enhanced Pro Forma Invoice generator to include discount calculations in PDF documents
-  - Updated order totals to properly calculate subtotal, VAT, and final total after discounts
-  - Added real-time discount calculations in JavaScript for order forms
-  - Integrated discount display across all order-related views and documents
-- July 3, 2025: Created Professional Pro Forma Invoice System for Orders
-  - Built new proforma_invoice_generator.py with enhanced HTML template
-  - Added corporate branding with accent color (#0A3D62) and modern typography
-  - Implemented responsive design with viewport support and flexible layout
-  - Added zebra striping, improved table headers, and professional styling
-  - Created generate_proforma_invoice route for order PDF downloads
-  - Updated order view template with Pro Forma Invoice button
-  - Added print-friendly CSS for clean document printing
-  - Integrated with existing order management system
-- June 29, 2025: Added pending pricing status feature for quotation items
-  - Added pricing_status column to QuotationItem model (CONFIRMED, PENDING, REQUESTED)
-  - Enhanced quotation parser to handle items without prices
-  - Updated edit quotation interface with pricing status controls
-  - Added visual indicators for pending pricing items
-  - Fixed AI price suggestion button restoration issues
-  - Set default pricing status to CONFIRMED for all new items
-  - Added enhanced JavaScript debugging for AI price suggestion buttons
-- June 24, 2025: Initial setup
-
-## User Preferences
-
-Preferred communication style: Simple, everyday language.
+- **Database Server**: PostgreSQL 16
+- **Font Rendering**: fontconfig, freetype, ghostscript, pango, harfbuzz

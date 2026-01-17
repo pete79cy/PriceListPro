@@ -1,5 +1,5 @@
 /* static/pwa/sw.js */
-const CACHE_VERSION = "v8";
+const CACHE_VERSION = "v9";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -10,7 +10,25 @@ const PRECACHE_URLS = [
   "/static/pwa/icons/icon-512.png"
 ];
 
-const NO_CACHE_PATHS = ["/login", "/logout", "/admin", "/api"];
+const NO_CACHE_PATHS = [
+  "/login",
+  "/logout",
+  "/admin",
+  "/api",
+  "/customers",
+  "/products",
+  "/suppliers",
+  "/quotation",
+  "/orders",
+  "/invoices",
+  "/upload",
+  "/create",
+  "/edit",
+  "/company-settings",
+  "/viber",
+  "/pending",
+  "/addenda"
+];
 
 function shouldCacheHTML(pathname) {
   return !NO_CACHE_PATHS.some(p => pathname.startsWith(p));

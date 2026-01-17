@@ -102,6 +102,7 @@
 
     <!-- Report Configuration Form -->
     <form method="POST" id="deliveryNoteForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <!-- Report Options -->
         <div class="form-section">
             <h5 class="section-title">
