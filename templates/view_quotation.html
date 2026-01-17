@@ -23,10 +23,10 @@
             <span class="material-symbols-outlined text-[16px]">expand_more</span>
         </button>
         <div id="pdfDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
-            <a href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+            <a href="{{ url_for('export_quotation_modern', quotation_id=quotation.id) }}" onclick="return openPdfSafely(this.href)" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">description</span> Modern PDF
             </a>
-            <a href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+            <a href="{{ url_for('quotation.export_custom', quotation_id=quotation.id) }}" onclick="return openPdfSafely(this.href)" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">tune</span> Custom PDF
             </a>
         </div>
@@ -78,7 +78,7 @@
             <a href="{{ url_for('custom_supplier_report', quotation_id=quotation.id) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">summarize</span> Custom Supplier Reports
             </a>
-            <a href="{{ url_for('delivery_note_enhanced', quotation_id=quotation.id) }}" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+            <a href="{{ url_for('delivery_note_enhanced', quotation_id=quotation.id) }}" onclick="return openPdfSafely(this.href)" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">local_shipping</span> Delivery Note
             </a>
             <a href="#" id="showAiInsightsButton" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
@@ -1134,6 +1134,23 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function openPdfSafely(url) {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone === true;
+    
+    if (isStandalone) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.click();
+        return false;
+    } else {
+        window.open(url, '_blank', 'noopener');
+        return false;
+    }
 }
 </script>
 {% endblock %}
