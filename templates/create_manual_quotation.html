@@ -32,6 +32,7 @@
                 </div>
                 <div class="p-4 sm:p-6">
                     <form id="manualQuotationForm" method="POST" action="{{ url_for('create_manual_quotation') }}" class="space-y-5">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <!-- Customer Select -->
                         <div>
                             <label for="customer_id" class="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
