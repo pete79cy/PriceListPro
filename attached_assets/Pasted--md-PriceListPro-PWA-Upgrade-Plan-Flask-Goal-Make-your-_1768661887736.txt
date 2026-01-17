@@ -1,0 +1,400 @@
+```md
+# PriceListPro → PWA Upgrade Plan (Flask)
+**Goal:** Make your existing Flask web app installable on mobile (Android + iOS) as a **PWA** with:
+- Home screen icon + splash
+- Offline fallback page
+- Basic caching for faster loads
+- Safe update behavior (no “stale app forever”)
+
+This is **Option A** (PWA). No App Store needed.
+
+---
+
+## 1) What you’ll add
+### Files (new)
+```
+
+static/
+pwa/
+manifest.webmanifest
+sw.js
+icons/
+icon-192.png
+icon-512.png
+icon-512-maskable.png
+templates/
+offline.html
+
+````
+
+### Routes (optional but recommended)
+- `/manifest.webmanifest` (serve manifest with correct mimetype)
+- `/sw.js` (serve service worker at root scope)
+- `/offline` (offline fallback page)
+- `/version.json` (build/version for cache busting and support)
+
+---
+
+## 2) PWA Requirements Checklist (must-have)
+✅ Served over HTTPS (Replit deployment is HTTPS)  
+✅ `manifest.webmanifest` linked in `<head>`  
+✅ Service worker registered from pages users visit  
+✅ At least one icon (192/512)  
+✅ Proper scope so SW controls the app routes  
+
+---
+
+## 3) Add the manifest
+
+### 3.1 Create `static/pwa/manifest.webmanifest`
+Update `start_url` + `scope` to match your deployed root.
+
+```json
+{
+  "name": "PriceListPro",
+  "short_name": "PriceListPro",
+  "description": "Plant Pricing System - Orders, Quotations, Invoices",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [
+    {
+      "src": "/static/pwa/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/pwa/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/pwa/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
+````
+
+---
+
+## 4) Add icons
+
+Create these PNGs:
+
+* `icon-192.png` (192×192)
+* `icon-512.png` (512×512)
+* `icon-512-maskable.png` (512×512)
+
+Put them in:
+
+```
+static/pwa/icons/
+```
+
+**Tip:** maskable icon should have padding around the logo (so it doesn’t get clipped in circular masks).
+
+---
+
+## 5) Add Service Worker (cache + offline fallback)
+
+### 5.1 Create `static/pwa/sw.js`
+
+This version:
+
+* precaches core assets
+* caches static files with **Cache First**
+* uses **Network First** for HTML routes (so logged-in pages stay fresh)
+* falls back to `/offline` when offline
+
+```js
+/* static/pwa/sw.js */
+const CACHE_VERSION = "v1"; // bump this when you want to force a refresh
+const STATIC_CACHE = `static-${CACHE_VERSION}`;
+const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
+
+const PRECACHE_URLS = [
+  "/offline",
+  "/static/pwa/manifest.webmanifest",
+  "/static/pwa/icons/icon-192.png",
+  "/static/pwa/icons/icon-512.png"
+];
+
+// Install: precache basics
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+  );
+  self.skipWaiting();
+});
+
+// Activate: clean old caches
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => ![STATIC_CACHE, RUNTIME_CACHE].includes(k))
+          .map((k) => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+// Helper
+function isStaticAsset(url) {
+  return (
+    url.pathname.startsWith("/static/") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".jpg") ||
+    url.pathname.endsWith(".jpeg") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".woff") ||
+    url.pathname.endsWith(".woff2")
+  );
+}
+
+// Fetch strategy
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+
+  // Only handle GET
+  if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+
+  // Ignore cross-origin
+  if (url.origin !== self.location.origin) return;
+
+  // HTML navigation: Network First (fresh pages), fallback to cache/offline
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(async () => {
+          const cached = await caches.match(req);
+          return cached || caches.match("/offline");
+        })
+    );
+    return;
+  }
+
+  // Static assets: Cache First
+  if (isStaticAsset(url)) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((res) => {
+          const copy = res.clone();
+          caches.open(STATIC_CACHE).then((cache) => cache.put(req, copy));
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // Default: Network First for same-origin GETs
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, copy));
+        return res;
+      })
+      .catch(() => caches.match(req))
+  );
+});
+```
+
+---
+
+## 6) Flask routing for correct scope + MIME types (important)
+
+Service workers must be served from **root scope** (e.g. `/sw.js`) to control your whole app.
+
+### 6.1 Add routes (recommended)
+
+In your `app.py` (or a blueprint):
+
+```python
+from flask import send_from_directory, jsonify, render_template, current_app
+
+@app.get("/manifest.webmanifest")
+def pwa_manifest():
+    return send_from_directory("static/pwa", "manifest.webmanifest", mimetype="application/manifest+json")
+
+@app.get("/sw.js")
+def service_worker():
+    # Must be served from root to control the entire site
+    return send_from_directory("static/pwa", "sw.js", mimetype="application/javascript")
+
+@app.get("/offline")
+def offline_page():
+    return render_template("offline.html")
+
+@app.get("/version.json")
+def version_json():
+    # Option A: use env BUILD_ID if you have it; fallback to timestamp or static version
+    build_id = current_app.config.get("BUILD_ID") or "dev"
+    return jsonify({"build_id": build_id})
+```
+
+### 6.2 Add `BUILD_ID` config (optional but very useful)
+
+In `app.py`:
+
+```python
+import os
+app.config["BUILD_ID"] = os.environ.get("BUILD_ID", "dev")
+```
+
+---
+
+## 7) Add `<head>` tags + register the SW
+
+### 7.1 In your main base template (the one all pages extend)
+
+Add inside `<head>`:
+
+```html
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b1220">
+
+<!-- iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PriceListPro">
+<link rel="apple-touch-icon" href="/static/pwa/icons/icon-192.png">
+```
+
+### 7.2 Register SW (place near end of `<body>` in base template)
+
+```html
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js");
+        // Optional: update check
+        reg.update();
+      } catch (e) {
+        console.warn("SW registration failed", e);
+      }
+    });
+  }
+</script>
+```
+
+---
+
+## 8) Offline fallback template
+
+Create `templates/offline.html`:
+
+```html
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offline — PriceListPro</title>
+    <style>
+      body{font-family:system-ui;margin:0;padding:24px;background:#0b1220;color:#e5e7eb}
+      .card{max-width:560px;margin:40px auto;padding:20px;border-radius:14px;background:#111827}
+      a{color:#93c5fd}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>You’re offline</h1>
+      <p>PriceListPro can’t reach the server right now.</p>
+      <p>Try again when you have a connection.</p>
+      <p><a href="/">Retry</a></p>
+    </div>
+  </body>
+</html>
+```
+
+---
+
+## 9) Install UX (optional)
+
+On Android/Chrome, the browser will usually show an install prompt automatically.
+If you want a custom “Install App” button, implement `beforeinstallprompt` handling.
+
+(We can add this later; keep v1 simple.)
+
+---
+
+## 10) Testing (do these in order)
+
+### 10.1 Desktop (Chrome)
+
+1. Open site
+2. DevTools → Application:
+
+   * Manifest loads
+   * Service worker is active
+3. DevTools → Lighthouse → “Progressive Web App” audit
+
+### 10.2 Android
+
+* Visit site in Chrome → menu → **Install app**
+* Open installed app → confirm:
+
+  * standalone display
+  * login works
+  * offline page appears when airplane mode is enabled
+
+### 10.3 iPhone (Safari)
+
+* Visit site → Share → **Add to Home Screen**
+* Open from icon (standalone)
+* Test offline fallback
+
+---
+
+## 11) Notes (important realities)
+
+* PWA offline support is best for **static assets** and an **offline page**.
+* Full offline CRUD requires designing offline-first sync (possible, but bigger project).
+* iOS PWA behavior is more restrictive than Android (especially background tasks).
+
+---
+
+## 12) Upgrade policy (recommended)
+
+When you deploy changes that affect JS/CSS/templates:
+
+* bump `CACHE_VERSION` in `sw.js` (e.g. `v2`)
+* or use `BUILD_ID`-based cache names (more advanced)
+
+---
+
+## 13) Definition of Done
+
+* App is installable on Android + iOS
+* Service worker active
+* Offline fallback works
+* No console errors
+* Lighthouse PWA audit passes core checks
+
+---
+
+```
+
+If you tell me which base template is the true “global” one in your project (`base.html` vs `side_layout.html`), I can tailor the exact patch locations so this drops in cleanly without fighting your current layout system.
+```
