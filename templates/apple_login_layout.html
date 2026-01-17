@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Plant Pricing System{% endblock %}</title>
+    
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0b1220">
+    
+    <!-- iOS PWA support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PriceListPro">
+    <link rel="apple-touch-icon" href="/static/pwa/icons/icon-192.png">
+    
     <!-- Apple-style Login CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
     <!-- Font Awesome for icons -->
@@ -163,6 +174,20 @@
                 }
             }
         });
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", async () => {
+          try {
+            const reg = await navigator.serviceWorker.register("/sw.js");
+            reg.update();
+          } catch (e) {
+            console.warn("SW registration failed", e);
+          }
+        });
+      }
     </script>
     
     {% block scripts %}{% endblock %}

@@ -113,6 +113,16 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- January 17, 2026: PWA (Progressive Web App) Upgrade
+  - Made app installable on Android and iOS as a standalone app
+  - Added manifest.webmanifest with app metadata and icons
+  - Created service worker (sw.js) for offline support and caching
+  - Added offline fallback page (templates/offline.html)
+  - Added PWA routes: /manifest.webmanifest, /sw.js, /offline, /version.json
+  - Updated side_layout.html with PWA meta tags and service worker registration
+  - Added iOS PWA support (apple-mobile-web-app-capable, apple-touch-icon)
+  - Generated PWA icons: icon-192.png, icon-512.png, icon-512-maskable.png
+  - Added BUILD_ID config for cache busting in production
 - January 17, 2026: Post-Stabilization Quality Gate Implementation
   - Deliverable A: Created pytest test suite (tests/test_money.py, tests/test_vat_totals.py) with 30 tests for money/VAT correctness
   - Deliverable B: Implemented IntegrityChecker utility (utils/integrity_checker.py) to scan Orders for data integrity issues
