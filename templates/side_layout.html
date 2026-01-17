@@ -59,6 +59,9 @@
         .material-symbols-outlined.fill {
             font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        .border-3 {
+            border-width: 3px;
+        }
         @media (max-width: 1023px) {
             .sidebar-closed {
                 transform: translateX(-100%);
@@ -71,6 +74,14 @@
     {% block head %}{% endblock %}
 </head>
 <body class="font-display bg-background-light text-slate-900">
+    <!-- Page Loading Indicator -->
+    <div id="page-loader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-150">
+        <div class="flex flex-col items-center gap-3">
+            <div class="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm text-slate-600">Loading...</span>
+        </div>
+    </div>
+    
     <div class="flex h-screen w-full overflow-hidden">
         <!-- Mobile Overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 lg:hidden hidden" onclick="toggleSidebar()"></div>
@@ -328,6 +339,35 @@
           }
         });
       }
+    </script>
+    
+    <!-- Page Navigation Loader -->
+    <script>
+        (function() {
+            const loader = document.getElementById('page-loader');
+            
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('a[href]');
+                if (!link) return;
+                
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
+                    link.hasAttribute('target') || link.hasAttribute('download') ||
+                    e.ctrlKey || e.metaKey || e.shiftKey) {
+                    return;
+                }
+                
+                if (href.startsWith('/') || href.startsWith(window.location.origin)) {
+                    loader.style.opacity = '1';
+                    loader.style.pointerEvents = 'auto';
+                }
+            });
+            
+            window.addEventListener('pageshow', function(e) {
+                loader.style.opacity = '0';
+                loader.style.pointerEvents = 'none';
+            });
+        })();
     </script>
     
     <!-- Sidebar Toggle Script -->
