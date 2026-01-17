@@ -1,0 +1,117 @@
+Perfect — that’s the “adult supervision” layer this app needed. 🧪🛡️
+Since you’ve already implemented everything and it’s passing, the most useful thing I can do now is give you a **tight “production readiness wrap-up”**: what to double-check, what to add next (small, high-leverage), and how to avoid future foot-guns.
+
+## What you have now (and why it’s strong)
+
+* **Money + VAT logic centralized** (`utils/money.py`) → fewer circular imports, one source of truth.
+* **30 tests** covering rounding + VAT edge cases → regression net is real, not vibes.
+* **Integrity checker** catching the real-world failures (mismatches, invalid VAT, nulls, negatives).
+* **System Health page** that turns hidden config into visible state (token/CSRF/cookies + scanner + quick tests).
+* **Cookie security tightened** correctly (Secure only in production, Lax by default, HttpOnly always).
+
+That combo is exactly how you keep finance/reporting apps from slowly turning into haunted calculators.
+
+## The 6 checks I’d do before calling it “shipping-safe”
+
+1. **Integrity checker on real legacy data**
+
+   * Run it against a meaningful dataset size (e.g., last 6–12 months).
+   * Save the JSON output somewhere (even just a local log file) so you can compare runs.
+
+2. **Export path uses the same totals**
+
+   * Ensure PDF/Excel exports read from the same source as UI:
+
+     * either computed totals from Decimal logic, or stored totals that were calculated with it.
+   * The classic bug is UI correct / PDF off by €0.01.
+
+3. **Enforcement of VAT allowed values at input**
+
+   * You detect invalid VAT in the checker — great.
+   * Also ensure forms/API reject invalid VAT **at write time** so bad data can’t enter.
+
+4. **CSRF exemptions are minimal**
+
+   * Only exempt the true programmatic endpoints.
+   * Everything else remains protected.
+
+5. **Production config sanity**
+
+   * `SESSION_COOKIE_SECURE=True` only when HTTPS is guaranteed.
+   * Confirm `SECRET_KEY` and `API_TOKEN` are required in production (no fallback defaults).
+
+6. **Performance sanity**
+
+   * Integrity scan should not time out on large datasets.
+   * If it might, add pagination or a date-range filter on the scanner.
+
+## The next 3 upgrades that give huge ROI
+
+### 1) Add an “Integrity Repair Mode” (carefully gated)
+
+You already detect problems. The next step is optionally being able to **repair** *safe* issues:
+
+* recompute stored totals from line items using current Decimal logic
+* normalize VAT rates (only if you’re 100% sure that’s valid)
+
+Rules:
+
+* repair requires admin + explicit checkbox + confirmation
+* write an audit record: who, when, what changed (before/after)
+
+### 2) CI test run on every deploy
+
+Even a minimal GitHub Actions / Replit workflow step that runs:
+
+* `pytest`
+* (optional) lint
+
+That’s the “no regressions allowed” force field.
+
+### 3) Migrate DB money columns away from float (if not already done)
+
+You fixed calculation correctness — but if DB still stores floats, you can still persist tiny inaccuracies.
+
+Best target:
+
+* `Numeric(12,2)` or integer cents
+* backfill + swap code usage
+* drop old float columns after verification
+
+## Suggested `replit.md` changelog entry (copy/paste)
+
+If you want a clean entry format:
+
+```md
+## 2026-01-17 — Post-Stabilization Quality Gate
+
+### Added
+- Unit test suite (30 tests)
+  - `tests/test_money.py` (Decimal rounding, money() behavior)
+  - `tests/test_vat_totals.py` (line VAT + order totals across 19%/5%/0%)
+- Integrity checker utility
+  - `utils/integrity_checker.py` scans Orders for:
+    - stored vs computed mismatches
+    - invalid VAT rates (0/5/19 only)
+    - null/invalid money fields
+    - negative quantities/prices
+- Admin “System Health” page
+  - Route: `/admin/system-health`
+  - Shows API token status, CSRF status, cookie security flags
+  - Includes integrity scan runner + results table
+  - Includes quick in-app VAT fixtures (5) with PASS/FAIL output
+
+### Changed
+- Extracted money utilities/constants to `utils/money.py` to resolve circular imports
+- Cookie hardening:
+  - `SESSION_COOKIE_HTTPONLY=True`
+  - `SESSION_COOKIE_SAMESITE='Lax'`
+  - `SESSION_COOKIE_SECURE=True` in production only
+
+### Verified
+- All pytest tests passing (30)
+- System Health page verified end-to-end
+- Login confirmed working with CSRF enabled
+```
+
+If you keep iterating, the next “grown-up” move is scheduling the integrity checker (daily/weekly) and logging deltas — that turns the system into something that can *self-police* as data grows.
