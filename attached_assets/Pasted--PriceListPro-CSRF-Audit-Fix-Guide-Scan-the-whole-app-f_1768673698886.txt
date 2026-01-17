@@ -1,0 +1,243 @@
+# PriceListPro — CSRF Audit & Fix Guide (Scan the whole app for missing CSRF tokens)
+
+## Goal
+Find **every request path that mutates state** (POST/PUT/PATCH/DELETE) and ensure it includes a valid CSRF token:
+- **HTML forms** must submit a `csrf_token` field
+- **JS fetch/XHR** must send the token via header (or form field)
+- **APIs** must either enforce CSRF (session-cookie auth) or be explicitly exempted (token auth/webhooks)
+
+---
+
+## 0) Confirm how CSRF is implemented (single source of truth)
+In Flask apps, CSRF is typically provided by **Flask-WTF**:
+
+Expected pattern:
+- `from flask_wtf.csrf import CSRFProtect`
+- `csrf = CSRFProtect()`
+- `csrf.init_app(app)` in app factory or initialization
+
+### Quick check (code search)
+Search the repo for:
+- `CSRFProtect`
+- `csrf_token`
+- `WTF_CSRF`
+- `@csrf.exempt`
+
+If you **don’t** see `CSRFProtect` initialized, the app may be partially protected or inconsistent.
+
+---
+
+## 1) Turn CSRF failures into loud, debuggable signals
+### A. Ensure required config exists
+Confirm these exist in config (or env):
+- `SECRET_KEY` (must be set and stable)
+- `WTF_CSRF_ENABLED = True` (or default True)
+- `WTF_CSRF_TIME_LIMIT` (optional; set e.g. 3600 to reduce random expiries during testing)
+
+### B. Log CSRF errors clearly
+Flask-WTF raises `CSRFError`. Add an error handler so logs show **which route** and **why**:
+
+Example handler:
+- Logs `request.path`, `request.method`, and `e.description`
+- Returns a user-friendly error or JSON depending on request type
+
+(Implement wherever your error handlers live.)
+
+---
+
+## 2) Inventory: list every state-changing endpoint (routes audit)
+CSRF must cover any route that:
+- creates/updates/deletes records
+- uploads files
+- changes status
+- triggers “download” if it also writes audit logs or modifies something
+
+### Grep for route methods
+Search for routes with methods other than GET:
+- `methods=["POST"`
+- `methods=['POST'`
+- `PUT`, `PATCH`, `DELETE`
+
+Make a checklist table (Route → Method → HTML Form / JS Fetch / External Client).
+
+**Important:** Many apps accidentally mutate state on GET (bad for CSRF + caching). Flag any GET route that writes to DB.
+
+---
+
+## 3) Templates audit: find `<form>` missing CSRF
+### Rule
+Every HTML form that submits to a protected endpoint must include a CSRF field:
+
+- If using WTForms: `{{ form.hidden_tag() }}`
+- If manual form:  
+  `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`
+
+### Fast scan commands (recommended)
+Run these searches:
+
+1) List all forms:
+- search `"<form"` in `/templates`
+
+2) Find forms that *don’t* mention csrf:
+- find blocks containing `<form` but no `csrf_token` and no `hidden_tag`
+
+3) Watch for forms built via macros/partials:
+- check shared components like `form.html`, `_partials.html`, `_modals.html`
+
+### Common “gotchas” in real apps
+- Modal forms loaded via partial templates
+- “Delete” actions implemented as a form with a button (often missing CSRF)
+- Inline forms inside tables (bulk actions)
+- Hidden forms used by JS “confirm delete” flows
+
+---
+
+## 4) JavaScript audit: all fetch/XHR/axios POSTs must send CSRF
+CSRF tokens don’t magically appear in JSON requests.
+
+### A. Standard approach (recommended)
+1) Inject CSRF token into a meta tag in your base template:
+```html
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+	2.	In JS, read it and attach to every mutating request:
+
+	•	Header commonly accepted by Flask-WTF: X-CSRFToken (or X-CSRF-Token)
+
+Example pattern:
+
+const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+fetch('/some-endpoint', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': token,
+  },
+  body: JSON.stringify(payload),
+});
+
+B. Scan the repo for mutating requests
+
+Search for:
+	•	fetch( with method: "POST" / "PUT" / "PATCH" / "DELETE"
+	•	axios.post / axios.put / axios.delete
+	•	XMLHttpRequest
+	•	$.ajax (if used)
+
+Then verify each includes CSRF header (or form field).
+
+C. Fix once: centralize request helper
+
+If you have multiple fetch calls, create one helper like apiFetch() that:
+	•	auto-attaches CSRF for non-GET methods
+	•	handles JSON vs FormData
+	•	handles 400 CSRF failures with a clear UI message (“Session expired, refresh”)
+
+This prevents “some endpoints work, some fail” chaos.
+
+⸻
+
+5) File upload endpoints (classic CSRF trap)
+
+Uploads often use FormData:
+	•	You still must include CSRF.
+
+Two valid patterns:
+	1.	Include CSRF in the form itself (hidden input) and submit normally
+	2.	If using fetch + FormData, add header X-CSRFToken: token
+
+⸻
+
+6) API endpoints: choose the correct CSRF policy
+
+If API uses session cookies (browser-authenticated)
+
+Then CSRF protection must apply to POST/PUT/PATCH/DELETE.
+
+If API uses Authorization headers (token-based) and is truly stateless
+
+You may exempt CSRF for those endpoints, but be deliberate:
+	•	@csrf.exempt only for specific blueprints/routes
+	•	never exempt broad areas like “/api/*” unless you’re certain
+
+Webhooks / external callbacks
+
+Those should be exempt, but protected with:
+	•	shared secret (HMAC signature) OR
+	•	allowlist + secret token
+
+⸻
+
+7) “PWA effect”: caching + CSRF mismatch symptoms
+
+After PWA/service worker changes, you can get CSRF issues because:
+	•	HTML pages served from cache contain an old token
+	•	user is “logged in” via cookie, but page is stale
+
+Mitigations:
+	•	Ensure auth-sensitive routes are not cached (you already did this for many routes—double-check templates with forms are not cached).
+	•	Ensure Cache-Control: no-store for pages containing forms that use CSRF tokens (especially admin panels).
+	•	If a CSRF failure happens, prompt refresh (soft-reload) and re-fetch token.
+
+⸻
+
+8) Build a practical “CSRF Coverage Checklist” (what “done” means)
+
+For each item below, you must be able to say “yes”:
+
+Templates
+	•	Every <form method="post"> includes csrf_token or form.hidden_tag()
+	•	All delete/confirm/bulk forms include CSRF
+	•	All modal/partial forms include CSRF
+
+JavaScript
+	•	Every mutating fetch/axios call includes CSRF header
+	•	A single shared helper is used (preferred)
+
+Routes
+	•	Every POST/PUT/PATCH/DELETE route is protected unless explicitly exempt
+	•	No state changes happen on GET
+
+PWA / caching
+	•	Pages with forms are not served stale from service worker
+	•	Auth-sensitive pages have no-store or are excluded from cache
+
+⸻
+
+9) Add tests so this never regresses
+
+A. Template test (fast win)
+
+Using pytest + BeautifulSoup:
+	•	render key pages
+	•	assert that every form has an input named csrf_token (or contains hidden_tag output)
+
+B. Endpoint test (behavioral)
+	•	POST without CSRF → expect 400 (CSRF failure)
+	•	POST with CSRF → expect 200/302
+
+This locks correctness in.
+
+⸻
+
+10) Execution plan (recommended order)
+	1.	Route inventory: list all mutating endpoints
+	2.	Template sweep: add CSRF to every form
+	3.	JS sweep: attach CSRF header to every mutating request
+	4.	PWA check: ensure no stale form pages
+	5.	Tests: add template + endpoint CSRF tests
+
+⸻
+
+Quick “most likely missing CSRF” hotspots
+	•	Delete buttons inside tables
+	•	Bulk actions (approve/reject, mark paid, change status)
+	•	Modal forms loaded via partials
+	•	Upload endpoints using fetch + FormData
+	•	Any “API-ish” endpoints called from the browser
+
+⸻
+
+
+If you paste this into Replit AI, it can follow it as a punchlist and produce a concrete “found + fixed” diff. The key trick is: **make one central JS request helper** and **make base templates always expose the CSRF token**—then most of the app becomes impossible to break accidentally.

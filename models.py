@@ -172,6 +172,7 @@ class Invoice(db.Model):
     
     # Relationships
     items = db.relationship('InvoiceItem', backref='invoice', lazy=True, cascade="all, delete-orphan")
+    # Note: customer relationship is defined via backref from Customer.invoices
     
     def __repr__(self):
         return f'<Invoice {self.invoice_number}>'
@@ -200,6 +201,8 @@ class FileUpload(db.Model):
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     processed = db.Column(db.Boolean, default=False)
     processing_notes = db.Column(db.Text, nullable=True)
+    
+    customer = db.relationship('Customer', backref='uploads', lazy=True)
     
     def __repr__(self):
         return f'<FileUpload {self.filename}>'
