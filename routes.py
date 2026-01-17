@@ -184,6 +184,10 @@ def register_routes(app):
     def version_json():
         build_id = app.config.get("BUILD_ID") or "dev"
         return jsonify({"build_id": build_id})
+
+    @app.get("/health")
+    def health_check():
+        return jsonify({"ok": True}), 200
     
     # Direct access to database backup
     @app.route('/database-backup')
