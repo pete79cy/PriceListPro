@@ -195,8 +195,8 @@
                                         'rejected': 'bg-red-100 text-red-700',
                                         'completed': 'bg-purple-100 text-purple-700'
                                     } %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ status_colors.get(quotation.status.value if quotation.status else 'draft', 'bg-slate-100 text-slate-700') }}">
-                                        {{ (quotation.status.value if quotation.status else 'draft')|capitalize }}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ status_colors.get((quotation.status|lower) if quotation.status else 'draft', 'bg-slate-100 text-slate-700') }}">
+                                        {{ (quotation.status if quotation.status else 'draft')|capitalize }}
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-slate-900 text-right">
@@ -248,8 +248,8 @@
                             'rejected': 'bg-red-100 text-red-700',
                             'completed': 'bg-purple-100 text-purple-700'
                         } %}
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ status_colors.get(quotation.status.value if quotation.status else 'draft', 'bg-slate-100 text-slate-700') }}">
-                            {{ (quotation.status.value if quotation.status else 'draft')|capitalize }}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ status_colors.get((quotation.status|lower) if quotation.status else 'draft', 'bg-slate-100 text-slate-700') }}">
+                            {{ (quotation.status if quotation.status else 'draft')|capitalize }}
                         </span>
                     </div>
                     <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">

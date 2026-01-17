@@ -6,7 +6,30 @@ from flask_login import UserMixin
 import re
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import UUID
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+
+
+# Cyprus VAT rates (as percentages)
+CYPRUS_VAT_STANDARD = 19  # Standard rate
+CYPRUS_VAT_REDUCED = 5    # Reduced rate
+CYPRUS_VAT_ZERO = 0       # Zero rate (for exports, etc.)
+ALLOWED_VAT_RATES = [CYPRUS_VAT_STANDARD, CYPRUS_VAT_REDUCED, CYPRUS_VAT_ZERO]
+
+# Decimal precision for money calculations
+TWOPLACES = Decimal("0.01")
+
+
+def money(value) -> Decimal:
+    """
+    Convert a value to a Decimal with 2 decimal places.
+    Uses ROUND_HALF_UP for consistent rounding.
+    Prevents float precision issues in money calculations.
+    """
+    if value is None:
+        return Decimal("0.00")
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+    return value.quantize(TWOPLACES, rounding=ROUND_HALF_UP)
 
 
 class OrderStatusEnum(str, Enum):
@@ -129,6 +152,11 @@ class Product(db.Model):
         return f'<Product {self.name}>'
 
 class PriceList(db.Model):
+    __tablename__ = 'price_list'
+    __table_args__ = (
+        db.Index('ix_pricelist_customer_product', 'customer_id', 'product_id'),
+    )
+    
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
@@ -143,6 +171,11 @@ class PriceList(db.Model):
         return f'<PriceList Customer: {self.customer_id}, Product: {self.product_id}, Price: {self.price}>'
 
 class Invoice(db.Model):
+    __tablename__ = 'invoice'
+    __table_args__ = (
+        db.Index('ix_invoice_customer_date', 'customer_id', 'invoice_date'),
+    )
+    
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False, unique=True)
@@ -249,6 +282,12 @@ class QuotationStatus:
 # The Order class is defined later in the file
     
 class Quotation(db.Model):
+    __tablename__ = 'quotation'
+    __table_args__ = (
+        db.Index('ix_quotation_status', 'status'),
+        db.Index('ix_quotation_customer_created', 'customer_id', 'created_at'),
+    )
+    
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     quotation_number = db.Column(db.String(50), nullable=False, unique=True)
@@ -435,33 +474,14 @@ class Order(db.Model):
             return False
     
     @property
-    def subtotal(self):
-        """Calculate the subtotal for the order (sum of all items)"""
-        return sum(item.quantity * item.price for item in self.items) if self.items else 0.0
-    
-    @property
     def total_items(self):
         """Get the total number of items in this order"""
         return sum(item.quantity for item in self.items) if self.items else 0
     
-
-    
     @property
     def total_after_discount(self):
-        """Calculate the total after discount but before VAT"""
-        return max(0, self.subtotal - self.discount_value)
-    
-    @property
-    def vat_amount(self):
-        """Calculate VAT amount based on total after discount"""
-        # Apply VAT to the discounted amount
-        vat_rate = 0.24  # 24% VAT
-        return self.total_after_discount * vat_rate
-    
-    @property
-    def total(self):
-        """Calculate the final total with discount and VAT"""
-        return self.total_after_discount + self.vat_amount
+        """Calculate the total after discount but before VAT (alias for total_before_vat for compatibility)"""
+        return self.total_before_vat
         
     def transition_to(self, target_status):
         """
@@ -498,66 +518,68 @@ class Order(db.Model):
     
     @property
     def subtotal(self):
-        """Calculate subtotal (sum of all items before discounts and VAT)"""
-        return sum(item.quantity * item.price for item in self.items)
+        """Calculate subtotal (sum of all items before discounts and VAT) using Decimal"""
+        if not self.items:
+            return Decimal("0.00")
+        return money(sum((item.net_total for item in self.items), Decimal("0.00")))
     
     @property
     def total_before_vat(self):
         """Calculate total after discount but before VAT"""
         if self.total_override_amount is not None:
             # Work backwards from override total to find pre-VAT amount
-            # Assuming 19% VAT rate for most items
-            return round(self.total_override_amount / 1.19, 2)
+            # Using Cyprus standard VAT rate (19%)
+            return money(Decimal(str(self.total_override_amount)) / Decimal("1.19"))
         
         # Standard calculation: subtotal minus discount
-        return self.subtotal - self.discount_value
+        return money(self.subtotal - self.discount_value)
     
     @property
     def discount_value(self):
-        """Calculate the actual discount amount"""
+        """Calculate the actual discount amount using Decimal"""
         if self.total_override_amount is not None:
             # Calculate discount needed to reach the override total
-            return round(self.subtotal - self.total_before_vat, 2)
+            return money(self.subtotal - self.total_before_vat)
         
         # Standard calculation based on discount type
         if self.discount_type == 'percentage':
-            return round(self.subtotal * (self.discount_percentage / 100), 2)
+            return money(self.subtotal * (Decimal(str(self.discount_percentage)) / Decimal("100")))
         else:
-            return round(self.discount_amount, 2)
+            return money(self.discount_amount)
     
     @property
     def vat_amount(self):
-        """Calculate VAT amount based on total after discount"""
+        """Calculate VAT amount based on total after discount using Decimal and per-item VAT rates"""
         if self.total_override_amount is not None:
             # VAT is simply override total minus pre-VAT amount
-            return round(self.total_override_amount - self.total_before_vat, 2)
+            return money(Decimal(str(self.total_override_amount)) - self.total_before_vat)
         
-        # Standard calculation: VAT on discounted amount
-        if self.subtotal == 0:
-            return 0.0
+        # Standard calculation: VAT on discounted amount per item
+        subtotal = self.subtotal
+        if subtotal == Decimal("0.00"):
+            return Decimal("0.00")
             
-        # Calculate discount ratio
-        discount_ratio = self.discount_value / self.subtotal if self.subtotal > 0 else 0
+        # Calculate discount ratio for proportional distribution
+        discount_ratio = self.discount_value / subtotal if subtotal > Decimal("0") else Decimal("0")
         
-        vat_total = 0.0
+        vat_total = Decimal("0.00")
         for item in self.items:
-            item_total = item.quantity * item.price
             # Apply proportional discount to this item
-            item_after_discount = item_total * (1 - discount_ratio)
-            # Calculate VAT on discounted amount
-            vat_total += item_after_discount * (item.vat_rate / 100)
+            item_after_discount = item.net_total * (Decimal("1") - discount_ratio)
+            # Calculate VAT on discounted amount using item's VAT rate (Cyprus: 19% or 5%)
+            vat_total += item_after_discount * (Decimal(str(item.vat_rate)) / Decimal("100"))
         
-        return round(vat_total, 2)
+        return money(vat_total)
     
     @property
     def total(self):
-        """Calculate the final total"""
+        """Calculate the final total using Decimal"""
         if self.total_override_amount is not None:
             # Override total is the source of truth
-            return round(self.total_override_amount, 2)
+            return money(self.total_override_amount)
         
         # Standard calculation
-        return round(self.total_before_vat + self.vat_amount, 2)
+        return money(self.total_before_vat + self.vat_amount)
         
 class OrderItem(db.Model):
     """Model for individual items within an order"""
@@ -581,14 +603,40 @@ class OrderItem(db.Model):
     
     def __repr__(self):
         return f'<OrderItem {self.plant_name} x {self.quantity}>'
+    
+    @property
+    def unit_price_dec(self):
+        """Get unit price as Decimal"""
+        return money(self.price)
+    
+    @property
+    def quantity_dec(self):
+        """Get quantity as Decimal"""
+        return Decimal(str(self.quantity or 0))
+    
+    @property
+    def net_total(self):
+        """Calculate net total for this item using Decimal"""
+        return money(self.unit_price_dec * self.quantity_dec)
+    
+    @property
+    def vat_amount(self):
+        """Calculate VAT amount for this item using Decimal and Cyprus VAT rates"""
+        rate = Decimal(str(self.vat_rate)) / Decimal("100")
+        return money(self.net_total * rate)
+    
+    @property
+    def gross_total(self):
+        """Calculate gross total (net + VAT) for this item"""
+        return money(self.net_total + self.vat_amount)
         
     def get_total(self):
-        """Calculate the total price for this item"""
-        return self.quantity * self.price
+        """Calculate the total price for this item (legacy method, use net_total property)"""
+        return float(self.net_total)
         
     def get_vat_amount(self):
-        """Calculate the VAT amount for this item"""
-        return self.get_total() * (self.vat_rate / 100)
+        """Calculate the VAT amount for this item (legacy method, use vat_amount property)"""
+        return float(self.vat_amount)
 
 class QuotationItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)

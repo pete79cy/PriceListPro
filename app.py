@@ -7,17 +7,22 @@ from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 
 # Set up logging - this will be replaced by the custom logger
 logging.basicConfig(level=logging.DEBUG)
 
-# Import our custom logger
+# Create a fallback logger that always exists
+logger = logging.getLogger("pricelistpro")
+logger.setLevel(logging.INFO)
+
+# Import our custom logger (if available)
 try:
-    from utils.logger import logger
+    from utils.logger import logger as custom_logger
+    logger = custom_logger
     logger.info("App module loaded")
-except ImportError:
-    # This can happen on first load before utils directory exists
-    pass
+except ImportError as e:
+    logger.warning(f"Using fallback logger: {e}")
 
 def register_error_handlers(app):
     @app.errorhandler(500)
@@ -73,6 +78,9 @@ os.makedirs(app.config['TEMPLATES_FOLDER'], exist_ok=True)
 
 # Initialize the app with the extension
 db.init_app(app)
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 # Add custom Jinja2 filters
 def nl2br(value):
@@ -162,8 +170,15 @@ with app.app_context():
         # Register API blueprint
         try:
             from blueprints.routes_api import api
-            # Add API token to app config
-            app.config["API_TOKEN"] = os.environ.get("API_TOKEN", "test_api_token")
+            # Add API token to app config - require token in production, no insecure default
+            api_token = os.environ.get("API_TOKEN")
+            if not api_token and not app.debug:
+                logger.warning("API_TOKEN is not set. API endpoints will be disabled in production.")
+                app.config["API_TOKEN"] = None
+            else:
+                app.config["API_TOKEN"] = api_token
+            # Exempt API from CSRF (uses token-based authentication)
+            csrf.exempt(api)
             app.register_blueprint(api)
             logger.info("API blueprint registered successfully")
         except (ImportError, Exception) as e:
