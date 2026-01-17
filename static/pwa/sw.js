@@ -1,5 +1,5 @@
 /* static/pwa/sw.js */
-const CACHE_VERSION = "v10";
+const CACHE_VERSION = "v11";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
@@ -27,8 +27,18 @@ const NO_CACHE_PATHS = [
   "/company-settings",
   "/viber",
   "/pending",
-  "/addenda"
+  "/addenda",
+  "/export",
+  "/delivery-note"
 ];
+
+// PDF routes should NEVER be cached - network only
+function isPdfRoute(pathname) {
+  return pathname.includes("/pdf") || 
+         pathname.includes("/export") || 
+         pathname.includes("/delivery-note") ||
+         pathname.endsWith(".pdf");
+}
 
 function shouldCacheHTML(pathname) {
   return !NO_CACHE_PATHS.some(p => pathname.startsWith(p));
@@ -99,6 +109,12 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
 
   if (url.origin !== self.location.origin) return;
+
+  // PDF routes: ALWAYS network-only, never cache
+  if (isPdfRoute(url.pathname)) {
+    event.respondWith(fetch(req));
+    return;
+  }
 
   if (req.mode === "navigate") {
     if (!shouldCacheHTML(url.pathname)) {
