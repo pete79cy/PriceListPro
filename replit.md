@@ -113,6 +113,17 @@ A comprehensive Flask-based plant pricing system that manages customer quotation
 
 ## Changelog
 
+- January 17, 2026: Post-Stabilization Quality Gate Implementation
+  - Deliverable A: Created pytest test suite (tests/test_money.py, tests/test_vat_totals.py) with 30 tests for money/VAT correctness
+  - Deliverable B: Implemented IntegrityChecker utility (utils/integrity_checker.py) to scan Orders for data integrity issues
+  - Deliverable C: Added Admin UI System Health page (/admin/system-health) with:
+    - API Token configuration status
+    - CSRF protection status
+    - Cookie security settings display
+    - Data Integrity Scanner with run button and results table
+    - Quick VAT Calculation Tests (5 core tests run in-app)
+  - Extracted money utilities to utils/money.py to avoid circular imports in tests
+  - Added session cookie security: SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE='Lax', SESSION_COOKIE_SECURE (production only)
 - January 17, 2026: PriceListPro Stabilization - Cyprus VAT & Money Precision
   - P0: Fixed dashboard template crash by replacing quotation.status.value with quotation.status
   - P0: Fixed Order model duplicate properties and implemented Cyprus VAT rates (19% standard, 5% reduced)
