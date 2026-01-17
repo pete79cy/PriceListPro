@@ -396,6 +396,56 @@
             options.headers['X-CSRFToken'] = getCSRFToken();
             return fetch(url, options);
         }
+        
+        // Safe PDF download for iOS/PWA - prevents page navigation
+        function openPdfSafely(url, filename) {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                 window.navigator.standalone === true;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
+            // For iOS PWA, use blob download to prevent navigation
+            if (isStandalone || isIOS) {
+                // Show loading indicator
+                const loader = document.getElementById('page-loader');
+                if (loader) {
+                    loader.style.opacity = '1';
+                    loader.style.pointerEvents = 'auto';
+                }
+                
+                fetch(url, { credentials: 'include' })
+                    .then(response => {
+                        if (!response.ok) throw new Error('PDF download failed');
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const objUrl = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = objUrl;
+                        a.download = filename || 'document.pdf';
+                        a.style.display = 'none';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+                    })
+                    .catch(err => {
+                        console.error('PDF download error:', err);
+                        // Fallback: open in new tab
+                        window.open(url, '_blank', 'noopener');
+                    })
+                    .finally(() => {
+                        if (loader) {
+                            loader.style.opacity = '0';
+                            loader.style.pointerEvents = 'none';
+                        }
+                    });
+                return false;
+            } else {
+                // Desktop: open in new tab
+                window.open(url, '_blank', 'noopener');
+                return false;
+            }
+        }
     </script>
     
     <!-- Sidebar Toggle Script -->

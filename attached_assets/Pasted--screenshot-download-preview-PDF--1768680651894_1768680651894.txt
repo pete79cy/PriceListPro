@@ -1,0 +1,88 @@
+Ναι — αυτό που βλέπεις στο screenshot είναι κλασικό σύμπτωμα ότι το download/preview του PDF “παίρνει” το ίδιο tab (σε iOS ανοίγει PDF viewer) και έτσι πρακτικά “χάνεις” την σελίδα των quotations.
+
+Η πιο αξιόπιστη λύση είναι: το PDF να ανοίγει σε νέο tab/window ή να γίνεται attachment download χωρίς να πλοηγεί τη σελίδα.
+
+Fix 1 (συνήθως το καλύτερο): Άνοιγμα PDF σε νέο tab
+
+Αν τώρα έχεις κουμπί που κάνει redirect στο /quotations/<id>/pdf, κάν’ το link:
+
+<a class="btn btn-primary"
+   href="{{ url_for('quotation_pdf', quotation_id=q.id) }}"
+   target="_blank"
+   rel="noopener noreferrer">
+  Download PDF
+</a>
+
+Αν το download είναι POST (λόγω CSRF)
+
+Τότε φόρμα με target="_blank":
+
+<form method="POST"
+      action="{{ url_for('quotation_pdf_post', quotation_id=q.id) }}"
+      target="_blank">
+  {{ csrf_token() }}
+  <button type="submit" class="btn btn-primary">Download PDF</button>
+</form>
+
+Αυτό κρατάει το quotations page ανοιχτό, και το PDF πάει αλλού.
+
+⸻
+
+Fix 2 (server-side): Στείλε το PDF ως “attachment” (όχι inline preview)
+
+Σε Flask:
+
+from flask import send_file
+
+@app.get("/quotations/<int:quotation_id>/pdf")
+def quotation_pdf(quotation_id):
+    pdf_path, filename = build_pdf_for_quotation(quotation_id)
+    return send_file(
+        pdf_path,
+        mimetype="application/pdf",
+        as_attachment=True,          # <-- κρίσιμο
+        download_name=filename       # Flask 2+
+    )
+
+Αυτό πιέζει το browser να το χειριστεί ως download. (Στο iOS μερικές φορές πάλι κάνει preview, αλλά δεν πρέπει να σου “κλειδώνει” την πλοήγηση αν έχεις και Fix 1.)
+
+⸻
+
+Fix 3 (πιο “bulletproof” UX): Download χωρίς navigation (fetch → blob)
+
+Αν θες να μην αλλάζει καθόλου η σελίδα:
+
+async function downloadPdf(url, filename) {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) throw new Error("PDF download failed");
+
+  const blob = await res.blob();
+  const objUrl = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = objUrl;
+  a.download = filename || "quotation.pdf";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(objUrl);
+}
+
+Και στο κουμπί:
+
+<button type="button"
+  onclick="downloadPdf('{{ url_for('quotation_pdf', quotation_id=q.id) }}', 'PAK-{{ q.number }}.pdf')">
+  Download PDF
+</button>
+
+
+⸻
+
+Γιατί σου συμβαίνει τώρα
+
+Σε iPhone/PWA, όταν πας σε URL που σερβίρει application/pdf, το Safari συχνά ανοίγει “PDF viewer mode” στο ίδιο context. Αν το trigger είναι redirect/replace, μπορεί να μη σου αφήσει “πίσω”.
+
+⸻
+
+Αν μου πεις πώς είναι υλοποιημένο τώρα το κουμπί (link GET; form POST; ή JS window.location), θα σου δώσω ακριβώς το μικρό patch που χρειάζεται (1–2 αρχεία) χωρίς να πειράξουμε άλλα κομμάτια του PRA.
