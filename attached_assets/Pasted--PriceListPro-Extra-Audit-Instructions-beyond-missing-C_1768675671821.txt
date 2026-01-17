@@ -1,0 +1,196 @@
+# PriceListPro — Extra Audit Instructions (beyond “missing CSRF token”)
+
+## Purpose
+CSRF issues often show up as a *symptom* of deeper consistency problems: caching stale HTML, session instability, mixed auth modes, forms posting to the wrong route, or JS requests not behaving like browser form posts.  
+This addendum is a structured audit checklist to catch those hidden causes across the app.
+
+---
+
+## A) Confirm CSRF + Session prerequisites are stable
+### 1) SECRET_KEY stability
+CSRF relies on a stable `SECRET_KEY`. If it changes between deploys/instances, CSRF will fail intermittently.
+
+Audit:
+- Ensure `SECRET_KEY` is set via env and never defaults to a random value at boot.
+- Ensure all replicas (if any) share the same `SECRET_KEY`.
+
+### 2) Session storage & persistence
+If you use server-side sessions (e.g., Flask-Session + Postgres/Redis), verify sessions persist before redirects and across requests.
+
+Audit:
+- Confirm session backend configured correctly and reachable.
+- Check session cookie settings:
+  - `SESSION_COOKIE_SAMESITE` (typically `Lax` for normal web apps)
+  - `SESSION_COOKIE_SECURE` (True on HTTPS)
+  - `SESSION_COOKIE_HTTPONLY` (True)
+- Look for failures after login: CSRF often fails because user is “half logged-in” (cookie not set).
+
+### 3) Clock/timeouts
+CSRF tokens can expire.
+Audit:
+- If `WTF_CSRF_TIME_LIMIT` is set, ensure it is not too short (recommend 3600).
+- Confirm server clock/timezone is correct.
+
+---
+
+## B) Detect “state changes on GET” (silent CSRF bypass / future bug)
+CSRF protects POST/PUT/PATCH/DELETE. If any GET request updates DB, it will:
+- bypass CSRF protections
+- be cacheable (bad)
+- break in PWA mode (stale pages + hidden writes)
+
+Audit:
+- Search for routes with `methods=["GET"]` (or default GET) that:
+  - write logs
+  - mark statuses
+  - create rows (e.g., “download” endpoint that writes an audit row)
+  - mutate any state
+Fix:
+- Convert to POST or move side-effect to explicit POST action.
+
+---
+
+## C) Validate “form route + method correctness”
+Common issue: template forms pointing to endpoints that expect JSON or different methods.
+
+Audit each form:
+- `action` points to correct route name/url
+- `method="post"` is present for mutating actions
+- Buttons that look like links but should POST are actually forms (with CSRF)
+- For delete actions: ensure method is POST (or uses method override safely)
+
+Method override audit (if used):
+- Search for `_method` fields or method override middleware.
+- Ensure CSRF is still required for the POST that carries the override.
+
+---
+
+## D) JavaScript request integrity audit (JSON vs FormData vs headers)
+### 1) Centralize request logic
+If the app uses multiple fetch calls, you will inevitably miss CSRF in some.
+
+Audit:
+- Count fetch/axios calls.
+- Ensure all non-GET requests go through one helper (e.g., `apiFetch`).
+
+### 2) Content-Type pitfalls
+Some frameworks behave differently depending on Content-Type.
+
+Audit:
+- If sending JSON: `Content-Type: application/json` + CSRF header.
+- If sending `FormData`: DO NOT set `Content-Type` manually (browser sets boundary), but DO add CSRF header.
+
+### 3) Cross-origin / subdomain issues
+If app runs on multiple subdomains, cookie scope can break sessions → CSRF fails.
+
+Audit:
+- Check cookie `domain`/`path` settings.
+- Ensure you are not mixing `www.` and non-`www.` origins.
+
+---
+
+## E) PWA / Service Worker “stale HTML” audit (very likely after PWA work)
+Even if you excluded `/login` and `/admin`, **any page containing forms** served from cache can carry stale CSRF tokens.
+
+Audit:
+- Identify all routes that render forms (admin pages, create/edit quotation, upload invoice, etc.)
+- Ensure service worker caching strategy does NOT cache these pages:
+  - exclude them from runtime cache
+  - or enforce `Cache-Control: no-store`
+
+Concrete checks:
+- Open devtools → Application → Service Workers → “Bypass for network”
+- Compare behavior with and without bypass.
+- If CSRF works only when bypassing SW, caching is serving stale token pages.
+
+Recommended policy:
+- HTML pages with forms: network-first + no-store (or no cache at SW level)
+- Static assets (CSS/JS/icons): cache-first is fine
+
+---
+
+## F) CSRF exemptions audit (security & correctness)
+Too many exemptions can hide bugs and weaken security.
+
+Audit:
+- Find all `@csrf.exempt`
+- For each, document WHY it is exempt:
+  - webhook endpoint
+  - API endpoint using token auth (Authorization header)
+  - internal callback with HMAC signature
+
+Fix patterns:
+- If exempted because “it kept failing,” that’s a bug, not a solution.
+- If exempted for webhooks: require signature/HMAC and reject unsigned requests.
+
+---
+
+## G) Error handling audit: make CSRF failures actionable
+A 400 “CSRF token missing” with no hint causes wasted time.
+
+Audit:
+- Ensure CSRF errors:
+  - log route + method + user id (if available) + referrer
+  - return JSON for `Accept: application/json` requests
+  - return HTML message for normal navigation
+- For PWA/mobile: show “Session expired. Refresh.”
+
+---
+
+## H) Automated detection: build an internal “CSRF coverage report”
+Create a small internal script or admin page that:
+1) Lists all routes with methods in {POST,PUT,PATCH,DELETE}
+2) Shows whether route is CSRF exempt
+3) Flags routes that are:
+   - mutating but exempt
+   - mutating and used by browser session auth (must be protected)
+4) Optional: run a test POST without CSRF and expect 400
+
+Output:
+- A table: `Route | Methods | Exempt? | Used By | Status`
+
+This becomes your regression guard.
+
+---
+
+## I) Smoke testing scenarios (real-world reproduction)
+Run these after fixes:
+1) Fresh session:
+- Hard refresh → load form page → submit → must succeed
+
+2) “Idle tab” test:
+- Open form page, wait 30–60 min, submit
+- If fails: token time limit too short or stale page caching
+
+3) PWA installed test:
+- Install PWA → open form page → submit
+- Ensure SW not caching form HTML
+
+4) Multi-tab:
+- Tab A login → Tab B open old form page → submit
+- If fails: old token is expected; UX should prompt refresh gracefully
+
+---
+
+## J) Typical root causes & what they look like
+- **Missing hidden field**: Only HTML form posts fail, JS posts may work.
+- **Missing JS header**: Only fetch/axios posts fail.
+- **Stale PWA HTML**: Works in normal browser refresh, fails in installed PWA or after offline/online transitions.
+- **SECRET_KEY change**: Random failures after deploy.
+- **Session cookie not persisting**: Failures after login redirect, works after manual refresh.
+- **Overbroad csrf.exempt**: “Works” but insecure + future data corruption risk.
+
+---
+
+## Deliverable Checklist (what “audit complete” means)
+- [ ] All mutating routes inventoried
+- [ ] All HTML forms include CSRF
+- [ ] All JS mutating requests include CSRF via a centralized helper
+- [ ] All exemptions justified + secured (HMAC/webhook or token auth)
+- [ ] Service worker does not cache form pages / auth pages
+- [ ] CSRF error handler logs actionable info
+- [ ] Tests added: template CSRF presence + endpoint CSRF behavior
+
+---
+
+This add-on turns your CSRF hunt from “whack-a-mole” into “systems engineering”: you’re auditing the whole causal chain (session → caching → templates → JS → routes → exemptions). That’s how you stop CSRF bugs from respawning like hydras.
