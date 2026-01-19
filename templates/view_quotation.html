@@ -323,6 +323,7 @@
         </div>
         <div class="px-4 sm:px-6 py-4">
             <form method="POST" action="{{ url_for('update_quotation_internal_notes', quotation_id=quotation.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <textarea name="internal_notes" rows="4" 
                     class="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary resize-y transition-shadow"
                     placeholder="Add internal notes about customer communication, special requirements, follow-ups, etc...">{{ quotation.internal_notes or '' }}</textarea>
@@ -587,6 +588,7 @@
                 </button>
             </div>
             <form action="{{ url_for('add_quotation_item', quotation_id=quotation.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="p-6 space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -663,6 +665,7 @@
                 </button>
             </div>
             <form id="editItemForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="p-6 space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -739,6 +742,7 @@
                 </button>
             </div>
             <form action="{{ url_for('export_quotation_excel', quotation_id=quotation.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="p-6">
                     <p class="text-sm text-slate-600 mb-4">Select columns to include in Excel export:</p>
                     <div class="flex gap-2 mb-4">
