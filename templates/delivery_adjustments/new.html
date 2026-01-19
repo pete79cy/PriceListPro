@@ -71,6 +71,7 @@
                     {% else %}
                     <form method="POST" action="{{ url_for('delivery_adjustments.create_quotation_adjustment', quotation_id=document.id) }}">
                     {% endif %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
