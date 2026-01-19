@@ -74,11 +74,13 @@
                                 {% if update.status == 'Pending' %}
                                 <div class="btn-group">
                                     <form action="{{ url_for('approve_update', update_id=update.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-success me-1">
                                             <i class="fas fa-check"></i> Approve
                                         </button>
                                     </form>
                                     <form action="{{ url_for('reject_update', update_id=update.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-danger">
                                             <i class="fas fa-times"></i> Reject
                                         </button>
