@@ -31,12 +31,14 @@
                         </span>
                         {% if addendum.status == 'draft' %}
                         <form method="POST" action="{{ url_for('addenda.lock_addendum', addendum_id=addendum.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Lock this addendum to prevent further changes?')">
                                 <i class="fas fa-lock"></i> Lock
                             </button>
                         </form>
                         {% else %}
                         <form method="POST" action="{{ url_for('addenda.unlock_addendum', addendum_id=addendum.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('Unlock this addendum to allow changes?')">
                                 <i class="fas fa-unlock"></i> Unlock
                             </button>
@@ -137,6 +139,7 @@
                             {% if addendum.status == 'draft' %}
                             <td>
                                 <form method="POST" action="{{ url_for('addenda.delete_line', addendum_id=addendum.id, line_id=line.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" 
                                             onclick="return confirm('Delete this line?')" title="Delete line">
                                         <i class="fas fa-trash"></i>
@@ -175,6 +178,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('addenda.add_line', addendum_id=addendum.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">

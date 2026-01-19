@@ -91,12 +91,14 @@
                             {% if update.status == 'Pending' %}
                             <div class="flex items-center justify-end gap-2">
                                 <form action="{{ url_for('approve_update', update_id=update.id) }}" method="POST" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1">
                                         <span class="material-symbols-outlined text-[16px]">check</span>
                                         Approve
                                     </button>
                                 </form>
                                 <form action="{{ url_for('reject_update', update_id=update.id) }}" method="POST" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="px-3 py-1.5 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1">
                                         <span class="material-symbols-outlined text-[16px]">close</span>
                                         Reject
@@ -146,12 +148,14 @@
             {% if update.status == 'Pending' %}
             <div class="flex gap-2 pt-3 border-t border-slate-100">
                 <form action="{{ url_for('approve_update', update_id=update.id) }}" method="POST" class="flex-1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="w-full px-3 py-2 bg-green-50 text-green-700 text-sm font-medium rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center gap-1">
                         <span class="material-symbols-outlined text-[16px]">check</span>
                         Approve
                     </button>
                 </form>
                 <form action="{{ url_for('reject_update', update_id=update.id) }}" method="POST" class="flex-1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="w-full px-3 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1">
                         <span class="material-symbols-outlined text-[16px]">close</span>
                         Reject

@@ -21,6 +21,7 @@
     </div>
 
     <form id="orderForm" method="POST" action="{{ url_for('orders.new_order') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if form %}{{ form.hidden_tag() }}{% endif %}
         <input type="hidden" name="items" id="itemsJson" value="">
         <input type="hidden" name="items_json" id="itemsJsonField" value="">

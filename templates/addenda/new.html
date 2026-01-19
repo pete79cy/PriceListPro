@@ -18,6 +18,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group mb-3">
                             <label for="customer_id" class="form-label">Customer *</label>
                             <select class="form-control" id="customer_id" name="customer_id" required>

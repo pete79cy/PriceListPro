@@ -20,6 +20,7 @@
 
 {% block content %}
 <form id="quotationForm" method="POST" action="{{ url_for('save_quotation') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="customer_id" value="{{ customer.id }}">
     <input type="hidden" id="customer-id" value="{{ customer.id }}">
     <input type="hidden" name="product_count" value="{{ products|length }}">
