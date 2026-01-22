@@ -414,8 +414,9 @@
                                         data-selling-price="{{ item.selling_price }}"
                                         data-vat-rate="{{ item.vat_rate }}"
                                         data-supplier="{{ item.supplier|e or '' }}"
-                                        data-supplier-id="{{ item.supplier_id }}"
+                                        data-supplier-id="{{ item.supplier_id or '' }}"
                                         data-cost-price="{{ item.cost_price or 0 }}"
+                                        data-pricing-status="{{ item.pricing_status or 'CONFIRMED' }}"
                                         title="Edit">
                                     <span class="material-symbols-outlined text-[18px]">edit</span>
                                 </button>
@@ -470,8 +471,9 @@
                                 data-selling-price="{{ item.selling_price }}"
                                 data-vat-rate="{{ item.vat_rate }}"
                                 data-supplier="{{ item.supplier|e or '' }}"
-                                data-supplier-id="{{ item.supplier_id }}"
-                                data-cost-price="{{ item.cost_price or 0 }}">
+                                data-supplier-id="{{ item.supplier_id or '' }}"
+                                data-cost-price="{{ item.cost_price or 0 }}"
+                                data-pricing-status="{{ item.pricing_status or 'CONFIRMED' }}">
                             <span class="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <a href="{{ url_for('delete_quotation_item', item_id=item.id) }}" 
@@ -666,6 +668,8 @@
             </div>
             <form id="editItemForm" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="pricing_status" id="edit_pricing_status" value="CONFIRMED">
+                <input type="hidden" name="supplier" id="edit_supplier" value="">
                 <div class="p-6 space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -1031,7 +1035,9 @@ function initEditItemButtons() {
             document.getElementById('edit_selling_price').value = this.dataset.sellingPrice || '';
             document.getElementById('edit_vat_rate').value = this.dataset.vatRate || '';
             document.getElementById('edit_supplier_id').value = this.dataset.supplierId || '';
+            document.getElementById('edit_supplier').value = this.dataset.supplier || '';
             document.getElementById('edit_cost_price').value = this.dataset.costPrice || '';
+            document.getElementById('edit_pricing_status').value = this.dataset.pricingStatus || 'CONFIRMED';
             openModal('editItemModal');
         });
     });
