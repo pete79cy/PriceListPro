@@ -227,7 +227,11 @@ def add_item(adjustment_id):
 def remove_item(adjustment_id, item_id):
     """Remove an item from a delivery adjustment"""
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
-    item = DeliveryAdjustmentItem.query.filter_by(id=item_id, adjustment_id=adjustment_id).first_or_404()
+    item = DeliveryAdjustmentItem.query.filter_by(id=item_id, adjustment_id=adjustment_id).first()
+    
+    if not item:
+        flash('Item not found or already removed', 'warning')
+        return redirect(url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment_id))
     
     if adjustment.status != 'pending':
         flash('Can only remove items from pending adjustments', 'warning')
