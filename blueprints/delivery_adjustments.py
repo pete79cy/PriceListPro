@@ -248,7 +248,9 @@ def remove_item(adjustment_id, item_id):
 @login_required
 def confirm_adjustment(adjustment_id):
     """Confirm a delivery adjustment"""
+    logging.info(f"Confirm adjustment called for ID: {adjustment_id}")
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
+    logging.info(f"Current status: {adjustment.status}, Items count: {len(adjustment.items)}")
     
     if adjustment.status != 'pending':
         flash('Adjustment is not in pending status', 'warning')
