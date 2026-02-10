@@ -41,29 +41,19 @@ def register_error_handlers(app):
                 'message': 'Your session may have expired. Please refresh the page and try again.'
             }), 400
         
-        from flask import render_template_string
-        return render_template_string('''
-<!DOCTYPE html>
-<html>
-<head><title>Session Expired</title>
-<style>
-body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-h1 { color: #e74c3c; margin-bottom: 1rem; }
-p { color: #666; margin-bottom: 1.5rem; }
-a { display: inline-block; padding: 0.75rem 1.5rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px; }
-a:hover { background: #2980b9; }
-</style>
-</head>
-<body>
-<div class="card">
-<h1>Session Expired</h1>
-<p>Your session has expired or the security token is invalid. Please refresh the page and try again.</p>
-<a href="javascript:window.location.reload()">Refresh Page</a>
-</div>
-</body>
-</html>
-        '''), 400
+        from flask import flash, redirect
+        try:
+            flash('Η συνεδρία σας έληξε. Παρακαλώ δοκιμάστε ξανά.', 'warning')
+        except Exception:
+            pass
+        if referrer and referrer != 'unknown':
+            from urllib.parse import urlparse
+            back_url = urlparse(referrer).path or '/'
+        elif request.method == 'GET':
+            back_url = request.path or '/'
+        else:
+            back_url = '/'
+        return redirect(back_url)
     
     @app.errorhandler(500)
     def internal_error(error):
@@ -112,15 +102,16 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 # Configure BUILD_ID for PWA cache busting
 app.config["BUILD_ID"] = os.environ.get("BUILD_ID", "dev")
 
-# Configure session cookie security (P1 security hardening)
-app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protect against CSRF via cross-site requests
-# SESSION_COOKIE_SECURE should be True in production (HTTPS only)
-# Set to False for development to allow HTTP
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_NAME'] = 'pricelistpro_session'
 
-# Configure CSRF protection settings
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # CSRF token valid for 1 hour (prevents random expiries)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
+app.config['WTF_CSRF_TIME_LIMIT'] = 28800
 
 # Configure file uploads
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
