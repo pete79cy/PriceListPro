@@ -2743,6 +2743,7 @@ def register_routes(app):
         original = Quotation.query.get_or_404(quotation_id)
         
         try:
+            from blueprints.routes_api import generate_quotation_number
             # Create new quotation with the same customer and details
             new_quotation = Quotation(
                 customer_id=original.customer_id,
@@ -2769,13 +2770,30 @@ def register_routes(app):
                     quantity=item.quantity,
                     selling_price=item.selling_price,
                     vat_rate=item.vat_rate,
+                    pricing_status=item.pricing_status,
                     supplier=item.supplier,
                     supplier_id=item.supplier_id,
                     cost_price=item.cost_price,
                     total=item.total,
-                    position=item.position
+                    position=item.position,
+                    has_size_options=item.has_size_options
                 )
                 db.session.add(new_item)
+                db.session.flush()
+                
+                if item.has_size_options and item.size_options:
+                    for option in item.size_options:
+                        new_option = QuotationItemSizeOption(
+                            quotation_item_id=new_item.id,
+                            size=option.size,
+                            price=option.price,
+                            cost_price=option.cost_price,
+                            supplier=option.supplier,
+                            is_default=option.is_default,
+                            position=option.position,
+                            notes=option.notes
+                        )
+                        db.session.add(new_option)
             
             db.session.commit()
             flash(f'Quotation duplicated successfully as {new_quotation.quotation_number}', 'success')
