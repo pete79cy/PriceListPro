@@ -3,10 +3,10 @@ API Blueprint for Quotation Management.
 Provides endpoints for creating and retrieving quotations via JSON.
 """
 import os
-from flask import Blueprint, request, jsonify, current_app, url_for, abort, render_template
+from flask import Blueprint, request, jsonify, current_app, abort, render_template
 from flask_httpauth import HTTPTokenAuth
 from app import db
-from models import Quotation, QuotationItem, Customer, Product
+from models import Quotation, QuotationItem, QuotationItemSizeOption, Customer, Product, Supplier, SupplierProduct
 from utils.logger import logger, log_api_request
 from datetime import datetime
 
@@ -66,7 +66,7 @@ def make_quotation_response(quotation):
         "status": "success",
         "quotation_id": quotation.id,
         "quotation_number": quotation.quotation_number,
-        "edit_url": url_for("quotation.edit", quotation_id=quotation.id, _external=True)
+        "edit_url": f"/quotations/{quotation.id}"
     }
 
 def get_or_create_customer(customer_data):
@@ -91,6 +91,64 @@ def get_or_create_customer(customer_data):
         db.session.flush()  # Get customer.id
     
     return customer
+
+def _find_supplier_products(item):
+    """
+    Find matching supplier products for a quotation item.
+    Searches by product name/description and optional pot_size/height.
+    Returns a list of supplier options with cost prices.
+    """
+    if not item.description:
+        return []
+    
+    search_term = f"%{item.description}%"
+    query = SupplierProduct.query.join(Supplier).filter(
+        SupplierProduct.product_name.ilike(search_term)
+    )
+    
+    if item.pot_size:
+        query = query.filter(SupplierProduct.pot_size == item.pot_size)
+    if item.height:
+        query = query.filter(SupplierProduct.height == item.height)
+    
+    matches = query.all()
+    
+    if not matches:
+        query = SupplierProduct.query.join(Supplier).filter(
+            SupplierProduct.product_name.ilike(search_term)
+        )
+        matches = query.all()
+    
+    if not matches and item.scientific_name:
+        sci_term = f"%{item.scientific_name}%"
+        query = SupplierProduct.query.join(Supplier).filter(
+            SupplierProduct.scientific_name.ilike(sci_term)
+        )
+        if item.pot_size:
+            query = query.filter(SupplierProduct.pot_size == item.pot_size)
+        if item.height:
+            query = query.filter(SupplierProduct.height == item.height)
+        matches = query.all()
+        
+        if not matches and item.scientific_name:
+            query = SupplierProduct.query.join(Supplier).filter(
+                SupplierProduct.scientific_name.ilike(sci_term)
+            )
+            matches = query.all()
+    
+    return [{
+        "supplier_product_id": sp.id,
+        "supplier_id": sp.supplier_id,
+        "supplier_name": sp.supplier.name if sp.supplier else None,
+        "is_inhouse": sp.supplier.is_inhouse if sp.supplier else False,
+        "product_name": sp.product_name,
+        "scientific_name": sp.scientific_name,
+        "pot_size": sp.pot_size,
+        "height": sp.height,
+        "cost_price": sp.cost_price,
+        "price": sp.price,
+    } for sp in matches]
+
 
 # API Routes
 @api.route("/quotations", methods=["POST"])
@@ -204,7 +262,7 @@ def create_quotation():
 def get_quotation(quotation_number):
     """
     Retrieve a quotation by its quotation number.
-    Returns the quotation details in JSON format.
+    Returns full quotation details including supplier info, cost prices, and size options.
     """
     quotation = Quotation.query.filter_by(quotation_number=quotation_number).first()
     if not quotation:
@@ -213,14 +271,12 @@ def get_quotation(quotation_number):
             "message": f"Quotation {quotation_number} not found"
         }), 404
     
-    # Get customer and items
     customer = Customer.query.get(quotation.customer_id)
     items = quotation.items
     
-    # Format response
     items_data = []
     for item in items:
-        items_data.append({
+        item_dict = {
             "id": item.id,
             "description": item.description,
             "scientific_name": item.scientific_name,
@@ -228,16 +284,65 @@ def get_quotation(quotation_number):
             "height": item.height,
             "quantity": item.quantity,
             "selling_price": item.selling_price,
+            "cost_price": item.cost_price,
             "vat_rate": item.vat_rate,
             "total": item.total,
-            "position": item.position
-        })
+            "position": item.position,
+            "pricing_status": item.pricing_status,
+            "supplier_name": item.supplier,
+            "supplier_id": item.supplier_id,
+            "has_size_options": item.has_size_options,
+        }
+        
+        if item.supplier_id:
+            supplier_obj = Supplier.query.get(item.supplier_id)
+            if supplier_obj:
+                item_dict["supplier_details"] = {
+                    "id": supplier_obj.id,
+                    "name": supplier_obj.name,
+                    "contact_person": supplier_obj.contact_person,
+                    "email": supplier_obj.email,
+                    "phone": supplier_obj.phone,
+                    "is_inhouse": supplier_obj.is_inhouse,
+                }
+        
+        if item.product_id:
+            product_obj = Product.query.get(item.product_id)
+            if product_obj:
+                item_dict["product"] = {
+                    "id": product_obj.id,
+                    "name": product_obj.name,
+                    "category": product_obj.category,
+                    "sku": product_obj.sku,
+                    "scientific_name": product_obj.scientific_name,
+                }
+        
+        if item.has_size_options and item.size_options:
+            item_dict["size_options"] = [{
+                "id": opt.id,
+                "size": opt.size,
+                "price": opt.price,
+                "cost_price": opt.cost_price,
+                "supplier": opt.supplier,
+                "is_default": opt.is_default,
+                "position": opt.position,
+                "notes": opt.notes,
+            } for opt in item.size_options]
+        
+        supplier_products = _find_supplier_products(item)
+        if supplier_products:
+            item_dict["available_suppliers"] = supplier_products
+        
+        items_data.append(item_dict)
     
     response = {
         "status": "success",
         "quotation_id": quotation.id,
         "quotation_number": quotation.quotation_number,
         "quotation_date": quotation.quotation_date.isoformat() if quotation.quotation_date else None,
+        "status_label": quotation.get_status_label(),
+        "status_code": quotation.status,
+        "valid_until": quotation.valid_until.isoformat() if quotation.valid_until else None,
         "customer": {
             "id": customer.id,
             "name": customer.name,
@@ -248,10 +353,13 @@ def get_quotation(quotation_number):
         "items": items_data,
         "currency": quotation.currency,
         "notes": quotation.notes,
+        "internal_notes": quotation.internal_notes,
         "total_amount": quotation.total_amount,
         "created_at": quotation.created_at.isoformat() if quotation.created_at else None,
         "updated_at": quotation.updated_at.isoformat() if quotation.updated_at else None,
-        "edit_url": url_for("quotation.edit", quotation_id=quotation.id, _external=True)
+        "viewed_at": quotation.viewed_at.isoformat() if quotation.viewed_at else None,
+        "accepted_at": quotation.accepted_at.isoformat() if quotation.accepted_at else None,
+        "edit_url": f"/quotations/{quotation.id}"
     }
     
     return jsonify(response), 200
@@ -261,39 +369,72 @@ def get_quotation(quotation_number):
 @log_api_request
 def list_quotations():
     """
-    List all quotations, with optional filtering by customer ID.
-    Returns a list of quotations in JSON format.
+    List all quotations with full details, optional filtering by customer_id and status.
+    Returns quotations with items, suppliers, and cost prices.
     """
     customer_id = request.args.get("customer_id")
+    status = request.args.get("status")
     limit = request.args.get("limit", 50, type=int)
     offset = request.args.get("offset", 0, type=int)
     
-    # Build query
     query = Quotation.query
     
     if customer_id:
         query = query.filter_by(customer_id=customer_id)
+    if status:
+        query = query.filter_by(status=status)
     
-    # Add sorting and pagination
+    total_count = query.count()
     quotations = query.order_by(Quotation.created_at.desc()).limit(limit).offset(offset).all()
     
-    # Format response
     results = []
     for quotation in quotations:
-        results.append({
+        items_summary = []
+        for item in quotation.items:
+            item_data = {
+                "id": item.id,
+                "description": item.description,
+                "scientific_name": item.scientific_name,
+                "pot_size": item.pot_size,
+                "height": item.height,
+                "quantity": item.quantity,
+                "selling_price": item.selling_price,
+                "cost_price": item.cost_price,
+                "vat_rate": item.vat_rate,
+                "total": item.total,
+                "pricing_status": item.pricing_status,
+                "supplier_name": item.supplier,
+                "supplier_id": item.supplier_id,
+            }
+            items_summary.append(item_data)
+        
+        quotation_data = {
             "id": quotation.id,
             "quotation_number": quotation.quotation_number,
-            "customer_name": quotation.customer.name if quotation.customer else "Unknown",
+            "status_code": quotation.status,
+            "status_label": quotation.get_status_label(),
+            "customer": {
+                "id": quotation.customer.id,
+                "name": quotation.customer.name,
+            } if quotation.customer else {"id": None, "name": "Unknown"},
             "quotation_date": quotation.quotation_date.isoformat() if quotation.quotation_date else None,
+            "valid_until": quotation.valid_until.isoformat() if quotation.valid_until else None,
             "total_amount": quotation.total_amount,
             "currency": quotation.currency,
             "item_count": len(quotation.items),
-            "created_at": quotation.created_at.isoformat() if quotation.created_at else None
-        })
+            "items": items_summary,
+            "notes": quotation.notes,
+            "created_at": quotation.created_at.isoformat() if quotation.created_at else None,
+            "updated_at": quotation.updated_at.isoformat() if quotation.updated_at else None,
+        }
+        results.append(quotation_data)
     
     response = {
         "status": "success",
         "count": len(results),
+        "total": total_count,
+        "limit": limit,
+        "offset": offset,
         "quotations": results
     }
     
