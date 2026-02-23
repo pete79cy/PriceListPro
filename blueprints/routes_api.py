@@ -174,18 +174,25 @@ def create_quotation():
                 "height": "30cm",
                 "quantity": 5,
                 "selling_price": 29.99,
-                "vat_rate": 19.0
+                "cost_price": 15.00,
+                "vat_rate": 19.0,
+                "supplier_id": 2,
+                "supplier": "Supplier Name",
+                "product_id": null,
+                "pricing_status": "CONFIRMED"
             }
         ],
         "currency": "€",
-        "notes": "Additional notes about the quotation"
+        "notes": "Additional notes about the quotation",
+        "internal_notes": "Internal notes for staff",
+        "valid_until": "2026-03-31",
+        "status": "DRAFT"
     }
     """
     data = request.get_json() or {}
     customer_data = data.get("customer", {})
     items_data = data.get("items", [])
     
-    # Basic validation
     if not customer_data.get("name"):
         return jsonify({
             "status": "error", 
@@ -199,7 +206,6 @@ def create_quotation():
         }), 400
     
     try:
-        # Get or create customer
         customer = get_or_create_customer(customer_data)
         if not customer:
             return jsonify({
@@ -207,45 +213,109 @@ def create_quotation():
                 "message": "Could not create customer"
             }), 400
         
-        # Create quotation
+        valid_until = None
+        if data.get("valid_until"):
+            try:
+                valid_until = datetime.strptime(data["valid_until"], "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        
         quotation = Quotation(
             customer_id=customer.id,
             quotation_number=generate_quotation_number(),
             quotation_date=datetime.now().date(),
             currency=data.get("currency", "€"),
-            notes=data.get("notes", "")
+            notes=data.get("notes", ""),
+            internal_notes=data.get("internal_notes"),
+            valid_until=valid_until,
+            status=data.get("status", "DRAFT")
         )
         db.session.add(quotation)
-        db.session.flush()  # Get quotation.id
+        db.session.flush()
         
-        # Add items
         position = 0
         total_amount = 0
+        items_created = []
         
         for item_data in items_data:
+            selling_price = item_data.get("selling_price") or 0
+            quantity = item_data.get("quantity", 1)
+            cost_price = item_data.get("cost_price")
+            supplier_id = item_data.get("supplier_id")
+            supplier_name = item_data.get("supplier", "")
+            pricing_status = item_data.get("pricing_status", "CONFIRMED")
+            
+            if supplier_id:
+                supplier_obj = Supplier.query.get(supplier_id)
+                if supplier_obj and not supplier_name:
+                    supplier_name = supplier_obj.name
+            
+            if selling_price == 0 and pricing_status == "CONFIRMED":
+                pricing_status = "PENDING"
+            
             item = QuotationItem(
                 quotation_id=quotation.id,
+                product_id=item_data.get("product_id"),
                 description=item_data.get("description", "Unnamed Product"),
                 scientific_name=item_data.get("scientific_name"),
                 pot_size=item_data.get("pot_size"),
                 height=item_data.get("height"),
-                quantity=item_data.get("quantity", 1),
-                selling_price=item_data.get("selling_price", 0),
+                quantity=quantity,
+                selling_price=selling_price,
+                cost_price=cost_price,
                 vat_rate=item_data.get("vat_rate", 19.0),
+                supplier=supplier_name,
+                supplier_id=supplier_id,
+                pricing_status=pricing_status,
                 position=position
             )
             
-            # Calculate item total
-            item.total = item.quantity * item.selling_price
+            item.total = quantity * selling_price
             total_amount += item.total
             
             db.session.add(item)
+            db.session.flush()
+            
+            items_created.append({
+                "id": item.id,
+                "description": item.description,
+                "scientific_name": item.scientific_name,
+                "pot_size": item.pot_size,
+                "height": item.height,
+                "quantity": item.quantity,
+                "selling_price": item.selling_price,
+                "cost_price": item.cost_price,
+                "vat_rate": item.vat_rate,
+                "total": item.total,
+                "pricing_status": item.pricing_status,
+                "supplier_name": item.supplier,
+                "supplier_id": item.supplier_id,
+                "position": item.position,
+            })
             position += 1
         
         quotation.total_amount = total_amount
         db.session.commit()
         
-        response = make_quotation_response(quotation)
+        response = {
+            "status": "success",
+            "quotation_id": quotation.id,
+            "quotation_number": quotation.quotation_number,
+            "quotation_date": quotation.quotation_date.isoformat(),
+            "status_code": quotation.status,
+            "status_label": quotation.get_status_label(),
+            "customer": {
+                "id": customer.id,
+                "name": customer.name,
+            },
+            "items": items_created,
+            "total_amount": total_amount,
+            "currency": quotation.currency,
+            "notes": quotation.notes,
+            "internal_notes": quotation.internal_notes,
+            "valid_until": quotation.valid_until.isoformat() if quotation.valid_until else None,
+            "edit_url": f"/quotations/{quotation.id}",
+        }
         return jsonify(response), 201
         
     except Exception as e:
