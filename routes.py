@@ -584,7 +584,6 @@ def register_routes(app):
         
     @app.route('/login', methods=['GET', 'POST'])
     def login():
-        # If user is already logged in, redirect to dashboard
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
             
@@ -593,22 +592,22 @@ def register_routes(app):
             password = request.form.get('password')
             remember_me = request.form.get('remember_me') == 'on'
             
-            # Validate the username and password
+            logger.info(f"Login attempt for username: {username}")
+            
             user = User.query.filter_by(username=username).first()
             
             if user and user.check_password(password):
-                # Update last login timestamp
                 user.last_login = datetime.utcnow()
                 db.session.commit()
                 
-                # Log the user in with remember me option
                 login_user(user, remember=remember_me)
+                logger.info(f"Login successful for user: {username}")
                 flash(f'Welcome back, {user.username}!', 'success')
                 
-                # Redirect to the page they were trying to access or the dashboard
                 next_page = request.args.get('next')
                 return redirect(next_page if next_page else url_for('dashboard'))
             else:
+                logger.warning(f"Failed login attempt for username: {username}")
                 flash('Invalid username or password. Please try again.', 'danger')
                 
         return render_template('index.html')

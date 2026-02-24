@@ -115,16 +115,10 @@
             if (!username.value.trim()) {
                 showFieldError(username, 'Username is required');
                 isValid = false;
-            } else if (username.value.length < 3) {
-                showFieldError(username, 'Username must be at least 3 characters');
-                isValid = false;
             }
             
             if (!password.value) {
                 showFieldError(password, 'Password is required');
-                isValid = false;
-            } else if (password.value.length < 6) {
-                showFieldError(password, 'Password must be at least 6 characters');
                 isValid = false;
             }
             
