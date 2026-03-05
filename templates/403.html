@@ -1,0 +1,19 @@
+{% extends 'apple_login_layout.html' %}
+
+{% block title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="login-card" style="text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem; color: #dc3545;">
+        <i class="fas fa-lock"></i>
+    </div>
+    <div class="login-title" style="color: #dc3545;">Access Denied</div>
+    <div class="login-subtitle" style="margin-bottom: 2rem;">
+        Δεν έχετε δικαίωμα πρόσβασης.<br>
+        You are not authorized to access this application.
+    </div>
+    <a href="{{ url_for('index') }}" class="login-button" style="display: block; text-align: center; text-decoration: none;">
+        <i class="fas fa-arrow-left" style="margin-right: 0.5rem;"></i>Go Back
+    </a>
+</div>
+{% endblock %}
