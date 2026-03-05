@@ -123,19 +123,39 @@ def make_replit_blueprint():
     def error():
         return render_template("403.html"), 403
 
+    @replit_bp.route("/access-denied")
+    def access_denied():
+        return render_template("403.html"), 403
+
     return replit_bp
 
 
 def save_user(user_claims):
-    user = User()
-    user.id = user_claims['sub']
-    user.email = user_claims.get('email')
-    user.first_name = user_claims.get('first_name')
-    user.last_name = user_claims.get('last_name')
-    user.profile_image_url = user_claims.get('profile_image_url')
-    merged_user = db.session.merge(user)
+    user_id = user_claims['sub']
+    existing_user = User.query.get(user_id)
+
+    if existing_user is None:
+        user_count = User.query.count()
+        if user_count > 0:
+            return None
+
+        new_user = User()
+        new_user.id = user_id
+        new_user.email = user_claims.get('email')
+        new_user.first_name = user_claims.get('first_name')
+        new_user.last_name = user_claims.get('last_name')
+        new_user.profile_image_url = user_claims.get('profile_image_url')
+        new_user.is_admin = True
+        db.session.add(new_user)
+        db.session.commit()
+        return new_user
+
+    existing_user.email = user_claims.get('email')
+    existing_user.first_name = user_claims.get('first_name')
+    existing_user.last_name = user_claims.get('last_name')
+    existing_user.profile_image_url = user_claims.get('profile_image_url')
     db.session.commit()
-    return merged_user
+    return existing_user
 
 
 @oauth_authorized.connect
@@ -143,6 +163,10 @@ def logged_in(blueprint, token):
     user_claims = jwt.decode(token['id_token'],
                              options={"verify_signature": False})
     user = save_user(user_claims)
+
+    if user is None:
+        return redirect(url_for('replit_auth.access_denied'))
+
     login_user(user)
     blueprint.token = token
     next_url = session.pop("next_url", None)
