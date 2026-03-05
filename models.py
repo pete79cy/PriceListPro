@@ -1,11 +1,12 @@
 from datetime import datetime, date, timedelta
 from enum import Enum, auto
 from app import db
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
 from flask_login import UserMixin
 import re
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import UniqueConstraint
 from decimal import Decimal, ROUND_HALF_UP
 
 # Import money utilities from standalone module (avoids circular imports in tests)
@@ -55,21 +56,45 @@ ORDER_STATUS_TRANSITIONS = {
 }
 
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
+    __tablename__ = 'users'
+    id = db.Column(db.String, primary_key=True)
+    email = db.Column(db.String, unique=True, nullable=True)
+    first_name = db.Column(db.String, nullable=True)
+    last_name = db.Column(db.String, nullable=True)
+    profile_image_url = db.Column(db.String, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_login = db.Column(db.DateTime, nullable=True)
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-        
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def username(self):
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        if self.first_name:
+            return self.first_name
+        if self.email:
+            return self.email.split('@')[0]
+        return f"User {self.id[:8]}"
+
+    @property
+    def last_login(self):
+        return self.updated_at
+
     def __repr__(self):
         return f'<User {self.username}>'
+
+
+class OAuth(OAuthConsumerMixin, db.Model):
+    user_id = db.Column(db.String, db.ForeignKey(User.id))
+    browser_session_key = db.Column(db.String, nullable=False)
+    user = db.relationship(User)
+
+    __table_args__ = (UniqueConstraint(
+        'user_id',
+        'browser_session_key',
+        'provider',
+        name='uq_user_browser_session_key_provider',
+    ),)
 
 class CustomerCategory(db.Model):
     id = db.Column(db.Integer, primary_key=True)

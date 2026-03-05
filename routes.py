@@ -8,7 +8,8 @@ from flask import render_template, render_template_string, request, redirect, ur
 from werkzeug.utils import secure_filename
 from app import db
 from models import User, Customer, CustomerCategory, CustomerContact, Product, PriceList, Invoice, InvoiceItem, FileUpload, ProductUpdateRequest, Quotation, QuotationItem, QuotationItemSizeOption, Supplier, SupplierProduct, CompanySettings, QuotationStatus, Order
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_login import current_user
+from replit_auth import require_login
 from utils.excel_parser import parse_excel_file
 from utils.pdf_parser import extract_text_from_pdf, extract_invoice_data
 from utils.search import search_price_list
@@ -183,7 +184,7 @@ def register_routes(app):
     # ===============================
     
     @app.route('/admin/csrf-audit', methods=['GET'])
-    @login_required
+    @require_login
     def csrf_audit():
         """CSRF coverage audit report for security review."""
         if not current_user.is_admin:
@@ -303,7 +304,7 @@ def register_routes(app):
         ''', routes=routes_audit, protected_count=protected_count, exempt_count=exempt_count)
     
     @app.route('/admin/system-health', methods=['GET'])
-    @login_required
+    @require_login
     def system_health():
         """Display system health page with security and integrity status."""
         from utils.integrity_checker import IntegrityChecker
@@ -336,7 +337,7 @@ def register_routes(app):
         )
     
     @app.route('/admin/system-health/scan', methods=['POST'])
-    @login_required
+    @require_login
     def system_health_scan():
         """Run integrity scan and store results in session."""
         from utils.integrity_checker import IntegrityChecker
@@ -353,7 +354,7 @@ def register_routes(app):
         return redirect(url_for('system_health'))
     
     @app.route('/admin/system-health/test', methods=['POST'])
-    @login_required
+    @require_login
     def system_health_test():
         """Run quick VAT calculation tests."""
         from utils.money import money, calculate_vat, calculate_gross
@@ -582,45 +583,9 @@ def register_routes(app):
         # Otherwise show the login page
         return render_template('index.html')
         
-    @app.route('/login', methods=['GET', 'POST'])
-    def login():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-            
-        if request.method == 'POST':
-            username = request.form.get('username')
-            password = request.form.get('password')
-            remember_me = request.form.get('remember_me') == 'on'
-            
-            logger.info(f"Login attempt for username: {username}")
-            
-            user = User.query.filter_by(username=username).first()
-            
-            if user and user.check_password(password):
-                user.last_login = datetime.utcnow()
-                db.session.commit()
-                
-                login_user(user, remember=remember_me)
-                logger.info(f"Login successful for user: {username}")
-                flash(f'Welcome back, {user.username}!', 'success')
-                
-                next_page = request.args.get('next')
-                return redirect(next_page if next_page else url_for('dashboard'))
-            else:
-                logger.warning(f"Failed login attempt for username: {username}")
-                flash('Invalid username or password. Please try again.', 'danger')
-                
-        return render_template('index.html')
-    
-    @app.route('/logout')
-    @login_required
-    def logout():
-        logout_user()
-        flash('You have been logged out successfully.', 'success')
-        return redirect(url_for('index'))
     
     @app.route('/dashboard')
-    @login_required
+    @require_login
     def dashboard():
         import json
         # Get some stats for the dashboard
@@ -758,14 +723,14 @@ def register_routes(app):
                               now=datetime.now())
     
     @app.route('/uploads', methods=['GET'])
-    @login_required
+    @require_login
     def uploads():
         customers = Customer.query.order_by(Customer.name).all()
         recent_uploads = FileUpload.query.order_by(FileUpload.upload_date.desc()).limit(10).all()
         return render_template('uploads_new.html', customers=customers, recent_uploads=recent_uploads)
     
     @app.route('/upload/excel', methods=['POST'])
-    @login_required
+    @require_login
     def upload_excel():
         if 'file' not in request.files:
             flash('No file part', 'danger')
@@ -863,7 +828,7 @@ def register_routes(app):
         return redirect(request.url)
     
     @app.route('/upload/pdf', methods=['POST'])
-    @login_required
+    @require_login
     def upload_pdf():
         if 'file' not in request.files:
             flash('No file part', 'danger')
@@ -1023,7 +988,7 @@ def register_routes(app):
         return redirect(request.url)
     
     @app.route('/upload/customer-invoice', methods=['POST'])
-    @login_required
+    @require_login
     def upload_customer_invoice():
         """
         Upload customer invoice Excel file with specific structure and update price lists
@@ -1119,7 +1084,7 @@ def register_routes(app):
         return redirect(url_for('uploads'))
                 
     @app.route('/download-customer-invoice-template')
-    @login_required
+    @require_login
     def download_customer_invoice_template():
         """Download a sample customer invoice template for reference"""
         return send_from_directory(
@@ -1130,7 +1095,7 @@ def register_routes(app):
         )
         
     @app.route('/customers', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def customers():
         if request.method == 'POST':
             # Add or update a customer
@@ -1190,7 +1155,7 @@ def register_routes(app):
                              customer_categories=customer_categories)
     
     @app.route('/customer/<int:customer_id>', methods=['GET'])
-    @login_required
+    @require_login
     def view_customer(customer_id):
         """Show customer details including stats and contact history"""
         customer = Customer.query.get_or_404(customer_id)
@@ -1207,7 +1172,7 @@ def register_routes(app):
                              customer_categories=customer_categories)
     
     @app.route('/customer/delete/<int:customer_id>', methods=['POST'])
-    @login_required
+    @require_login
     def delete_customer(customer_id):
         """Delete a customer and all associated data"""
         try:
@@ -1229,7 +1194,7 @@ def register_routes(app):
         return redirect(url_for('customers'))
     
     @app.route('/customers/<int:customer_id>/add_contact', methods=['POST'])
-    @login_required
+    @require_login
     def add_customer_contact(customer_id):
         """Add a new contact record for a customer"""
         customer = Customer.query.get_or_404(customer_id)
@@ -1267,7 +1232,7 @@ def register_routes(app):
         return redirect(url_for('customer_detail', customer_id=customer_id))
         
     @app.route('/customers/<int:customer_id>/delete_contact/<int:contact_id>', methods=['POST'])
-    @login_required
+    @require_login
     def delete_customer_contact(customer_id, contact_id):
         """Delete a customer contact record"""
         contact = CustomerContact.query.get_or_404(contact_id)
@@ -1288,7 +1253,7 @@ def register_routes(app):
         return redirect(url_for('customer_detail', customer_id=customer_id))
     
     @app.route('/customers/<int:customer_id>/delete', methods=['POST'])
-    @login_required
+    @require_login
     def delete_customer_new(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         db.session.delete(customer)
@@ -1297,7 +1262,7 @@ def register_routes(app):
         return redirect(url_for('customers'))
     
     @app.route('/customer_categories', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def customer_categories():
         """View and manage customer categories"""
         if request.method == 'POST':
@@ -1328,7 +1293,7 @@ def register_routes(app):
         return render_template('customer_categories.html', categories=categories)
         
     @app.route('/customer_categories/<int:category_id>/delete', methods=['POST'])
-    @login_required
+    @require_login
     def delete_customer_category(category_id):
         """Delete a customer category"""
         category = CustomerCategory.query.get_or_404(category_id)
@@ -1351,7 +1316,7 @@ def register_routes(app):
         return redirect(url_for('customer_categories'))
     
     @app.route('/products', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def products():
         if request.method == 'POST':
             # Add or update a product
@@ -1392,7 +1357,7 @@ def register_routes(app):
         return render_template('products_new.html', products=products_list)
     
     @app.route('/products/batch-delete', methods=['POST'])
-    @login_required
+    @require_login
     def batch_delete_products():
         """Delete multiple products at once"""
         product_ids = request.form.getlist('product_ids')
@@ -1432,7 +1397,7 @@ def register_routes(app):
         return redirect(url_for('products'))
 
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
-    @login_required
+    @require_login
     def delete_product(product_id):
         product = Product.query.get_or_404(product_id)
         product_name = product.name
@@ -1456,13 +1421,13 @@ def register_routes(app):
 
     
     @app.route('/search', methods=['GET'])
-    @login_required
+    @require_login
     def search():
         customers = Customer.query.order_by(Customer.name).all()
         return render_template('search_new.html', customers=customers)
     
     @app.route('/api/search', methods=['GET'])
-    @login_required
+    @require_login
     def api_search():
         query = request.args.get('q', '')
         customer_id = request.args.get('customer_id', '')
@@ -1476,7 +1441,7 @@ def register_routes(app):
         return jsonify(results)
     
     @app.route('/api/categories', methods=['GET'])
-    @login_required
+    @require_login
     def get_categories():
         """API endpoint to get all customer categories"""
         try:
@@ -1496,7 +1461,7 @@ def register_routes(app):
             return jsonify({'error': str(e)}), 500
     
     @app.route('/api/customers/search', methods=['GET'])
-    @login_required
+    @require_login
     def search_customers():
         """API endpoint for searching customers by name, email or phone"""
         query = request.args.get('q', '')
@@ -1590,7 +1555,7 @@ def register_routes(app):
         return jsonify(results)
     
     @app.route('/download/template')
-    @login_required
+    @require_login
     def download_template():
         """Provide a downloadable Excel template for price lists or quotations"""
         templates_dict = ensure_template_exists(app.static_folder)
@@ -1610,7 +1575,7 @@ def register_routes(app):
                                  as_attachment=True, download_name=download_name)
     
     @app.route('/price-lists')
-    @login_required
+    @require_login
     def price_lists():
         """View all price lists with filtering options"""
         # Get query parameters
@@ -1659,7 +1624,7 @@ def register_routes(app):
                               selected_category=category)
     
     @app.route('/edit-product', methods=['POST'])
-    @login_required
+    @require_login
     def edit_product():
         """Edit product details from any page"""
         product_id = request.form.get('product_id')
@@ -1726,7 +1691,7 @@ def register_routes(app):
             return redirect(url_for(redirect_to))
     
     @app.route('/add-to-price-list', methods=['POST'])
-    @login_required
+    @require_login
     def add_to_price_list():
         """Add a product to a customer's price list"""
         product_id = request.form.get('product_id')
@@ -1779,7 +1744,7 @@ def register_routes(app):
         return redirect(url_for('price_lists', customer_id=customer_id))
 
     @app.route('/price-list/<int:price_id>/delete', methods=['POST'])
-    @login_required
+    @require_login
     def delete_price_list_entry(price_id):
         """Delete a single price list entry"""
         price_list = PriceList.query.get_or_404(price_id)
@@ -1804,7 +1769,7 @@ def register_routes(app):
         return redirect(url_for('price_lists', customer_id=customer_id, category=category))
         
     @app.route('/price-lists/batch-delete', methods=['POST'])
-    @login_required
+    @require_login
     def batch_delete_price_lists():
         """Delete multiple price list entries at once"""
         data = request.get_json()
@@ -1837,7 +1802,7 @@ def register_routes(app):
             return jsonify({'error': str(e)}), 500
             
     @app.route('/edit-price', methods=['POST'])
-    @login_required
+    @require_login
     def edit_price():
         """Edit price in a price list"""
         price_id = request.form.get('price_id')
@@ -1875,7 +1840,7 @@ def register_routes(app):
         return redirect(url_for('price_lists', customer_id=customer_id))
     
     @app.route('/price-lists/<int:price_id>/update-price', methods=['POST'])
-    @login_required
+    @require_login
     def update_price_list_inline(price_id):
         """Update a price list entry via AJAX (inline editing)"""
         data = request.get_json()
@@ -1909,7 +1874,7 @@ def register_routes(app):
             return jsonify({'error': str(e)}), 500
     
     @app.route('/price-lists/export-csv', methods=['POST'])
-    @login_required
+    @require_login
     def export_price_lists_csv():
         """Export selected price list entries to CSV"""
         import io
@@ -1956,7 +1921,7 @@ def register_routes(app):
             return jsonify({'error': str(e)}), 500
                               
     @app.route('/invoices')
-    @login_required
+    @require_login
     def invoices():
         """View all invoices with filtering options"""
         # Get query parameters
@@ -2004,7 +1969,7 @@ def register_routes(app):
                               date_to=date_to)
                               
     @app.route('/invoice/<int:invoice_id>')
-    @login_required
+    @require_login
     def invoice_details(invoice_id):
         """View details of a specific invoice"""
         invoice = Invoice.query.get_or_404(invoice_id)
@@ -2021,7 +1986,7 @@ def register_routes(app):
                               items=items)
                               
     @app.route('/invoice/<int:invoice_id>/delete', methods=['POST'])
-    @login_required
+    @require_login
     def delete_invoice(invoice_id):
         """Delete an invoice and its related items"""
         invoice = Invoice.query.get_or_404(invoice_id)
@@ -2058,7 +2023,7 @@ def register_routes(app):
         return redirect(url_for('invoices'))
         
     @app.route('/invoices/batch-delete', methods=['POST'])
-    @login_required
+    @require_login
     def batch_delete_invoices():
         """Delete multiple invoices at once"""
         data = request.get_json()
@@ -2094,7 +2059,7 @@ def register_routes(app):
             return jsonify({'error': str(e)}), 500
             
     @app.route('/invoices/delete-all', methods=['POST'])
-    @login_required
+    @require_login
     def delete_all_invoices():
         """Delete all invoices from the database"""
         from utils.database_cleanup import delete_all_invoices
@@ -2109,7 +2074,7 @@ def register_routes(app):
         return redirect(url_for('invoices'))
     
     @app.route('/pending-updates')
-    @login_required
+    @require_login
     def pending_updates():
         """View all pending price update requests"""
         # Get filter parameters
@@ -2146,7 +2111,7 @@ def register_routes(app):
                               selected_customer_id=customer_id)
     
     @app.route('/update/<int:update_id>/approve', methods=['POST'])
-    @login_required
+    @require_login
     def approve_update(update_id):
         """Approve a pending price update"""
         if approve_price_update(update_id):
@@ -2158,7 +2123,7 @@ def register_routes(app):
         return redirect(url_for('pending_updates'))
     
     @app.route('/update/<int:update_id>/reject', methods=['POST'])
-    @login_required
+    @require_login
     def reject_update(update_id):
         """Reject a pending price update"""
         if reject_price_update(update_id):
@@ -2170,7 +2135,7 @@ def register_routes(app):
         return redirect(url_for('pending_updates'))
     
     @app.route('/uploads/<filename>')
-    @login_required
+    @require_login
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
         
@@ -2178,7 +2143,7 @@ def register_routes(app):
         
     # Quotation Management Routes
     @app.route('/quotations')
-    @login_required
+    @require_login
     def quotations():
         """View all quotations with filtering options"""
         # Get filter parameters
@@ -2252,14 +2217,14 @@ def register_routes(app):
                               pagination=pagination)
     
     @app.route('/upload-quotation')
-    @login_required
+    @require_login
     def upload_quotation():
         """Show the quotation upload page"""
         customers = Customer.query.order_by(Customer.name).all()
         return render_template('upload_quotation.html', customers=customers)
     
     @app.route('/create-manual-quotation', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def create_manual_quotation():
         """Create a new quotation manually without file upload"""
         if request.method == 'GET':
@@ -2308,7 +2273,7 @@ def register_routes(app):
             return render_template('create_manual_quotation.html', customers=customers)
     
     @app.route('/upload-quotation-file', methods=['POST'])
-    @login_required
+    @require_login
     def upload_quotation_file():
         """Handle uploaded file for quotation creation"""
         if 'file' not in request.files:
@@ -2372,7 +2337,7 @@ def register_routes(app):
             return redirect(url_for('upload_quotation'))
             
     @app.route('/save-quotation', methods=['POST', 'GET'])
-    @login_required
+    @require_login
     def save_quotation():
         """Save the finalized quotation"""
         print("RECEIVED SAVE QUOTATION REQUEST")
@@ -2632,7 +2597,7 @@ def register_routes(app):
             return redirect(url_for('upload_quotation'))
             
     @app.route('/quotation/<int:quotation_id>')
-    @login_required
+    @require_login
     def view_quotation(quotation_id):
         """View details of a specific quotation"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2677,7 +2642,7 @@ def register_routes(app):
                               all_suppliers=all_suppliers)
     
     @app.route('/quotation/<int:quotation_id>/transition_status', methods=['POST'])
-    @login_required
+    @require_login
     def quotation_transition_status(quotation_id):
         """Handle quotation status transitions"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2714,7 +2679,7 @@ def register_routes(app):
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/update_internal_notes', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def update_quotation_internal_notes(quotation_id):
         """Update internal notes for a quotation"""
@@ -2736,7 +2701,7 @@ def register_routes(app):
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/duplicate', methods=['POST'])
-    @login_required
+    @require_login
     def duplicate_quotation(quotation_id):
         """Duplicate a quotation to create a new one with the same items (POST required for CSRF protection)"""
         original = Quotation.query.get_or_404(quotation_id)
@@ -2806,7 +2771,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/export')
-    @login_required
+    @require_login
     def export_quotation(quotation_id):
         """Export a quotation as PDF using the standard template"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2834,7 +2799,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
             
     @app.route('/quotation/<int:quotation_id>/export/excel')
-    @login_required
+    @require_login
     def export_quotation_excel(quotation_id):
         """Export a quotation as Excel (.xlsx) file with optional column selection"""
         from utils.excel_generator import generate_quotation_excel
@@ -2884,7 +2849,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
             
     @app.route('/quotation/<int:quotation_id>/export/modern')
-    @login_required
+    @require_login
     def export_quotation_modern(quotation_id):
         """Export a quotation as PDF using the modern template"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2913,7 +2878,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/export/fixed')
-    @login_required
+    @require_login
     def export_quotation_fixed(quotation_id):
         """Export a quotation as PDF using the enhanced generator to fix missing items"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2937,7 +2902,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
 
     @app.route('/quotation/<int:quotation_id>/export/debug')
-    @login_required
+    @require_login
     def export_quotation_debug(quotation_id):
         """Export a quotation with debug visuals to identify missing items"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2962,7 +2927,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/supplier/<path:supplier>')
-    @login_required
+    @require_login
     def export_supplier_report(quotation_id, supplier):
         """Export a supplier-specific report from a quotation"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -2990,7 +2955,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/custom_supplier_report', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def custom_supplier_report(quotation_id):
         """Create a custom report with multiple suppliers and configurable fields"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -3105,7 +3070,7 @@ def register_routes(app):
         )
     
     @app.route('/quotation/<int:quotation_id>/delivery-note-report', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def delivery_note_report(quotation_id):
         """Generate a custom delivery note report with quantity, description, and actual size"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -3158,7 +3123,7 @@ def register_routes(app):
         )
 
     @app.route('/quotation/<int:quotation_id>/delivery_note_enhanced')
-    @login_required
+    @require_login
     def delivery_note_enhanced(quotation_id):
         """Generate enhanced delivery note with QR codes and status badges using ReportLab"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -3185,7 +3150,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/delete')
-    @login_required
+    @require_login
     def delete_quotation(quotation_id):
         """Delete a quotation and its related items"""
         quotation = Quotation.query.get(quotation_id)
@@ -3207,7 +3172,7 @@ def register_routes(app):
         return redirect(url_for('quotations'))
         
     @app.route('/quotation/<int:quotation_id>/item/add', methods=['POST'])
-    @login_required
+    @require_login
     def add_quotation_item(quotation_id):
         """Add a new item to an existing quotation"""
         quotation = Quotation.query.get_or_404(quotation_id)
@@ -3323,7 +3288,7 @@ def register_routes(app):
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
         
     @app.route('/quotation/<int:quotation_id>/item/<int:item_id>', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def edit_quotation_item(quotation_id, item_id):
         """Edit an existing quotation item with AJAX support"""
@@ -3477,7 +3442,7 @@ def register_routes(app):
                 return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/reorder-items', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def reorder_drag_quotation_items(quotation_id):
         """Update the order of items in a quotation via AJAX"""
@@ -3519,7 +3484,7 @@ def register_routes(app):
             return jsonify({'success': False, 'error': str(e)}), 500
         
     @app.route('/quotation/item/<int:item_id>/delete')
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def delete_quotation_item(item_id):
         """Delete a quotation item"""
@@ -3550,7 +3515,7 @@ def register_routes(app):
         return redirect(url_for('view_quotation', quotation_id=quotation_id))
     
     @app.route('/quotation/<int:quotation_id>/item/quick_add', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def quick_add_quotation_item(quotation_id):
         """Add a new quotation item via AJAX with minimal information"""
@@ -3592,7 +3557,7 @@ def register_routes(app):
     # ==================== SIZE OPTIONS ROUTES ====================
     
     @app.route('/quotation/item/<int:item_id>/size_options', methods=['GET'])
-    @login_required
+    @require_login
     def get_size_options(item_id):
         """Get all size options for a quotation item"""
         item = QuotationItem.query.get_or_404(item_id)
@@ -3618,7 +3583,7 @@ def register_routes(app):
         })
     
     @app.route('/quotation/item/<int:item_id>/size_options/add', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def add_size_option(item_id):
         """Add a new size option to a quotation item"""
@@ -3698,7 +3663,7 @@ def register_routes(app):
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/quotation/item/<int:item_id>/size_options/<int:option_id>', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def edit_size_option(item_id, option_id):
         """Edit an existing size option"""
@@ -3765,7 +3730,7 @@ def register_routes(app):
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/quotation/item/<int:item_id>/size_options/<int:option_id>/delete', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def delete_size_option(item_id, option_id):
         """Delete a size option (POST only for CSRF protection)"""
@@ -3803,7 +3768,7 @@ def register_routes(app):
             return redirect(url_for('view_quotation', quotation_id=item.quotation_id))
     
     @app.route('/quotation/item/<int:item_id>/toggle_size_options', methods=['POST'])
-    @login_required
+    @require_login
     @with_db_reconnect(max_retries=3)
     def toggle_size_options(item_id):
         """Toggle whether an item uses size options or not"""
@@ -3827,7 +3792,7 @@ def register_routes(app):
 
     
     @app.route('/supplier/quick_add', methods=['POST'])
-    @login_required
+    @require_login
     def quick_add_supplier():
         """Add a new supplier via AJAX for quotation editor"""
         try:
@@ -3865,7 +3830,7 @@ def register_routes(app):
         
     # Supplier Management Routes
     @app.route('/suppliers')
-    @login_required
+    @require_login
     def suppliers():
         """View and manage suppliers"""
         # Get search query parameter if any
@@ -3924,7 +3889,7 @@ def register_routes(app):
         )
         
     @app.route('/api/suppliers')
-    @login_required
+    @require_login
     def api_suppliers():
         """API endpoint to get suppliers as JSON"""
         try:
@@ -3972,7 +3937,7 @@ def register_routes(app):
             }), 500
         
     @app.route('/add_supplier', methods=['POST'])
-    @login_required
+    @require_login
     def add_supplier():
         """Add a new supplier or get existing one"""
         from utils.supplier_utils import get_supplier_by_name_or_create
@@ -4021,7 +3986,7 @@ def register_routes(app):
         return redirect(url_for('suppliers'))
         
     @app.route('/edit_supplier/<int:supplier_id>', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def edit_supplier(supplier_id):
         """Edit an existing supplier"""
         from utils.supplier_utils import update_supplier
@@ -4081,7 +4046,7 @@ def register_routes(app):
         return redirect(url_for('suppliers'))
         
     @app.route('/delete_supplier/<int:supplier_id>')
-    @login_required
+    @require_login
     def delete_supplier(supplier_id):
         """Delete a supplier"""
         from utils.supplier_utils import delete_supplier as delete_supplier_util
@@ -4107,7 +4072,7 @@ def register_routes(app):
     
     # Supplier Product Management Routes
     @app.route('/supplier_products')
-    @login_required
+    @require_login
     def supplier_products():
         """View and manage supplier products"""
         from utils.supplier_manager import search_supplier_products
@@ -4140,7 +4105,7 @@ def register_routes(app):
         )
     
     @app.route('/add_supplier_product', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def add_supplier_product():
         """Add a new supplier product"""
         from datetime import datetime
@@ -4191,7 +4156,7 @@ def register_routes(app):
         return render_template('edit_supplier_product.html', suppliers=suppliers_list, today=datetime.utcnow())
     
     @app.route('/edit_supplier_product/<int:id>', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def edit_supplier_product(id):
         """Edit an existing supplier product"""
         from datetime import datetime
@@ -4229,7 +4194,7 @@ def register_routes(app):
         return render_template('edit_supplier_product.html', product=product, suppliers=suppliers_list, today=datetime.utcnow())
     
     @app.route('/delete_supplier_product/<int:id>', methods=['POST'])
-    @login_required
+    @require_login
     def delete_supplier_product(id):
         """Delete a supplier product"""
         product = SupplierProduct.query.get_or_404(id)
@@ -4247,7 +4212,7 @@ def register_routes(app):
         return redirect(url_for('supplier_products', supplier_id=supplier_id))
     
     @app.route('/batch_delete_supplier_products', methods=['POST'])
-    @login_required
+    @require_login
     def batch_delete_supplier_products():
         """Delete multiple supplier products at once"""
         product_ids = request.form.getlist('product_ids')
@@ -4292,7 +4257,7 @@ def register_routes(app):
         return redirect(url_for('supplier_products', supplier_id=supplier_id))
         
     @app.route('/generate_supplier_report', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def generate_supplier_report():
         """Generate a customized report of selected supplier products"""
         import json
@@ -4408,7 +4373,7 @@ def register_routes(app):
             return redirect(url_for('supplier_products'))
     
     @app.route('/export_supplier_catalog/<int:supplier_id>')
-    @login_required
+    @require_login
     def export_supplier_catalog(supplier_id):
         """Export a catalog of all products from a specific supplier"""
         from utils.pdf_generator import generate_supplier_catalog_pdf
@@ -4437,7 +4402,7 @@ def register_routes(app):
             return redirect(url_for('supplier_products', supplier_id=supplier_id))
             
     @app.route('/supplier_duplicates')
-    @login_required
+    @require_login
     def supplier_duplicates():
         """View potential duplicate supplier products"""
         # Get all suppliers for the dropdown
@@ -4585,7 +4550,7 @@ def register_routes(app):
             return redirect(url_for('supplier_duplicates', supplier_id=supplier_id))
     
     @app.route('/supplier_duplicate_results/<int:supplier_id>')
-    @login_required
+    @require_login
     def supplier_duplicate_results(supplier_id):
         """Show analysis results for potential duplicate products"""
         # Get the current supplier
@@ -4608,7 +4573,7 @@ def register_routes(app):
         )
     
     @app.route('/flag_supplier_duplicates/<int:supplier_id>', methods=['POST'])
-    @login_required
+    @require_login
     def flag_supplier_duplicates(supplier_id):
         """Flag selected products as duplicates"""
         try:
@@ -4648,7 +4613,7 @@ def register_routes(app):
             return redirect(url_for('supplier_duplicate_results', supplier_id=supplier_id))
     
     @app.route('/company_settings')
-    @login_required
+    @require_login
     def company_settings():
         """View and manage company settings"""
         # Get or create company settings
@@ -4661,7 +4626,7 @@ def register_routes(app):
         return render_template('company_settings_new.html', company=company)
         
     @app.route('/save_company_settings', methods=['POST'])
-    @login_required
+    @require_login
     def save_company_settings():
         """Save company settings"""
         # Get or create company settings
@@ -4703,7 +4668,7 @@ def register_routes(app):
         
     # AI Document Insights Routes
     @app.route('/ai-insights/settings', methods=['GET', 'POST'])
-    @login_required
+    @require_login
     def ai_settings():
         """AI document insights settings page"""
         from utils.ai_document_analyzer import get_document_analyzer, reset_document_analyzer
@@ -4745,7 +4710,7 @@ def register_routes(app):
         )
     
     @app.route('/ai-insights/status', methods=['GET'])
-    @login_required
+    @require_login
     def ai_status():
         """Check if AI document analysis is enabled"""
         from utils.ai_document_analyzer import get_document_analyzer
@@ -4789,7 +4754,7 @@ def register_routes(app):
         }), 200 if db_healthy else 503
     
     @app.route('/test-openai-api', methods=['GET'])
-    @login_required
+    @require_login
     def test_openai_api():
         """Test if OpenAI API key is valid and working"""
         api_key = os.getenv("OPENAI_API_KEY")
@@ -4857,7 +4822,7 @@ def register_routes(app):
             })
     
     @app.route('/ai-insights/analyze', methods=['POST'])
-    @login_required
+    @require_login
     def analyze_document():
         """Analyze a document and return insights"""
         from utils.ai_document_analyzer import get_document_analyzer
@@ -4906,7 +4871,7 @@ def register_routes(app):
             return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
     
     @app.route('/api/price-assistant', methods=['GET'])
-    @login_required
+    @require_login
     def price_assistant():
         """Get AI-powered pricing suggestions for a product with fallback to historical data"""
         from utils.ai_price_assistant import get_ai_price_assistant
@@ -4965,7 +4930,7 @@ def register_routes(app):
         return jsonify(result)
     
     @app.route('/viber-settings', methods=['GET'])
-    @login_required
+    @require_login
     def viber_settings():
         """
         View and manage Viber integration settings
@@ -4990,7 +4955,7 @@ def register_routes(app):
         )
         
     @app.route('/viber-set-webhook', methods=['POST'])
-    @login_required
+    @require_login
     def viber_set_webhook():
         """
         Set the Viber webhook URL (POST required for CSRF protection)
@@ -5024,7 +4989,7 @@ def register_routes(app):
         return redirect(url_for('viber_settings'))
         
     @app.route('/viber-update-mapping', methods=['POST'])
-    @login_required
+    @require_login
     def update_viber_mapping():
         """
         Update the mapping between Viber IDs and suppliers
@@ -5053,7 +5018,7 @@ def register_routes(app):
             return jsonify({"status": "error", "message": str(e)}), 500
 
     @app.route('/viber-docs', methods=['GET'])
-    @login_required
+    @require_login
     def viber_docs():
         """
         View documentation for the Viber integration
@@ -5062,7 +5027,7 @@ def register_routes(app):
         
     # AI Insights Feedback API Routes
     @app.route('/api/feedback/submit', methods=['POST'])
-    @login_required
+    @require_login
     def submit_feedback():
         """Submit user feedback for AI-generated insights"""
         start_time = time.time()
@@ -5137,7 +5102,7 @@ def register_routes(app):
             }), 500
     
     @app.route('/api/feedback/stats', methods=['GET'])
-    @login_required
+    @require_login
     def get_feedback_stats():
         """Get statistics on collected AI insights feedback"""
         start_time = time.time()
@@ -5192,7 +5157,7 @@ def register_routes(app):
             }), 500
     
     @app.route('/api/feedback/recent', methods=['GET'])
-    @login_required
+    @require_login
     def get_recent_feedback():
         """Get recent feedback entries for AI insights"""
         start_time = time.time()
@@ -5248,7 +5213,7 @@ def register_routes(app):
             
     # AI Insights UI Feedback Page
     @app.route('/ai-insights/feedback', methods=['GET'])
-    @login_required
+    @require_login
     def ai_insights_feedback_dashboard():
         """Display the AI insights feedback dashboard"""
         # Get feedback collector

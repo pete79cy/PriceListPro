@@ -6,7 +6,8 @@ This module provides web routes for database backup and restore operations.
 import os
 from datetime import datetime
 from flask import render_template, redirect, url_for, flash, request, send_file, current_app
-from flask_login import login_required, current_user
+from flask_login import current_user
+from replit_auth import require_login
 from werkzeug.utils import secure_filename
 
 from app import db
@@ -26,7 +27,7 @@ from . import backup_bp
 
 @backup_bp.route('/')
 # Temporarily disabled for testing
-# @login_required
+# @require_login
 def index():
     """Display backup dashboard."""
     tool = DatabaseBackupTool()
@@ -40,7 +41,7 @@ def index():
 
 
 @backup_bp.route('/create', methods=['POST'])
-@login_required
+@require_login
 def create_backup():
     """Create a new database backup."""
     description = request.form.get('description', f"Manual backup by {current_user.username}")
@@ -57,7 +58,7 @@ def create_backup():
 
 
 @backup_bp.route('/restore/<path:filename>', methods=['POST'])
-@login_required
+@require_login
 def restore_backup(filename):
     """Restore database from a specific backup file."""
     confirmation = request.form.get('confirmation')
@@ -78,7 +79,7 @@ def restore_backup(filename):
 
 
 @backup_bp.route('/download/<path:filename>')
-@login_required
+@require_login
 def download_backup(filename):
     """Download a backup file."""
     tool = DatabaseBackupTool()
@@ -92,7 +93,7 @@ def download_backup(filename):
 
 
 @backup_bp.route('/clean', methods=['POST'])
-@login_required
+@require_login
 def clean_backups():
     """Remove old backup files, keeping only the specified number."""
     keep = request.form.get('keep', 10)

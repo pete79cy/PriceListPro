@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
-from flask_login import LoginManager, current_user
+from flask_login import current_user
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
 # Set up logging - this will be replaced by the custom logger
@@ -137,16 +137,6 @@ def nl2br(value):
 
 app.jinja_env.filters['nl2br'] = nl2br
 
-# Setup Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'  # Route for login page
-
-@login_manager.user_loader
-def load_user(user_id):
-    from models import User
-    return User.query.get(int(user_id))
-
 with app.app_context():
     # Import models here so tables are created
     import models
@@ -170,6 +160,10 @@ with app.app_context():
             logger.info("✅ OpenAI API check successful.")
     except ImportError as e:
         logger.warning(f"OpenAI health check could not be performed: {str(e)}")
+    
+    # Register Replit Auth blueprint
+    from replit_auth import make_replit_blueprint
+    app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
     
     # Import and register routes
     from routes import register_routes

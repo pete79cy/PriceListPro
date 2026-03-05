@@ -6,7 +6,7 @@ after the initial order delivery, along with final proforma invoice generation.
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, send_file
-from flask_login import login_required
+from replit_auth import require_login
 from app import db
 from models import (Order, Quotation, DeliveryAdjustment, DeliveryAdjustmentItem, 
                    DeliveryAdjustmentType, FinalProformaInvoice, Product, OrderItem, QuotationItem)
@@ -17,28 +17,28 @@ import logging
 delivery_adjustments = Blueprint('delivery_adjustments', __name__, url_prefix='/delivery-adjustments')
 
 @delivery_adjustments.route('/')
-@login_required
+@require_login
 def index():
     """List all delivery adjustments"""
     adjustments = DeliveryAdjustment.query.order_by(DeliveryAdjustment.created_at.desc()).all()
     return render_template('delivery_adjustments/index.html', adjustments=adjustments)
 
 @delivery_adjustments.route('/order/<int:order_id>')
-@login_required
+@require_login
 def view_order_adjustments(order_id):
     """View all adjustments for a specific order"""
     order = Order.query.get_or_404(order_id)
     return render_template('delivery_adjustments/order_adjustments.html', order=order)
 
 @delivery_adjustments.route('/quotation/<int:quotation_id>')
-@login_required
+@require_login
 def view_quotation_adjustments(quotation_id):
     """View all adjustments for a specific quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)
     return render_template('delivery_adjustments/quotation_adjustments.html', quotation=quotation)
 
 @delivery_adjustments.route('/new/order/<int:order_id>')
-@login_required
+@require_login
 def new_order_adjustment(order_id):
     """Create a new delivery adjustment for an order"""
     order = Order.query.get_or_404(order_id)
@@ -52,7 +52,7 @@ def new_order_adjustment(order_id):
                          adjustment_types=DeliveryAdjustmentType)
 
 @delivery_adjustments.route('/new/quotation/<int:quotation_id>')
-@login_required
+@require_login
 def new_quotation_adjustment(quotation_id):
     """Create a new delivery adjustment for a quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)
@@ -66,7 +66,7 @@ def new_quotation_adjustment(quotation_id):
                          adjustment_types=DeliveryAdjustmentType)
 
 @delivery_adjustments.route('/create/order/<int:order_id>', methods=['POST'])
-@login_required
+@require_login
 def create_order_adjustment(order_id):
     """Create a new delivery adjustment for an order"""
     order = Order.query.get_or_404(order_id)
@@ -109,7 +109,7 @@ def create_order_adjustment(order_id):
         return redirect(url_for('delivery_adjustments.new_order_adjustment', order_id=order_id))
 
 @delivery_adjustments.route('/create/quotation/<int:quotation_id>', methods=['POST'])
-@login_required
+@require_login
 def create_quotation_adjustment(quotation_id):
     """Create a new delivery adjustment for a quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)
@@ -152,14 +152,14 @@ def create_quotation_adjustment(quotation_id):
         return redirect(url_for('delivery_adjustments.new_quotation_adjustment', quotation_id=quotation_id))
 
 @delivery_adjustments.route('/<int:adjustment_id>')
-@login_required
+@require_login
 def view_adjustment(adjustment_id):
     """View a specific delivery adjustment"""
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
     return render_template('delivery_adjustments/view.html', adjustment=adjustment)
 
 @delivery_adjustments.route('/<int:adjustment_id>/edit')
-@login_required
+@require_login
 def edit_adjustment(adjustment_id):
     """Edit a delivery adjustment"""
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
@@ -172,7 +172,7 @@ def edit_adjustment(adjustment_id):
     return render_template('delivery_adjustments/edit.html', adjustment=adjustment)
 
 @delivery_adjustments.route('/<int:adjustment_id>/add-item', methods=['POST'])
-@login_required
+@require_login
 def add_item(adjustment_id):
     """Add an item to a delivery adjustment"""
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
@@ -223,7 +223,7 @@ def add_item(adjustment_id):
     return redirect(url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment_id))
 
 @delivery_adjustments.route('/<int:adjustment_id>/remove-item/<int:item_id>', methods=['POST'])
-@login_required
+@require_login
 def remove_item(adjustment_id, item_id):
     """Remove an item from a delivery adjustment"""
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
@@ -249,7 +249,7 @@ def remove_item(adjustment_id, item_id):
     return redirect(url_for('delivery_adjustments.edit_adjustment', adjustment_id=adjustment_id))
 
 @delivery_adjustments.route('/<int:adjustment_id>/confirm', methods=['POST'])
-@login_required
+@require_login
 def confirm_adjustment(adjustment_id):
     """Confirm a delivery adjustment"""
     adjustment = DeliveryAdjustment.query.get_or_404(adjustment_id)
@@ -277,7 +277,7 @@ def confirm_adjustment(adjustment_id):
     return redirect(url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment_id))
 
 @delivery_adjustments.route('/final-invoice/<int:order_id>')
-@login_required
+@require_login
 def view_final_invoice(order_id):
     """View or create final proforma invoice for an order"""
     order = Order.query.get_or_404(order_id)
@@ -301,7 +301,7 @@ def view_final_invoice(order_id):
                          order=order, final_invoice=final_invoice)
 
 @delivery_adjustments.route('/final-invoice/quotation/<int:quotation_id>')
-@login_required
+@require_login
 def view_final_invoice_quotation(quotation_id):
     """View or create final proforma invoice for a quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)
@@ -326,7 +326,7 @@ def view_final_invoice_quotation(quotation_id):
                          quotation=quotation, final_invoice=final_invoice)
 
 @delivery_adjustments.route('/create-final-invoice/quotation/<int:quotation_id>', methods=['POST'])
-@login_required
+@require_login
 def create_final_invoice_quotation(quotation_id):
     """Create final proforma invoice for quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)
@@ -379,7 +379,7 @@ def create_final_invoice_quotation(quotation_id):
         return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=quotation_id))
 
 @delivery_adjustments.route('/<int:adjustment_id>/print')
-@login_required
+@require_login
 def print_adjustment(adjustment_id):
     """Generate PDF for a delivery adjustment"""
     from utils.pdf_utils import generate_delivery_adjustment_pdf
@@ -402,7 +402,7 @@ def print_adjustment(adjustment_id):
         return redirect(url_for('delivery_adjustments.view_adjustment', adjustment_id=adjustment_id))
 
 @delivery_adjustments.route('/final-invoice/<int:invoice_id>/print')
-@login_required
+@require_login
 def print_final_invoice(invoice_id):
     """Generate PDF for a final proforma invoice"""
     from utils.pdf_utils import generate_final_invoice_pdf
@@ -428,7 +428,7 @@ def print_final_invoice(invoice_id):
             return redirect(url_for('delivery_adjustments.view_final_invoice_quotation', quotation_id=final_invoice.quotation_id))
 
 @delivery_adjustments.route('/create-final-invoice/<int:order_id>', methods=['POST'])
-@login_required
+@require_login
 def create_final_invoice(order_id):
     """Create final proforma invoice"""
     order = Order.query.get_or_404(order_id)
@@ -466,7 +466,7 @@ def create_final_invoice(order_id):
         return redirect(url_for('delivery_adjustments.view_final_invoice', order_id=order_id))
 
 @delivery_adjustments.route('/api/order-items/<int:order_id>')
-@login_required
+@require_login
 def api_get_order_items(order_id):
     """Get order items for autocomplete in adjustments"""
     order = Order.query.get_or_404(order_id)
