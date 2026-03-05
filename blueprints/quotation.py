@@ -1,13 +1,13 @@
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_from_directory
-from flask_login import login_required
+from replit_auth import require_login
 from app import db
 from models import Quotation, Customer
 
 quotation_bp = Blueprint('quotation', __name__, url_prefix='/quotation')
 
 @quotation_bp.route('/customize_fields', methods=['GET', 'POST'])
-@login_required
+@require_login
 def customize_fields():
     """Customize which fields to include in quotation PDF"""
     quotation_fields = [
@@ -70,7 +70,7 @@ def customize_fields():
                           quotation_id=quotation_id)
 
 @quotation_bp.route('/<int:quotation_id>/export/custom')
-@login_required
+@require_login
 def export_custom(quotation_id):
     """Export a quotation as PDF using custom field selection"""
     from utils.custom_pdf_generator import generate_custom_pdf

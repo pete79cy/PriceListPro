@@ -207,7 +207,7 @@
                                 {% if current_user.is_admin %}Administrator{% else %}User{% endif %}
                             </span>
                         </div>
-                        <a href="{{ url_for('logout') }}" class="text-red-500 hover:text-red-600 transition-colors" title="Sign Out">
+                        <a href="{{ url_for('replit_auth.logout') }}" class="text-red-500 hover:text-red-600 transition-colors" title="Sign Out">
                             <span class="material-symbols-outlined text-[22px]">logout</span>
                         </a>
                     </div>

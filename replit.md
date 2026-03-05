@@ -11,7 +11,7 @@ Preferred communication style: Simple, everyday language.
 ### Backend
 - **Framework**: Flask with SQLAlchemy ORM
 - **Database**: PostgreSQL
-- **Authentication**: Flask-Login
+- **Authentication**: Replit Auth (OpenID Connect via Replit) using Flask-Dance and Flask-Login. Login/logout handled at `/auth/login` and `/auth/logout`. Protected routes use `@require_login` decorator from `replit_auth.py`.
 - **Admin Interface**: Flask-Admin
 - **PDF Generation**: WeasyPrint
 - **File Processing**: pandas, openpyxl, xlrd, PyPDF2

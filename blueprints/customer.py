@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
+from replit_auth import require_login
 from app import db
 from models import Customer, CustomerCategory
 
 customer_bp = Blueprint('customer_form', __name__, url_prefix='/customer_form')
 
 @customer_bp.route('/create', methods=['GET', 'POST'])
-@login_required
+@require_login
 def create_customer():
     """Create a new customer with the provided information"""
     # Get all categories for the dropdown

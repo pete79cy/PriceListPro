@@ -4,7 +4,7 @@ Provides smart product search, pricing, and order item management
 """
 
 from flask import jsonify, request
-from flask_login import login_required
+from replit_auth import require_login
 from sqlalchemy import or_, and_
 from datetime import datetime, date
 
@@ -14,7 +14,7 @@ from .routes import get_customer_price, update_customer_price_list
 
 
 @orders.route('/api/search/products')
-@login_required
+@require_login
 def api_search_products():
     """Optimized product search with efficient database queries"""
     query = request.args.get('q', '').strip()
@@ -145,7 +145,7 @@ def api_search_products():
 
 
 @orders.route('/api/products/<int:product_id>/price')
-@login_required
+@require_login
 def api_get_product_price():
     """Get product price for a specific customer"""
     product_id = request.args.get('product_id', type=int)
@@ -171,7 +171,7 @@ def api_get_product_price():
 
 
 @orders.route('/api/price-list/update', methods=['POST'])
-@login_required
+@require_login
 def api_update_price_list():
     """Update customer price list entry"""
     data = request.get_json()
@@ -202,7 +202,7 @@ def api_update_price_list():
 
 
 @orders.route('/api/orders/<int:order_id>/items', methods=['GET'])
-@login_required
+@require_login
 def api_get_order_items(order_id):
     """Get all items for a specific order"""
     order = Order.query.get_or_404(order_id)
@@ -235,7 +235,7 @@ def api_get_order_items(order_id):
 
 
 @orders.route('/api/orders/<int:order_id>/items', methods=['POST'])
-@login_required
+@require_login
 def api_add_order_item(order_id):
     """Add a new item to an order"""
     order = Order.query.get_or_404(order_id)
@@ -291,7 +291,7 @@ def api_add_order_item(order_id):
 
 
 @orders.route('/api/orders/<int:order_id>/items/<int:item_id>', methods=['PUT'])
-@login_required
+@require_login
 def api_update_order_item(order_id, item_id):
     """Update an existing order item"""
     order = Order.query.get_or_404(order_id)
@@ -347,7 +347,7 @@ def api_update_order_item(order_id, item_id):
 
 
 @orders.route('/api/orders/<int:order_id>/items/<int:item_id>', methods=['DELETE'])
-@login_required
+@require_login
 def api_delete_order_item(order_id, item_id):
     """Delete an order item"""
     order = Order.query.get_or_404(order_id)
@@ -365,7 +365,7 @@ def api_delete_order_item(order_id, item_id):
 
 
 @orders.route('/api/vat/rates')
-@login_required
+@require_login
 def api_get_vat_rates():
     """Get available VAT rates"""
     return jsonify([
@@ -376,7 +376,7 @@ def api_get_vat_rates():
 
 
 @orders.route('/api/price-list/<int:price_list_id>', methods=['PUT'])
-@login_required
+@require_login
 def api_update_price_list_entry(price_list_id):
     """Update an existing price list entry"""
     price_list_entry = PriceList.query.get_or_404(price_list_id)
@@ -412,7 +412,7 @@ def api_update_price_list_entry(price_list_id):
 
 
 @orders.route('/api/price-list/<int:price_list_id>', methods=['DELETE'])
-@login_required
+@require_login
 def api_delete_price_list_entry(price_list_id):
     """Delete a price list entry"""
     price_list_entry = PriceList.query.get_or_404(price_list_id)
@@ -429,7 +429,7 @@ def api_delete_price_list_entry(price_list_id):
 
 
 @orders.route('/api/customers/<int:customer_id>/price-list')
-@login_required
+@require_login
 def api_get_customer_price_list(customer_id):
     """Get all price list entries for a specific customer"""
     customer = Customer.query.get_or_404(customer_id)

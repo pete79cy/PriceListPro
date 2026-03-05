@@ -43,3 +43,6 @@ externalPort = 80
 
 [userenv.development]
 API_TOKEN = "test-api-token-for-dev-2026"
+
+[agent]
+integrations = ["python_log_in_with_replit:1.0.0"]

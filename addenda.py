@@ -6,7 +6,7 @@ supplementary sales documents that can be attached to invoices.
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response
-from flask_login import login_required
+from replit_auth import require_login
 from app import db
 from models import InvoiceAddendum, InvoiceAddendumLine, Customer, Product
 from datetime import datetime, date
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 addenda_bp = Blueprint('addenda', __name__, url_prefix='/addenda')
 
 @addenda_bp.route('/')
-@login_required
+@require_login
 def list_addenda():
     """List all invoice addenda"""
     page = request.args.get('page', 1, type=int)
@@ -31,7 +31,7 @@ def list_addenda():
     return render_template('addenda/list_new.html', addenda=addenda)
 
 @addenda_bp.route('/new', methods=['GET', 'POST'])
-@login_required
+@require_login
 def new_addendum():
     """Create a new invoice addendum"""
     if request.method == 'POST':
@@ -77,7 +77,7 @@ def new_addendum():
     return render_template('addenda/new.html', customers=customers)
 
 @addenda_bp.route('/<uuid:addendum_id>')
-@login_required
+@require_login
 def view_addendum(addendum_id):
     """View a specific invoice addendum"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -85,7 +85,7 @@ def view_addendum(addendum_id):
     return render_template('addenda/view.html', addendum=addendum)
 
 @addenda_bp.route('/<uuid:addendum_id>/lines', methods=['POST'])
-@login_required
+@require_login
 def add_line(addendum_id):
     """Add a new line to an addendum"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -141,7 +141,7 @@ def add_line(addendum_id):
     return redirect(url_for('addenda.view_addendum', addendum_id=addendum_id))
 
 @addenda_bp.route('/<uuid:addendum_id>/lines/<uuid:line_id>/delete', methods=['POST'])
-@login_required
+@require_login
 def delete_line(addendum_id, line_id):
     """Delete a line from an addendum"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -170,7 +170,7 @@ def delete_line(addendum_id, line_id):
     return redirect(url_for('addenda.view_addendum', addendum_id=addendum_id))
 
 @addenda_bp.route('/<uuid:addendum_id>/lock', methods=['POST'])
-@login_required
+@require_login
 def lock_addendum(addendum_id):
     """Lock an addendum to prevent further modifications"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -189,7 +189,7 @@ def lock_addendum(addendum_id):
     return redirect(url_for('addenda.view_addendum', addendum_id=addendum_id))
 
 @addenda_bp.route('/<uuid:addendum_id>/unlock', methods=['POST'])
-@login_required
+@require_login
 def unlock_addendum(addendum_id):
     """Unlock an addendum to allow modifications"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -208,7 +208,7 @@ def unlock_addendum(addendum_id):
     return redirect(url_for('addenda.view_addendum', addendum_id=addendum_id))
 
 @addenda_bp.route('/<uuid:addendum_id>/pdf')
-@login_required
+@require_login
 def export_pdf(addendum_id):
     """Export addendum as PDF"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -238,7 +238,7 @@ def export_pdf(addendum_id):
 
 # API endpoints for AJAX functionality
 @addenda_bp.route('/api/<uuid:addendum_id>')
-@login_required
+@require_login
 def api_get_addendum(addendum_id):
     """Get addendum data as JSON"""
     addendum = InvoiceAddendum.query.get_or_404(addendum_id)
@@ -269,7 +269,7 @@ def api_get_addendum(addendum_id):
     })
 
 @addenda_bp.route('/api/products/search')
-@login_required
+@require_login
 def api_search_products():
     """Search products for autocomplete"""
     query = request.args.get('q', '').strip()

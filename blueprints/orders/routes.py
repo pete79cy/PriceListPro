@@ -1,6 +1,7 @@
 from datetime import datetime, date, timedelta
 from flask import render_template, request, redirect, url_for, flash, abort, current_app, jsonify
-from flask_login import login_required, current_user
+from flask_login import current_user
+from replit_auth import require_login
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -112,7 +113,7 @@ def update_customer_price_list(customer_id, product_id, price):
 
 # Routes
 @orders.route('/')
-@login_required
+@require_login
 def index():
     """Daily Orders dashboard"""
     # Get all orders with their items, newest first
@@ -160,7 +161,7 @@ def index():
     )
 
 @orders.route('/new', methods=['GET', 'POST'])
-@login_required
+@require_login
 def new_order():
     """Create a new order with enhanced functionality"""
     if request.method == 'POST':
@@ -260,13 +261,13 @@ def new_order():
                          customers=customers)
 
 @orders.route('/enhanced/new', methods=['GET', 'POST'])
-@login_required
+@require_login
 def new_enhanced_order():
     """Create a new order using the enhanced interface"""
     return new_order()
 
 @orders.route('/<int:order_id>')
-@login_required
+@require_login
 def view_order(order_id):
     """View a specific order"""
     order = Order.query.get_or_404(order_id)
@@ -289,7 +290,7 @@ def view_order(order_id):
     )
 
 @orders.route('/<int:order_id>/add_item', methods=['POST'])
-@login_required
+@require_login
 def add_item_to_order(order_id):
     """Add a new item to an existing order"""
     order = Order.query.get_or_404(order_id)
@@ -338,7 +339,7 @@ def add_item_to_order(order_id):
     return redirect(url_for('orders.view_order', order_id=order_id))
 
 @orders.route('/<int:order_id>/edit', methods=['GET', 'POST'])
-@login_required
+@require_login
 def edit_order(order_id):
     """Edit an existing order with enhanced functionality"""
     order = Order.query.get_or_404(order_id)
@@ -447,13 +448,13 @@ def edit_order(order_id):
                          customers=customers)
 
 @orders.route('/demo')
-@login_required
+@require_login
 def demo():
     """Demo page for enhanced daily orders management"""
     return render_template('orders/demo.html')
 
 @orders.route('/price-list')
-@login_required
+@require_login
 def customer_price_list():
     """Manage customer price lists"""
     # Get all price list entries with relationships
@@ -471,7 +472,7 @@ def customer_price_list():
                          products=products)
 
 @orders.route('/<int:order_id>/status', methods=['POST'])
-@login_required
+@require_login
 def update_status(order_id):
     """Update the status of an order"""
     order = Order.query.get_or_404(order_id)
@@ -492,7 +493,7 @@ def update_status(order_id):
     return redirect(url_for('orders.view_order', order_id=order.id))
 
 @orders.route('/<int:order_id>/add_item', methods=['POST'])
-@login_required
+@require_login
 def add_item(order_id):
     """Add an item to an order - supports both existing products and creating new ones"""
     order = Order.query.get_or_404(order_id)
@@ -594,7 +595,7 @@ def add_item(order_id):
     return redirect(url_for('orders.view_order', order_id=order.id))
 
 @orders.route('/<int:order_id>/item/<int:item_id>/update', methods=['POST'])
-@login_required
+@require_login
 def update_item(order_id, item_id):
     """Update an order item"""
     order = Order.query.get_or_404(order_id)
@@ -626,7 +627,7 @@ def update_item(order_id, item_id):
     return redirect(url_for('orders.view_order', order_id=order.id))
 
 @orders.route('/<int:order_id>/item/<int:item_id>/update-inline', methods=['PUT'])
-@login_required
+@require_login
 def update_item_inline(order_id, item_id):
     """Update an order item via AJAX for inline editing"""
     from flask import jsonify
@@ -674,7 +675,7 @@ def update_item_inline(order_id, item_id):
         return jsonify({'error': 'Failed to update item'}), 500
 
 @orders.route('/<int:order_id>/item/<int:item_id>/remove', methods=['POST'])
-@login_required
+@require_login
 def remove_item(order_id, item_id):
     """Remove an item from an order"""
     order = Order.query.get_or_404(order_id)
@@ -687,7 +688,7 @@ def remove_item(order_id, item_id):
     return redirect(url_for('orders.view_order', order_id=order.id))
 
 @orders.route('/<int:order_id>/delivery_note')
-@login_required
+@require_login
 def print_delivery_note(order_id):
     """Generate and display a PDF delivery note"""
     order = Order.query.get_or_404(order_id)
@@ -724,7 +725,7 @@ def print_delivery_note(order_id):
     return redirect(url_for('static', filename=f'pdfs/{filename}'))
 
 @orders.route('/<int:order_id>/charge_sheet')
-@login_required
+@require_login
 def generate_charge_sheet(order_id):
     """Generate and display a PDF Pro Forma Invoice"""
     order = Order.query.get_or_404(order_id)
@@ -751,7 +752,7 @@ def generate_charge_sheet(order_id):
     return redirect(url_for('static', filename=f'pdfs/{filename}'))
 
 @orders.route('/<int:order_id>/proforma_invoice')
-@login_required
+@require_login
 def generate_proforma_invoice(order_id):
     """Generate and download a Pro Forma Invoice PDF for the order"""
     from flask import Response
@@ -780,7 +781,7 @@ def generate_proforma_invoice(order_id):
         return redirect(url_for('orders.view_order', order_id=order.id))
 
 @orders.route('/<int:order_id>/discount', methods=['POST'])
-@login_required
+@require_login
 def update_discount(order_id):
     """Update the discount for an order"""
     order = Order.query.get_or_404(order_id)
@@ -826,7 +827,7 @@ def update_discount(order_id):
 
 
 @orders.route('/<int:order_id>/update_total', methods=['POST'])
-@login_required
+@require_login
 def update_order_total(order_id):
     """Update order total by setting override amount"""
     order = Order.query.get_or_404(order_id)
