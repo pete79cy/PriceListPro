@@ -4,289 +4,328 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plant Pricing System API</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/css/style.css">
-    <!-- Prism.js for code highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism-okaidia.min.css">
     <style>
-        .api-endpoint {
-            border-left: 4px solid #0d6efd;
-            padding-left: 15px;
-            margin-bottom: 30px;
-        }
-        .http-method {
-            font-weight: bold;
-            border-radius: 4px;
-            padding: 2px 8px;
-            margin-right: 10px;
-        }
-        .method-post {
-            background-color: #28a745;
-            color: white;
-        }
-        .method-get {
-            background-color: #0d6efd;
-            color: white;
-        }
-        pre {
-            border-radius: 6px;
-            margin: 15px 0;
-        }
-        .endpoint-url {
-            font-family: monospace;
-            font-size: 1.1em;
-        }
+        .api-endpoint { border-left: 4px solid #0d6efd; padding-left: 15px; margin-bottom: 30px; }
+        .api-endpoint.post-ep { border-left-color: #28a745; }
+        .http-method { font-weight: bold; border-radius: 4px; padding: 2px 8px; margin-right: 10px; font-size: 0.85em; }
+        .method-post { background-color: #28a745; color: white; }
+        .method-get  { background-color: #0d6efd; color: white; }
+        pre { border-radius: 6px; margin: 15px 0; }
+        .endpoint-url { font-family: monospace; font-size: 1.05em; }
+        .badge-auth { background-color: #ffc107; color: #000; font-size: 0.75em; padding: 2px 6px; border-radius: 4px; }
+        .toc-link { font-family: monospace; font-size: 0.9em; }
+        .section-anchor { scroll-margin-top: 70px; }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-seedling"></i> Plant Pricing System
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
+            <a class="navbar-brand" href="/"><i class="fas fa-seedling"></i> Plant Pricing System</a>
+            <div class="collapse navbar-collapse">
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/api/v1/">API Documentation</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/api/v1/">API Docs</a></li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
     <div class="container">
-        <h1 class="mb-4">Plant Pricing System API Documentation</h1>
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> 
-            <strong>Authentication:</strong> All API requests require a Bearer token in the Authorization header.
-            <div class="mt-2">Example: <code>Authorization: Bearer your_api_token</code></div>
+        <h1 class="mb-3">API Documentation <span class="badge bg-secondary fs-6">v1</span></h1>
+
+        <div class="alert alert-warning">
+            <i class="fas fa-lock"></i> <strong>Authentication:</strong>
+            Most endpoints require a Bearer token in the <code>Authorization</code> header.<br>
+            <code>Authorization: Bearer YOUR_API_TOKEN</code>
         </div>
 
+        <!-- Table of Contents -->
         <div class="card mb-4">
-            <div class="card-header">
-                <h2 class="mb-0">Quotations API</h2>
-            </div>
+            <div class="card-header"><h5 class="mb-0"><i class="fas fa-list"></i> Endpoints Overview</h5></div>
             <div class="card-body">
-                <!-- Create Quotation -->
-                <div class="api-endpoint">
-                    <h3>
-                        <span class="http-method method-post">POST</span>
-                        <span class="endpoint-url">/api/v1/quotations</span>
-                    </h3>
-                    <p>Create a new quotation with customer information and items.</p>
-                    
-                    <h4>Request Body</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="fw-bold mb-1">Quotations</p>
+                        <ul class="list-unstyled ms-3">
+                            <li><span class="http-method method-post">POST</span><a class="toc-link" href="#q-create">/api/v1/quotations</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#q-list">/api/v1/quotations</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#q-get">/api/v1/quotations/{number}</a></li>
+                        </ul>
+                        <p class="fw-bold mb-1 mt-2">Customers</p>
+                        <ul class="list-unstyled ms-3">
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#c-list">/api/v1/customers</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#c-get">/api/v1/customers/{id}</a></li>
+                        </ul>
+                        <p class="fw-bold mb-1 mt-2">Suppliers</p>
+                        <ul class="list-unstyled ms-3">
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#s-list">/api/v1/suppliers</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#s-get">/api/v1/suppliers/{id}</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#s-products">/api/v1/suppliers/{id}/products</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="fw-bold mb-1">Orders</p>
+                        <ul class="list-unstyled ms-3">
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#o-list">/api/v1/orders</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#o-get">/api/v1/orders/{number}</a></li>
+                        </ul>
+                        <p class="fw-bold mb-1 mt-2">Invoices</p>
+                        <ul class="list-unstyled ms-3">
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#inv-list">/api/v1/invoices</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#inv-get">/api/v1/invoices/{number}</a></li>
+                        </ul>
+                        <p class="fw-bold mb-1 mt-2">Other</p>
+                        <ul class="list-unstyled ms-3">
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#pl-list">/api/v1/price-lists</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#p-list">/api/v1/products</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#p-get">/api/v1/products/{id}</a></li>
+                            <li><span class="http-method method-get">GET</span><a class="toc-link" href="#cs-get">/api/v1/company-settings</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUOTATIONS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Quotations</h2></div>
+            <div class="card-body">
+
+                <div class="api-endpoint post-ep" id="q-create">
+                    <h4><span class="http-method method-post">POST</span><span class="endpoint-url">/api/v1/quotations</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Create a new quotation.</p>
+                    <h5>Request Body</h5>
                     <pre><code class="language-json">{
-  "customer": {
-    "name": "Acme Garden Center",
-    "email": "info@acmegarden.com",
-    "phone": "+1234567890",
-    "address": "123 Garden Street, Plant City"
-  },
+  "customer": { "name": "Acme Garden", "email": "info@acme.com", "phone": "+357123456", "address": "Nicosia" },
   "items": [
-    {
-      "description": "Ficus Lyrata",
-      "scientific_name": "Ficus lyrata",
-      "pot_size": "17cm",
-      "height": "80cm",
-      "quantity": 5,
-      "selling_price": 29.99,
-      "vat_rate": 19.0
-    },
-    {
-      "description": "Monstera Deliciosa",
-      "scientific_name": "Monstera deliciosa",
-      "pot_size": "21cm",
-      "height": "100cm",
-      "quantity": 3,
-      "selling_price": 45.50,
-      "vat_rate": 19.0
-    }
+    { "description": "Ficus Lyrata", "scientific_name": "Ficus lyrata", "pot_size": "17cm", "height": "80cm", "quantity": 5, "selling_price": 29.99, "vat_rate": 19.0 }
   ],
   "currency": "€",
-  "notes": "Special order for showroom display."
+  "notes": "Showroom display",
+  "valid_until": "2026-04-30",
+  "status": "DRAFT"
 }</code></pre>
-
-                    <h4>Response (201 Created)</h4>
-                    <pre><code class="language-json">{
-  "status": "success",
-  "quotation_id": 123,
-  "quotation_number": "PAK-2025-042",
-  "edit_url": "https://example.com/quotation/edit/123"
-}</code></pre>
+                    <h5>Response (201)</h5>
+                    <pre><code class="language-json">{ "status": "success", "quotation_id": 123, "quotation_number": "PAK-2026-042", "edit_url": "/quotations/123" }</code></pre>
                 </div>
 
-                <!-- Get Quotation -->
-                <div class="api-endpoint">
-                    <h3>
-                        <span class="http-method method-get">GET</span>
-                        <span class="endpoint-url">/api/v1/quotations/{quotation_number}</span>
-                    </h3>
-                    <p>Retrieve a quotation by its quotation number.</p>
-                    
-                    <h4>Response (200 OK)</h4>
-                    <pre><code class="language-json">{
-  "status": "success",
-  "quotation_id": 123,
-  "quotation_number": "PAK-2025-042",
-  "quotation_date": "2025-05-09",
-  "customer": {
-    "id": 45,
-    "name": "Acme Garden Center",
-    "email": "info@acmegarden.com",
-    "phone": "+1234567890",
-    "address": "123 Garden Street, Plant City"
-  },
-  "items": [
-    {
-      "id": 256,
-      "description": "Ficus Lyrata",
-      "scientific_name": "Ficus lyrata",
-      "pot_size": "17cm",
-      "height": "80cm",
-      "quantity": 5,
-      "selling_price": 29.99,
-      "vat_rate": 19.0,
-      "total": 149.95,
-      "position": 0
-    },
-    {
-      "id": 257,
-      "description": "Monstera Deliciosa",
-      "scientific_name": "Monstera deliciosa",
-      "pot_size": "21cm",
-      "height": "100cm",
-      "quantity": 3,
-      "selling_price": 45.50,
-      "vat_rate": 19.0,
-      "total": 136.50,
-      "position": 1
-    }
-  ],
-  "currency": "€",
-  "notes": "Special order for showroom display.",
-  "total_amount": 286.45,
-  "created_at": "2025-05-09T16:28:30.123456Z",
-  "updated_at": "2025-05-09T16:28:30.123456Z",
-  "edit_url": "https://example.com/quotation/edit/123"
-}</code></pre>
-                </div>
-
-                <!-- List Quotations -->
-                <div class="api-endpoint">
-                    <h3>
-                        <span class="http-method method-get">GET</span>
-                        <span class="endpoint-url">/api/v1/quotations</span>
-                    </h3>
-                    <p>List all quotations, with optional filtering.</p>
-                    
-                    <h4>Query Parameters</h4>
+                <div class="api-endpoint" id="q-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/quotations</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List all quotations.</p>
+                    <h5>Query Parameters</h5>
                     <ul>
-                        <li><code>customer_id</code> (optional) - Filter by customer ID</li>
-                        <li><code>limit</code> (optional, default: 50) - Maximum number of results</li>
-                        <li><code>offset</code> (optional, default: 0) - Pagination offset</li>
+                        <li><code>customer_id</code> — filter by customer</li>
+                        <li><code>status</code> — filter by status (DRAFT, SENT, ACCEPTED, REJECTED, COMPLETED)</li>
+                        <li><code>limit</code> (default: 50), <code>offset</code> (default: 0)</li>
                     </ul>
-                    
-                    <h4>Response (200 OK)</h4>
+                    <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://yourapp.replit.app/api/v1/quotations?status=SENT&limit=20"</code></pre>
+                </div>
+
+                <div class="api-endpoint" id="q-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/quotations/{quotation_number}</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get a specific quotation by number (e.g. <code>PAK-2026-001</code>). Returns full details including items, supplier info, and size options.</p>
+                    <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://yourapp.replit.app/api/v1/quotations/PAK-2026-001"</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Customers</h2></div>
+            <div class="card-body">
+
+                <div class="api-endpoint" id="c-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/customers</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List all customers.</p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>search</code> — search by name, email, or phone</li>
+                        <li><code>category_id</code> — filter by category</li>
+                        <li><code>limit</code> (default: 100), <code>offset</code> (default: 0)</li>
+                    </ul>
+                    <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://yourapp.replit.app/api/v1/customers?search=garden"</code></pre>
+                </div>
+
+                <div class="api-endpoint" id="c-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/customers/{id}</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get a specific customer including their contacts, quotations summary, and orders summary.</p>
+                    <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://yourapp.replit.app/api/v1/customers/5"</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUPPLIERS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Suppliers</h2></div>
+            <div class="card-body">
+
+                <div class="api-endpoint" id="s-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/suppliers</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List all suppliers.</p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>search</code> — search by name, contact person, or email</li>
+                        <li><code>is_inhouse</code> — <code>true</code> or <code>false</code></li>
+                        <li><code>limit</code> (default: 100), <code>offset</code> (default: 0)</li>
+                    </ul>
+                </div>
+
+                <div class="api-endpoint" id="s-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/suppliers/{id}</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get a specific supplier with their full product list.</p>
+                </div>
+
+                <div class="api-endpoint" id="s-products">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/suppliers/{id}/products</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List all products from a specific supplier.</p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>search</code> — filter by product name</li>
+                        <li><code>limit</code> (default: 200), <code>offset</code> (default: 0)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ORDERS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Orders</h2></div>
+            <div class="card-body">
+
+                <div class="api-endpoint" id="o-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/orders</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List all orders with financial totals.</p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>status</code> — filter by status (new, confirmed, processing, completed, cancelled)</li>
+                        <li><code>customer_id</code> — filter by customer</li>
+                        <li><code>limit</code> (default: 50), <code>offset</code> (default: 0)</li>
+                    </ul>
+                    <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://yourapp.replit.app/api/v1/orders?status=new"</code></pre>
+                </div>
+
+                <div class="api-endpoint" id="o-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/orders/{order_number}</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get a specific order with all items and computed totals (subtotal, VAT, discount, total).</p>
+                    <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "https://yourapp.replit.app/api/v1/orders/ORD-2026-001"</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVOICES -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Invoices</h2></div>
+            <div class="card-body">
+
+                <div class="api-endpoint" id="inv-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/invoices</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List all invoices.</p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>customer_id</code> — filter by customer</li>
+                        <li><code>limit</code> (default: 50), <code>offset</code> (default: 0)</li>
+                    </ul>
+                </div>
+
+                <div class="api-endpoint" id="inv-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/invoices/{invoice_number}</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get a specific invoice with all line items.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRICE LISTS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Price Lists</h2></div>
+            <div class="card-body">
+                <div class="api-endpoint" id="pl-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/price-lists</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>List price list entries (customer-specific product prices).</p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>customer_id</code> — filter by customer</li>
+                        <li><code>product_id</code> — filter by product</li>
+                        <li><code>limit</code> (default: 100), <code>offset</code> (default: 0)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRODUCTS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Products</h2></div>
+            <div class="card-body">
+
+                <div class="api-endpoint" id="p-list">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/products</span></h4>
+                    <p>Search products. <strong>No authentication required.</strong></p>
+                    <h5>Query Parameters</h5>
+                    <ul>
+                        <li><code>search</code> — search by name, category, SKU, or scientific name</li>
+                        <li><code>limit</code> (default: 50)</li>
+                    </ul>
+                    <pre><code class="language-bash">curl "https://yourapp.replit.app/api/v1/products?search=ficus"</code></pre>
+                </div>
+
+                <div class="api-endpoint" id="p-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/products/{id}</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get full details for a specific product.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPANY SETTINGS -->
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="mb-0">Company Settings</h2></div>
+            <div class="card-body">
+                <div class="api-endpoint" id="cs-get">
+                    <h4><span class="http-method method-get">GET</span><span class="endpoint-url">/api/v1/company-settings</span> <span class="badge-auth">🔒 Auth required</span></h4>
+                    <p>Get company information (name, address, contact details).</p>
+                    <h5>Response</h5>
                     <pre><code class="language-json">{
   "status": "success",
-  "count": 2,
-  "quotations": [
-    {
-      "id": 123,
-      "quotation_number": "PAK-2025-042",
-      "customer_name": "Acme Garden Center",
-      "quotation_date": "2025-05-09",
-      "total_amount": 286.45,
-      "currency": "€",
-      "item_count": 2,
-      "created_at": "2025-05-09T16:28:30.123456Z"
-    },
-    {
-      "id": 122,
-      "quotation_number": "PAK-2025-041",
-      "customer_name": "Green Thumb Nursery",
-      "quotation_date": "2025-05-08",
-      "total_amount": 425.75,
-      "currency": "€",
-      "item_count": 5,
-      "created_at": "2025-05-08T14:15:30.123456Z"
-    }
-  ]
+  "name": "My Plant Company",
+  "address_line1": "123 Green Street",
+  "address_line2": "Nicosia, Cyprus",
+  "phone": "+357 22 123456",
+  "email": "info@myplants.com",
+  "pdf_orientation": "portrait"
 }</code></pre>
                 </div>
             </div>
         </div>
 
+        <!-- ERRORS -->
         <div class="card mb-4">
-            <div class="card-header">
-                <h2 class="mb-0">API Testing</h2>
-            </div>
+            <div class="card-header"><h2 class="mb-0">Error Responses</h2></div>
             <div class="card-body">
-                <p>You can test the API using curl or any HTTP client. Here are some examples:</p>
-                <h4>Create a new quotation</h4>
-                <pre><code class="language-bash">curl -X POST https://example.com/api/v1/quotations \
-  -H "Authorization: Bearer your_api_token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customer": {"name":"Acme Garden Center","email":"info@acmegarden.com"},
-    "items":[{"description":"Ficus Lyrata","quantity":5,"selling_price":29.99}],
-    "currency":"€",
-    "notes":"Test quotation"
-  }'</code></pre>
-                
-                <h4>Get a quotation</h4>
-                <pre><code class="language-bash">curl -H "Authorization: Bearer your_api_token" \
-  https://example.com/api/v1/quotations/PAK-2025-042</code></pre>
-                
-                <h4>List quotations</h4>
-                <pre><code class="language-bash">curl -H "Authorization: Bearer your_api_token" \
-  https://example.com/api/v1/quotations?limit=10</code></pre>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h2 class="mb-0">Error Responses</h2>
-            </div>
-            <div class="card-body">
-                <p>The API returns standard HTTP status codes and JSON error responses:</p>
-                <pre><code class="language-json">{
-  "status": "error",
-  "message": "Error message describing the problem"
-}</code></pre>
-                
-                <h4>Common Error Codes</h4>
+                <pre><code class="language-json">{ "status": "error", "message": "Description of the problem" }</code></pre>
                 <ul>
-                    <li><code>400 Bad Request</code> - Missing or invalid request parameters</li>
-                    <li><code>401 Unauthorized</code> - Missing or invalid API token</li>
-                    <li><code>404 Not Found</code> - Resource not found</li>
-                    <li><code>500 Internal Server Error</code> - Server-side error</li>
+                    <li><code>400</code> — Bad request (missing or invalid parameters)</li>
+                    <li><code>401</code> — Unauthorized (missing or invalid API token)</li>
+                    <li><code>404</code> — Resource not found</li>
+                    <li><code>500</code> — Server error</li>
                 </ul>
             </div>
         </div>
+
     </div>
 
-    <!-- Footer -->
-    <footer class="footer mt-5 py-3 bg-light">
+    <footer class="footer mt-5 py-3 bg-dark border-top">
         <div class="container text-center">
-            <span class="text-muted">Plant Pricing System API Documentation &copy; 2025</span>
+            <span class="text-muted">Plant Pricing System API Documentation &copy; 2026</span>
         </div>
     </footer>
 
-    <!-- Bootstrap and Prism JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/components/prism-json.min.js"></script>
