@@ -1,7 +1,10 @@
 import logging
+import datetime
 from sqlalchemy import func, or_
 from app import db
 from models import Customer, Product, PriceList
+
+_MIN_DATE = datetime.date.min
 
 def search_price_list(query, customer_id=None):
     """
@@ -55,7 +58,7 @@ def search_price_list(query, customer_id=None):
         
         if customer_id and prices:
             # Customer-specific search with pricing
-            prices.sort(key=lambda p: p.effective_date if p.effective_date else '1900-01-01', reverse=True)
+            prices.sort(key=lambda p: p.effective_date if p.effective_date else _MIN_DATE, reverse=True)
             
             results.append({
                 'product_id': product.id,
@@ -75,7 +78,7 @@ def search_price_list(query, customer_id=None):
             # Get the most recent price from any customer if available
             recent_price = None
             if prices:
-                prices.sort(key=lambda p: p.effective_date if p.effective_date else '1900-01-01', reverse=True)
+                prices.sort(key=lambda p: p.effective_date if p.effective_date else _MIN_DATE, reverse=True)
                 recent_price = prices[0].price
             
             results.append({
