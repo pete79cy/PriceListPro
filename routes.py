@@ -1435,10 +1435,12 @@ def register_routes(app):
         if not query:
             return jsonify({'error': 'No search query provided'}), 400
         
-        # If customer_id is provided, search with customer-specific pricing
-        # If not, search all products with general pricing
-        results = search_price_list(query, customer_id)
-        return jsonify(results)
+        try:
+            results = search_price_list(query, customer_id)
+            return jsonify(results)
+        except Exception as e:
+            logger.error(f"Search error: {str(e)}", exc_info=True)
+            return jsonify({'error': 'Search failed', 'results': []}), 500
     
     @app.route('/api/categories', methods=['GET'])
     @require_login
