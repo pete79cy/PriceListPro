@@ -38,19 +38,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make AJAX request to search API
     fetch(`/api/search?q=${encodeURIComponent(query)}&customer_id=${customerId}`)
       .then(response => {
-        return response.text().then(text => {
-          try {
-            return JSON.parse(text);
-          } catch (err) {
-            console.error("Error parsing JSON:", err);
-            console.log("Raw response:", text);
-            throw new Error("Error parsing server response. Please try again.");
-          }
-        });
+        if (response.redirected || response.headers.get('content-type') === null ||
+            !response.headers.get('content-type').includes('application/json')) {
+          return response.text().then(text => {
+            try {
+              return JSON.parse(text);
+            } catch (err) {
+              console.error("Non-JSON response from server:", text.substring(0, 200));
+              throw new Error("Unexpected server response. Please refresh the page and try again.");
+            }
+          });
+        }
+        return response.json();
       })
       .then(data => {
         // Hide spinner
         searchSpinner.classList.add('hidden');
+
+        if (data.error && !data.results) {
+          throw new Error(data.error);
+        }
 
         if (data.results && data.results.length > 0) {
           // Show results

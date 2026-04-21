@@ -187,14 +187,19 @@ def require_login(f):
             session["next_url"] = get_next_navigation_url(request)
             return redirect(url_for('replit_auth.login'))
 
-        expires_in = replit.token.get('expires_in', 0)
+        try:
+            token_data = replit.token
+            expires_in = token_data.get('expires_in', 0) if token_data else 0
+        except Exception:
+            expires_in = 0
+
         if expires_in < 0:
             _issuer_url = os.environ.get('ISSUER_URL', "https://replit.com/oidc")
             refresh_token_url = _issuer_url + "/token"
             try:
                 token = replit.refresh_token(token_url=refresh_token_url,
                                              client_id=os.environ['REPL_ID'])
-            except InvalidGrantError:
+            except (InvalidGrantError, Exception):
                 session["next_url"] = get_next_navigation_url(request)
                 return redirect(url_for('replit_auth.login'))
             replit.token_updater(token)
