@@ -78,26 +78,43 @@ db = SQLAlchemy(model_class=Base)
 
 # Create the app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+session_secret = os.environ.get("SESSION_SECRET")
+if not session_secret:
+    raise RuntimeError("SESSION_SECRET environment variable is required")
+app.secret_key = session_secret
 
 # Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    raise RuntimeError("DATABASE_URL environment variable is required")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+engine_options = {
     "pool_recycle": 300,  # Recycle connections after 5 minutes
     "pool_pre_ping": True,  # Verify connection before use to prevent stale connections
-    "pool_size": 10,  # Maximum number of persistent connections
-    "max_overflow": 20,  # Maximum number of connections above pool_size
-    "pool_timeout": 30,  # Seconds to wait for a connection from the pool
-    "connect_args": {
-        "client_encoding": "utf8",
-        "options": "-c client_encoding=utf8 -c standard_conforming_strings=on",
-        "connect_timeout": 10,  # Connection timeout in seconds
-        "keepalives": 1,  # Enable keepalives
-        "keepalives_idle": 60,  # Seconds between keepalives
-        "keepalives_interval": 10,  # Seconds between keepalive probes
-        "keepalives_count": 3  # Number of keepalive probes before considering connection dead
-    },
 }
+
+if database_url.startswith("postgresql"):
+    engine_options.update({
+        "pool_size": 10,  # Maximum number of persistent connections
+        "max_overflow": 20,  # Maximum number of connections above pool_size
+        "pool_timeout": 30,  # Seconds to wait for a connection from the pool
+        "connect_args": {
+            "client_encoding": "utf8",
+            "options": "-c client_encoding=utf8 -c standard_conforming_strings=on",
+            "connect_timeout": 10,  # Connection timeout in seconds
+            "keepalives": 1,  # Enable keepalives
+            "keepalives_idle": 60,  # Seconds between keepalives
+            "keepalives_interval": 10,  # Seconds between keepalive probes
+            "keepalives_count": 3  # Number of keepalive probes before considering connection dead
+        },
+    })
+
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 
 # Configure BUILD_ID for PWA cache busting
 app.config["BUILD_ID"] = os.environ.get("BUILD_ID", "dev")
@@ -114,9 +131,11 @@ app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.config['WTF_CSRF_TIME_LIMIT'] = 28800
 
 # Configure file uploads
-app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
-app.config['TEMPLATES_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates/sample_files')
+storage_root = os.environ.get("STORAGE_ROOT", os.path.join(base_dir, "storage"))
+app.config['UPLOAD_FOLDER'] = os.environ.get("UPLOAD_FOLDER", os.path.join(storage_root, "uploads"))
+app.config['TEMPLATES_FOLDER'] = os.environ.get("TEMPLATES_FOLDER", os.path.join(base_dir, 'templates', 'sample_files'))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
+os.makedirs(storage_root, exist_ok=True)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['TEMPLATES_FOLDER'], exist_ok=True)
 

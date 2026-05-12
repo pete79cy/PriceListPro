@@ -4,7 +4,7 @@ import uuid
 from functools import wraps
 from urllib.parse import urlencode
 
-from flask import g, session, redirect, request, render_template, url_for
+from flask import Blueprint, g, session, redirect, request, render_template, url_for
 from flask_dance.consumer import (
     OAuth2ConsumerBlueprint,
     oauth_authorized,
@@ -20,6 +20,7 @@ from app import app, db
 from models import OAuth, User
 
 login_manager = LoginManager(app)
+login_manager.login_view = "replit_auth.login"
 
 
 @login_manager.user_loader
@@ -62,7 +63,109 @@ class UserSessionStorage(BaseStorage):
         db.session.commit()
 
 
+def get_auth_mode():
+    configured_mode = (os.environ.get("AUTH_MODE") or "").strip().lower()
+    if configured_mode in {"local", "replit"}:
+        return configured_mode
+    return "replit" if os.environ.get("REPL_ID") else "local"
+
+
+def is_replit_auth_enabled():
+    return get_auth_mode() == "replit"
+
+
+def ensure_browser_session():
+    if "_browser_session_key" not in session:
+        session["_browser_session_key"] = uuid.uuid4().hex
+    session.modified = True
+    g.browser_session_key = session["_browser_session_key"]
+
+
+def is_truthy(value, default=False):
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def ensure_local_user():
+    ensure_browser_session()
+    g.flask_dance_replit = None
+
+    if current_user.is_authenticated:
+        return current_user
+
+    user_id = os.environ.get("LOCAL_AUTH_USER_ID", "local-admin")
+    user = User.query.get(user_id)
+
+    if user is None:
+        user = User(
+            id=user_id,
+            email=os.environ.get("LOCAL_AUTH_EMAIL", "admin@example.com"),
+            first_name=os.environ.get("LOCAL_AUTH_FIRST_NAME", "Local"),
+            last_name=os.environ.get("LOCAL_AUTH_LAST_NAME", "Admin"),
+            is_admin=is_truthy(os.environ.get("LOCAL_AUTH_IS_ADMIN"), default=True),
+        )
+        db.session.add(user)
+        db.session.commit()
+    else:
+        updated = False
+        desired_email = os.environ.get("LOCAL_AUTH_EMAIL")
+        desired_first_name = os.environ.get("LOCAL_AUTH_FIRST_NAME")
+        desired_last_name = os.environ.get("LOCAL_AUTH_LAST_NAME")
+        desired_admin = os.environ.get("LOCAL_AUTH_IS_ADMIN")
+
+        if desired_email and user.email != desired_email:
+            user.email = desired_email
+            updated = True
+        if desired_first_name and user.first_name != desired_first_name:
+            user.first_name = desired_first_name
+            updated = True
+        if desired_last_name and user.last_name != desired_last_name:
+            user.last_name = desired_last_name
+            updated = True
+        if desired_admin is not None:
+            parsed_admin = is_truthy(desired_admin, default=True)
+            if user.is_admin != parsed_admin:
+                user.is_admin = parsed_admin
+                updated = True
+
+        if updated:
+            db.session.commit()
+
+    login_user(user)
+    return user
+
+
 def make_replit_blueprint():
+    if not is_replit_auth_enabled():
+        local_bp = Blueprint("replit_auth", __name__)
+
+        @local_bp.before_app_request
+        def set_local_session():
+            ensure_browser_session()
+            g.flask_dance_replit = None
+
+        @local_bp.route("/login")
+        def login():
+            ensure_local_user()
+            next_url = request.args.get("next") or session.pop("next_url", None) or url_for("index")
+            return redirect(next_url)
+
+        @local_bp.route("/logout")
+        def logout():
+            logout_user()
+            return redirect(url_for("replit_auth.login"))
+
+        @local_bp.route("/error")
+        def error():
+            return render_template("403.html"), 403
+
+        @local_bp.route("/access-denied")
+        def access_denied():
+            return render_template("403.html"), 403
+
+        return local_bp
+
     try:
         repl_id = os.environ['REPL_ID']
     except KeyError:
@@ -97,10 +200,7 @@ def make_replit_blueprint():
 
     @replit_bp.before_app_request
     def set_applocal_session():
-        if '_browser_session_key' not in session:
-            session['_browser_session_key'] = uuid.uuid4().hex
-        session.modified = True
-        g.browser_session_key = session['_browser_session_key']
+        ensure_browser_session()
         g.flask_dance_replit = replit_bp.session
 
     @replit_bp.route("/logout")
@@ -183,6 +283,10 @@ def require_login(f):
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        if not is_replit_auth_enabled():
+            ensure_local_user()
+            return f(*args, **kwargs)
+
         if not current_user.is_authenticated:
             session["next_url"] = get_next_navigation_url(request)
             return redirect(url_for('replit_auth.login'))
@@ -218,4 +322,4 @@ def get_next_navigation_url(request):
     return request.referrer or request.url
 
 
-replit = LocalProxy(lambda: g.flask_dance_replit)
+replit = LocalProxy(lambda: getattr(g, "flask_dance_replit", None))
