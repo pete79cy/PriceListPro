@@ -1,10 +1,11 @@
+import hmac
 import jwt
 import os
 import uuid
 from functools import wraps
 from urllib.parse import urlencode
 
-from flask import Blueprint, g, session, redirect, request, render_template, url_for
+from flask import Blueprint, flash, g, session, redirect, request, render_template, url_for
 from flask_dance.consumer import (
     OAuth2ConsumerBlueprint,
     oauth_authorized,
@@ -15,6 +16,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user
 from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 from sqlalchemy.exc import NoResultFound
 from werkzeug.local import LocalProxy
+from werkzeug.security import check_password_hash
 
 from app import app, db
 from models import OAuth, User
@@ -88,11 +90,13 @@ def is_truthy(value, default=False):
 
 
 def ensure_local_user():
+    """Ensure the local admin user row exists in the DB and return it.
+
+    This does NOT log the user in — call login_user() separately after
+    verifying credentials.
+    """
     ensure_browser_session()
     g.flask_dance_replit = None
-
-    if current_user.is_authenticated:
-        return current_user
 
     user_id = os.environ.get("LOCAL_AUTH_USER_ID", "local-admin")
     user = User.query.get(user_id)
@@ -132,8 +136,30 @@ def ensure_local_user():
         if updated:
             db.session.commit()
 
-    login_user(user)
     return user
+
+
+def verify_admin_credentials(username, password):
+    """Compare submitted credentials with ADMIN_USERNAME / ADMIN_PASSWORD env vars.
+
+    Accepts either ADMIN_PASSWORD (plain) or ADMIN_PASSWORD_HASH
+    (werkzeug.security hashed). Uses constant-time comparison for the plain
+    case to avoid timing attacks.
+    """
+    expected_username = os.environ.get("ADMIN_USERNAME", "admin")
+    expected_password = os.environ.get("ADMIN_PASSWORD", "")
+    expected_password_hash = os.environ.get("ADMIN_PASSWORD_HASH", "")
+
+    if not expected_password and not expected_password_hash:
+        return False
+
+    if not hmac.compare_digest(username or "", expected_username):
+        return False
+
+    if expected_password_hash:
+        return check_password_hash(expected_password_hash, password or "")
+
+    return hmac.compare_digest(password or "", expected_password)
 
 
 def make_replit_blueprint():
@@ -145,15 +171,35 @@ def make_replit_blueprint():
             ensure_browser_session()
             g.flask_dance_replit = None
 
-        @local_bp.route("/login")
+        @local_bp.route("/login", methods=["GET", "POST"])
         def login():
-            ensure_local_user()
-            next_url = request.args.get("next") or session.pop("next_url", None) or url_for("index")
-            return redirect(next_url)
+            if current_user.is_authenticated:
+                return redirect(url_for("index"))
+
+            if request.method == "POST":
+                username = (request.form.get("username") or "").strip()
+                password = request.form.get("password") or ""
+
+                if verify_admin_credentials(username, password):
+                    user = ensure_local_user()
+                    login_user(user, remember=True)
+                    next_url = (
+                        request.args.get("next")
+                        or session.pop("next_url", None)
+                        or url_for("index")
+                    )
+                    return redirect(next_url)
+
+                flash("Invalid username or password.", "danger")
+                return render_template("auth_login.html"), 401
+
+            return render_template("auth_login.html")
 
         @local_bp.route("/logout")
         def logout():
             logout_user()
+            session.clear()
+            flash("You have been signed out.", "success")
             return redirect(url_for("replit_auth.login"))
 
         @local_bp.route("/error")
@@ -284,7 +330,9 @@ def require_login(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not is_replit_auth_enabled():
-            ensure_local_user()
+            if not current_user.is_authenticated:
+                session["next_url"] = get_next_navigation_url(request)
+                return redirect(url_for("replit_auth.login"))
             return f(*args, **kwargs)
 
         if not current_user.is_authenticated:
